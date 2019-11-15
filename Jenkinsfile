@@ -13,7 +13,7 @@ pipeline {
         }
          stage('Dist Local') {
             steps {
-                sh 'mvn -B deploy'
+                sh 'mvn -B -DskipTests deploy'
             }
         }
     }
