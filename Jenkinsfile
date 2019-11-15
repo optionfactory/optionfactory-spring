@@ -8,12 +8,12 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                sh 'mvn clean verify'
+                sh 'mvn -B clean verify'
             }
         }
          stage('Dist Local') {
             steps {
-                sh 'mvn deploy'
+                sh 'mvn -B deploy'
             }
         }
     }
