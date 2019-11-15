@@ -17,6 +17,7 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.orm.hibernate5.LocalSessionFactoryBuilder;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.testcontainers.containers.PostgreSQLContainer;
 
 @Configuration
 //@EnableJpaRepositories(
@@ -48,20 +49,27 @@ public class HibernateTestConfig {
         return builder.buildSessionFactory();
     }
 
-    @Bean
-    public DataSource dataSource(
-            @Value("${db.hostname}") String hostname,
-            @Value("${db.port}") int port,
+    @Bean(initMethod = "start")
+    public PostgreSQLContainer postgres(
             @Value("${db.schema}") String schema,
             @Value("${db.username}") String username,
-            @Value("${db.password}") String password) throws PropertyVetoException {
+            @Value("${db.password}") String password
+    ) {
+        return new PostgreSQLContainer("postgres:10.8-alpine")
+                .withDatabaseName(schema)
+                .withUsername(username)
+                .withPassword(password);
+    }
+
+    @Bean
+    public DataSource dataSource(PostgreSQLContainer postgres) throws PropertyVetoException {
         final Properties driverProperties = new Properties();
         final ComboPooledDataSource dataSource = new ComboPooledDataSource();
         dataSource.setProperties(driverProperties);
-        dataSource.setUser(username);
-        dataSource.setPassword(password);
+        dataSource.setUser(postgres.getUsername());
+        dataSource.setPassword(postgres.getPassword());
         dataSource.setDriverClass(org.postgresql.Driver.class.getName());
-        dataSource.setJdbcUrl(String.format("jdbc:postgresql://%s:%s/%s", hostname, port, schema));
+        dataSource.setJdbcUrl(postgres.getJdbcUrl());
         dataSource.setInitialPoolSize(5);
         dataSource.setMaxPoolSize(50);
         dataSource.setMinPoolSize(5);
