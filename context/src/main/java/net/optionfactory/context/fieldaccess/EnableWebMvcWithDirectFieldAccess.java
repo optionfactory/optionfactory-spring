@@ -1,0 +1,34 @@
+package net.optionfactory.context.fieldaccess;
+
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import net.optionfactory.context.fieldaccess.EnableWebMvcWithDirectFieldAccess.DirectFieldAccessConfig;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.web.bind.support.ConfigurableWebBindingInitializer;
+import org.springframework.web.servlet.config.annotation.DelegatingWebMvcConfiguration;
+
+/**
+ * To be used in place of {@code @EnableWebMvc}, enforcing access to bean fields
+ * instead of referencing getters and setters.
+ */
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+@Documented
+@Import(DirectFieldAccessConfig.class)
+public @interface EnableWebMvcWithDirectFieldAccess {
+
+    @Configuration
+    static class DirectFieldAccessConfig extends DelegatingWebMvcConfiguration {
+
+        @Override
+        protected ConfigurableWebBindingInitializer getConfigurableWebBindingInitializer() {
+            final ConfigurableWebBindingInitializer initializer = super.getConfigurableWebBindingInitializer();
+            initializer.setDirectFieldAccess(true);
+            return initializer;
+        }
+    }
+}
