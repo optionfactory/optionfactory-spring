@@ -9,6 +9,4 @@ public interface Filter {
     String name();
 
     Predicate toPredicate(CriteriaBuilder builder, Root<?> root, String[] values);
-
-    
 }

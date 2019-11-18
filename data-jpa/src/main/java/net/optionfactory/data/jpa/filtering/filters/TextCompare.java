@@ -77,7 +77,7 @@ public @interface TextCompare {
             Filters.ensure(modes.contains(mode), "mode %s not whitelisted (%s)", mode, modes);
             final String value = values[2];
             Filters.ensure(value != null, "value cannot be null");
-            final Expression<String> lhs = mode == Mode.CASE_SENSITIVE ? root.get(property) : builder.lower(root.get(property));
+            final Expression<String> lhs = mode == Mode.CASE_SENSITIVE ? Filters.traverseProperty(root, property) : builder.lower(Filters.traverseProperty(root, property));
             final String rhs = mode == Mode.CASE_SENSITIVE ? value : value.toLowerCase();
             switch (operator) {
                 case CONTAINS:

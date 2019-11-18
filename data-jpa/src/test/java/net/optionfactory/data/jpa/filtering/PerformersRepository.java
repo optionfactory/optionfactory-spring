@@ -6,13 +6,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface ActivitiesRepository extends JpaRepository<Activity, Long>, WhitelistFilteringRepository<Activity> {
+public interface PerformersRepository extends JpaRepository<Performer, Long>, WhitelistFilteringRepository<Performer> {
 
-    Optional<Activity> findByIdAndName(long id, String name);
+    Optional<Performer> findByIdAndName(long id, String name);
 
-    Slice<Activity> findByName(String name, Pageable pr);
+    Slice<Performer> findByName(String name, Pageable pr);
 
-    default List<Activity> findAllByName(String name, FilterRequest fr) {
+    default List<Performer> findAllByName(String name, FilterRequest fr) {
         return findAll((root, query, cb) -> cb.equal(root.get("name"), name), fr);
     }
 }

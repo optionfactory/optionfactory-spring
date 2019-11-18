@@ -48,7 +48,7 @@ public @interface InList {
         @Override
         public Predicate toPredicate(CriteriaBuilder builder, Root<?> root, String[] values) {
             //TODO: handle numbers
-            return builder.in(root.get(this.property)).in((Object[]) values);
+            return builder.in(Filters.traverseProperty(root, property)).in((Object[]) values);
         }
 
         @Override

@@ -55,7 +55,7 @@ public @interface PostgresFullTextSearch {
         @Override
         public Predicate toPredicate(CriteriaBuilder builder, Root<?> root, String[] values) {
             //params = alias, alias, alias, alias, query
-            final List<Expression<?>> paths = Stream.of(properties).map(p -> root.get(p)).collect(Collectors.toList());
+            final List<Expression<?>> paths = Stream.of(properties).map(p -> Filters.traverseProperty(root, p)).collect(Collectors.toList());
             final Expression<String> query = builder.literal(values[0]);
             final Expression<?>[] allargs = Stream.concat(paths.stream(), Stream.of(query)).toArray((size) -> new Expression[size]);
             Expression<Boolean> function = builder.function("fts", boolean.class, allargs);

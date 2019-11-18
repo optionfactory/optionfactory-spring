@@ -66,7 +66,7 @@ public @interface NumberCompare {
             Filters.ensure(operators.contains(operator), "operator %s not whitelisted (%s)", operator, operators);
             final String value = values[1];
             Filters.ensure(value != null, "value cannot be null");
-            final Path<Number> lhs = root.get(property);
+            final Path<Number> lhs = Filters.traverseProperty(root, property);
             final Number rhs = NumberUtils.parseNumber(name, propertyClass);
             switch (operator) {
                 case LT:

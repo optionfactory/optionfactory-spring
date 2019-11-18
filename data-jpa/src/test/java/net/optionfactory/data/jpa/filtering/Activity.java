@@ -26,6 +26,4 @@ public class Activity {
     public enum Season {
         SUMMER, WINTER;
     }
-
-    
 }

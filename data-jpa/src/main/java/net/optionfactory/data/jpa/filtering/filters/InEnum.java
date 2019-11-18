@@ -60,14 +60,15 @@ public @interface InEnum {
                 return Enum.valueOf(t, v);
             });
             final Set<Enum<?>> requested = stream.collect(Collectors.toSet());
-            return builder.in(root.get(this.property)).in(requested);
+            if (requested.isEmpty()) {
+                return builder.disjunction();
+            }
+            return Filters.traverseProperty(root, this.property).in(requested);
         }
 
         @Override
         public String name() {
             return name;
         }
-
     }
-
 }
