@@ -8,14 +8,14 @@ import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import net.optionfactory.data.jpa.filtering.filters.InEnum;
+import net.optionfactory.data.jpa.filtering.filters.LocalDateCompare;
 import net.optionfactory.data.jpa.filtering.filters.TextCompare;
 
 @Entity
 @TextCompare(name = "performerName", property = "performer.name")
 @InEnum(name = "season", property = "activity.season", type = Activity.Season.class)
 @InEnum(name = "status", property = "status", type = Appointment.Status.class)
-//TODO: @InDate
-//TODO: @InInstant
+@LocalDateCompare(name = "date", property = "date")
 public class Appointment {
 
     @Id
