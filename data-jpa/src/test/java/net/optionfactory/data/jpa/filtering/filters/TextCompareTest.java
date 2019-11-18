@@ -1,7 +1,9 @@
-package net.optionfactory.data.jpa.filtering;
+package net.optionfactory.data.jpa.filtering.filters;
 
 import net.optionfactory.data.jpa.HibernateTestConfig;
-import net.optionfactory.data.jpa.filtering.filters.TextCompare;
+import net.optionfactory.data.jpa.filtering.ActivitiesRepository;
+import net.optionfactory.data.jpa.filtering.Activity;
+import net.optionfactory.data.jpa.filtering.FilterRequest;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
