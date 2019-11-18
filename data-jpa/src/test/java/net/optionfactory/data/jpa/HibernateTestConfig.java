@@ -6,6 +6,7 @@ import java.util.Properties;
 import javax.sql.DataSource;
 import net.optionfactory.data.jpa.filtering.Activity;
 import net.optionfactory.data.jpa.filtering.EnableJpaWhitelistFilteringRepositories;
+import net.optionfactory.data.jpa.filtering.TestMarker;
 import net.optionfactory.data.jpa.hibernate.naming.LowerCaseAndUnderscoreNamingStrategy;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.model.naming.ImplicitNamingStrategyComponentPathImpl;
@@ -14,20 +15,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.orm.hibernate5.HibernateTransactionManager;
 import org.springframework.orm.hibernate5.LocalSessionFactoryBuilder;
 import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 @Configuration
-//@EnableJpaRepositories(
-//        basePackageClasses = Activity.class,
-//        enableDefaultTransactions = false,
-//        entityManagerFactoryRef = "hibernate",
-//        repositoryBaseClass = JpaWhitelistFilteringRepositoryBase.class
-//)
 @EnableJpaWhitelistFilteringRepositories(
-        basePackageClasses = Activity.class, 
+        basePackageClasses = TestMarker.class, 
         entityManagerFactoryRef = "hibernate"
 )
 @PropertySource(value = "classpath:test.properties")
@@ -82,12 +79,12 @@ public class HibernateTestConfig {
     }
 
     @Bean
-    public JpaTransactionManager hibernateTx(SessionFactory hibernate) {
-        return new JpaTransactionManager(hibernate);
+    public PlatformTransactionManager transactionManager(SessionFactory hibernate) {
+        return new HibernateTransactionManager(hibernate);
     }
 
     @Bean
-    public TransactionTemplate tt(JpaTransactionManager htt) {
+    public TransactionTemplate tt(PlatformTransactionManager htt) {
         return new TransactionTemplate(htt);
     }
 
