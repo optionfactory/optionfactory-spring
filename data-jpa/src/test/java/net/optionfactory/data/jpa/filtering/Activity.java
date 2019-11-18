@@ -6,6 +6,7 @@ import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import net.optionfactory.data.jpa.filtering.Activity.Season;
 import net.optionfactory.data.jpa.filtering.filters.InEnum;
+import net.optionfactory.data.jpa.filtering.filters.InList;
 import net.optionfactory.data.jpa.filtering.filters.PostgresFullTextSearch;
 import net.optionfactory.data.jpa.filtering.filters.TextCompare;
 
@@ -14,6 +15,9 @@ import net.optionfactory.data.jpa.filtering.filters.TextCompare;
 @TextCompare(name="byDesc", property="description")
 @InEnum(name="bySeason", property="season", type=Season.class)
 @PostgresFullTextSearch(name="fts", properties = {"name", "description"})
+@InList(name = "nameIn", property = "name")
+@InList(name = "maxPersonsIn", property = "maxPersons")
+@InList(name = "ratingIn", property = "rating")
 public class Activity {
 
     @Id
@@ -22,6 +26,8 @@ public class Activity {
     public String description;
     @Enumerated(EnumType.STRING)
     public Season season;
+    public Integer maxPersons;
+    public double rating;
     
     public enum Season {
         SUMMER, WINTER;

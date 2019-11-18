@@ -33,7 +33,7 @@ public class PropertyChainTest {
     @Before
     public void setup() {
         final Activity swimming = activities.save(activity(1, "swimming", "Swimming!", Activity.Season.SUMMER));
-        final Activity skying = activities.save(activity(2, "skying", "Skying!", Activity.Season.WINTER));
+        final Activity skying = activities.save(activity(2, "skiing", "Skiing!", Activity.Season.WINTER));
 
         final Performer pietro = performers.save(performer(1, "pietro"));
         final Performer paolo = performers.save(performer(2, "paolo"));
