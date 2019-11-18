@@ -3,7 +3,6 @@ package net.optionfactory.data.jpa.filtering.filters.spi;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.List;
-import javax.persistence.criteria.Expression;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Root;
 import javax.persistence.metamodel.Attribute;

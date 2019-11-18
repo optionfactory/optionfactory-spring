@@ -17,6 +17,7 @@ import net.optionfactory.data.jpa.filtering.filters.NumberCompare.NumberCompareF
 import net.optionfactory.data.jpa.filtering.filters.NumberCompare.RepeatableNumberCompare;
 import org.springframework.util.NumberUtils;
 import net.optionfactory.data.jpa.filtering.filters.spi.Filters;
+import net.optionfactory.data.jpa.filtering.filters.spi.Values;
 
 @Documented
 @Target(value = ElementType.TYPE)
@@ -55,7 +56,7 @@ public @interface NumberCompare {
         public NumberCompareFilter(NumberCompare nc, EntityType<?> entity) {
             this.name = nc.name();
             this.property = nc.property();
-            Filters.ensurePropertyOfAnyType(nc, entity, property, Number.class);
+            Filters.ensurePropertyOfAnyType(nc, entity, property, Number.class, byte.class, short.class, int.class, long.class, float.class, double.class, char.class);
             this.propertyClass = (Class<? extends Number>) entity.getAttribute(nc.property()).getJavaType();
             this.operators = EnumSet.of(nc.operators()[0], nc.operators());
         }
@@ -65,16 +66,16 @@ public @interface NumberCompare {
             final Operator operator = Operator.valueOf(values[0]);
             Filters.ensure(operators.contains(operator), "operator %s not whitelisted (%s)", operator, operators);
             final String value = values[1];
-            Filters.ensure(value != null, "value cannot be null");
+            Filters.ensure(value != null || operator == Operator.EQ, "value cannot be null when operator is not %s", Operator.EQ.name());
             final Path<Number> lhs = Filters.traverseProperty(root, property);
-            final Number rhs = NumberUtils.parseNumber(name, propertyClass);
+            final Number rhs = (Number) Values.convert(value, propertyClass);
             switch (operator) {
                 case LT:
                     return builder.lt(lhs, rhs);
                 case LTE:
                     return builder.le(lhs, rhs);
                 case EQ:
-                    return builder.equal(lhs, rhs);
+                    return rhs == null ? lhs.isNull() : builder.equal(lhs, rhs);
                 case GTE:
                     return builder.ge(lhs, rhs);
                 case GT:
@@ -88,7 +89,5 @@ public @interface NumberCompare {
         public String name() {
             return name;
         }
-
     }
-
 }
