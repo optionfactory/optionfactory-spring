@@ -1,12 +1,9 @@
 package net.optionfactory.data.jpa.filtering.filters.filterwith;
 
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 import net.optionfactory.data.jpa.HibernateTestConfig;
-import net.optionfactory.data.jpa.filtering.filters.filterwith.CustomEntity;
-import net.optionfactory.data.jpa.filtering.filters.filterwith.CustomFilter;
-import net.optionfactory.data.jpa.filtering.filters.filterwith.CustomsRepository;
 import net.optionfactory.data.jpa.filtering.FilterRequest;
 import net.optionfactory.data.jpa.filtering.filters.spi.Filters;
 import org.junit.Assert;
@@ -59,6 +56,6 @@ public class FilterWithTest {
         final FilterRequest request = new FilterRequest();
         request.put("custom", new String[]{CustomFilter.Check.LESS.name()});
         final Page<CustomEntity> page = customs.findAll(request, Pageable.unpaged());
-        Assert.assertEquals(new HashSet<>(Arrays.asList(3L, 5L)), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assert.assertEquals(Set.of(3L, 5L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 }

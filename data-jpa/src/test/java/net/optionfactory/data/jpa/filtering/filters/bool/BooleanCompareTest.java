@@ -39,28 +39,28 @@ public class BooleanCompareTest {
 
     @Test
     public void canFilterBooleanValueWithDefaultOptions() {
-        Assert.assertEquals(ids(1L), idsIn(flags.findAll(filter("javaBoolean", "true"), Pageable.unpaged())));
-        Assert.assertEquals(ids(1L), idsIn(flags.findAll(filter("javaBoolean", "True"), Pageable.unpaged())));
-        Assert.assertEquals(ids(1L), idsIn(flags.findAll(filter("javaBoolean", "TRUE"), Pageable.unpaged())));
-        Assert.assertEquals(ids(2L), idsIn(flags.findAll(filter("javaBoolean", "false"), Pageable.unpaged())));
-        Assert.assertEquals(ids(2L), idsIn(flags.findAll(filter("javaBoolean", "False"), Pageable.unpaged())));
-        Assert.assertEquals(ids(2L), idsIn(flags.findAll(filter("javaBoolean", "FALSE"), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(1L), idsIn(flags.findAll(filter("javaBoolean", "true"), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(1L), idsIn(flags.findAll(filter("javaBoolean", "True"), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(1L), idsIn(flags.findAll(filter("javaBoolean", "TRUE"), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(2L), idsIn(flags.findAll(filter("javaBoolean", "false"), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(2L), idsIn(flags.findAll(filter("javaBoolean", "False"), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(2L), idsIn(flags.findAll(filter("javaBoolean", "FALSE"), Pageable.unpaged())));
     }
 
     @Test
     public void canFilterBooleanValueWithCustomValuesIgnoringCase() {
-        Assert.assertEquals(ids(1L), idsIn(flags.findAll(filter("yesNoBoolean", "yes"), Pageable.unpaged())));
-        Assert.assertEquals(ids(1L), idsIn(flags.findAll(filter("yesNoBoolean", "Yes"), Pageable.unpaged())));
-        Assert.assertEquals(ids(1L), idsIn(flags.findAll(filter("yesNoBoolean", "YES"), Pageable.unpaged())));
-        Assert.assertEquals(ids(2L), idsIn(flags.findAll(filter("yesNoBoolean", "no"), Pageable.unpaged())));
-        Assert.assertEquals(ids(2L), idsIn(flags.findAll(filter("yesNoBoolean", "No"), Pageable.unpaged())));
-        Assert.assertEquals(ids(2L), idsIn(flags.findAll(filter("yesNoBoolean", "NO"), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(1L), idsIn(flags.findAll(filter("yesNoBoolean", "yes"), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(1L), idsIn(flags.findAll(filter("yesNoBoolean", "Yes"), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(1L), idsIn(flags.findAll(filter("yesNoBoolean", "YES"), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(2L), idsIn(flags.findAll(filter("yesNoBoolean", "no"), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(2L), idsIn(flags.findAll(filter("yesNoBoolean", "No"), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(2L), idsIn(flags.findAll(filter("yesNoBoolean", "NO"), Pageable.unpaged())));
     }
 
     @Test
     public void canFilterBooleanValueWithCustomValuesMatchingCase() {
-        Assert.assertEquals(ids(1L), idsIn(flags.findAll(filter("YNMatchCaseBoolean", "Y"), Pageable.unpaged())));
-        Assert.assertEquals(ids(2L), idsIn(flags.findAll(filter("YNMatchCaseBoolean", "N"), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(1L), idsIn(flags.findAll(filter("YNMatchCaseBoolean", "Y"), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(2L), idsIn(flags.findAll(filter("YNMatchCaseBoolean", "N"), Pageable.unpaged())));
     }
 
     @Test(expected = Filters.InvalidFilterRequest.class)
@@ -77,10 +77,6 @@ public class BooleanCompareTest {
         final FilterRequest fr = new FilterRequest();
         fr.put(filterName, new String[]{value});
         return fr;
-    }
-
-    private static Set<Long> ids(Long... ids) {
-        return new HashSet<>(Arrays.asList(ids));
     }
 
     private static Set<Long> idsIn(Page<Flag> page) {

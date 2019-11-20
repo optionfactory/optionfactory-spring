@@ -1,9 +1,7 @@
 package net.optionfactory.data.jpa.filtering.chaining;
 
-import java.time.Instant;
-import java.time.LocalDate;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 import net.optionfactory.data.jpa.HibernateTestConfig;
 import net.optionfactory.data.jpa.filtering.FilterRequest;
@@ -33,20 +31,20 @@ public class PropertyChainTest {
 
     @Before
     public void setup() {
-        final Activity swimming = activities.save(activity(1, "swimming", "Swimming!", Activity.Season.SUMMER));
-        final Activity skying = activities.save(activity(2, "skiing", "Skiing!", Activity.Season.WINTER));
+        final Activity swimming = activities.save(activity(1, "swimming", Activity.Season.SUMMER));
+        final Activity skying = activities.save(activity(2, "skying", Activity.Season.WINTER));
 
         final Performer pietro = performers.save(performer(1, "pietro"));
         final Performer paolo = performers.save(performer(2, "paolo"));
         final Performer pietreppaolo = performers.save(performer(3, "pietreppaolo"));
 
         appointments.saveAll(Arrays.asList(
-                appointment(1, Instant.EPOCH, LocalDate.parse("2019-01-10"), skying, pietro, Appointment.Status.CONFIRMED),
-                appointment(2, Instant.EPOCH, LocalDate.parse("2019-01-10"), skying, paolo, Appointment.Status.CONFIRMED),
-                appointment(3, Instant.EPOCH, LocalDate.parse("2019-02-20"), skying, pietreppaolo, Appointment.Status.CANCELED),
-                appointment(4, Instant.EPOCH, LocalDate.parse("2019-06-01"), swimming, pietro, Appointment.Status.PENDING),
-                appointment(5, Instant.EPOCH, LocalDate.parse("2019-06-03"), swimming, paolo, Appointment.Status.PENDING),
-                appointment(6, Instant.EPOCH, LocalDate.parse("2019-07-07"), swimming, pietreppaolo, Appointment.Status.CONFIRMED)
+                appointment(1, skying, pietro, Appointment.Status.CONFIRMED),
+                appointment(2, skying, paolo, Appointment.Status.CONFIRMED),
+                appointment(3, skying, pietreppaolo, Appointment.Status.CANCELED),
+                appointment(4, swimming, pietro, Appointment.Status.PENDING),
+                appointment(5, swimming, paolo, Appointment.Status.PENDING),
+                appointment(6, swimming, pietreppaolo, Appointment.Status.CONFIRMED)
         ));
     }
 
@@ -60,7 +58,7 @@ public class PropertyChainTest {
         });
         final Pageable pr = Pageable.unpaged();
         final Page<Appointment> page = appointments.findAll(fr, pr);
-        Assert.assertEquals(new HashSet<>(Arrays.asList(1L, 4L)), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assert.assertEquals(Set.of(1L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
@@ -78,23 +76,22 @@ public class PropertyChainTest {
         fr.put("status", new String[]{Appointment.Status.CONFIRMED.name()});
         final Pageable pr = Pageable.unpaged();
         final Page<Appointment> page = appointments.findAll(fr, pr);
-        Assert.assertEquals(new HashSet<>(Arrays.asList(1L, 2L, 6L)), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assert.assertEquals(Set.of(1L, 2L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void canFilterByActivitySeasonInEnum() {
         final FilterRequest fr = new FilterRequest();
-        fr.put("season", new String[]{Activity.Season.SUMMER.name()});
+        fr.put("activitySeason", new String[]{Activity.Season.SUMMER.name()});
         final Pageable pr = Pageable.unpaged();
         final Page<Appointment> page = appointments.findAll(fr, pr);
-        Assert.assertEquals(new HashSet<>(Arrays.asList(4L, 5L, 6L)), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assert.assertEquals(Set.of(4L, 5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
-    private static Activity activity(long id, String name, String description, Activity.Season season) {
+    private static Activity activity(long id, String name, Activity.Season season) {
         final Activity activity = new Activity();
         activity.id = id;
         activity.name = name;
-        activity.description = description;
         activity.season = season;
         return activity;
     }
@@ -106,11 +103,9 @@ public class PropertyChainTest {
         return performer;
     }
 
-    private static Appointment appointment(long id, Instant created, LocalDate date, Activity activity, Performer performer, Appointment.Status status) {
+    private static Appointment appointment(long id, Activity activity, Performer performer, Appointment.Status status) {
         final Appointment appointment = new Appointment();
         appointment.id = id;
-        appointment.created = created;
-        appointment.date = date;
         appointment.activity = activity;
         appointment.performer = performer;
         appointment.status = status;

@@ -2,6 +2,7 @@ package net.optionfactory.data.jpa.filtering.filters.inlist;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 import net.optionfactory.data.jpa.HibernateTestConfig;
 import net.optionfactory.data.jpa.filtering.FilterRequest;
@@ -38,7 +39,7 @@ public class InListTest {
         fr.put("nameIn", new String[]{"walking", "skiing", "sleeping"});
         final Pageable pr = Pageable.unpaged();
         final Page<EntityForInList> page = repo.findAll(fr, pr);
-        Assert.assertEquals(new HashSet<>(Arrays.asList(2L, 3L)), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assert.assertEquals(Set.of(2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
@@ -56,7 +57,7 @@ public class InListTest {
         fr.put("maxPersonsIn", new String[]{"10", "11", "12"});
         final Pageable pr = Pageable.unpaged();
         final Page<EntityForInList> page = repo.findAll(fr, pr);
-        Assert.assertEquals(new HashSet<>(Arrays.asList(1L, 2L)), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assert.assertEquals(Set.of(1L, 2L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
@@ -65,7 +66,7 @@ public class InListTest {
         fr.put("maxPersonsIn", new String[]{null, "5"});
         final Pageable pr = Pageable.unpaged();
         final Page<EntityForInList> page = repo.findAll(fr, pr);
-        Assert.assertEquals(new HashSet<>(Arrays.asList(3L, 4L)), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assert.assertEquals(Set.of(3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
@@ -74,7 +75,7 @@ public class InListTest {
         fr.put("ratingIn", new String[]{Double.toString(2.3e5d), Double.toString(Math.PI)});
         final Pageable pr = Pageable.unpaged();
         final Page<EntityForInList> page = repo.findAll(fr, pr);
-        Assert.assertEquals(new HashSet<>(Arrays.asList(3L, 4L)), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assert.assertEquals(Set.of(3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     private static EntityForInList entity(long id, String name, double rating, Integer maxPersons) {
