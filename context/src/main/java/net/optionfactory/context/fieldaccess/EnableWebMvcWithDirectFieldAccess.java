@@ -8,6 +8,8 @@ import java.lang.annotation.Target;
 import net.optionfactory.context.fieldaccess.EnableWebMvcWithDirectFieldAccess.DirectFieldAccessConfig;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.format.support.FormattingConversionService;
+import org.springframework.validation.Validator;
 import org.springframework.web.bind.support.ConfigurableWebBindingInitializer;
 import org.springframework.web.servlet.config.annotation.DelegatingWebMvcConfiguration;
 
@@ -25,10 +27,12 @@ public @interface EnableWebMvcWithDirectFieldAccess {
     static class DirectFieldAccessConfig extends DelegatingWebMvcConfiguration {
 
         @Override
-        protected ConfigurableWebBindingInitializer getConfigurableWebBindingInitializer() {
-            final ConfigurableWebBindingInitializer initializer = super.getConfigurableWebBindingInitializer();
+        protected ConfigurableWebBindingInitializer getConfigurableWebBindingInitializer(FormattingConversionService mvcConversionService, Validator mvcValidator) {
+            final ConfigurableWebBindingInitializer initializer = super.getConfigurableWebBindingInitializer(mvcConversionService, mvcValidator);
             initializer.setDirectFieldAccess(true);
             return initializer;
         }
+        
+        
     }
 }
