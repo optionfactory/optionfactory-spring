@@ -21,14 +21,32 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>        
     </properties>
-
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>2.10.1</version>
+            </dependency> 
+            <dependency>
+                <groupId>org.hibernate</groupId>
+                <artifactId>hibernate-core</artifactId>
+                <version>5.4.8.Final</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.data</groupId>
+                <artifactId>spring-data-jpa</artifactId>
+                <version>2.2.1.RELEASE</version>
+            </dependency>            
+        </dependencies>       
+    </dependencyManagement>
     <build>
         <pluginManagement>
             <plugins>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
-                    <version>3.0.1</version>
+                    <version>3.2.0</version>
                     <executions>
                         <execution>
                             <id>attach-sources</id>
@@ -41,7 +59,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>3.0.0-M1</version>
+                    <version>3.1.1</version>
                     <executions>
                         <execution>
                             <id>attach-javadocs</id>
@@ -65,14 +83,4 @@
         <url>https://bitbucket.org/optionfactory/optionfactory-spring</url>
     </scm>
 
-    <distributionManagement>
-        <snapshotRepository>
-            <id>nexus</id>
-            <url>${env.NEXUS_SNAPSHOTS_URL}</url>
-        </snapshotRepository>
-        <repository>
-            <id>nexus</id>
-            <url>${env.NEXUS_RELEASES_URL}</url>
-        </repository>
-    </distributionManagement>
 </project>
