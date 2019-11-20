@@ -1,4 +1,4 @@
-package net.optionfactory.data.jpa.filtering.filters;
+package net.optionfactory.data.jpa.filtering;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.Predicate;

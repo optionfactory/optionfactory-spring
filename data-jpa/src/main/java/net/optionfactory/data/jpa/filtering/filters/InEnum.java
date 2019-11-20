@@ -1,5 +1,6 @@
 package net.optionfactory.data.jpa.filtering.filters;
 
+import net.optionfactory.data.jpa.filtering.Filter;
 import net.optionfactory.data.jpa.filtering.filters.spi.WhitelistedFilter;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -21,7 +22,7 @@ import net.optionfactory.data.jpa.filtering.filters.spi.Filters;
 @Documented
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.RUNTIME)
-@WhitelistedFilter(InEnumFilter.class)
+@WhitelistedFilter(filter=InEnumFilter.class)
 @Repeatable(RepeatableInEnum.class)
 public @interface InEnum {
 

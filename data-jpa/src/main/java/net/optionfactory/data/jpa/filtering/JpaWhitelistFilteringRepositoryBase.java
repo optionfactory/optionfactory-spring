@@ -1,6 +1,5 @@
 package net.optionfactory.data.jpa.filtering;
 
-import net.optionfactory.data.jpa.filtering.filters.Filter;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -52,25 +51,27 @@ public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> ext
     }
 
     private static <T> Filter createFilterFromAnnotation(Annotation annotation, JpaEntityInformation<T, ?> ei, EntityManager em) throws IllegalStateException {
-        final WhitelistedFilter wfAnnotation = AnnotationUtils.findAnnotation(annotation.annotationType(), WhitelistedFilter.class);
+        Class<? extends Filter> filterClass = (Class<? extends Filter>) AnnotationUtils.getValue(annotation, "filter");
+        if(filterClass == null){
+            filterClass = AnnotationUtils.findAnnotation(annotation.annotationType(), WhitelistedFilter.class).filter();
+        }
         try {
             final Map<Class<?>, Object> typeToArgument = new HashMap<>();
-            typeToArgument.put(WhitelistedFilter.class, wfAnnotation);
             typeToArgument.put(annotation.annotationType(), annotation);
             typeToArgument.put(JpaEntityInformation.class, ei);
             typeToArgument.put(EntityManager.class, em);
             typeToArgument.put(EntityType.class, em.getMetamodel().entity(ei.getJavaType()));
 
-            final List<Constructor<?>> candidates = Stream.of(wfAnnotation.value().getConstructors())
+            final List<Constructor<?>> candidates = Stream.of(filterClass.getConstructors())
                     .filter(ctor -> Modifier.isPublic(ctor.getModifiers()))
                     .filter(ctor -> Stream.of(ctor.getParameterTypes()).allMatch(pt -> typeToArgument.containsKey(pt)))
                     .collect(Collectors.toList());
 
             if (candidates.isEmpty()) {
-                throw new IllegalStateException(String.format("No suitable public constructor for Filter %s", wfAnnotation.value()));
+                throw new IllegalStateException(String.format("No suitable public constructor for Filter %s", filterClass));
             }
             if (candidates.size() > 1) {
-                throw new IllegalStateException(String.format("Too many suitable public constructors for Filter %s", wfAnnotation.value()));
+                throw new IllegalStateException(String.format("Too many suitable public constructors for Filter %s", filterClass));
             }
 
             final Constructor<?> constructor = candidates.get(0);
