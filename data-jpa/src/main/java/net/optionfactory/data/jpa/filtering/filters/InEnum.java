@@ -22,7 +22,7 @@ import net.optionfactory.data.jpa.filtering.filters.spi.Filters;
 @Documented
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.RUNTIME)
-@WhitelistedFilter(filter=InEnumFilter.class)
+@WhitelistedFilter(InEnumFilter.class)
 @Repeatable(RepeatableInEnum.class)
 public @interface InEnum {
 

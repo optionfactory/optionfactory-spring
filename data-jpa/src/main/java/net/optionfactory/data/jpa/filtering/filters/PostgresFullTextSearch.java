@@ -24,7 +24,7 @@ import net.optionfactory.data.jpa.filtering.filters.spi.Filters;
 @Documented
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.RUNTIME)
-@WhitelistedFilter(filter=PostgresFullTextSearchFilter.class)
+@WhitelistedFilter(PostgresFullTextSearchFilter.class)
 @Repeatable(RepeatablePostgresFullTextSearch.class)
 public @interface PostgresFullTextSearch {
     

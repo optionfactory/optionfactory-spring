@@ -12,6 +12,5 @@ import net.optionfactory.data.jpa.filtering.Filter;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface WhitelistedFilter {
 
-    Class<? extends Filter> filter();
-
+    Class<? extends Filter> value();
 }

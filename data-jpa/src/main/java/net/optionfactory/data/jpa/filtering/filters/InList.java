@@ -23,7 +23,7 @@ import net.optionfactory.data.jpa.filtering.filters.spi.Values;
 @Documented
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.RUNTIME)
-@WhitelistedFilter(filter=InListFilter.class)
+@WhitelistedFilter(InListFilter.class)
 @Repeatable(RepeatableInList.class)
 public @interface InList {
 

@@ -24,7 +24,7 @@ import net.optionfactory.data.jpa.filtering.filters.LocalDateCompare.RepeatableL
 @Documented
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.RUNTIME)
-@WhitelistedFilter(filter=LocalDateCompareFilter.class)
+@WhitelistedFilter(LocalDateCompareFilter.class)
 @Repeatable(RepeatableLocalDateCompare.class)
 public @interface LocalDateCompare {
 

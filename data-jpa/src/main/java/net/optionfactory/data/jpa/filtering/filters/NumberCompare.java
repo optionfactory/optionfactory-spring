@@ -23,7 +23,7 @@ import net.optionfactory.data.jpa.filtering.filters.spi.Values;
 @Documented
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.RUNTIME)
-@WhitelistedFilter(filter=NumberCompareFilter.class)
+@WhitelistedFilter(NumberCompareFilter.class)
 @Repeatable(RepeatableNumberCompare.class)
 public @interface NumberCompare {
 

@@ -2,10 +2,10 @@ package net.optionfactory.data.jpa.filtering;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
-import net.optionfactory.data.jpa.filtering.filters.FilterWith;
+import net.optionfactory.data.jpa.filtering.filters.Filterable;
 
 @Entity
-@FilterWith(name = "custom", filter = CustomFilter.class)
+@Filterable(name = "custom", filter = CustomFilter.class)
 public class CustomEntity {
 
     @Id

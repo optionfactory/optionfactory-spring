@@ -20,7 +20,7 @@ import net.optionfactory.data.jpa.filtering.filters.BooleanCompare.RepeatableBoo
 @Documented
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.RUNTIME)
-@WhitelistedFilter(filter=BooleanCompareFilter.class)
+@WhitelistedFilter(BooleanCompareFilter.class)
 @Repeatable(RepeatableBooleanCompare.class)
 public @interface BooleanCompare {
 

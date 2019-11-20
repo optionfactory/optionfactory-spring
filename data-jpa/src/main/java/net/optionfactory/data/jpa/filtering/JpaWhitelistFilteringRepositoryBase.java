@@ -2,6 +2,7 @@ package net.optionfactory.data.jpa.filtering;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
@@ -26,6 +27,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.support.JpaEntityInformation;
 import org.springframework.data.jpa.repository.support.SimpleJpaRepository;
 import net.optionfactory.data.jpa.filtering.filters.spi.WhitelistedFilter;
+import org.springframework.core.annotation.AnnotatedElementUtils;
 
 public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> extends SimpleJpaRepository<T, ID> {
 
@@ -51,10 +53,7 @@ public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> ext
     }
 
     private static <T> Filter createFilterFromAnnotation(Annotation annotation, JpaEntityInformation<T, ?> ei, EntityManager em) throws IllegalStateException {
-        Class<? extends Filter> filterClass = (Class<? extends Filter>) AnnotationUtils.getValue(annotation, "filter");
-        if(filterClass == null){
-            filterClass = AnnotationUtils.findAnnotation(annotation.annotationType(), WhitelistedFilter.class).filter();
-        }
+        final Class<? extends Filter> filterClass = AnnotatedElementUtils.findMergedAnnotation(AnnotatedElementUtils.forAnnotations(annotation), WhitelistedFilter.class).value();
         try {
             final Map<Class<?>, Object> typeToArgument = new HashMap<>();
             typeToArgument.put(annotation.annotationType(), annotation);

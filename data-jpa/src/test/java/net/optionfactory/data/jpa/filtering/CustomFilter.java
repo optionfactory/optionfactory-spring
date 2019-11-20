@@ -7,14 +7,14 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.metamodel.EntityType;
-import net.optionfactory.data.jpa.filtering.filters.FilterWith;
 import net.optionfactory.data.jpa.filtering.filters.spi.Filters;
+import net.optionfactory.data.jpa.filtering.filters.Filterable;
 
 public class CustomFilter implements Filter {
 
     private final String name;
 
-    public CustomFilter(FilterWith annotation, EntityType<?> entityType) {
+    public CustomFilter(Filterable annotation, EntityType<?> entityType) {
         if (!CustomEntity.class.isAssignableFrom(entityType.getJavaType())) {
             throw new Filters.InvalidFilterConfiguration(String.format("Unsupported entity type %s for filter %s", entityType.getJavaType().getSimpleName(), annotation.filter().getSimpleName()));
         }
