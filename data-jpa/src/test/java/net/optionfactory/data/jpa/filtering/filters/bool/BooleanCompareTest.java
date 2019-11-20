@@ -1,4 +1,4 @@
-package net.optionfactory.data.jpa.filtering.filters;
+package net.optionfactory.data.jpa.filtering.filters.bool;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -6,8 +6,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import net.optionfactory.data.jpa.HibernateTestConfig;
 import net.optionfactory.data.jpa.filtering.FilterRequest;
-import net.optionfactory.data.jpa.filtering.Flag;
-import net.optionfactory.data.jpa.filtering.FlagsRepository;
 import net.optionfactory.data.jpa.filtering.filters.spi.Filters;
 import org.junit.Assert;
 import org.junit.Test;

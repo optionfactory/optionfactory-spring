@@ -1,12 +1,12 @@
-package net.optionfactory.data.jpa.filtering.filters;
+package net.optionfactory.data.jpa.filtering.filters.filterwith;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.stream.Collectors;
 import net.optionfactory.data.jpa.HibernateTestConfig;
-import net.optionfactory.data.jpa.filtering.CustomEntity;
-import net.optionfactory.data.jpa.filtering.CustomFilter;
-import net.optionfactory.data.jpa.filtering.CustomsRepository;
+import net.optionfactory.data.jpa.filtering.filters.filterwith.CustomEntity;
+import net.optionfactory.data.jpa.filtering.filters.filterwith.CustomFilter;
+import net.optionfactory.data.jpa.filtering.filters.filterwith.CustomsRepository;
 import net.optionfactory.data.jpa.filtering.FilterRequest;
 import net.optionfactory.data.jpa.filtering.filters.spi.Filters;
 import org.junit.Assert;

@@ -1,4 +1,4 @@
-package net.optionfactory.data.jpa.filtering;
+package net.optionfactory.data.jpa.filtering.filters.filterwith;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -8,6 +8,7 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.metamodel.EntityType;
+import net.optionfactory.data.jpa.filtering.Filter;
 import net.optionfactory.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.data.jpa.filtering.filters.Filterable;
 

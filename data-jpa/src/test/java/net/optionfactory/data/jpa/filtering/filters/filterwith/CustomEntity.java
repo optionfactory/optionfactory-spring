@@ -1,4 +1,4 @@
-package net.optionfactory.data.jpa.filtering;
+package net.optionfactory.data.jpa.filtering.filters.filterwith;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;

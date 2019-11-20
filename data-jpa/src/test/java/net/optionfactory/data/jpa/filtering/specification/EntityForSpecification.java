@@ -1,14 +1,15 @@
-package net.optionfactory.data.jpa.filtering;
+package net.optionfactory.data.jpa.filtering.specification;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import net.optionfactory.data.jpa.filtering.filters.TextCompare;
 
 @Entity
-@TextCompare(name = "name", property = "name")
-public class Performer {
-
+@TextCompare(name = "byDesc", property = "description")
+public class EntityForSpecification {
+    
     @Id
     public long id;
     public String name;
+    public String description;
 }

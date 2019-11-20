@@ -1,8 +1,10 @@
-package net.optionfactory.data.jpa.filtering;
+package net.optionfactory.data.jpa.filtering.chaining;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import net.optionfactory.data.jpa.filtering.FilterRequest;
+import net.optionfactory.data.jpa.filtering.WhitelistFilteringRepository;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;

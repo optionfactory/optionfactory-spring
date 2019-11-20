@@ -1,4 +1,4 @@
-package net.optionfactory.data.jpa.filtering;
+package net.optionfactory.data.jpa.filtering.chaining;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.stream.Collectors;
 import net.optionfactory.data.jpa.HibernateTestConfig;
+import net.optionfactory.data.jpa.filtering.FilterRequest;
 import net.optionfactory.data.jpa.filtering.filters.TextCompare;
 import org.junit.Assert;
 import org.junit.Before;

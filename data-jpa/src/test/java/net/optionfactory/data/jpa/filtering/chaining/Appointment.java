@@ -1,4 +1,4 @@
-package net.optionfactory.data.jpa.filtering;
+package net.optionfactory.data.jpa.filtering.chaining;
 
 import java.time.Instant;
 import java.time.LocalDate;

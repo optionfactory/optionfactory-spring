@@ -1,4 +1,4 @@
-package net.optionfactory.data.jpa.filtering.filters;
+package net.optionfactory.data.jpa.filtering.filters.localdate;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -7,9 +7,10 @@ import java.util.HashSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.optionfactory.data.jpa.HibernateTestConfig;
-import net.optionfactory.data.jpa.filtering.Appointment;
-import net.optionfactory.data.jpa.filtering.AppointmentsRepository;
+import net.optionfactory.data.jpa.filtering.chaining.Appointment;
+import net.optionfactory.data.jpa.filtering.chaining.AppointmentsRepository;
 import net.optionfactory.data.jpa.filtering.FilterRequest;
+import net.optionfactory.data.jpa.filtering.filters.LocalDateCompare;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.Before;

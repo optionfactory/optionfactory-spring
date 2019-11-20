@@ -1,18 +1,18 @@
-package net.optionfactory.data.jpa.filtering;
+package net.optionfactory.data.jpa.filtering.specification;
 
 import java.util.List;
 import net.optionfactory.data.jpa.HibernateTestConfig;
+import net.optionfactory.data.jpa.filtering.FilterRequest;
 import net.optionfactory.data.jpa.filtering.filters.TextCompare;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.support.TransactionTemplate;
 
 public class SpecificationsTest {
 
-    private ActivitiesRepository activities;
+    private EntityForSpecificationRepository repo;
     private TransactionTemplate tx;
 
     @Before
@@ -20,20 +20,20 @@ public class SpecificationsTest {
         final AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
         ctx.register(HibernateTestConfig.class);
         ctx.refresh();
-        this.activities = ctx.getBean(ActivitiesRepository.class);
+        this.repo = ctx.getBean(EntityForSpecificationRepository.class);
         this.tx = ctx.getBean(TransactionTemplate.class);
         tx.execute(txs -> {
-            activities.deleteAll();
-            final Activity a = new Activity();
+            repo.deleteAll();
+            final EntityForSpecification a = new EntityForSpecification();
             a.id = 1;
             a.name = "name1";
             a.description = "description";
-            activities.save(a);
-            final Activity b = new Activity();
+            repo.save(a);
+            final EntityForSpecification b = new EntityForSpecification();
             b.id = 2;
             b.name = "name2";
             b.description = "description";
-            activities.save(b);
+            repo.save(b);
 
             return null;
         });
@@ -46,7 +46,7 @@ public class SpecificationsTest {
             TextCompare.Mode.CASE_SENSITIVE.toString(),
             "description"        
         });
-        List<Activity> page = tx.execute(txs -> activities.findAllByName("name2", fr));        
+        List<EntityForSpecification> page = tx.execute(txs -> repo.findAllByName("name2", fr));        
         Assert.assertEquals(1, page.size());
     }
 }
