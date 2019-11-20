@@ -9,6 +9,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
@@ -60,7 +61,7 @@ public @interface BooleanCompare {
         }
 
         @Override
-        public Predicate toPredicate(CriteriaBuilder builder, Root<?> root, String[] values) {
+        public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
             Filters.ensure(values.length == 1, "missing value for comparison");
             final String value = values[0];
             final Path<Boolean> p = Filters.traverseProperty(root, property);

@@ -11,6 +11,7 @@ import java.lang.annotation.Target;
 import java.util.Arrays;
 import java.util.EnumSet;
 import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Expression;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
@@ -70,7 +71,7 @@ public @interface TextCompare {
         }
 
         @Override
-        public Predicate toPredicate(CriteriaBuilder builder, Root<?> root, String[] values) {
+        public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
             Filters.ensure(values.length == 3, "in filter %s@%s expected operator,mode,value got %s", name, root.getJavaType().getSimpleName(), Arrays.toString(values));
             final Operator operator = Operator.valueOf(values[0]);
             Filters.ensure(operators.contains(operator), "operator %s not whitelisted (%s)", operator, operators);

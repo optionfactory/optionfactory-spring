@@ -13,6 +13,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
 import java.util.stream.Stream;
 import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
@@ -66,7 +67,7 @@ public @interface LocalDateCompare {
         }
 
         @Override
-        public Predicate toPredicate(CriteriaBuilder builder, Root<?> root, String[] values) {
+        public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
             final Operator operator = Operator.valueOf(values[0]);
             Filters.ensure(operators.contains(operator), "operator %s not whitelisted (%s)", operator, operators);
             final Path<LocalDate> lhs = Filters.traverseProperty(root, property);

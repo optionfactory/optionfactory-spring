@@ -10,6 +10,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.EnumSet;
 import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
@@ -63,7 +64,7 @@ public @interface NumberCompare {
         }
 
         @Override
-        public Predicate toPredicate(CriteriaBuilder builder, Root<?> root, String[] values) {
+        public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
             final Operator operator = Operator.valueOf(values[0]);
             Filters.ensure(operators.contains(operator), "operator %s not whitelisted (%s)", operator, operators);
             final String value = values[1];

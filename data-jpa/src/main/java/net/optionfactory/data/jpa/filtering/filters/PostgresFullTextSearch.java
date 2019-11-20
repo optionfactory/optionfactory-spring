@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Expression;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
@@ -20,14 +21,13 @@ import net.optionfactory.data.jpa.filtering.filters.PostgresFullTextSearch.Postg
 import net.optionfactory.data.jpa.filtering.filters.PostgresFullTextSearch.RepeatablePostgresFullTextSearch;
 import net.optionfactory.data.jpa.filtering.filters.spi.Filters;
 
-
 @Documented
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.RUNTIME)
 @WhitelistedFilter(PostgresFullTextSearchFilter.class)
 @Repeatable(RepeatablePostgresFullTextSearch.class)
 public @interface PostgresFullTextSearch {
-    
+
     String name();
 
     String[] properties();
@@ -49,16 +49,16 @@ public @interface PostgresFullTextSearch {
             this.name = ie.name();
             this.properties = ie.properties();
             for (String property : properties) {
-                Filters.ensurePropertyOfAnyType(ie, entityType, property, String.class);            
+                Filters.ensurePropertyOfAnyType(ie, entityType, property, String.class);
             }
         }
 
         @Override
-        public Predicate toPredicate(CriteriaBuilder builder, Root<?> root, String[] values) {
+        public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
             //params = alias, alias, alias, alias, query
             final List<Expression<?>> paths = Stream.of(properties).map(p -> Filters.traverseProperty(root, p)).collect(Collectors.toList());
-            final Expression<String> query = builder.literal(values[0]);
-            final Expression<?>[] allargs = Stream.concat(paths.stream(), Stream.of(query)).toArray((size) -> new Expression[size]);
+            final Expression<String> q = builder.literal(values[0]);
+            final Expression<?>[] allargs = Stream.concat(paths.stream(), Stream.of(q)).toArray((size) -> new Expression[size]);
             Expression<Boolean> function = builder.function("fts", boolean.class, allargs);
             return builder.isTrue(function);
         }

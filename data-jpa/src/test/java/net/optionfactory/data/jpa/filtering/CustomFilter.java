@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Stream;
 import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.metamodel.EntityType;
@@ -27,7 +28,7 @@ public class CustomFilter implements Filter {
     }
 
     @Override
-    public Predicate toPredicate(CriteriaBuilder builder, Root<?> root, String[] values) {
+    public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
         Filters.ensure(values.length == 1, "Custom filter expects a single parameter, but %s were given: %s", values.length, Arrays.toString(values));
         final String check = values[0];
         Filters.ensure(Stream.of(Check.values()).map(Check::name).anyMatch(c -> Objects.equals(c, check)), "Unknown check for custom filter: %s", check);

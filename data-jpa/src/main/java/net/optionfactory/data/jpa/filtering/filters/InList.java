@@ -11,6 +11,7 @@ import java.lang.annotation.Target;
 import java.util.Objects;
 import java.util.stream.Stream;
 import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
@@ -53,7 +54,7 @@ public @interface InList {
         }
 
         @Override
-        public Predicate toPredicate(CriteriaBuilder builder, Root<?> root, String[] values) {
+        public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
             if (values.length == 0) {
                 return builder.disjunction();
             }
