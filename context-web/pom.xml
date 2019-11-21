@@ -6,13 +6,18 @@
         <artifactId>optionfactory-spring</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
-    <artifactId>context</artifactId>
+    <artifactId>context-web</artifactId>
+    <name>${project.groupId}:${project.artifactId}</name>    
     <packaging>jar</packaging>
-    <name>${project.groupId}:${project.artifactId}</name>
     <dependencies>
         <dependency>
+            <groupId>net.optionfactory</groupId>
+            <artifactId>context</artifactId>
+            <version>${project.version}</version>
+        </dependency>        
+        <dependency>
             <groupId>org.springframework</groupId>
-            <artifactId>spring-context</artifactId>
+            <artifactId>spring-webmvc</artifactId>
         </dependency>
     </dependencies>
 </project>

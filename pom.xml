@@ -14,6 +14,9 @@
         <module>data-jpa</module>
         <module>data-jpa-web</module>
         <module>context</module>
+        <module>context-web</module>
+        <module>problems</module>
+        <module>problems-web</module>
     </modules>
 
     <properties>
@@ -47,7 +50,12 @@
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-webmvc</artifactId>
                 <version>5.2.1.RELEASE</version>
-            </dependency>                     
+            </dependency>   
+            <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-core</artifactId>
+                <version>5.2.1.RELEASE</version>
+            </dependency>                              
         </dependencies>       
     </dependencyManagement>
     <build>

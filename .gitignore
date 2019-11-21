@@ -1,3 +1,6 @@
 /data-jpa/target/
 /data-jpa-web/target/
 /context/target/
+/problems/target/
+/problems-web/target/
+/context-web/target/
