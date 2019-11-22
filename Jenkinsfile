@@ -13,7 +13,7 @@ pipeline {
         }
          stage('Dist Local') {
             steps {
-                sh 'mvn -B -DskipTests deploy'
+                sh "mvn -B -DskipTests -DaltSnapshotDeploymentRepository=nexus::default::${env.NEXUS_SNAPSHOTS_URL} -DaltReleaseDeploymentRepository=nexus::default::${env.NEXUS_RELEASES_URL} deploy"
             }
         }
     }
