@@ -12,5 +12,4 @@ public class EntityForLocalDate {
     @Id
     public long id;
     public LocalDate date;
-
 }
