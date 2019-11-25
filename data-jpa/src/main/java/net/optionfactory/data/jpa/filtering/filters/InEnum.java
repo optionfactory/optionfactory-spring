@@ -8,11 +8,13 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.metamodel.EntityType;
@@ -33,6 +35,8 @@ public @interface InEnum {
 
     String property();
 
+    boolean nullable() default false;
+
     @Documented
     @Target(value = ElementType.TYPE)
     @Retention(value = RetentionPolicy.RUNTIME)
@@ -45,27 +49,30 @@ public @interface InEnum {
 
         private final String name;
         private final String property;
-        private final Class<? extends Enum<?>> type;
+        private final boolean nullable;
+        private final Class<? extends Enum> type;
 
-        public InEnumFilter(InEnum ie, EntityType<?> entityType) {
-            this.name = ie.name();
-            this.property = ie.property();
-            this.type = ie.type();
-            Filters.ensurePropertyOfAnyType(ie, entityType, property, type);
+        public InEnumFilter(InEnum annotation, EntityType<?> entityType) {
+            this.name = annotation.name();
+            this.property = annotation.property();
+            this.nullable = annotation.nullable();
+            this.type = annotation.type();
+            Filters.ensurePropertyOfAnyType(annotation, entityType, property, type);
         }
 
         @Override
         public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
-            @SuppressWarnings("unchecked")
-            final Stream<Enum<?>> stream = Stream.of(values).map(v -> {
-                final Class<? extends Enum> t = (Class<? extends Enum>) this.type;
-                return Enum.valueOf(t, v);
-            });
-            final Set<Enum<?>> requested = stream.collect(Collectors.toSet());
+            final boolean hasNull = Stream.of(values).anyMatch(Objects::isNull);
+            Filters.ensure(!hasNull || nullable, "Null enum filter values not allowed");
+            final Set<Enum> requested = Stream.of(values)
+                    .filter(Objects::nonNull)
+                    .map(value -> Enum.valueOf(type, value))
+                    .collect(Collectors.toSet());
+            final Path<Object> enumProperty = Filters.traverseProperty(root, this.property);
             if (requested.isEmpty()) {
-                return builder.disjunction();
+                return hasNull ? enumProperty.isNull() : builder.disjunction();
             }
-            return Filters.traverseProperty(root, this.property).in(requested);
+            return hasNull ? builder.or(enumProperty.isNull(), enumProperty.in(requested)) : enumProperty.in(requested);
         }
 
         @Override
