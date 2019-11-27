@@ -20,7 +20,6 @@
         <module>context-web</module>
         <module>problems</module>
         <module>problems-web</module>
-        <module>security-web</module>
     </modules>
 
     <properties>
