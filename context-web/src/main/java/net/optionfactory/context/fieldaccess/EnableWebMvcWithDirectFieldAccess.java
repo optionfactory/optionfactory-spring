@@ -12,10 +12,11 @@ import org.springframework.format.support.FormattingConversionService;
 import org.springframework.validation.Validator;
 import org.springframework.web.bind.support.ConfigurableWebBindingInitializer;
 import org.springframework.web.servlet.config.annotation.DelegatingWebMvcConfiguration;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 /**
- * To be used in place of {@code @EnableWebMvc}, enforcing access to bean fields
- * instead of referencing getters and setters.
+ * To be used in place of {@link EnableWebMvc @EnableWebMvc}, enforcing access
+ * to bean fields instead of referencing getters and setters.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
@@ -32,7 +33,5 @@ public @interface EnableWebMvcWithDirectFieldAccess {
             initializer.setDirectFieldAccess(true);
             return initializer;
         }
-        
-        
     }
 }
