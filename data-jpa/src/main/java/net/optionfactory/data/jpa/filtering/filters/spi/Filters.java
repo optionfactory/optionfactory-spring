@@ -11,14 +11,14 @@ import javax.persistence.metamodel.ManagedType;
 import javax.persistence.metamodel.SingularAttribute;
 import javax.persistence.metamodel.Type;
 
+/**
+ * Utility methods for defining filters.
+ */
 public interface Filters {
 
     public static void ensurePropertyExists(Annotation annotation, EntityType<?> entity, String property) {
-        try {
-            entity.getAttribute(property);
-        } catch (IllegalArgumentException ex) {
-            throw new InvalidFilterConfiguration(String.format("filter %s@%s references a non-existent property %s", annotation, entity.getJavaType().getSimpleName(), property));
-        }
+        final List<String> propertyChain = Arrays.asList(property.split("\\."));
+        getAttributeFromPropertyChain(annotation, entity, propertyChain);
     }
 
     public static Class<?> ensurePropertyOfAnyType(Annotation annotation, EntityType<?> entity, String property, Class<?>... types) {
@@ -43,7 +43,11 @@ public interface Filters {
             if (reachedType == null) {
                 throw new InvalidFilterConfiguration(String.format("filter %s@%s references property %s in property chain %s owned by the the non-managed type %s", annotation, entity.getJavaType().getSimpleName(), property, propertyChain, reachedAttribute.getJavaType().getSimpleName()));
             }
-            reachedAttribute = reachedType.getAttribute(property);
+            try {
+                reachedAttribute = reachedType.getAttribute(property);
+            } catch (IllegalArgumentException exception) {
+                throw new InvalidFilterConfiguration(String.format("filter %s@%s references a non-existent property %s.%s in property chain %s", annotation, entity.getJavaType().getSimpleName(), reachedType.getJavaType().getSimpleName(), property, propertyChain));
+            }
             if (reachedAttribute instanceof SingularAttribute) {
                 final Type targetType = ((SingularAttribute) reachedAttribute).getType();
                 if (targetType instanceof ManagedType) {
@@ -68,24 +72,12 @@ public interface Filters {
         final List<String> propertyChain = Arrays.asList(property.split("\\."));
         Path<?> path = root;
         for (String part : propertyChain) {
-            path = path.get(part);
+            try {
+                path = path.get(part);
+            } catch (IllegalArgumentException exception) {
+                throw new InvalidFilterConfiguration(String.format("property chain %s from entity %s references a non-existent property %s.%s", propertyChain, root.getJavaType().getSimpleName(), path.getJavaType().getSimpleName(), part));
+            }
         }
         return (Path<T>) path;
-    }
-
-    public static class InvalidFilterConfiguration extends IllegalStateException {
-
-        public InvalidFilterConfiguration(String reason) {
-            super(reason);
-        }
-
-    }
-
-    public static class InvalidFilterRequest extends IllegalArgumentException {
-
-        public InvalidFilterRequest(String reason) {
-            super(reason);
-        }
-
     }
 }

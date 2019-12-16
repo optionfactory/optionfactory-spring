@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import net.optionfactory.data.jpa.HibernateTestConfig;
 import net.optionfactory.data.jpa.filtering.FilterRequest;
 import net.optionfactory.data.jpa.filtering.filters.spi.Filters;
+import net.optionfactory.data.jpa.filtering.filters.spi.InvalidFilterRequest;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,7 +45,7 @@ public class FilterWithTest {
         return custom;
     }
 
-    @Test(expected = Filters.InvalidFilterRequest.class)
+    @Test(expected = InvalidFilterRequest.class)
     public void throwsWhenCustomFilterDoesNotMeetParametersPreconditions() {
         final FilterRequest request = new FilterRequest();
         request.put("custom", new String[0]);

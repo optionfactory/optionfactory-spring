@@ -7,6 +7,7 @@ import net.optionfactory.data.jpa.HibernateTestConfig;
 import net.optionfactory.data.jpa.filtering.FilterRequest;
 import net.optionfactory.data.jpa.filtering.filters.NumberCompare;
 import net.optionfactory.data.jpa.filtering.filters.spi.Filters;
+import net.optionfactory.data.jpa.filtering.filters.spi.InvalidFilterRequest;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,7 +43,7 @@ public class NumberCompareTest {
         Assert.assertEquals(Set.of(1L), idsIn(page));
     }
 
-    @Test(expected = Filters.InvalidFilterRequest.class)
+    @Test(expected = InvalidFilterRequest.class)
     public void cannotFilterInequalityByNullValue() {
         repo.findAll(filter("maxPersons", NumberCompare.Operator.LTE, null), Pageable.unpaged());
     }

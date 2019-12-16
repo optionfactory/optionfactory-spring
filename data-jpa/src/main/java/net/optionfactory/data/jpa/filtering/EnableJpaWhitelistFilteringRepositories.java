@@ -13,6 +13,10 @@ import org.springframework.data.jpa.repository.support.JpaRepositoryFactoryBean;
 import org.springframework.data.repository.config.BootstrapMode;
 import org.springframework.data.repository.query.QueryLookupStrategy.Key;
 
+/**
+ * Enable use of JPA repositories extending the
+ * {@link WhitelistFilteringRepository} interface.
+ */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented

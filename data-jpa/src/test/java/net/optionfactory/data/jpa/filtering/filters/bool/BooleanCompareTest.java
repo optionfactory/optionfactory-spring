@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import net.optionfactory.data.jpa.HibernateTestConfig;
 import net.optionfactory.data.jpa.filtering.FilterRequest;
 import net.optionfactory.data.jpa.filtering.filters.spi.Filters;
+import net.optionfactory.data.jpa.filtering.filters.spi.InvalidFilterRequest;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.Before;
@@ -63,12 +64,12 @@ public class BooleanCompareTest {
         Assert.assertEquals(Set.of(2L), idsIn(flags.findAll(filter("YNMatchCaseBoolean", "N"), Pageable.unpaged())));
     }
 
-    @Test(expected = Filters.InvalidFilterRequest.class)
+    @Test(expected = InvalidFilterRequest.class)
     public void throwsWhenValueDoesNotMatchCase() {
         flags.findAll(filter("YNMatchCaseBoolean", "y"), Pageable.unpaged());
     }
 
-    @Test(expected = Filters.InvalidFilterRequest.class)
+    @Test(expected = InvalidFilterRequest.class)
     public void throwsWhenValueDoesNotMatch() {
         flags.findAll(filter("yesNoBoolean", "maybe"), Pageable.unpaged());
     }

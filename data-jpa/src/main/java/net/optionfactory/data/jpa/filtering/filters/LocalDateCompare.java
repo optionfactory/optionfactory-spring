@@ -22,6 +22,12 @@ import net.optionfactory.data.jpa.filtering.filters.LocalDateCompare.LocalDateCo
 import net.optionfactory.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.data.jpa.filtering.filters.LocalDateCompare.RepeatableLocalDateCompare;
 
+/**
+ * Compares a {@link LocalDate} property.The first argument must be a
+ * whitelisted {@link Operator}. The {@link Operator#BETWEEN} accepts two
+ * arguments, while the other operators accept a single argument, which format
+ * must match the configured {@link #datePattern() datePattern}.
+ */
 @Documented
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.RUNTIME)

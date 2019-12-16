@@ -17,7 +17,13 @@ import javax.persistence.metamodel.EntityType;
 import net.optionfactory.data.jpa.filtering.filters.BooleanCompare.BooleanCompareFilter;
 import net.optionfactory.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.data.jpa.filtering.filters.BooleanCompare.RepeatableBooleanCompare;
+import net.optionfactory.data.jpa.filtering.filters.spi.InvalidFilterRequest;
 
+/**
+ * Filters a boolean property. Accepts a single parameter as truth value, which
+ * should match either {@link BooleanCompare#trueValue() trueValue} or
+ * {@link BooleanCompare#falseValue() falseValue}.
+ */
 @Documented
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.RUNTIME)
@@ -74,7 +80,7 @@ public @interface BooleanCompare {
             if ((ignoreCase && value.equalsIgnoreCase(falseValue)) || value.equals(falseValue)) {
                 return builder.isFalse(p);
             }
-            throw new Filters.InvalidFilterRequest(String.format("unexpected boolean value '%s', expecting either '%s' or '%s'", value, trueValue, falseValue));
+            throw new InvalidFilterRequest(String.format("unexpected boolean value '%s', expecting either '%s' or '%s'", value, trueValue, falseValue));
         }
 
         @Override

@@ -21,6 +21,13 @@ import net.optionfactory.data.jpa.filtering.filters.InList.RepeatableInList;
 import net.optionfactory.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.data.jpa.filtering.filters.spi.Values;
 
+/**
+ * Filters a property with a set of accepted values. The property type should be
+ * a primitive type (exception made for {@code boolean}, supported by
+ * {@link BooleanCompare}), {@link String} or {@link Number}.With no argument
+ * given, the filtered result will always be empty. If {@code null} arguments
+ * are passed in, {@code NULL} values of a nullable column will be matched.
+ */
 @Documented
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.RUNTIME)

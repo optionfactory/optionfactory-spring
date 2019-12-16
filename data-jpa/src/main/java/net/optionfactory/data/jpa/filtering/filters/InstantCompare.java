@@ -22,6 +22,13 @@ import net.optionfactory.data.jpa.filtering.filters.InstantCompare.InstantCompar
 import net.optionfactory.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.data.jpa.filtering.filters.InstantCompare.RepeatableInstantCompare;
 
+/**
+ * Compares an {@link Instant} property. The first argument must be a
+ * whitelisted {@link Operator}. Operators {@link Operator#FROM} (inclusive) and
+ * {@link Operator#BEFORE} (exclusive) accept a single argument, while
+ * {@link Operator#BETWEEN} (left inclusive and right exclusive) accepts a
+ * range.
+ */
 @Documented
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.RUNTIME)

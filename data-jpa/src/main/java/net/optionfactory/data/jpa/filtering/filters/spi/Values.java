@@ -35,6 +35,6 @@ public interface Values {
         if (char.class.isAssignableFrom(target)) {
             return value.charAt(0);
         }
-        throw new Filters.InvalidFilterRequest(String.format("Unconvertible value '%s' to %s", value, target.getSimpleName()));
+        throw new InvalidFilterRequest(String.format("Unconvertible value '%s' to %s", value, target.getSimpleName()));
     }
 }

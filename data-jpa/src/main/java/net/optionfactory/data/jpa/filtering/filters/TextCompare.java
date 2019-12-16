@@ -20,6 +20,10 @@ import net.optionfactory.data.jpa.filtering.filters.TextCompare.TextCompareFilte
 import net.optionfactory.data.jpa.filtering.filters.TextCompare.RepeatableTextCompare;
 import net.optionfactory.data.jpa.filtering.filters.spi.Filters;
 
+/**
+ * Compares a text property. The three arguments must be a whitelisted
+ * {@link Operator}, a whitelisted {@link Mode} and the comparison value.
+ */
 @Documented
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.RUNTIME)

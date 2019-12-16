@@ -8,6 +8,8 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.EnumSet;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -17,10 +19,16 @@ import javax.persistence.criteria.Root;
 import javax.persistence.metamodel.EntityType;
 import net.optionfactory.data.jpa.filtering.filters.NumberCompare.NumberCompareFilter;
 import net.optionfactory.data.jpa.filtering.filters.NumberCompare.RepeatableNumberCompare;
-import org.springframework.util.NumberUtils;
 import net.optionfactory.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.data.jpa.filtering.filters.spi.Values;
 
+/**
+ * Compares a numeric property, either a primitive type (not {@code boolean}) or
+ * a {@link Number} (such as boxed primitives, {@link BigInteger} or
+ * {@link BigDecimal}). The first argument must be a whitelisted
+ * {@link Operator}. All operators accept a single numeric argument, that must
+ * be convertible to the relative property type.
+ */
 @Documented
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.RUNTIME)

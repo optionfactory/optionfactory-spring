@@ -22,6 +22,13 @@ import net.optionfactory.data.jpa.filtering.filters.InEnum.InEnumFilter;
 import net.optionfactory.data.jpa.filtering.filters.InEnum.RepeatableInEnum;
 import net.optionfactory.data.jpa.filtering.filters.spi.Filters;
 
+/**
+ * Filters an enum property with a set of accepted values. Filter arguments list
+ * must contain the enum constants that have to be accepted. With no argument
+ * given, the filtered result will always be empty. If
+ * {@link InEnum#nullable() nullable} is true, then {@code null} arguments can
+ * be passed in, that will match {@code NULL} values in nullable columns.
+ */
 @Documented
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.RUNTIME)
