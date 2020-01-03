@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import javassist.Modifier;
 import javax.persistence.EntityManager;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Order;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.metamodel.EntityType;
@@ -27,6 +29,8 @@ import org.springframework.data.jpa.repository.support.JpaEntityInformation;
 import org.springframework.data.jpa.repository.support.SimpleJpaRepository;
 import net.optionfactory.data.jpa.filtering.filters.spi.WhitelistedFilter;
 import org.springframework.core.annotation.AnnotatedElementUtils;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.repository.query.QueryUtils;
 
 public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> extends SimpleJpaRepository<T, ID> {
 
@@ -34,7 +38,6 @@ public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> ext
 
     public JpaWhitelistFilteringRepositoryBase(JpaEntityInformation<T, ?> ei, EntityManager em) {
         super(ei, em);
-
         this.whitelist = Stream
                 .of(ei.getJavaType().getAnnotations())
                 .flatMap(repeatableAnnotation -> flattenRepeatables(repeatableAnnotation))
@@ -106,7 +109,7 @@ public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> ext
     }
 
     public Page<T> findAll(Specification<T> base, FilterRequest filters, Pageable pageable) {
-        return findAll(Specification.where(base).and(new WhitelistFilteringSpecificationAdapter<>(filters, whitelist)), pageable);
+        return findAll(Specification.where(base).and(new SortSpecificationAdapter<>(pageable.getSort())).and(new WhitelistFilteringSpecificationAdapter<>(filters, whitelist)), unsorted(pageable));
     }
 
     public List<T> findAll(FilterRequest filters, Sort sort) {
@@ -114,7 +117,7 @@ public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> ext
     }
 
     public List<T> findAll(Specification<T> base, FilterRequest filters, Sort sort) {
-        return findAll(Specification.where(base).and(new WhitelistFilteringSpecificationAdapter<>(filters, whitelist)), sort);
+        return findAll(Specification.where(base).and(new SortSpecificationAdapter<>(sort)).and(new WhitelistFilteringSpecificationAdapter<>(filters, whitelist)), Sort.unsorted());
     }
 
     public long count(FilterRequest filters) {
@@ -122,8 +125,11 @@ public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> ext
     }
 
     public long count(Specification<T> base, FilterRequest filters) {
-
         return count(Specification.where(base).and(new WhitelistFilteringSpecificationAdapter<>(filters, whitelist)));
+    }
+
+    private static Pageable unsorted(Pageable page) {
+        return PageRequest.of(page.getPageNumber(), page.getPageSize());
     }
 
     public static class WhitelistFilteringSpecificationAdapter<T> implements Specification<T> {
@@ -153,7 +159,22 @@ public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> ext
                     .toArray((size) -> new Predicate[size]);
             return builder.and(predicates);
         }
-
     }
 
+    public static class SortSpecificationAdapter<T> implements Specification<T> {
+
+        private final Sort sort;
+
+        public SortSpecificationAdapter(Sort sort) {
+            this.sort = sort != null ? sort : Sort.unsorted();
+        }
+
+        @Override
+        public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) {
+            final List<Order> orders = new ArrayList<>(query.getOrderList());
+            orders.addAll(QueryUtils.toOrders(sort, root, criteriaBuilder));
+            query.orderBy(orders);
+            return criteriaBuilder.conjunction();
+        }
+    }
 }
