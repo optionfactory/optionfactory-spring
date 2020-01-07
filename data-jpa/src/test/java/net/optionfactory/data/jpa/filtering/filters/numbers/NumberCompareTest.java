@@ -1,12 +1,12 @@
 package net.optionfactory.data.jpa.filtering.filters.numbers;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import net.optionfactory.data.jpa.HibernateTestConfig;
 import net.optionfactory.data.jpa.filtering.FilterRequest;
 import net.optionfactory.data.jpa.filtering.filters.NumberCompare;
-import net.optionfactory.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.data.jpa.filtering.filters.spi.InvalidFilterRequest;
 import org.junit.Assert;
 import org.junit.Before;
@@ -67,11 +67,8 @@ public class NumberCompareTest {
     }
 
     private static FilterRequest filter(String filterName, NumberCompare.Operator operator, String value) {
-        final FilterRequest fr = new FilterRequest();
-        fr.put(filterName, new String[]{operator.name(), value});
-        return fr;
+        return FilterRequest.of(Map.of(filterName, new String[]{operator.name(), value}));
     }
-
 
     private static Set<Long> idsIn(Page<EntityForNumberCompare> page) {
         return page.getContent().stream().map(flag -> flag.id).collect(Collectors.toSet());

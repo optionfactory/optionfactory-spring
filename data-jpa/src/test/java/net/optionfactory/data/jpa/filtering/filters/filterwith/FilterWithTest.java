@@ -1,11 +1,11 @@
 package net.optionfactory.data.jpa.filtering.filters.filterwith;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import net.optionfactory.data.jpa.HibernateTestConfig;
 import net.optionfactory.data.jpa.filtering.FilterRequest;
-import net.optionfactory.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.data.jpa.filtering.filters.spi.InvalidFilterRequest;
 import org.junit.Assert;
 import org.junit.Before;
@@ -47,15 +47,13 @@ public class FilterWithTest {
 
     @Test(expected = InvalidFilterRequest.class)
     public void throwsWhenCustomFilterDoesNotMeetParametersPreconditions() {
-        final FilterRequest request = new FilterRequest();
-        request.put("custom", new String[0]);
+        final FilterRequest request = FilterRequest.of(Map.of("custom", new String[0]));
         customs.findAll(request, Pageable.unpaged());
     }
 
     @Test
     public void canApplyCustomFilterWithParameter() {
-        final FilterRequest request = new FilterRequest();
-        request.put("custom", new String[]{CustomFilter.Check.LESS.name()});
+        final FilterRequest request = FilterRequest.of(Map.of("custom", new String[]{CustomFilter.Check.LESS.name()}));
         final Page<CustomEntity> page = customs.findAll(request, Pageable.unpaged());
         Assert.assertEquals(Set.of(3L, 5L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }

@@ -2,6 +2,7 @@ package net.optionfactory.data.jpa.filtering.filters.localdate;
 
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -75,9 +76,7 @@ public class LocalDateCompareTest {
     }
 
     private static FilterRequest filter(LocalDateCompare.Operator operator, String... values) {
-        final FilterRequest fr = new FilterRequest();
-        fr.put("date", Stream.concat(Stream.of(operator.name()), Stream.of(values)).toArray(i -> new String[i]));
-        return fr;
+        return FilterRequest.of(Map.of("date", Stream.concat(Stream.of(operator.name()), Stream.of(values)).toArray(i -> new String[i])));
     }
 
     private static EntityForLocalDate entity(long id, LocalDate date) {

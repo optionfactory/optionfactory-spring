@@ -49,7 +49,7 @@ public class SortTest {
 
     @Test
     public void canSortWithSpecificationOrders() {
-        final List<EntityForSort> all = repo.findAll(new EvenIdFirst(), new FilterRequest());
+        final List<EntityForSort> all = repo.findAll(new EvenIdFirst(), FilterRequest.unfiltered());
         final List<String> expected = List.of("B", "D", "F", "A", "C", "E");
         Assert.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()));
     }
@@ -57,7 +57,7 @@ public class SortTest {
     @Test
     public void canSortWithSpecificationAndThenGivenOrders() {
         final Sort sort = Sort.by(Sort.Order.asc("a"), Sort.Order.desc("b"));
-        final List<EntityForSort> all = repo.findAll(new EvenIdFirst(), new FilterRequest(), sort);
+        final List<EntityForSort> all = repo.findAll(new EvenIdFirst(), FilterRequest.unfiltered(), sort);
         final List<String> expected = List.of("D", "B", "F", "C", "E", "A");
         Assert.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()));
     }
@@ -73,7 +73,7 @@ public class SortTest {
     @Test
     public void canSortPageWithSpecificationAndThenGivenOrders() {
         final Sort sort = Sort.by(Sort.Order.asc("a"), Sort.Order.desc("b"));
-        final Page<EntityForSort> page = repo.findAll(new EvenIdFirst(), new FilterRequest(), PageRequest.of(0, Integer.MAX_VALUE, sort));
+        final Page<EntityForSort> page = repo.findAll(new EvenIdFirst(), FilterRequest.unfiltered(), PageRequest.of(0, Integer.MAX_VALUE, sort));
         final List<String> expected = List.of("D", "B", "F", "C", "E", "A");
         Assert.assertEquals(expected, page.stream().map(e -> e.b).collect(Collectors.toList()));
     }

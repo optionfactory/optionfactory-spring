@@ -1,6 +1,7 @@
 package net.optionfactory.data.jpa.filtering.specification;
 
 import java.util.List;
+import java.util.Map;
 import net.optionfactory.data.jpa.HibernateTestConfig;
 import net.optionfactory.data.jpa.filtering.FilterRequest;
 import net.optionfactory.data.jpa.filtering.filters.TextCompare;
@@ -38,15 +39,15 @@ public class SpecificationsTest {
             return null;
         });
     }
+
     @Test
     public void canMixBaseSpecsWithFilterRequest() {
-        final FilterRequest fr = new FilterRequest();
-        fr.put("byDesc", new String[]{
+        final FilterRequest fr = FilterRequest.of(Map.of("byDesc", new String[]{
             TextCompare.Operator.EQUALS.toString(),
             TextCompare.Mode.CASE_SENSITIVE.toString(),
-            "description"        
-        });
-        List<EntityForSpecification> page = tx.execute(txs -> repo.findAllByName("name2", fr));        
+            "description"
+        }));
+        List<EntityForSpecification> page = tx.execute(txs -> repo.findAllByName("name2", fr));
         Assert.assertEquals(1, page.size());
     }
 }

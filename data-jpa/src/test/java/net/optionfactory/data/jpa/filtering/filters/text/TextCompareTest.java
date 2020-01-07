@@ -1,5 +1,6 @@
 package net.optionfactory.data.jpa.filtering.filters.text;
 
+import java.util.Map;
 import net.optionfactory.data.jpa.HibernateTestConfig;
 import net.optionfactory.data.jpa.filtering.FilterRequest;
 import net.optionfactory.data.jpa.filtering.filters.TextCompare;
@@ -37,12 +38,11 @@ public class TextCompareTest {
 
     @Test
     public void textCompareEquals() {
-        final FilterRequest fr = new FilterRequest();
-        fr.put("byName", new String[]{
+        final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
             TextCompare.Operator.EQUALS.toString(),
             TextCompare.Mode.CASE_SENSITIVE.toString(),
             "asd"
-        });
+        }));
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
@@ -50,12 +50,11 @@ public class TextCompareTest {
 
     @Test
     public void textCompareEqualsIgnoreCase() {
-        final FilterRequest fr = new FilterRequest();
-        fr.put("byName", new String[]{
+        final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
             TextCompare.Operator.EQUALS.toString(),
             TextCompare.Mode.IGNORE_CASE.toString(),
             "ASD"
-        });
+        }));
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
@@ -63,12 +62,11 @@ public class TextCompareTest {
 
     @Test
     public void textCompareContains() {
-        final FilterRequest fr = new FilterRequest();
-        fr.put("byName", new String[]{
+        final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
             TextCompare.Operator.CONTAINS.toString(),
             TextCompare.Mode.CASE_SENSITIVE.toString(),
             "s"
-        });
+        }));
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
@@ -76,12 +74,11 @@ public class TextCompareTest {
 
     @Test
     public void textCompareContainsIgnoreCase() {
-        final FilterRequest fr = new FilterRequest();
-        fr.put("byName", new String[]{
+        final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
             TextCompare.Operator.CONTAINS.toString(),
             TextCompare.Mode.IGNORE_CASE.toString(),
             "S"
-        });
+        }));
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
@@ -89,12 +86,11 @@ public class TextCompareTest {
 
     @Test
     public void textCompareStartsWith() {
-        final FilterRequest fr = new FilterRequest();
-        fr.put("byName", new String[]{
+        final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
             TextCompare.Operator.STARTS_WITH.toString(),
             TextCompare.Mode.CASE_SENSITIVE.toString(),
             "a"
-        });
+        }));
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
@@ -102,12 +98,11 @@ public class TextCompareTest {
 
     @Test
     public void textCompareStartsWithIgnoreCase() {
-        final FilterRequest fr = new FilterRequest();
-        fr.put("byName", new String[]{
+        final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
             TextCompare.Operator.STARTS_WITH.toString(),
             TextCompare.Mode.IGNORE_CASE.toString(),
             "A"
-        });
+        }));
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
@@ -115,12 +110,11 @@ public class TextCompareTest {
 
     @Test
     public void textCompareEndsWith() {
-        final FilterRequest fr = new FilterRequest();
-        fr.put("byName", new String[]{
+        final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
             TextCompare.Operator.ENDS_WITH.toString(),
             TextCompare.Mode.CASE_SENSITIVE.toString(),
             "d"
-        });
+        }));
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
@@ -128,12 +122,11 @@ public class TextCompareTest {
 
     @Test
     public void textCompareEndsWithIgnoreCase() {
-        final FilterRequest fr = new FilterRequest();
-        fr.put("byName", new String[]{
+        final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
             TextCompare.Operator.ENDS_WITH.toString(),
             TextCompare.Mode.IGNORE_CASE.toString(),
             "D"
-        });
+        }));
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);

@@ -34,7 +34,7 @@ public class FiltersTest {
                 return cb.disjunction();
             }
         };
-        repository.findOne(specification, new FilterRequest());
+        repository.findOne(specification, FilterRequest.unfiltered());
     }
 
     @Test(expected = InvalidFilterConfiguration.class)
@@ -46,7 +46,7 @@ public class FiltersTest {
                 return cb.disjunction();
             }
         };
-        repository.findOne(specification, new FilterRequest());
+        repository.findOne(specification, FilterRequest.unfiltered());
     }
 
     @Test

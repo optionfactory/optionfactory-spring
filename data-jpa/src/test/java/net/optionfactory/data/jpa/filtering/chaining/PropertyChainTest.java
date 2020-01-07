@@ -1,6 +1,7 @@
 package net.optionfactory.data.jpa.filtering.chaining;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import net.optionfactory.data.jpa.HibernateTestConfig;
@@ -50,12 +51,11 @@ public class PropertyChainTest {
 
     @Test
     public void canFilterByComparingPerformerName() {
-        final FilterRequest fr = new FilterRequest();
-        fr.put("performerName", new String[]{
+        final FilterRequest fr = FilterRequest.of(Map.of("performerName", new String[]{
             TextCompare.Operator.EQUALS.toString(),
             TextCompare.Mode.CASE_SENSITIVE.toString(),
             "pietro"
-        });
+        }));
         final Pageable pr = Pageable.unpaged();
         final Page<Appointment> page = appointments.findAll(fr, pr);
         Assert.assertEquals(Set.of(1L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
@@ -63,8 +63,7 @@ public class PropertyChainTest {
 
     @Test
     public void canFilterByEmptyEnum() {
-        final FilterRequest fr = new FilterRequest();
-        fr.put("status", new String[0]);
+        final FilterRequest fr = FilterRequest.of(Map.of("status", new String[0]));
         final Pageable pr = Pageable.unpaged();
         final Page<Appointment> page = appointments.findAll(fr, pr);
         Assert.assertTrue(page.isEmpty());
@@ -72,8 +71,7 @@ public class PropertyChainTest {
 
     @Test
     public void canFilterByStatusInEnum() {
-        final FilterRequest fr = new FilterRequest();
-        fr.put("status", new String[]{Appointment.Status.CONFIRMED.name()});
+        final FilterRequest fr = FilterRequest.of(Map.of("status", new String[]{Appointment.Status.CONFIRMED.name()}));
         final Pageable pr = Pageable.unpaged();
         final Page<Appointment> page = appointments.findAll(fr, pr);
         Assert.assertEquals(Set.of(1L, 2L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
@@ -81,8 +79,7 @@ public class PropertyChainTest {
 
     @Test
     public void canFilterByActivitySeasonInEnum() {
-        final FilterRequest fr = new FilterRequest();
-        fr.put("activitySeason", new String[]{Activity.Season.SUMMER.name()});
+        final FilterRequest fr = FilterRequest.of(Map.of("activitySeason", new String[]{Activity.Season.SUMMER.name()}));
         final Pageable pr = Pageable.unpaged();
         final Page<Appointment> page = appointments.findAll(fr, pr);
         Assert.assertEquals(Set.of(4L, 5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));

@@ -137,8 +137,8 @@ public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> ext
         private final Map<String, String[]> requested;
         private final Map<String, Filter> whitelisted;
 
-        public WhitelistFilteringSpecificationAdapter(Map<String, String[]> requested, Map<String, Filter> whitelisted) {
-            this.requested = requested;
+        public WhitelistFilteringSpecificationAdapter(FilterRequest requested, Map<String, Filter> whitelisted) {
+            this.requested = requested.filters == null ? Map.of() : requested.filters;
             this.whitelisted = whitelisted;
         }
 

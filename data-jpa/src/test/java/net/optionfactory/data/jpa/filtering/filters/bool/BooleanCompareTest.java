@@ -1,12 +1,11 @@
 package net.optionfactory.data.jpa.filtering.filters.bool;
 
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import net.optionfactory.data.jpa.HibernateTestConfig;
 import net.optionfactory.data.jpa.filtering.FilterRequest;
-import net.optionfactory.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.data.jpa.filtering.filters.spi.InvalidFilterRequest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -75,8 +74,7 @@ public class BooleanCompareTest {
     }
 
     private static FilterRequest filter(String filterName, String value) {
-        final FilterRequest fr = new FilterRequest();
-        fr.put(filterName, new String[]{value});
+        final FilterRequest fr = FilterRequest.of(Map.of(filterName, new String[]{value}));
         return fr;
     }
 
