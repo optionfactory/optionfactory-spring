@@ -129,7 +129,7 @@ public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> ext
     }
 
     private static Pageable unsorted(Pageable page) {
-        return PageRequest.of(page.getPageNumber(), page.getPageSize());
+        return page.isPaged() ? PageRequest.of(page.getPageNumber(), page.getPageSize()) : Pageable.unpaged();
     }
 
     public static class WhitelistFilteringSpecificationAdapter<T> implements Specification<T> {
