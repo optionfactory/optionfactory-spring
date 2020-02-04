@@ -5,9 +5,7 @@ import java.util.LinkedHashMap;
 import net.optionfactory.problems.Problem;
 import java.util.List;
 import java.util.function.Supplier;
-import org.apache.commons.logging.LogFactory;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import net.optionfactory.problems.web.RestExceptionResolver.Options;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,7 +33,7 @@ public class RestExceptionResolverTest {
         final ContentNegotiationManager cnm = new ContentNegotiationManager();
         final LinkedHashMap<MediaType, Supplier<View>> suppliers = new LinkedHashMap<>();
         suppliers.put(MediaType.APPLICATION_JSON, new JsonViewFactory(new ObjectMapper()));
-        er = new RestExceptionResolver(cnm, suppliers, RestExceptionResolver.LOWEST_PRECEDENCE + 1);
+        er = new RestExceptionResolver(cnm, suppliers, RestExceptionResolver.LOWEST_PRECEDENCE + 1, Options.INCLUDE_DETAILS);
         hm = new HandlerMethod(new RestExceptionResolverTest(), RestExceptionResolverTest.class.getMethod("fakeControllerMethod"));
     }
 
