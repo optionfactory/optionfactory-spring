@@ -81,21 +81,21 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 metadata.put("known", inner.getKnownPropertyIds());
                 metadata.put("in", inner.getReferringClass().getSimpleName());
                 final Problem failure = Problem.of("UNRECOGNIZED_PROPERTY", inner.getPropertyName(), "Unrecognized field", metadata);
-                logger.info(String.format("Unrecognized property at %s: %s", requestUri, failure));
+                logger.debug(String.format("Unrecognized property at %s: %s", requestUri, failure));
                 return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, Arrays.asList(failure));
             }
             if (cause instanceof InvalidFormatException) {
                 final InvalidFormatException inner = (InvalidFormatException) cause;
                 final String path = inner.getPath().stream().map(p -> p.getFieldName()).collect(Collectors.joining("."));
                 final Problem failure = Problem.of("INVALID_FORMAT", path, "Invalid format", inner.getMessage());
-                logger.info(String.format("Invalid format at %s: %s", requestUri, failure));
+                logger.debug(String.format("Invalid format at %s: %s", requestUri, failure));
                 return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, Arrays.asList(failure));
             }
             if (cause instanceof JsonMappingException) {
                 final JsonMappingException inner = (JsonMappingException) cause;
                 final String path = inner.getPath().stream().map(p -> p.getFieldName()).collect(Collectors.joining("."));
                 final Problem failure = Problem.of("INVALID_FORMAT", path, "Invalid format", inner.getMessage());
-                logger.info(String.format("Json mapping exception at %s: %s", requestUri, failure));
+                logger.debug(String.format("Json mapping exception at %s: %s", requestUri, failure));
                 return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, Arrays.asList(failure));
             }
             if (cause instanceof JsonParseException) {
@@ -104,11 +104,11 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 details.put("location", inner.getLocation());
                 details.put("message", cause.getMessage());
                 final Problem failure = Problem.of("UNPARSEABLE_MESSAGE", Problem.NO_CONTEXT, "Unpearsable message", details);
-                logger.info(String.format("Unparseable message: %s", failure.toString()));
+                logger.debug(String.format("Unparseable message: %s", failure.toString()));
                 return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, Arrays.asList(failure));
             }
             final Problem failure = Problem.of("MESSAGE_NOT_READABLE", Problem.NO_CONTEXT, "Message not readable", cause != null ? cause.getMessage() : ex.getMessage());
-            logger.info(String.format("Unreadable message at %s: %s", requestUri, failure));
+            logger.debug(String.format("Unreadable message at %s: %s", requestUri, failure));
             return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, Arrays.asList(failure));
         }
         if (ex instanceof BindException) {
@@ -116,7 +116,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             final Stream<Problem> globalFailures = be.getGlobalErrors().stream().map(RestExceptionResolver::objectErrorToProblem);
             final Stream<Problem> fieldFailures = be.getFieldErrors().stream().map(RestExceptionResolver::fieldErrorToProblem);
             final List<Problem> failures = Stream.concat(globalFailures, fieldFailures).collect(Collectors.toList());
-            logger.info(String.format("Binding failure at %s: %s", requestUri, failures));
+            logger.debug(String.format("Binding failure at %s: %s", requestUri, failures));
             return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, failures);
         }
         if (ex instanceof MethodArgumentNotValidException) {
@@ -124,7 +124,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             final Stream<Problem> globalFailures = manve.getBindingResult().getGlobalErrors().stream().map(RestExceptionResolver::objectErrorToProblem);
             final Stream<Problem> fieldFailures = manve.getBindingResult().getFieldErrors().stream().map(RestExceptionResolver::fieldErrorToProblem);
             final List<Problem> failures = Stream.concat(globalFailures, fieldFailures).collect(Collectors.toList());
-            logger.info(String.format("Invalid method argument at %s: %s", requestUri, failures));
+            logger.debug(String.format("Invalid method argument at %s: %s", requestUri, failures));
             return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, failures);
         }
         if (ex instanceof MethodArgumentTypeMismatchException) { // Handles type errors in path variables (Es. not-numeric string when expecting an int)
@@ -134,13 +134,13 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             final Object value = matme.getValue();
             final String sourceType = value == null ? "null" : value.getClass().toGenericString();
             final List<Problem> failures = Collections.singletonList(Problem.of("CONVERSION_ERROR", parameterName, "Conversion error", String.format("Failed to convert value of type '%s' to '%s'.", sourceType, parameterType)));
-            logger.info(String.format("Conversion error for argument %s expected type %s found type %s at %s: %s", parameterName, parameterType, sourceType, requestUri, failures));
+            logger.debug(String.format("Conversion error for argument %s expected type %s found type %s at %s: %s", parameterName, parameterType, sourceType, requestUri, failures));
             return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, failures);
         }
         if (ex instanceof MissingServletRequestPartException) { // Handles missing multipart request part
             final MissingServletRequestPartException msrpe = (MissingServletRequestPartException) ex;
             final Problem problem = Problem.of("FIELD_ERROR", msrpe.getRequestPartName(), "Required request part is not present", Problem.NO_DETAILS);
-            logger.info(String.format("Missing required part %s of multipart request: %s", msrpe.getRequestPartName(), requestUri));
+            logger.debug(String.format("Missing required part %s of multipart request: %s", msrpe.getRequestPartName(), requestUri));
             return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, Collections.singletonList(problem));
         }
         if (ex instanceof ResponseStatusException) {
@@ -152,22 +152,22 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
         if (responseStatus != null) {
             if (ex instanceof Failure) {
                 final Failure failure = (Failure) ex;
-                logger.info(String.format("Failure at %s", requestUri), failure);
+                logger.debug(String.format("Failure at %s", requestUri), failure);
                 return new HttpStatusAndFailures(responseStatus.value(), failure.problems);
             }
             final String reason = responseStatus.reason().isEmpty() ? ex.getMessage() : responseStatus.reason();
             final Problem problem = Problem.of("GENERIC_PROBLEM", null, null, reason);
-            logger.info(String.format("Failure at %s: %s", requestUri, problem));
+            logger.debug(String.format("Failure at %s: %s", requestUri, problem));
             return new HttpStatusAndFailures(responseStatus.value(), Collections.singletonList(problem));
         }
         if (ex instanceof Failure) {
             final Failure failure = (Failure) ex;
-            logger.info(String.format("Failure at %s", requestUri), failure);
+            logger.debug(String.format("Failure at %s", requestUri), failure);
             return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, failure.problems);
         }
         if (ex instanceof AccessDeniedException) {
             final Problem problem = Problem.of("FORBIDDEN", null, null, ex.getMessage());
-            logger.info(String.format("Access denied at %s: %s", requestUri, problem));
+            logger.debug(String.format("Access denied at %s: %s", requestUri, problem));
             return new HttpStatusAndFailures(HttpStatus.FORBIDDEN, Collections.singletonList(problem));
         }
         if (null != super.doResolveException(request, new SendErrorToSetStatusHttpServletResponse(response), hm, ex)) {
@@ -233,11 +233,11 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
     }
 
     private static Problem fieldErrorToProblem(FieldError error) {
-        return Problem.of("FIELD_ERROR", error.getField(), null, error.getDefaultMessage());
+        return Problem.of("FIELD_ERROR", error.getField(), error.getDefaultMessage(), null);
     }
 
     private static Problem objectErrorToProblem(ObjectError error) {
-        return Problem.of("OBJECT_ERROR", null, null, error.getDefaultMessage());
+        return Problem.of("OBJECT_ERROR", null, error.getDefaultMessage(), null);
     }
 
     public static class SendErrorToSetStatusHttpServletResponse extends HttpServletResponseWrapper {
