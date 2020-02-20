@@ -1,17 +1,13 @@
 package net.optionfactory.data.jpa.filtering;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
 import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.core.annotation.AliasFor;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.jpa.repository.support.JpaRepositoryFactoryBean;
 import org.springframework.data.repository.config.BootstrapMode;
 import org.springframework.data.repository.query.QueryLookupStrategy.Key;
+
+import java.lang.annotation.*;
 
 /**
  * Enable use of JPA repositories extending the
@@ -21,9 +17,7 @@ import org.springframework.data.repository.query.QueryLookupStrategy.Key;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @EnableJpaRepositories(
-        repositoryBaseClass = JpaWhitelistFilteringRepositoryBase.class,
-        enableDefaultTransactions = false,
-        transactionManagerRef = "badIdeaTransactionManagerRef"
+        repositoryBaseClass = JpaWhitelistFilteringRepositoryBase.class
 )
 public @interface EnableJpaWhitelistFilteringRepositories {
 
@@ -65,4 +59,12 @@ public @interface EnableJpaWhitelistFilteringRepositories {
 
     @AliasFor(annotation = EnableJpaRepositories.class)
     char escapeCharacter() default '\\';
+
+    @AliasFor(annotation = EnableJpaRepositories.class)
+    boolean enableDefaultTransactions() default false;
+
+    @AliasFor(annotation = EnableJpaRepositories.class)
+    String transactionManagerRef() default "badIdeaTransactionManagerRef";
+
+
 }
