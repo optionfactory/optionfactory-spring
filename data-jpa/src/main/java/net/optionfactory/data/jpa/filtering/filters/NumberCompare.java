@@ -66,8 +66,7 @@ public @interface NumberCompare {
         public NumberCompareFilter(NumberCompare nc, EntityType<?> entity) {
             this.name = nc.name();
             this.property = nc.property();
-            Filters.ensurePropertyOfAnyType(nc, entity, property, Number.class, byte.class, short.class, int.class, long.class, float.class, double.class, char.class);
-            this.propertyClass = (Class<? extends Number>) entity.getAttribute(nc.property()).getJavaType();
+            this.propertyClass = (Class<? extends Number>) Filters.ensurePropertyOfAnyType(nc, entity, property, Number.class, byte.class, short.class, int.class, long.class, float.class, double.class, char.class);
             this.operators = EnumSet.of(nc.operators()[0], nc.operators());
         }
 
