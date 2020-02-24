@@ -1,9 +1,5 @@
 package net.optionfactory.data.jpa.filtering.filters.numbers;
 
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import net.optionfactory.data.jpa.HibernateTestConfig;
 import net.optionfactory.data.jpa.filtering.FilterRequest;
 import net.optionfactory.data.jpa.filtering.filters.NumberCompare;
@@ -19,6 +15,11 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = HibernateTestConfig.class)
 @Transactional
@@ -30,10 +31,10 @@ public class NumberCompareTest {
     @Before
     public void setup() {
         repo.saveAll(Arrays.asList(
-                entity(1, null, Math.E),
-                entity(2, 15, Math.E),
-                entity(3, 10, Math.PI),
-                entity(4, 5, 2.3e5)
+                entity(1, null, Math.E, 42),
+                entity(2, 15, Math.E, 43),
+                entity(3, 10, Math.PI, 44),
+                entity(4, 5, 2.3e5, 45)
         ));
     }
 
@@ -66,6 +67,11 @@ public class NumberCompareTest {
         Assert.assertEquals(Set.of(3L, 4L), idsIn(repo.findAll(filter("rating", NumberCompare.Operator.GTE, Double.toString(Math.PI)), Pageable.unpaged())));
     }
 
+    @Test
+    public void canFilterOnEmbeddedValues() {
+        Assert.assertEquals(Set.of(1L), idsIn(repo.findAll(filter("container.value", NumberCompare.Operator.EQ, "42"), Pageable.unpaged())));
+    }
+
     private static FilterRequest filter(String filterName, NumberCompare.Operator operator, String value) {
         return FilterRequest.of(Map.of(filterName, new String[]{operator.name(), value}));
     }
@@ -74,11 +80,13 @@ public class NumberCompareTest {
         return page.getContent().stream().map(flag -> flag.id).collect(Collectors.toSet());
     }
 
-    private static EntityForNumberCompare entity(long id, Integer maxPersons, double rating) {
+    private static EntityForNumberCompare entity(long id, Integer maxPersons, double rating, Integer containerValue) {
         final EntityForNumberCompare e = new EntityForNumberCompare();
         e.id = id;
         e.maxPersons = maxPersons;
         e.rating = rating;
+        e.container = new EntityForNumberCompare.NumericEmbeddedContainer();
+        e.container.value = containerValue;
         return e;
     }
 }
