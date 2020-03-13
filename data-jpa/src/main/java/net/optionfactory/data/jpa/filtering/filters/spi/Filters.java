@@ -1,15 +1,11 @@
 package net.optionfactory.data.jpa.filtering.filters.spi;
 
+import javax.persistence.criteria.Path;
+import javax.persistence.criteria.Root;
+import javax.persistence.metamodel.*;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.List;
-import javax.persistence.criteria.Path;
-import javax.persistence.criteria.Root;
-import javax.persistence.metamodel.Attribute;
-import javax.persistence.metamodel.EntityType;
-import javax.persistence.metamodel.ManagedType;
-import javax.persistence.metamodel.SingularAttribute;
-import javax.persistence.metamodel.Type;
 
 /**
  * Utility methods for defining filters.
@@ -27,7 +23,7 @@ public interface Filters {
             final Attribute<?, ?> attribute = getAttributeFromPropertyChain(annotation, entity, propertyChain);
             for (Class<?> type : types) {
                 if (type.isAssignableFrom(attribute.getJavaType())) {
-                    return type;
+                    return attribute.getJavaType();
                 }
             }
             throw new InvalidFilterConfiguration(String.format("filter %s@%s expects property %s of type %s, got %s", annotation, entity.getJavaType().getSimpleName(), property, Arrays.toString(types), attribute.getJavaType().getSimpleName()));
