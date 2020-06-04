@@ -24,6 +24,7 @@
         <module>problems</module>
         <module>problems-web</module>
         <module>webserver</module>
+        <module>authentication-bearer-token</module>
     </modules>
 
     <properties>
@@ -34,6 +35,12 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>javax.servlet</groupId>
+                <artifactId>javax.servlet-api</artifactId>
+                <version>4.0.1</version>
+                <scope>provided</scope>
+            </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
@@ -73,6 +80,11 @@
                 <groupId>org.springframework.security</groupId>
                 <artifactId>spring-security-web</artifactId>
                 <version>5.2.2.RELEASE</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-config</artifactId>
+                <version>4.2.2.RELEASE</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework</groupId>
