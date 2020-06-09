@@ -84,17 +84,17 @@
             <dependency>
                 <groupId>org.springframework.security</groupId>
                 <artifactId>spring-security-core</artifactId>
-                <version>5.3.2.RELEASE</version>
+                <version>5.3.3.RELEASE</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.security</groupId>
                 <artifactId>spring-security-config</artifactId>
-                <version>5.3.2.RELEASE</version>
+                <version>5.3.3.RELEASE</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.security</groupId>
                 <artifactId>spring-security-web</artifactId>
-                <version>5.3.2.RELEASE</version>
+                <version>5.3.3.RELEASE</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework</groupId>
@@ -110,8 +110,8 @@
             <dependency>
                 <groupId>org.springframework.security</groupId>
                 <artifactId>spring-security-oauth2-client</artifactId>
-                <version>5.3.2.RELEASE</version>
-            </dependency>           
+                <version>5.3.3.RELEASE</version>
+            </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
