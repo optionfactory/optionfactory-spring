@@ -7,16 +7,19 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map.Entry;
 import net.optionfactory.spring.upstream.UpstreamInterceptor;
+import net.optionfactory.spring.upstream.UpstreamPort;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 import org.springframework.ws.WebServiceMessage;
 import org.springframework.ws.client.WebServiceClientException;
@@ -30,7 +33,7 @@ import org.springframework.ws.transport.context.TransportContextHolder;
 import org.springframework.ws.transport.http.HttpComponentsConnection;
 import org.springframework.ws.transport.http.HttpComponentsMessageSender;
 
-public class UpstreamSoapPort<CONTEXT> {
+public class UpstreamSoapPort<CONTEXT> implements UpstreamPort<CONTEXT> {
 
     private final String upstreamId;
     private final WebServiceTemplate soap;
@@ -75,9 +78,20 @@ public class UpstreamSoapPort<CONTEXT> {
         this.soap = inner;
     }
 
-    public <T> T exchange(CONTEXT context, RequestEntity<?> requestEntity, Class<T> responseType) {
+    @Override
+    public <T> ResponseEntity<T> exchange(CONTEXT context, RequestEntity<?> requestEntity, Class<T> responseType) {
+        return exchange(requestEntity, context);
+    }
+
+
+    @Override
+    public <T> ResponseEntity<T> exchange(CONTEXT context, RequestEntity<?> requestEntity, ParameterizedTypeReference<T> responseType) {
+        return exchange(requestEntity, context);
+    }
+    
+    private <T> ResponseEntity<T> exchange(RequestEntity<?> requestEntity, CONTEXT context) {
         final var actualEntity = makeEntity(requestEntity, context);
-        var got = soap.marshalSendAndReceive(actualEntity.getUrl().toString(), actualEntity.getBody(), (WebServiceMessage message) -> {
+        final var got = soap.marshalSendAndReceive(actualEntity.getUrl().toString(), actualEntity.getBody(), (WebServiceMessage message) -> {
             final HttpComponentsConnection connection = (HttpComponentsConnection) TransportContextHolder.getTransportContext().getConnection();
             for (Entry<String, List<String>> header : actualEntity.getHeaders().entrySet()) {
                 for (String value : header.getValue()) {
@@ -89,8 +103,9 @@ public class UpstreamSoapPort<CONTEXT> {
             ctx.requestHeaders = actualEntity.getHeaders();
             callContexts.set(ctx);
         });
-        return (T) got;
+        return ResponseEntity.ok((T) got);
     }
+    
 
     private RequestEntity<?> makeEntity(RequestEntity<?> requestEntity, CONTEXT context) {
         final var headers = new HttpHeaders();
@@ -103,21 +118,21 @@ public class UpstreamSoapPort<CONTEXT> {
         }
         return new RequestEntity<>(requestEntity.getBody(), headers, requestEntity.getMethod(), requestEntity.getUrl(), requestEntity.getType());
     }
-    
+
     public static class SoapCallContext {
+
         public HttpHeaders requestHeaders;
         public Resource requestBody;
         public URI requestUri;
-        
+
     }
 
     public static class SoapInterceptors implements ClientInterceptor {
 
         private final List<UpstreamInterceptor> interceptors;
         private final String upstreamId;
-	private final ThreadLocal<SoapCallContext> callContexts;
+        private final ThreadLocal<SoapCallContext> callContexts;
         private final HttpHeaders fakeResponseHeaders;
-        
 
         public SoapInterceptors(List<UpstreamInterceptor> interceptors, String upstreamId, ThreadLocal<SoapCallContext> callContexts) {
             this.interceptors = interceptors;
@@ -160,13 +175,13 @@ public class UpstreamSoapPort<CONTEXT> {
 
         @Override
         public void afterCompletion(MessageContext messageContext, Exception ex) throws WebServiceClientException {
-            if(ex == null){
+            if (ex == null) {
                 return;
             }
             final SoapCallContext ctx = callContexts.get();
             for (var interceptor : interceptors) {
                 interceptor.error(upstreamId, ctx.requestHeaders, ctx.requestUri, ctx.requestBody, ex);
-            }            
+            }
         }
 
         private static Resource toResource(WebServiceMessage message) {

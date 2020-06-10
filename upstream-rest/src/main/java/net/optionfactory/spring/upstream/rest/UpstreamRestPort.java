@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.Set;
 import net.optionfactory.spring.upstream.UpstreamException;
 import net.optionfactory.spring.upstream.UpstreamInterceptor;
+import net.optionfactory.spring.upstream.UpstreamPort;
 import net.optionfactory.spring.upstream.UpstreamResponseErrorHandler;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.SocketConfig;
@@ -41,7 +42,7 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestTemplate;
 
-public class UpstreamRestPort<CONTEXT> {
+public class UpstreamRestPort<CONTEXT> implements UpstreamPort<CONTEXT> {
 
     private final String upstreamId;
     private final RestTemplate rest;
