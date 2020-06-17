@@ -17,7 +17,7 @@ public class UpstreamOAuthInterceptor<T> implements UpstreamInterceptor<T> {
     }
 
     @Override
-    public HttpHeaders prepare(String upstreamId, T ctx, RequestEntity<?> entity) {
+    public HttpHeaders prepare(String upstreamId, String endpointId, T ctx, RequestEntity<?> entity) {
         final var headers = new HttpHeaders();
         headers.set("Authorization", String.format("Bearer %s", oauth.authorize(oauthReq).getAccessToken().getTokenValue()));
         return headers;

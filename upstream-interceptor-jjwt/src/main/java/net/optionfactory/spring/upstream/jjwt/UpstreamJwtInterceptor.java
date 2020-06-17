@@ -26,7 +26,7 @@ public class UpstreamJwtInterceptor<CTX> implements UpstreamInterceptor<CTX> {
     }
 
     @Override
-    public HttpHeaders prepare(String upstreamId, CTX ctx, RequestEntity<?> entity) {
+    public HttpHeaders prepare(String upstreamId, String endpointId, CTX ctx, RequestEntity<?> entity) {
         final var headers = new HttpHeaders();
         final var claims = new HashMap<String, Object>();
         final var jwtIssuedAt = new Date();

@@ -79,18 +79,25 @@ public class UpstreamSoapPort<CONTEXT> implements UpstreamPort<CONTEXT> {
     }
 
     @Override
-    public <T> ResponseEntity<T> exchange(CONTEXT context, RequestEntity<?> requestEntity, Class<T> responseType) {
-        return exchange(requestEntity, context);
+    public <T> ResponseEntity<T> exchange(CONTEXT context, String endpointId, RequestEntity<?> requestEntity, Class<T> responseType) {
+        try {
+            return exchange(endpointId, requestEntity, context);
+        } finally {
+            callContexts.remove();
+        }
     }
-
 
     @Override
-    public <T> ResponseEntity<T> exchange(CONTEXT context, RequestEntity<?> requestEntity, ParameterizedTypeReference<T> responseType) {
-        return exchange(requestEntity, context);
+    public <T> ResponseEntity<T> exchange(CONTEXT context, String endpointId, RequestEntity<?> requestEntity, ParameterizedTypeReference<T> responseType) {
+        try {
+            return exchange(endpointId, requestEntity, context);
+        } finally {
+            callContexts.remove();
+        }
     }
-    
-    private <T> ResponseEntity<T> exchange(RequestEntity<?> requestEntity, CONTEXT context) {
-        final var actualEntity = makeEntity(requestEntity, context);
+
+    private <T> ResponseEntity<T> exchange(String endpointId, RequestEntity<?> requestEntity, CONTEXT context) {
+        final var actualEntity = makeEntity(endpointId, requestEntity, context);
         final var got = soap.marshalSendAndReceive(actualEntity.getUrl().toString(), actualEntity.getBody(), (WebServiceMessage message) -> {
             final HttpComponentsConnection connection = (HttpComponentsConnection) TransportContextHolder.getTransportContext().getConnection();
             for (Entry<String, List<String>> header : actualEntity.getHeaders().entrySet()) {
@@ -101,17 +108,17 @@ public class UpstreamSoapPort<CONTEXT> implements UpstreamPort<CONTEXT> {
             final SoapCallContext ctx = new SoapCallContext();
             ctx.requestUri = actualEntity.getUrl();
             ctx.requestHeaders = actualEntity.getHeaders();
+            ctx.endpointId = endpointId;
             callContexts.set(ctx);
         });
         return ResponseEntity.ok((T) got);
     }
-    
 
-    private RequestEntity<?> makeEntity(RequestEntity<?> requestEntity, CONTEXT context) {
+    private RequestEntity<?> makeEntity(String endpointId, RequestEntity<?> requestEntity, CONTEXT context) {
         final var headers = new HttpHeaders();
         headers.addAll(requestEntity.getHeaders());
         for (var interceptor : interceptors) {
-            final var newHeaders = interceptor.prepare(upstreamId, context, requestEntity);
+            final var newHeaders = interceptor.prepare(upstreamId, endpointId, context, requestEntity);
             if (newHeaders != null) {
                 headers.addAll(newHeaders);
             }
@@ -124,6 +131,7 @@ public class UpstreamSoapPort<CONTEXT> implements UpstreamPort<CONTEXT> {
         public HttpHeaders requestHeaders;
         public Resource requestBody;
         public URI requestUri;
+        public String endpointId;
 
     }
 
@@ -147,7 +155,7 @@ public class UpstreamSoapPort<CONTEXT> implements UpstreamPort<CONTEXT> {
             final SoapCallContext ctx = callContexts.get();
             ctx.requestBody = toResource(messageContext.getRequest());
             for (var interceptor : interceptors) {
-                interceptor.before(upstreamId, ctx.requestHeaders, ctx.requestUri, ctx.requestBody);
+                interceptor.before(upstreamId, ctx.endpointId, ctx.requestHeaders, ctx.requestUri, ctx.requestBody);
             }
 
             return true;
@@ -158,7 +166,7 @@ public class UpstreamSoapPort<CONTEXT> implements UpstreamPort<CONTEXT> {
             final SoapCallContext ctx = callContexts.get();
             final Resource responseBody = toResource(messageContext.getResponse());
             for (var interceptor : interceptors) {
-                interceptor.after(upstreamId, ctx.requestHeaders, ctx.requestUri, ctx.requestBody, HttpStatus.OK, fakeResponseHeaders, responseBody);
+                interceptor.after(upstreamId, ctx.endpointId, ctx.requestHeaders, ctx.requestUri, ctx.requestBody, HttpStatus.OK, fakeResponseHeaders, responseBody);
             }
             return true;
         }
@@ -168,7 +176,7 @@ public class UpstreamSoapPort<CONTEXT> implements UpstreamPort<CONTEXT> {
             final SoapCallContext ctx = callContexts.get();
             final Resource faultBody = toResource(messageContext.getResponse());
             for (var interceptor : interceptors) {
-                interceptor.after(upstreamId, ctx.requestHeaders, ctx.requestUri, ctx.requestBody, HttpStatus.INTERNAL_SERVER_ERROR, fakeResponseHeaders, faultBody);
+                interceptor.after(upstreamId, ctx.endpointId, ctx.requestHeaders, ctx.requestUri, ctx.requestBody, HttpStatus.INTERNAL_SERVER_ERROR, fakeResponseHeaders, faultBody);
             }
             return true;
         }
@@ -180,7 +188,7 @@ public class UpstreamSoapPort<CONTEXT> implements UpstreamPort<CONTEXT> {
             }
             final SoapCallContext ctx = callContexts.get();
             for (var interceptor : interceptors) {
-                interceptor.error(upstreamId, ctx.requestHeaders, ctx.requestUri, ctx.requestBody, ex);
+                interceptor.error(upstreamId, ctx.endpointId, ctx.requestHeaders, ctx.requestUri, ctx.requestBody, ex);
             }
         }
 

@@ -14,7 +14,7 @@ public class UpstreamStaticAuthorizationTokenInterceptor<T> implements UpstreamI
     }
 
     @Override
-    public HttpHeaders prepare(String upstreamId, T context, RequestEntity<?> entity) {
+    public HttpHeaders prepare(String upstreamId, String endpointId, T context, RequestEntity<?> entity) {
         final var headers = new HttpHeaders();
         headers.set("Authorization", String.format("%s %s", tokenType, token));
         return headers;

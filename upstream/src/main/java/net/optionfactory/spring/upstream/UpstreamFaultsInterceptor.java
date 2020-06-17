@@ -2,7 +2,6 @@ package net.optionfactory.spring.upstream;
 
 import java.net.URI;
 import java.time.Instant;
-import java.util.Map;
 import net.optionfactory.spring.upstream.UpstreamFaultsSpooler.UpstreamFault;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -20,7 +19,7 @@ public class UpstreamFaultsInterceptor<CTX> implements UpstreamInterceptor<CTX> 
     }
 
     @Override
-    public void after(String upstreamId, HttpHeaders requestHeaders, URI requestUri, Resource requestBody, HttpStatus responseStatus, HttpHeaders responseHeaders, Resource responseBody) {
+    public void after(String upstreamId, String endpointId, HttpHeaders requestHeaders, URI requestUri, Resource requestBody, HttpStatus responseStatus, HttpHeaders responseHeaders, Resource responseBody) {
         if (responseStatus == null) {
             return;
         }
@@ -40,7 +39,7 @@ public class UpstreamFaultsInterceptor<CTX> implements UpstreamInterceptor<CTX> 
     }
 
     @Override
-    public void error(String upstreamId, HttpHeaders requestHeaders, URI requestUri, Resource requestBody, Exception ex) {
+    public void error(String upstreamId, String endpointId, HttpHeaders requestHeaders, URI requestUri, Resource requestBody, Exception ex) {
         final CTX ctx = tracing.context(requestHeaders);
 
         final String requestId = tracing.requestId(requestHeaders);

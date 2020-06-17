@@ -18,7 +18,7 @@ public class UpstreamTracingInterceptor<CTX> implements UpstreamInterceptor<CTX>
     }
 
     @Override
-    public HttpHeaders prepare(String upstreamId, CTX userId, RequestEntity<?> entity) {
+    public HttpHeaders prepare(String upstreamId, String endpointId, CTX userId, RequestEntity<?> entity) {
         final HttpHeaders headers = new HttpHeaders();
         final long requestId = requestsCounter.incrementAndGet();
         ctxMapper.toMap(userId).forEach((k, v) -> {

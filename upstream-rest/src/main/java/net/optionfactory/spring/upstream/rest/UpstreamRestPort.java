@@ -42,6 +42,7 @@ public class UpstreamRestPort<CONTEXT> implements UpstreamPort<CONTEXT> {
     private final String upstreamId;
     private final RestTemplate rest;
     private final List<UpstreamInterceptor> interceptors;
+    private final ThreadLocal<String> endpointIds = new ThreadLocal<>();
 
     public UpstreamRestPort(String upstreamId, ObjectMapper objectMapper, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, List<UpstreamInterceptor> interceptors) {
         final var builder = HttpClientBuilder.create();
@@ -67,26 +68,38 @@ public class UpstreamRestPort<CONTEXT> implements UpstreamPort<CONTEXT> {
 
         final var inner = new RestTemplate(requestFactory);
         inner.setMessageConverters(converters);
-        inner.setInterceptors(List.of(new RestInterceptors(upstreamId, interceptors)));
+        inner.setInterceptors(List.of(new RestInterceptors(upstreamId, interceptors, endpointIds)));
         inner.setErrorHandler(new UpstreamResponseErrorHandler(upstreamId, interceptors));
         this.upstreamId = upstreamId;
         this.interceptors = interceptors;
         this.rest = inner;
     }
 
-    public <T> ResponseEntity<T> exchange(CONTEXT context, RequestEntity<?> requestEntity, Class<T> responseType) {
-        return rest.exchange(makeEntity(requestEntity, context), responseType);
+    @Override
+    public <T> ResponseEntity<T> exchange(CONTEXT context, String endpointId, RequestEntity<?> requestEntity, Class<T> responseType) {
+        endpointIds.set(endpointId);
+        try {
+            return rest.exchange(makeEntity(endpointId, requestEntity, context), responseType);
+        } finally {
+            endpointIds.remove();
+        }
     }
 
-    public <T> ResponseEntity<T> exchange(CONTEXT context, RequestEntity<?> requestEntity, ParameterizedTypeReference<T> responseType) {
-        return rest.exchange(makeEntity(requestEntity, context), responseType);
+    @Override
+    public <T> ResponseEntity<T> exchange(CONTEXT context, String endpointId, RequestEntity<?> requestEntity, ParameterizedTypeReference<T> responseType) {
+        endpointIds.set(endpointId);
+        try {
+            return rest.exchange(makeEntity(endpointId, requestEntity, context), responseType);
+        } finally {
+            endpointIds.remove();
+        }
     }
 
-    private RequestEntity<?> makeEntity(RequestEntity<?> requestEntity, CONTEXT context) {
+    private RequestEntity<?> makeEntity(String endpointId, RequestEntity<?> requestEntity, CONTEXT context) {
         final var headers = new HttpHeaders();
         headers.addAll(requestEntity.getHeaders());
         for (var interceptor : interceptors) {
-            final var newHeaders = interceptor.prepare(upstreamId, context, requestEntity);
+            final var newHeaders = interceptor.prepare(upstreamId, endpointId, context, requestEntity);
             if (newHeaders != null) {
                 headers.addAll(newHeaders);
             }
@@ -98,10 +111,12 @@ public class UpstreamRestPort<CONTEXT> implements UpstreamPort<CONTEXT> {
 
         private final String upstreamId;
         private final List<UpstreamInterceptor> interceptors;
+        private final ThreadLocal<String> endpointIds;
 
-        public RestInterceptors(String upstreamId, List<UpstreamInterceptor> interceptors) {
+        public RestInterceptors(String upstreamId, List<UpstreamInterceptor> interceptors, ThreadLocal<String> endpointIds) {
             this.upstreamId = upstreamId;
             this.interceptors = interceptors;
+            this.endpointIds = endpointIds;
         }
 
         @Override
@@ -109,8 +124,9 @@ public class UpstreamRestPort<CONTEXT> implements UpstreamPort<CONTEXT> {
             final HttpHeaders requestHeaders = request.getHeaders();
             final Resource requestBody = new ByteArrayResource(requestBodyBytes);
             final URI requestUri = request.getURI();
+            final String endpointId = endpointIds.get();
             for (var interceptor : interceptors) {
-                interceptor.before(upstreamId, requestHeaders, requestUri, requestBody);
+                interceptor.before(upstreamId, endpointId, requestHeaders, requestUri, requestBody);
             }
             try {
                 final ClientHttpResponse response = execution.execute(request, requestBodyBytes);
@@ -119,24 +135,24 @@ public class UpstreamRestPort<CONTEXT> implements UpstreamPort<CONTEXT> {
                     responseBody = new ByteArrayResource(StreamUtils.copyToByteArray(body));
                 }
                 for (var interceptor : interceptors) {
-                    interceptor.after(upstreamId, requestHeaders, requestUri, requestBody, response.getStatusCode(), response.getHeaders(), responseBody);
+                    interceptor.after(upstreamId, endpointId, requestHeaders, requestUri, requestBody, response.getStatusCode(), response.getHeaders(), responseBody);
                 }
                 return response;
             } catch (IOException | RuntimeException ex) {
                 searchCauseOfType(ex, JsonMappingException.class).ifPresent(cex -> {
                     for (var interceptor : interceptors) {
-                        interceptor.error(upstreamId, requestHeaders, requestUri, requestBody, cex);
+                        interceptor.error(upstreamId, endpointId, requestHeaders, requestUri, requestBody, cex);
                     }
                     throw new UpstreamException(upstreamId, "MAPPING_ERROR", cex.getMessage());
                 });
                 searchCauseOfType(ex, SocketException.class).ifPresent(cex -> {
                     for (var interceptor : interceptors) {
-                        interceptor.error(upstreamId, requestHeaders, requestUri, requestBody, cex);
+                        interceptor.error(upstreamId, endpointId, requestHeaders, requestUri, requestBody, cex);
                     }
                     throw new UpstreamException(upstreamId, "UPSTREAM_DOWN", cex.getMessage());
                 });
                 for (var interceptor : interceptors) {
-                    interceptor.error(upstreamId, requestHeaders, requestUri, requestBody, ex);
+                    interceptor.error(upstreamId, endpointId, requestHeaders, requestUri, requestBody, ex);
                 }
                 throw new UpstreamException(upstreamId, "GENERIC_ERROR", ex.getMessage());
             }
