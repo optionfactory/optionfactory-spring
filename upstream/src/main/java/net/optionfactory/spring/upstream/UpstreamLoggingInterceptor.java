@@ -3,7 +3,8 @@ package net.optionfactory.spring.upstream;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -12,7 +13,7 @@ import org.springframework.http.RequestEntity;
 
 public class UpstreamLoggingInterceptor<CTX> implements UpstreamInterceptor<CTX> {
 
-    private final Logger logger = Logger.getLogger(UpstreamLoggingInterceptor.class);
+    private final Logger logger = LoggerFactory.getLogger(UpstreamLoggingInterceptor.class);
     private final UpstreamTracingInterceptor<CTX> tracing;
     private final boolean logHeaders;
     private final boolean logMultipart;

@@ -6,7 +6,6 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.log4j.Logger;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -19,7 +18,6 @@ import org.springframework.web.client.RestTemplate;
 
 public class UpstreamOAuthPasswordInterceptor<T> implements UpstreamInterceptor<T> {
 
-    private final Logger logger = Logger.getLogger(UpstreamOAuthPasswordInterceptor.class);
     private final String clientId;
     private final String clientSecret;
     private final URI tokenURI;
