@@ -6,11 +6,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.SocketException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import net.optionfactory.spring.upstream.UpstreamException;
 import net.optionfactory.spring.upstream.UpstreamInterceptor;
 import net.optionfactory.spring.upstream.UpstreamPort;
@@ -21,12 +19,9 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRequest;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
@@ -120,7 +115,7 @@ public class UpstreamRestPort<CONTEXT> implements UpstreamPort<CONTEXT> {
             try {
                 final ClientHttpResponse response = execution.execute(request, requestBodyBytes);
                 final ByteArrayResource responseBody;
-                try(final InputStream body = response.getBody()){
+                try (final InputStream body = response.getBody()) {
                     responseBody = new ByteArrayResource(StreamUtils.copyToByteArray(body));
                 }
                 for (var interceptor : interceptors) {
@@ -155,36 +150,5 @@ public class UpstreamRestPort<CONTEXT> implements UpstreamPort<CONTEXT> {
             }
             return Optional.empty();
         }
-
-        public static HttpStatus statusCodeOrNull(ClientHttpResponse response) {
-            try {
-                return response.getStatusCode();
-            } catch (IOException ex) {
-                return null;
-            }
-        }
-
-        private static final Set<String> LOGGED_MEDIA_TYPES = Set.of(
-                "JSON",
-                "TEXT",
-                "XML",
-                "HTML",
-                "XHTML"
-        );
-
-        public static String bodyAsString(MediaType contentType, boolean logMultipart, InputStreamSource body) {
-            if (contentType != null && contentType.isCompatibleWith(MediaType.MULTIPART_MIXED) && !logMultipart) {
-                return "(multipart body)";
-            }
-            if (contentType != null && !LOGGED_MEDIA_TYPES.stream().anyMatch(t -> contentType.toString().toUpperCase().contains(t))) {
-                return String.format("(binary:%s)", contentType);
-            }
-            try (var is = body.getInputStream()) {
-                return StreamUtils.copyToString(is, StandardCharsets.UTF_8);
-            } catch (IOException ex) {
-                return String.format("(binary:%s)", contentType);
-            }
-        }
-
     }
 }
