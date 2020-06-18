@@ -23,7 +23,7 @@
         <module>context-web</module>
         <module>problems</module>
         <module>problems-web</module>
-        <module>webserver</module>        
+        <module>webserver-undertow</module>        
         <module>authentication-bearer-token</module>
         <module>upstream</module>
         <module>upstream-rest</module>

@@ -52,4 +52,4 @@ public class Main {
 }
  * </code></pre>
  */
-package net.optionfactory.spring.webserver;
+package net.optionfactory.spring.webserver.undertow;

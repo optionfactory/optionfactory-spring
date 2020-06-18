@@ -1,4 +1,4 @@
-package net.optionfactory.spring.webserver;
+package net.optionfactory.spring.webserver.undertow;
 
 import io.undertow.server.handlers.ProxyPeerAddressHandler;
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
