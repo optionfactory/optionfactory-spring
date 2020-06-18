@@ -30,6 +30,7 @@
         <module>upstream-soap</module>
         <module>upstream-interceptor-jjwt</module>
         <module>upstream-interceptor-spring-oauth2</module>
+        <module>upstream-interceptor-micrometer</module>
         <module>email</module>
     </modules>
 
@@ -138,6 +139,11 @@
                 <artifactId>webservices-api</artifactId>
                 <version>2.4.4</version>
             </dependency>
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-core</artifactId>
+                <version>1.5.1</version>
+            </dependency>   
             <dependency>
                 <groupId>com.sun.mail</groupId>
                 <artifactId>javax.mail</artifactId>

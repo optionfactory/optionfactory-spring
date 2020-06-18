@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.function.Function;
 import net.optionfactory.spring.upstream.UpstreamInterceptor;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.RequestEntity;
 
 public class UpstreamJwtInterceptor<CTX> implements UpstreamInterceptor<CTX> {
 
@@ -26,14 +25,14 @@ public class UpstreamJwtInterceptor<CTX> implements UpstreamInterceptor<CTX> {
     }
 
     @Override
-    public HttpHeaders prepare(String upstreamId, String endpointId, CTX ctx, RequestEntity<?> entity) {
+    public HttpHeaders prepare(PrepareContext<CTX> prepare) {
         final var headers = new HttpHeaders();
         final var claims = new HashMap<String, Object>();
         final var jwtIssuedAt = new Date();
         final var jwtExpiration = new Date(30 * 60 * 1000 + jwtIssuedAt.getTime());
         final String jwt = Jwts.builder()
                 .setClaims(claims)
-                .setSubject(subjectFactory.apply(ctx))
+                .setSubject(subjectFactory.apply(prepare.ctx))
                 .setAudience(audience)
                 .setIssuer(jwtIssuer)
                 .setIssuedAt(jwtIssuedAt)

@@ -41,7 +41,7 @@ public class UpstreamOAuthClientCredentialsInterceptor<T> implements UpstreamInt
     }
 
     @Override
-    public HttpHeaders prepare(String upstreamId, String endpointId, T ctx, RequestEntity<?> entity) {
+    public HttpHeaders prepare(PrepareContext<T> prepare) {
         final String token = getOauthToken();
         final var headers = new HttpHeaders();
         headers.set("Authorization", String.format("Bearer %s", token));

@@ -39,7 +39,7 @@ public class UpstreamOAuthPasswordInterceptor<T> implements UpstreamInterceptor<
     }
 
     @Override
-    public HttpHeaders prepare(String upstreamId, String endpointId, T ctx, RequestEntity<?> entity) {
+    public HttpHeaders prepare(PrepareContext<T> prepare) {
         final String token = getOauthToken();
 
         final var headers = new HttpHeaders();

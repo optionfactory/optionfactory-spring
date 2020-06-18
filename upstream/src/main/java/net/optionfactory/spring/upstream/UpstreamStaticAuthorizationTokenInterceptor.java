@@ -1,7 +1,6 @@
 package net.optionfactory.spring.upstream;
 
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.RequestEntity;
 
 public class UpstreamStaticAuthorizationTokenInterceptor<T> implements UpstreamInterceptor<T> {
 
@@ -14,7 +13,7 @@ public class UpstreamStaticAuthorizationTokenInterceptor<T> implements UpstreamI
     }
 
     @Override
-    public HttpHeaders prepare(String upstreamId, String endpointId, T context, RequestEntity<?> entity) {
+    public HttpHeaders prepare(PrepareContext<T> prepare) {
         final var headers = new HttpHeaders();
         headers.set("Authorization", String.format("%s %s", tokenType, token));
         return headers;

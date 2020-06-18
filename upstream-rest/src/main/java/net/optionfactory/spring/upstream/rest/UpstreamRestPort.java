@@ -5,12 +5,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.SocketException;
-import java.net.URI;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 import net.optionfactory.spring.upstream.UpstreamException;
 import net.optionfactory.spring.upstream.UpstreamInterceptor;
+import net.optionfactory.spring.upstream.UpstreamInterceptor.ExchangeContext;
+import net.optionfactory.spring.upstream.UpstreamInterceptor.PrepareContext;
+import net.optionfactory.spring.upstream.UpstreamInterceptor.RequestContext;
+import net.optionfactory.spring.upstream.UpstreamInterceptor.ResponseContext;
 import net.optionfactory.spring.upstream.UpstreamPort;
 import net.optionfactory.spring.upstream.UpstreamResponseErrorHandler;
 import org.apache.http.client.config.RequestConfig;
@@ -19,7 +24,6 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.RequestEntity;
@@ -37,14 +41,15 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestTemplate;
 
-public class UpstreamRestPort<CONTEXT> implements UpstreamPort<CONTEXT> {
+public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
 
     private final String upstreamId;
+    private final AtomicLong requestCounter;
     private final RestTemplate rest;
-    private final List<UpstreamInterceptor> interceptors;
-    private final ThreadLocal<String> endpointIds = new ThreadLocal<>();
+    private final List<UpstreamInterceptor<CTX>> interceptors;
+    private final ThreadLocal<ExchangeContext<CTX>> callContexts = new ThreadLocal<>();
 
-    public UpstreamRestPort(String upstreamId, ObjectMapper objectMapper, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, List<UpstreamInterceptor> interceptors) {
+    public UpstreamRestPort(String upstreamId, AtomicLong requestCounter, ObjectMapper objectMapper, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, List<UpstreamInterceptor<CTX>> interceptors) {
         final var builder = HttpClientBuilder.create();
         builder.setSSLSocketFactory(socketFactory);
         final var client = builder.setDefaultRequestConfig(RequestConfig.custom()
@@ -68,91 +73,117 @@ public class UpstreamRestPort<CONTEXT> implements UpstreamPort<CONTEXT> {
 
         final var inner = new RestTemplate(requestFactory);
         inner.setMessageConverters(converters);
-        inner.setInterceptors(List.of(new RestInterceptors(upstreamId, interceptors, endpointIds)));
+        inner.setInterceptors(List.of(new RestInterceptors(upstreamId, interceptors, callContexts)));
         inner.setErrorHandler(new UpstreamResponseErrorHandler(upstreamId, interceptors));
         this.upstreamId = upstreamId;
+        this.requestCounter = requestCounter;
         this.interceptors = interceptors;
         this.rest = inner;
     }
 
     @Override
-    public <T> ResponseEntity<T> exchange(CONTEXT context, String endpointId, RequestEntity<?> requestEntity, Class<T> responseType) {
-        endpointIds.set(endpointId);
+    public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, Class<T> responseType) {
+        final ExchangeContext<CTX> ctx = new ExchangeContext<>();
+        ctx.prepare = new UpstreamInterceptor.PrepareContext<>();
+        ctx.prepare.requestId = requestCounter.incrementAndGet();
+        ctx.prepare.ctx = context;
+        ctx.prepare.endpointId = endpointId;
+        ctx.prepare.entity = requestEntity;
+        ctx.prepare.upstreamId = upstreamId;        
+        callContexts.set(ctx);
         try {
-            return rest.exchange(makeEntity(endpointId, requestEntity, context), responseType);
+            ctx.prepare.entity = makeEntity(ctx.prepare);
+            return rest.exchange(ctx.prepare.entity, responseType);
         } finally {
-            endpointIds.remove();
+            callContexts.remove();
         }
     }
 
     @Override
-    public <T> ResponseEntity<T> exchange(CONTEXT context, String endpointId, RequestEntity<?> requestEntity, ParameterizedTypeReference<T> responseType) {
-        endpointIds.set(endpointId);
+    public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, ParameterizedTypeReference<T> responseType) {
+        final ExchangeContext<CTX> ctx = new ExchangeContext<>();
+        ctx.prepare = new UpstreamInterceptor.PrepareContext<>();
+        ctx.prepare.requestId = requestCounter.incrementAndGet();
+        ctx.prepare.ctx = context;
+        ctx.prepare.endpointId = endpointId;
+        ctx.prepare.entity = requestEntity;
+        ctx.prepare.upstreamId = upstreamId;        
+        callContexts.set(ctx);
         try {
-            return rest.exchange(makeEntity(endpointId, requestEntity, context), responseType);
+            ctx.prepare.entity = makeEntity(ctx.prepare);
+            return rest.exchange(ctx.prepare.entity, responseType);
         } finally {
-            endpointIds.remove();
+            callContexts.remove();
         }
     }
 
-    private RequestEntity<?> makeEntity(String endpointId, RequestEntity<?> requestEntity, CONTEXT context) {
+    private RequestEntity<?> makeEntity(PrepareContext<CTX> prepare) {
         final var headers = new HttpHeaders();
-        headers.addAll(requestEntity.getHeaders());
+        headers.addAll(prepare.entity.getHeaders());
         for (var interceptor : interceptors) {
-            final var newHeaders = interceptor.prepare(upstreamId, endpointId, context, requestEntity);
+            final var newHeaders = interceptor.prepare(prepare);
             if (newHeaders != null) {
                 headers.addAll(newHeaders);
             }
         }
-        return new RequestEntity<>(requestEntity.getBody(), headers, requestEntity.getMethod(), requestEntity.getUrl(), requestEntity.getType());
+        return new RequestEntity<>(prepare.entity.getBody(), headers, prepare.entity.getMethod(), prepare.entity.getUrl(), prepare.entity.getType());
     }
 
-    public static class RestInterceptors implements ClientHttpRequestInterceptor {
+    public static class RestInterceptors<CTX> implements ClientHttpRequestInterceptor {
 
         private final String upstreamId;
-        private final List<UpstreamInterceptor> interceptors;
-        private final ThreadLocal<String> endpointIds;
+        private final List<UpstreamInterceptor<CTX>> interceptors;
+        private final ThreadLocal<ExchangeContext<CTX>> exchangeContexts;
 
-        public RestInterceptors(String upstreamId, List<UpstreamInterceptor> interceptors, ThreadLocal<String> endpointIds) {
+        public RestInterceptors(String upstreamId, List<UpstreamInterceptor<CTX>> interceptors, ThreadLocal<ExchangeContext<CTX>> exchangeContexts) {
             this.upstreamId = upstreamId;
             this.interceptors = interceptors;
-            this.endpointIds = endpointIds;
+            this.exchangeContexts = exchangeContexts;
         }
 
         @Override
         public ClientHttpResponse intercept(HttpRequest request, byte[] requestBodyBytes, ClientHttpRequestExecution execution) throws IOException {
-            final HttpHeaders requestHeaders = request.getHeaders();
-            final Resource requestBody = new ByteArrayResource(requestBodyBytes);
-            final URI requestUri = request.getURI();
-            final String endpointId = endpointIds.get();
+            final ExchangeContext<CTX> context = exchangeContexts.get();
+            context.request = new RequestContext();
+            context.request.at = Instant.now();
+            context.request.body = new ByteArrayResource(requestBodyBytes);
+            context.request.headers = request.getHeaders();
             for (var interceptor : interceptors) {
-                interceptor.before(upstreamId, endpointId, requestHeaders, requestUri, requestBody);
+                interceptor.before(context.prepare, context.request);
             }
             try {
                 final ClientHttpResponse response = execution.execute(request, requestBodyBytes);
-                final ByteArrayResource responseBody;
                 try (final InputStream body = response.getBody()) {
-                    responseBody = new ByteArrayResource(StreamUtils.copyToByteArray(body));
+                    context.response = new ResponseContext();
+                    context.response.at = Instant.now();
+                    context.response.status = response.getStatusCode();
+                    context.response.headers = response.getHeaders();
+                    context.response.body = new ByteArrayResource(StreamUtils.copyToByteArray(body));
                 }
                 for (var interceptor : interceptors) {
-                    interceptor.after(upstreamId, endpointId, requestHeaders, requestUri, requestBody, response.getStatusCode(), response.getHeaders(), responseBody);
+                    interceptor.success(context.prepare, context.request, context.response);
                 }
                 return response;
             } catch (IOException | RuntimeException ex) {
+                context.error = new UpstreamInterceptor.ErrorContext();
+                context.error.at = Instant.now();
                 searchCauseOfType(ex, JsonMappingException.class).ifPresent(cex -> {
+                    context.error.ex = cex;
                     for (var interceptor : interceptors) {
-                        interceptor.error(upstreamId, endpointId, requestHeaders, requestUri, requestBody, cex);
+                        interceptor.error(context.prepare, context.request, context.error);
                     }
                     throw new UpstreamException(upstreamId, "MAPPING_ERROR", cex.getMessage());
                 });
                 searchCauseOfType(ex, SocketException.class).ifPresent(cex -> {
+                    context.error.ex = cex;
                     for (var interceptor : interceptors) {
-                        interceptor.error(upstreamId, endpointId, requestHeaders, requestUri, requestBody, cex);
+                        interceptor.error(context.prepare, context.request, context.error);
                     }
                     throw new UpstreamException(upstreamId, "UPSTREAM_DOWN", cex.getMessage());
                 });
+                context.error.ex = ex;
                 for (var interceptor : interceptors) {
-                    interceptor.error(upstreamId, endpointId, requestHeaders, requestUri, requestBody, ex);
+                        interceptor.error(context.prepare, context.request, context.error);
                 }
                 throw new UpstreamException(upstreamId, "GENERIC_ERROR", ex.getMessage());
             }

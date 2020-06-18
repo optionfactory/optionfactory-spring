@@ -2,7 +2,6 @@ package net.optionfactory.spring.upstream.springoauth;
 
 import net.optionfactory.spring.upstream.UpstreamInterceptor;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.RequestEntity;
 import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 
@@ -17,7 +16,7 @@ public class UpstreamOAuthInterceptor<T> implements UpstreamInterceptor<T> {
     }
 
     @Override
-    public HttpHeaders prepare(String upstreamId, String endpointId, T ctx, RequestEntity<?> entity) {
+    public HttpHeaders prepare(PrepareContext<T> prepare) {
         final var headers = new HttpHeaders();
         headers.set("Authorization", String.format("Bearer %s", oauth.authorize(oauthReq).getAccessToken().getTokenValue()));
         return headers;

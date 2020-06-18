@@ -3,10 +3,16 @@ package net.optionfactory.spring.upstream.soap;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URI;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicLong;
 import net.optionfactory.spring.upstream.UpstreamInterceptor;
+import net.optionfactory.spring.upstream.UpstreamInterceptor.ExchangeContext;
+import net.optionfactory.spring.upstream.UpstreamInterceptor.ErrorContext;
+import net.optionfactory.spring.upstream.UpstreamInterceptor.PrepareContext;
+import net.optionfactory.spring.upstream.UpstreamInterceptor.RequestContext;
+import net.optionfactory.spring.upstream.UpstreamInterceptor.ResponseContext;
 import net.optionfactory.spring.upstream.UpstreamPort;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.SocketConfig;
@@ -33,14 +39,15 @@ import org.springframework.ws.transport.context.TransportContextHolder;
 import org.springframework.ws.transport.http.HttpComponentsConnection;
 import org.springframework.ws.transport.http.HttpComponentsMessageSender;
 
-public class UpstreamSoapPort<CONTEXT> implements UpstreamPort<CONTEXT> {
+public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
 
     private final String upstreamId;
+    private final AtomicLong requestCounter;
     private final WebServiceTemplate soap;
     private final List<UpstreamInterceptor> interceptors;
-    private final ThreadLocal<SoapCallContext> callContexts = new ThreadLocal<>();
+    private final ThreadLocal<ExchangeContext<CTX>> callContexts = new ThreadLocal<>();
 
-    public UpstreamSoapPort(String upstreamId, Resource[] schemas, Class<?> packageToScan, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, List<UpstreamInterceptor> interceptors) throws Exception {
+    public UpstreamSoapPort(String upstreamId, AtomicLong requestCounter, Resource[] schemas, Class<?> packageToScan, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, List<UpstreamInterceptor> interceptors) throws Exception {
         final var builder = HttpClientBuilder.create();
         builder.setSSLSocketFactory(socketFactory);
 
@@ -70,81 +77,82 @@ public class UpstreamSoapPort<CONTEXT> implements UpstreamPort<CONTEXT> {
         validator.afterPropertiesSet();
         inner.setInterceptors(new ClientInterceptor[]{
             validator,
-            new SoapInterceptors(interceptors, upstreamId, callContexts)
+            new SoapInterceptors(interceptors, callContexts)
         });
 
         this.upstreamId = upstreamId;
+        this.requestCounter = requestCounter;
         this.interceptors = interceptors;
         this.soap = inner;
     }
 
     @Override
-    public <T> ResponseEntity<T> exchange(CONTEXT context, String endpointId, RequestEntity<?> requestEntity, Class<T> responseType) {
+    public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, Class<T> responseType) {
+        final ExchangeContext<CTX> ctx = new ExchangeContext<>();
+        ctx.prepare = new UpstreamInterceptor.PrepareContext<>();
+        ctx.prepare.requestId = requestCounter.incrementAndGet();        
+        ctx.prepare.ctx = context;
+        ctx.prepare.endpointId = endpointId;
+        ctx.prepare.entity = requestEntity;
+        ctx.prepare.upstreamId = upstreamId;
+        callContexts.set(ctx);        
         try {
-            return exchange(endpointId, requestEntity, context);
+            return exchange(ctx);
         } finally {
             callContexts.remove();
         }
     }
 
     @Override
-    public <T> ResponseEntity<T> exchange(CONTEXT context, String endpointId, RequestEntity<?> requestEntity, ParameterizedTypeReference<T> responseType) {
+    public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, ParameterizedTypeReference<T> responseType) {
+        final ExchangeContext<CTX> ctx = new ExchangeContext<>();
+        ctx.prepare = new UpstreamInterceptor.PrepareContext<>();
+        ctx.prepare.requestId = requestCounter.incrementAndGet();        
+        ctx.prepare.ctx = context;
+        ctx.prepare.endpointId = endpointId;
+        ctx.prepare.entity = requestEntity;
+        ctx.prepare.upstreamId = upstreamId;
+        callContexts.set(ctx);        
         try {
-            return exchange(endpointId, requestEntity, context);
+            return exchange(ctx);
         } finally {
             callContexts.remove();
         }
     }
 
-    private <T> ResponseEntity<T> exchange(String endpointId, RequestEntity<?> requestEntity, CONTEXT context) {
-        final var actualEntity = makeEntity(endpointId, requestEntity, context);
-        final var got = soap.marshalSendAndReceive(actualEntity.getUrl().toString(), actualEntity.getBody(), (WebServiceMessage message) -> {
+    private <T> ResponseEntity<T> exchange(ExchangeContext<CTX> ctx) {
+        ctx.prepare.entity = makeEntity(ctx.prepare);
+        final var got = soap.marshalSendAndReceive(ctx.prepare.entity.getUrl().toString(), ctx.prepare.entity.getBody(), (WebServiceMessage message) -> {
             final HttpComponentsConnection connection = (HttpComponentsConnection) TransportContextHolder.getTransportContext().getConnection();
-            for (Entry<String, List<String>> header : actualEntity.getHeaders().entrySet()) {
+            for (Entry<String, List<String>> header : ctx.prepare.entity.getHeaders().entrySet()) {
                 for (String value : header.getValue()) {
                     connection.addRequestHeader(header.getKey(), value);
                 }
             }
-            final SoapCallContext ctx = new SoapCallContext();
-            ctx.requestUri = actualEntity.getUrl();
-            ctx.requestHeaders = actualEntity.getHeaders();
-            ctx.endpointId = endpointId;
-            callContexts.set(ctx);
         });
         return ResponseEntity.ok((T) got);
     }
 
-    private RequestEntity<?> makeEntity(String endpointId, RequestEntity<?> requestEntity, CONTEXT context) {
+    private RequestEntity<?> makeEntity(PrepareContext<CTX> prepare) {
         final var headers = new HttpHeaders();
-        headers.addAll(requestEntity.getHeaders());
+        headers.addAll(prepare.entity.getHeaders());
         for (var interceptor : interceptors) {
-            final var newHeaders = interceptor.prepare(upstreamId, endpointId, context, requestEntity);
+            final var newHeaders = interceptor.prepare(prepare);
             if (newHeaders != null) {
                 headers.addAll(newHeaders);
             }
         }
-        return new RequestEntity<>(requestEntity.getBody(), headers, requestEntity.getMethod(), requestEntity.getUrl(), requestEntity.getType());
+        return new RequestEntity<>(prepare.entity.getBody(), headers, prepare.entity.getMethod(), prepare.entity.getUrl(), prepare.entity.getType());
     }
 
-    public static class SoapCallContext {
+    public static class SoapInterceptors<CTX> implements ClientInterceptor {
 
-        public HttpHeaders requestHeaders;
-        public Resource requestBody;
-        public URI requestUri;
-        public String endpointId;
-
-    }
-
-    public static class SoapInterceptors implements ClientInterceptor {
-
-        private final List<UpstreamInterceptor> interceptors;
-        private final String upstreamId;
-        private final ThreadLocal<SoapCallContext> callContexts;
+        private final List<UpstreamInterceptor<CTX>> interceptors;
+        private final ThreadLocal<ExchangeContext<CTX>> callContexts;
         private final HttpHeaders fakeResponseHeaders;
 
-        public SoapInterceptors(List<UpstreamInterceptor> interceptors, String upstreamId, ThreadLocal<SoapCallContext> callContexts) {
+        public SoapInterceptors(List<UpstreamInterceptor<CTX>> interceptors, ThreadLocal<ExchangeContext<CTX>> callContexts) {
             this.interceptors = interceptors;
-            this.upstreamId = upstreamId;
             this.callContexts = callContexts;
             this.fakeResponseHeaders = new HttpHeaders();
             this.fakeResponseHeaders.setContentType(MediaType.APPLICATION_XML);
@@ -152,10 +160,13 @@ public class UpstreamSoapPort<CONTEXT> implements UpstreamPort<CONTEXT> {
 
         @Override
         public boolean handleRequest(MessageContext messageContext) throws WebServiceClientException {
-            final SoapCallContext ctx = callContexts.get();
-            ctx.requestBody = toResource(messageContext.getRequest());
+            final ExchangeContext<CTX> ctx = callContexts.get();
+            ctx.request = new RequestContext();
+            ctx.request.at = Instant.now();
+            ctx.request.body = toResource(messageContext.getRequest());
+            ctx.request.headers = ctx.prepare.entity.getHeaders();
             for (var interceptor : interceptors) {
-                interceptor.before(upstreamId, ctx.endpointId, ctx.requestHeaders, ctx.requestUri, ctx.requestBody);
+                interceptor.before(ctx.prepare, ctx.request);
             }
 
             return true;
@@ -163,20 +174,28 @@ public class UpstreamSoapPort<CONTEXT> implements UpstreamPort<CONTEXT> {
 
         @Override
         public boolean handleResponse(MessageContext messageContext) throws WebServiceClientException {
-            final SoapCallContext ctx = callContexts.get();
-            final Resource responseBody = toResource(messageContext.getResponse());
+            final ExchangeContext<CTX> ctx = callContexts.get();
+            ctx.response = new ResponseContext();
+            ctx.response.at = Instant.now();
+            ctx.response.body = toResource(messageContext.getResponse());
+            ctx.response.headers = fakeResponseHeaders;
+            ctx.response.status = HttpStatus.OK;            
             for (var interceptor : interceptors) {
-                interceptor.after(upstreamId, ctx.endpointId, ctx.requestHeaders, ctx.requestUri, ctx.requestBody, HttpStatus.OK, fakeResponseHeaders, responseBody);
+                interceptor.success(ctx.prepare, ctx.request, ctx.response);
             }
             return true;
         }
 
         @Override
         public boolean handleFault(MessageContext messageContext) throws WebServiceClientException {
-            final SoapCallContext ctx = callContexts.get();
-            final Resource faultBody = toResource(messageContext.getResponse());
+            final ExchangeContext<CTX> ctx = callContexts.get();
+            ctx.response = new ResponseContext();
+            ctx.response.at = Instant.now();
+            ctx.response.body = toResource(messageContext.getResponse());
+            ctx.response.headers = fakeResponseHeaders;
+            ctx.response.status = HttpStatus.BAD_REQUEST;
             for (var interceptor : interceptors) {
-                interceptor.after(upstreamId, ctx.endpointId, ctx.requestHeaders, ctx.requestUri, ctx.requestBody, HttpStatus.INTERNAL_SERVER_ERROR, fakeResponseHeaders, faultBody);
+                interceptor.success(ctx.prepare, ctx.request, ctx.response);
             }
             return true;
         }
@@ -186,9 +205,12 @@ public class UpstreamSoapPort<CONTEXT> implements UpstreamPort<CONTEXT> {
             if (ex == null) {
                 return;
             }
-            final SoapCallContext ctx = callContexts.get();
+            final ExchangeContext<CTX> ctx = callContexts.get();
+            ctx.error = new ErrorContext();
+            ctx.error.at = Instant.now();
+            ctx.error.ex = ex;
             for (var interceptor : interceptors) {
-                interceptor.error(upstreamId, ctx.endpointId, ctx.requestHeaders, ctx.requestUri, ctx.requestBody, ex);
+                interceptor.error(ctx.prepare, ctx.request, ctx.error);
             }
         }
 

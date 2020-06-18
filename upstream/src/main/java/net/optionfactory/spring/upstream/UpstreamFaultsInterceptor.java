@@ -19,35 +19,47 @@ public class UpstreamFaultsInterceptor<CTX> implements UpstreamInterceptor<CTX> 
     }
 
     @Override
-    public void after(String upstreamId, String endpointId, HttpHeaders requestHeaders, URI requestUri, Resource requestBody, HttpStatus responseStatus, HttpHeaders responseHeaders, Resource responseBody) {
-        if (responseStatus == null) {
+    public void success(PrepareContext<CTX> prepare, RequestContext request, ResponseContext response) {
+        if (response.status == null) {
             return;
         }
-        if (!responseStatus.is4xxClientError() && !responseStatus.is5xxServerError()) {
+        if (!response.status.is4xxClientError() && !response.status.is5xxServerError()) {
             return;
         }
-        final MediaType contentType = responseHeaders.getContentType();
-        final String responseBodyAsText = UpstreamOps.bodyAsString(contentType, true, responseBody);
-        final CTX ctx = tracing.context(requestHeaders);
+        final MediaType contentType = response.headers.getContentType();
+        final String responseBodyAsText = UpstreamOps.bodyAsString(contentType, true, response.body);
 
-        final String requestId = tracing.requestId(requestHeaders);
-        final Instant requestInstant = tracing.timestamp(requestHeaders);
-        final String requestBodyAsString = UpstreamOps.bodyAsString(MediaType.TEXT_XML /*fixme*/, true, requestBody);
-        final Instant responseInstant = Instant.now();
+        final String requestBodyAsString = UpstreamOps.bodyAsString(MediaType.TEXT_XML /*fixme*/, true, request.body);
         
-        faults.add(UpstreamFault.of(ctx, requestId, requestUri, responseStatus, contentType, requestInstant, requestBodyAsString, responseInstant, responseBodyAsText, null));
+        faults.add(UpstreamFault.of(
+                prepare.ctx, 
+                prepare.requestId, 
+                prepare.entity.getUrl(), 
+                response.status,
+                contentType, 
+                request.at, 
+                requestBodyAsString, 
+                response.at, 
+                responseBodyAsText, 
+                null
+        ));
     }
 
     @Override
-    public void error(String upstreamId, String endpointId, HttpHeaders requestHeaders, URI requestUri, Resource requestBody, Exception ex) {
-        final CTX ctx = tracing.context(requestHeaders);
+    public void error(PrepareContext<CTX> prepare, RequestContext request, ErrorContext error) {
+        final String requestBodyAsString = UpstreamOps.bodyAsString(MediaType.TEXT_XML /*fixme*/, true, request.body);
 
-        final String requestId = tracing.requestId(requestHeaders);
-        final Instant requestInstant = tracing.timestamp(requestHeaders);
-        final String requestBodyAsString = UpstreamOps.bodyAsString(MediaType.TEXT_XML /*fixme*/, true, requestBody);
-        final Instant responseInstant = Instant.now();
-
-        faults.add(UpstreamFault.of(ctx, requestId, requestUri, null, null, requestInstant, requestBodyAsString, responseInstant, null, ex));
+        faults.add(UpstreamFault.of(
+                prepare.ctx, 
+                prepare.requestId, 
+                prepare.entity.getUrl(), 
+                null, 
+                null, 
+                request.at, 
+                requestBodyAsString, 
+                error.at, 
+                null, 
+                error.ex));
     }
 
 }

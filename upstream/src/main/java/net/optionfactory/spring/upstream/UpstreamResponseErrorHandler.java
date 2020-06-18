@@ -5,12 +5,12 @@ import java.util.List;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.DefaultResponseErrorHandler;
 
-public class UpstreamResponseErrorHandler extends DefaultResponseErrorHandler {
+public class UpstreamResponseErrorHandler<CTX> extends DefaultResponseErrorHandler {
     
     private final String upstreamId;
-    private final List<UpstreamInterceptor> interceptors;
+    private final List<UpstreamInterceptor<CTX>> interceptors;
 
-    public UpstreamResponseErrorHandler(String upstreamId, List<UpstreamInterceptor> interceptors) {
+    public UpstreamResponseErrorHandler(String upstreamId, List<UpstreamInterceptor<CTX>> interceptors) {
         this.upstreamId = upstreamId;
         this.interceptors = interceptors;
     }
