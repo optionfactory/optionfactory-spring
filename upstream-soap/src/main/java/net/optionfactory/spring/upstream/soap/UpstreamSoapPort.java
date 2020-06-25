@@ -10,14 +10,18 @@ import java.util.concurrent.atomic.AtomicLong;
 import net.optionfactory.spring.upstream.UpstreamInterceptor;
 import net.optionfactory.spring.upstream.UpstreamInterceptor.ExchangeContext;
 import net.optionfactory.spring.upstream.UpstreamInterceptor.ErrorContext;
-import net.optionfactory.spring.upstream.UpstreamInterceptor.PrepareContext;
 import net.optionfactory.spring.upstream.UpstreamInterceptor.RequestContext;
 import net.optionfactory.spring.upstream.UpstreamInterceptor.ResponseContext;
 import net.optionfactory.spring.upstream.UpstreamPort;
+import org.apache.http.Header;
+import org.apache.http.HttpException;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.protocol.HttpContext;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -52,10 +56,21 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
         builder.setSSLSocketFactory(socketFactory);
 
         final var client = builder
-                .addInterceptorFirst(new HttpComponentsMessageSender.RemoveSoapHeadersInterceptor())
-                .setDefaultRequestConfig(RequestConfig.custom()
-                        .setConnectTimeout(connectionTimeoutInMillis).build())
+                .setDefaultRequestConfig(RequestConfig.custom().setConnectTimeout(connectionTimeoutInMillis).build())
                 .setDefaultSocketConfig(SocketConfig.custom().setSoKeepAlive(true).build())
+                .addInterceptorFirst(new HttpComponentsMessageSender.RemoveSoapHeadersInterceptor())
+                .addInterceptorLast((HttpResponse hr, HttpContext hc) -> {
+                    final var headers = new HttpHeaders();
+                    for (Header header : hr.getAllHeaders()) {
+                        headers.add(header.getName(), header.getValue());
+                    }
+                    final ExchangeContext<CTX> ctx = callContexts.get();
+                    ctx.response = new ResponseContext();
+                    ctx.response.headers = headers;
+                    ctx.response.status = HttpStatus.resolve(hr.getStatusLine().getStatusCode());
+                    ctx.response.at = Instant.now();
+                    ctx.response.body = null;
+                })
                 .build();
 
         final var inner = new WebServiceTemplate();
@@ -103,7 +118,7 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
         ctx.prepare.ctx = context;
         ctx.prepare.endpointId = endpointId;
         ctx.prepare.entity = requestEntity;
-        ctx.prepare.upstreamId = upstreamId;        
+        ctx.prepare.upstreamId = upstreamId;
         callContexts.set(ctx);
         try {
             final var headers = new HttpHeaders();
@@ -123,7 +138,7 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
                     }
                 }
             });
-            final ResponseEntity<T> response = ResponseEntity.ok().headers(ctx.response.headers).body((T)got);
+            final ResponseEntity<T> response = ResponseEntity.ok().headers(ctx.response.headers).body((T) got);
             for (UpstreamInterceptor interceptor : interceptors) {
                 interceptor.mappingSuccess(ctx.prepare, ctx.request, ctx.response, response);
             }
@@ -137,13 +152,10 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
 
         private final List<UpstreamInterceptor<CTX>> interceptors;
         private final ThreadLocal<ExchangeContext<CTX>> callContexts;
-        private final HttpHeaders fakeResponseHeaders;
 
         public SoapInterceptors(List<UpstreamInterceptor<CTX>> interceptors, ThreadLocal<ExchangeContext<CTX>> callContexts) {
             this.interceptors = interceptors;
             this.callContexts = callContexts;
-            this.fakeResponseHeaders = new HttpHeaders();
-            this.fakeResponseHeaders.setContentType(MediaType.APPLICATION_XML);
         }
 
         @Override
@@ -163,11 +175,7 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
         @Override
         public boolean handleResponse(MessageContext messageContext) throws WebServiceClientException {
             final ExchangeContext<CTX> ctx = callContexts.get();
-            ctx.response = new ResponseContext();
-            ctx.response.at = Instant.now();
             ctx.response.body = toResource(messageContext.getResponse());
-            ctx.response.headers = fakeResponseHeaders;
-            ctx.response.status = HttpStatus.OK;
             for (var interceptor : interceptors) {
                 interceptor.remotingSuccess(ctx.prepare, ctx.request, ctx.response);
             }
@@ -177,11 +185,7 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
         @Override
         public boolean handleFault(MessageContext messageContext) throws WebServiceClientException {
             final ExchangeContext<CTX> ctx = callContexts.get();
-            ctx.response = new ResponseContext();
-            ctx.response.at = Instant.now();
             ctx.response.body = toResource(messageContext.getResponse());
-            ctx.response.headers = fakeResponseHeaders;
-            ctx.response.status = HttpStatus.BAD_REQUEST;
             for (var interceptor : interceptors) {
                 interceptor.remotingSuccess(ctx.prepare, ctx.request, ctx.response);
             }
