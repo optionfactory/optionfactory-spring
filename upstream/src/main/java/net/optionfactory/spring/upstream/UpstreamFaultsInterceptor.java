@@ -1,11 +1,6 @@
 package net.optionfactory.spring.upstream;
 
-import java.net.URI;
-import java.time.Instant;
 import net.optionfactory.spring.upstream.UpstreamFaultsSpooler.UpstreamFault;
-import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 
 public class UpstreamFaultsInterceptor<CTX> implements UpstreamInterceptor<CTX> {
@@ -19,7 +14,7 @@ public class UpstreamFaultsInterceptor<CTX> implements UpstreamInterceptor<CTX> 
     }
 
     @Override
-    public void success(PrepareContext<CTX> prepare, RequestContext request, ResponseContext response) {
+    public void remotingSuccess(PrepareContext<CTX> prepare, RequestContext request, ResponseContext response) {
         if (response.status == null) {
             return;
         }
@@ -46,7 +41,7 @@ public class UpstreamFaultsInterceptor<CTX> implements UpstreamInterceptor<CTX> 
     }
 
     @Override
-    public void error(PrepareContext<CTX> prepare, RequestContext request, ErrorContext error) {
+    public void remotingError(PrepareContext<CTX> prepare, RequestContext request, ErrorContext error) {
         final String requestBodyAsString = UpstreamOps.bodyAsString(MediaType.TEXT_XML /*fixme*/, true, request.body);
 
         faults.add(UpstreamFault.of(

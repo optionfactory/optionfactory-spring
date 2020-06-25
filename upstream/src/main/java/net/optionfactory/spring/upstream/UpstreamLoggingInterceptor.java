@@ -29,7 +29,7 @@ public class UpstreamLoggingInterceptor<CTX> implements UpstreamInterceptor<CTX>
     }
 
     @Override
-    public void success(PrepareContext<CTX> prepare, RequestContext request, ResponseContext response) {
+    public void remotingSuccess(PrepareContext<CTX> prepare, RequestContext request, ResponseContext response) {
         final String ctxLogPrefix = ctxMapper.toLogPrefix(prepare.ctx);
         final long elapsedMillis = Duration.between(request.at, response.at).toMillis();
         final String logPrefix = String.format("[upstream:%s][op:res]%s[req:%s][ep:%s][ms:%s]", prepare.upstreamId, ctxLogPrefix, prepare.requestId, prepare.endpointId, elapsedMillis);
@@ -40,7 +40,7 @@ public class UpstreamLoggingInterceptor<CTX> implements UpstreamInterceptor<CTX>
     }
 
     @Override
-    public void error(PrepareContext<CTX> prepare, RequestContext request, ErrorContext error) {
+    public void remotingError(PrepareContext<CTX> prepare, RequestContext request, ErrorContext error) {
         final String ctxLogPrefix = ctxMapper.toLogPrefix(prepare.ctx);
         final long elapsedMillis = Duration.between(request.at, error.at).toMillis();
 

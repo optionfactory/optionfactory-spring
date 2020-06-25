@@ -5,6 +5,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 
 public interface UpstreamInterceptor<CTX> {
     
@@ -48,9 +49,13 @@ public interface UpstreamInterceptor<CTX> {
     default void before(PrepareContext<CTX> prepare, RequestContext request) {
     }
 
-    default void success(PrepareContext<CTX> prepare, RequestContext request, ResponseContext response) {
+    default void remotingSuccess(PrepareContext<CTX> prepare, RequestContext request, ResponseContext response) {
     }
 
-    default void error(PrepareContext<CTX> prepare, RequestContext request, ErrorContext error) {
+    default void remotingError(PrepareContext<CTX> prepare, RequestContext request, ErrorContext error) {
+    }
+    
+    default void mappingSuccess(PrepareContext<CTX> prepare, RequestContext request, ResponseContext response, ResponseEntity<?> mapped){
+    
     }
 }

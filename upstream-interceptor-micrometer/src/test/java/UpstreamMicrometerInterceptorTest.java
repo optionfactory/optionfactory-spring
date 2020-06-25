@@ -27,7 +27,7 @@ public class UpstreamMicrometerInterceptorTest {
         ctx.response.at = Instant.now();
         ctx.response.status = HttpStatus.I_AM_A_TEAPOT;
 
-        interceptor.success(ctx.prepare, ctx.request, ctx.response);
+        interceptor.remotingSuccess(ctx.prepare, ctx.request, ctx.response);
 
         Assert.assertEquals("upstream_duration_seconds", registry.getMeters().get(0).getId().getName());
     }

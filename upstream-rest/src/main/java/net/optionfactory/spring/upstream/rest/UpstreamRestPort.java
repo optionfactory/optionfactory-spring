@@ -93,7 +93,11 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
         callContexts.set(ctx);
         try {
             ctx.prepare.entity = makeEntity(ctx.prepare);
-            return rest.exchange(ctx.prepare.entity, responseType);
+            final ResponseEntity<T> response = rest.exchange(ctx.prepare.entity, responseType);
+            for (UpstreamInterceptor<CTX> interceptor : interceptors) {
+                interceptor.mappingSuccess(ctx.prepare, ctx.request, ctx.response, response);
+            }
+            return response;
         } finally {
             callContexts.remove();
         }
@@ -111,7 +115,11 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
         callContexts.set(ctx);
         try {
             ctx.prepare.entity = makeEntity(ctx.prepare);
-            return rest.exchange(ctx.prepare.entity, responseType);
+            final ResponseEntity<T> response = rest.exchange(ctx.prepare.entity, responseType);
+            for (UpstreamInterceptor<CTX> interceptor : interceptors) {
+                interceptor.mappingSuccess(ctx.prepare, ctx.request, ctx.response, response);
+            }
+            return response;
         } finally {
             callContexts.remove();
         }
@@ -161,7 +169,7 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
                     context.response.body = new ByteArrayResource(StreamUtils.copyToByteArray(body));
                 }
                 for (var interceptor : interceptors) {
-                    interceptor.success(context.prepare, context.request, context.response);
+                    interceptor.remotingSuccess(context.prepare, context.request, context.response);
                 }
                 return response;
             } catch (IOException | RuntimeException ex) {
@@ -170,20 +178,20 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
                 searchCauseOfType(ex, JsonMappingException.class).ifPresent(cex -> {
                     context.error.ex = cex;
                     for (var interceptor : interceptors) {
-                        interceptor.error(context.prepare, context.request, context.error);
+                        interceptor.remotingError(context.prepare, context.request, context.error);
                     }
                     throw new UpstreamException(upstreamId, "MAPPING_ERROR", cex.getMessage());
                 });
                 searchCauseOfType(ex, SocketException.class).ifPresent(cex -> {
                     context.error.ex = cex;
                     for (var interceptor : interceptors) {
-                        interceptor.error(context.prepare, context.request, context.error);
+                        interceptor.remotingError(context.prepare, context.request, context.error);
                     }
                     throw new UpstreamException(upstreamId, "UPSTREAM_DOWN", cex.getMessage());
                 });
                 context.error.ex = ex;
                 for (var interceptor : interceptors) {
-                        interceptor.error(context.prepare, context.request, context.error);
+                        interceptor.remotingError(context.prepare, context.request, context.error);
                 }
                 throw new UpstreamException(upstreamId, "GENERIC_ERROR", ex.getMessage());
             }

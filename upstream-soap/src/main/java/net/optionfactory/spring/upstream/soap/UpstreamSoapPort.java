@@ -88,61 +88,49 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
 
     @Override
     public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, Class<T> responseType) {
-        final ExchangeContext<CTX> ctx = new ExchangeContext<>();
-        ctx.prepare = new UpstreamInterceptor.PrepareContext<>();
-        ctx.prepare.requestId = requestCounter.incrementAndGet();        
-        ctx.prepare.ctx = context;
-        ctx.prepare.endpointId = endpointId;
-        ctx.prepare.entity = requestEntity;
-        ctx.prepare.upstreamId = upstreamId;
-        callContexts.set(ctx);        
-        try {
-            return exchange(ctx);
-        } finally {
-            callContexts.remove();
-        }
+        return exchange(context, endpointId, requestEntity);
     }
 
     @Override
     public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, ParameterizedTypeReference<T> responseType) {
+        return exchange(context, endpointId, requestEntity);
+    }
+
+    private <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity) {
         final ExchangeContext<CTX> ctx = new ExchangeContext<>();
         ctx.prepare = new UpstreamInterceptor.PrepareContext<>();
-        ctx.prepare.requestId = requestCounter.incrementAndGet();        
+        ctx.prepare.requestId = requestCounter.incrementAndGet();
         ctx.prepare.ctx = context;
         ctx.prepare.endpointId = endpointId;
         ctx.prepare.entity = requestEntity;
-        ctx.prepare.upstreamId = upstreamId;
-        callContexts.set(ctx);        
+        ctx.prepare.upstreamId = upstreamId;        
+        callContexts.set(ctx);
         try {
-            return exchange(ctx);
+            final var headers = new HttpHeaders();
+            headers.addAll(ctx.prepare.entity.getHeaders());
+            for (var interceptor : interceptors) {
+                final var newHeaders = interceptor.prepare(ctx.prepare);
+                if (newHeaders != null) {
+                    headers.addAll(newHeaders);
+                }
+            }
+            ctx.prepare.entity = new RequestEntity<>(ctx.prepare.entity.getBody(), headers, ctx.prepare.entity.getMethod(), ctx.prepare.entity.getUrl(), ctx.prepare.entity.getType());
+            final var got = soap.marshalSendAndReceive(ctx.prepare.entity.getUrl().toString(), ctx.prepare.entity.getBody(), (WebServiceMessage message) -> {
+                final HttpComponentsConnection connection = (HttpComponentsConnection) TransportContextHolder.getTransportContext().getConnection();
+                for (Entry<String, List<String>> header : ctx.prepare.entity.getHeaders().entrySet()) {
+                    for (String value : header.getValue()) {
+                        connection.addRequestHeader(header.getKey(), value);
+                    }
+                }
+            });
+            final ResponseEntity<T> response = ResponseEntity.ok().headers(ctx.response.headers).body((T)got);
+            for (UpstreamInterceptor interceptor : interceptors) {
+                interceptor.mappingSuccess(ctx.prepare, ctx.request, ctx.response, response);
+            }
+            return response;
         } finally {
             callContexts.remove();
         }
-    }
-
-    private <T> ResponseEntity<T> exchange(ExchangeContext<CTX> ctx) {
-        ctx.prepare.entity = makeEntity(ctx.prepare);
-        final var got = soap.marshalSendAndReceive(ctx.prepare.entity.getUrl().toString(), ctx.prepare.entity.getBody(), (WebServiceMessage message) -> {
-            final HttpComponentsConnection connection = (HttpComponentsConnection) TransportContextHolder.getTransportContext().getConnection();
-            for (Entry<String, List<String>> header : ctx.prepare.entity.getHeaders().entrySet()) {
-                for (String value : header.getValue()) {
-                    connection.addRequestHeader(header.getKey(), value);
-                }
-            }
-        });
-        return ResponseEntity.ok((T) got);
-    }
-
-    private RequestEntity<?> makeEntity(PrepareContext<CTX> prepare) {
-        final var headers = new HttpHeaders();
-        headers.addAll(prepare.entity.getHeaders());
-        for (var interceptor : interceptors) {
-            final var newHeaders = interceptor.prepare(prepare);
-            if (newHeaders != null) {
-                headers.addAll(newHeaders);
-            }
-        }
-        return new RequestEntity<>(prepare.entity.getBody(), headers, prepare.entity.getMethod(), prepare.entity.getUrl(), prepare.entity.getType());
     }
 
     public static class SoapInterceptors<CTX> implements ClientInterceptor {
@@ -179,9 +167,9 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
             ctx.response.at = Instant.now();
             ctx.response.body = toResource(messageContext.getResponse());
             ctx.response.headers = fakeResponseHeaders;
-            ctx.response.status = HttpStatus.OK;            
+            ctx.response.status = HttpStatus.OK;
             for (var interceptor : interceptors) {
-                interceptor.success(ctx.prepare, ctx.request, ctx.response);
+                interceptor.remotingSuccess(ctx.prepare, ctx.request, ctx.response);
             }
             return true;
         }
@@ -195,7 +183,7 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
             ctx.response.headers = fakeResponseHeaders;
             ctx.response.status = HttpStatus.BAD_REQUEST;
             for (var interceptor : interceptors) {
-                interceptor.success(ctx.prepare, ctx.request, ctx.response);
+                interceptor.remotingSuccess(ctx.prepare, ctx.request, ctx.response);
             }
             return true;
         }
@@ -210,7 +198,7 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
             ctx.error.at = Instant.now();
             ctx.error.ex = ex;
             for (var interceptor : interceptors) {
-                interceptor.error(ctx.prepare, ctx.request, ctx.error);
+                interceptor.remotingError(ctx.prepare, ctx.request, ctx.error);
             }
         }
 
