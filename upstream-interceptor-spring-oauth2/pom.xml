@@ -4,9 +4,10 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>3.0-SNAPSHOT</version>
+        <version>3.0</version>
     </parent>
     <artifactId>upstream-interceptor-spring-oauth2</artifactId>
+    <description>optionfactory-spring spring oauth2 upstream interceptor</description>
     <packaging>jar</packaging>
     <name>${project.groupId}:${project.artifactId}</name>
     <dependencies>
@@ -18,6 +19,6 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-oauth2-client</artifactId>
-        </dependency>           
-    </dependencies>        
+        </dependency>
+    </dependencies>
 </project>
