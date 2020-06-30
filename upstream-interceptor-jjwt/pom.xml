@@ -4,10 +4,10 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>3.0</version>
+        <version>3.1-SNAPSHOT</version>
     </parent>
     <artifactId>upstream-interceptor-jjwt</artifactId>
-    <description>optionfactory-spring jjwt upstream interceptor</description>            
+    <description>optionfactory-spring jjwt upstream interceptor</description>
     <packaging>jar</packaging>
     <name>${project.groupId}:${project.artifactId}</name>
     <dependencies>

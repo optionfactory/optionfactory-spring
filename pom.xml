@@ -4,10 +4,10 @@
 
     <groupId>net.optionfactory.spring</groupId>
     <artifactId>optionfactory-spring</artifactId>
-    <version>3.0</version>
+    <version>3.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <description>optionfactory-spring parent pom</description>
-    
+
     <name>${project.groupId}:${project.artifactId}</name>
     <url>https://github.com/optionfactory/optionfactory-spring</url>
 
@@ -22,7 +22,7 @@
             <url>http://www.opensource.org/licenses/BSD-3-Clause</url>
             <distribution>repo</distribution>
         </license>
-    </licenses>    
+    </licenses>
     <developers>
         <developer>
             <name>Roberto Ferranti</name>
@@ -30,7 +30,7 @@
             <organization>OptionFactory</organization>
             <organizationUrl>http://optionfactory.net</organizationUrl>
         </developer>
-    </developers>   
+    </developers>
     <distributionManagement>
         <snapshotRepository>
             <id>ossrh</id>
@@ -40,8 +40,8 @@
             <id>ossrh</id>
             <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
-    </distributionManagement>       
-            
+    </distributionManagement>
+
 
     <modules>
         <module>data-jpa</module>
@@ -50,7 +50,7 @@
         <module>context-web</module>
         <module>problems</module>
         <module>problems-web</module>
-        <module>webserver-undertow</module>        
+        <module>webserver-undertow</module>
         <module>authentication-bearer-token</module>
         <module>upstream</module>
         <module>upstream-rest</module>
@@ -75,7 +75,7 @@
                 <version>4.0.1</version>
                 <scope>provided</scope>
             </dependency>
-            <dependency>                
+            <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
                 <version>2.11.0</version>
@@ -94,7 +94,7 @@
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-core</artifactId>
                 <version>5.2.7.RELEASE</version>
-            </dependency>            
+            </dependency>
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-context</artifactId>
@@ -150,7 +150,7 @@
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
                 <version>4.5.12</version>
-            </dependency>        
+            </dependency>
             <dependency>
                 <groupId>org.springframework.ws</groupId>
                 <artifactId>spring-ws-core</artifactId>
@@ -170,7 +170,7 @@
                 <groupId>io.micrometer</groupId>
                 <artifactId>micrometer-core</artifactId>
                 <version>1.5.1</version>
-            </dependency>   
+            </dependency>
             <dependency>
                 <groupId>com.sun.mail</groupId>
                 <artifactId>javax.mail</artifactId>
@@ -180,12 +180,12 @@
                 <groupId>javax.mail</groupId>
                 <artifactId>javax.mail-api</artifactId>
                 <version>1.6.2</version>
-            </dependency>                   
+            </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>1.7.30</version>
-            </dependency>             
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -233,11 +233,11 @@
                                 </goals>
                                 <configuration>
                                     <additionalparam>-Xdoclint:none</additionalparam>
-                                    <javadocVersion>11.0.6</javadocVersion>                            
+                                    <javadocVersion>11.0.6</javadocVersion>
                                 </configuration>
                             </execution>
                         </executions>
-                    </plugin>                    
+                    </plugin>
                 </plugins>
             </build>
         </profile>

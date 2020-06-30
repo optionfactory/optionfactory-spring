@@ -4,10 +4,10 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>3.0</version>
+        <version>3.1-SNAPSHOT</version>
     </parent>
     <artifactId>problems-web</artifactId>
-    <description>optionfactory-spring problems web</description>            
+    <description>optionfactory-spring problems web</description>
     <name>${project.groupId}:${project.artifactId}</name>
     <packaging>jar</packaging>
     <dependencies>
