@@ -13,7 +13,7 @@ pipeline {
         }
          stage('Dist Local') {
             steps {
-                sh "mvn -B -DskipTests -DaltSnapshotDeploymentRepository=nexus::default::${env.NEXUS_SNAPSHOTS_URL} -DaltReleaseDeploymentRepository=nexus::default::${env.NEXUS_RELEASES_URL} org.apache.maven.plugins:maven-deploy-plugin:2.8.2:deploy"
+                sh "mvn -B -DskipTests -DaltSnapshotDeploymentRepository=nexus::default::${env.NEXUS_SNAPSHOTS_URL} -DaltReleaseDeploymentRepository=nexus::default::${env.NEXUS_RELEASES_URL} clean package org.apache.maven.plugins:maven-deploy-plugin:2.8.2:deploy"
             }
         }
     }
