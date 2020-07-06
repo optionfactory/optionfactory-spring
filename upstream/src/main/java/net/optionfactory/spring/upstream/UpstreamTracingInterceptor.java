@@ -1,29 +1,41 @@
 package net.optionfactory.spring.upstream;
 
+import java.util.Map;
 import org.springframework.http.HttpHeaders;
 
 public class UpstreamTracingInterceptor<CTX> implements UpstreamInterceptor<CTX> {
 
-    private final UpstreamContextTransformer<CTX> ctxMapper;
+    private final ContextHeadersEncoder<CTX> contextHeadersEncoder;
+    private final String prefix;
 
-    public UpstreamTracingInterceptor(UpstreamContextTransformer<CTX> ctx) {
-        this.ctxMapper = ctx;
+    public UpstreamTracingInterceptor(ContextHeadersEncoder<CTX> contextHeadersEncoder, String prefix) {
+        this.contextHeadersEncoder = contextHeadersEncoder;
+        this.prefix = prefix;
     }
 
     @Override
     public HttpHeaders prepare(PrepareContext<CTX> prepare) {
         final HttpHeaders headers = new HttpHeaders();
-        ctxMapper.toMap(prepare.ctx).forEach((k, v) -> {
-            headers.add(k, v);
+        contextHeadersEncoder.toMap(prepare.ctx).forEach((k, v) -> {
+            headers.add(String.format("%s%s", prefix, k), v);
         });
-        headers.set("X-HI-REQID", Long.toString(prepare.requestId));
+        headers.set(String.format("%sREQID", prefix), Long.toString(prepare.requestId));
         return headers;
     }
 
-    public String logPrefix(CTX ctx) {
-        return ctxMapper.toLogPrefix(ctx);
+    public interface ContextHeadersEncoder<CTX> {
+
+        Map<String, String> toMap(CTX ctx);
+
+        public static class Null<T> implements ContextHeadersEncoder<T> {
+
+            @Override
+            public Map<String, String> toMap(T ctx) {
+                return Map.of();
+            }
+
+        }
+
     }
-
-
 
 }

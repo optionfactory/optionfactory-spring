@@ -8,19 +8,19 @@ import org.springframework.http.MediaType;
 public class UpstreamLoggingInterceptor<CTX> implements UpstreamInterceptor<CTX> {
 
     private final Logger logger = LoggerFactory.getLogger(UpstreamLoggingInterceptor.class);
-    private final UpstreamContextTransformer<CTX> ctxMapper;
+    private final ContextLogEncoder<CTX> contextLogEncoder;
     private final boolean logHeaders;
     private final boolean logMultipart;
 
-    public UpstreamLoggingInterceptor(UpstreamContextTransformer<CTX> ctxMapper, boolean logHeaders, boolean logMultipart) {
-        this.ctxMapper = ctxMapper;
+    public UpstreamLoggingInterceptor(ContextLogEncoder<CTX> contextLogEncoder, boolean logHeaders, boolean logMultipart) {
+        this.contextLogEncoder = contextLogEncoder;
         this.logHeaders = logHeaders;
         this.logMultipart = logMultipart;
     }
 
     @Override
     public void before(PrepareContext<CTX> prepare, RequestContext request) {
-        final String ctxLogPrefix = ctxMapper.toLogPrefix(prepare.ctx);
+        final String ctxLogPrefix = contextLogEncoder.toLogPrefix(prepare.ctx);
         if (logHeaders) {
             logger.info(String.format("[upstream:%s][op:pre]%s[req:%s][ep:%s] headers=%s", prepare.upstreamId, ctxLogPrefix, prepare.requestId, prepare.endpointId, request.headers));
         }
@@ -30,7 +30,7 @@ public class UpstreamLoggingInterceptor<CTX> implements UpstreamInterceptor<CTX>
 
     @Override
     public void remotingSuccess(PrepareContext<CTX> prepare, RequestContext request, ResponseContext response) {
-        final String ctxLogPrefix = ctxMapper.toLogPrefix(prepare.ctx);
+        final String ctxLogPrefix = contextLogEncoder.toLogPrefix(prepare.ctx);
         final long elapsedMillis = Duration.between(request.at, response.at).toMillis();
         final String logPrefix = String.format("[upstream:%s][op:res]%s[req:%s][ep:%s][ms:%s]", prepare.upstreamId, ctxLogPrefix, prepare.requestId, prepare.endpointId, elapsedMillis);
 
@@ -41,11 +41,25 @@ public class UpstreamLoggingInterceptor<CTX> implements UpstreamInterceptor<CTX>
 
     @Override
     public void remotingError(PrepareContext<CTX> prepare, RequestContext request, ErrorContext error) {
-        final String ctxLogPrefix = ctxMapper.toLogPrefix(prepare.ctx);
+        final String ctxLogPrefix = contextLogEncoder.toLogPrefix(prepare.ctx);
         final long elapsedMillis = Duration.between(request.at, error.at).toMillis();
 
         final String logPrefix = String.format("[upstream:%s][op:err]%s[req:%s][ep:%s][ms:%s]", prepare.upstreamId, ctxLogPrefix, prepare.requestId, prepare.endpointId, elapsedMillis);
         logger.info(String.format("%s error: %s", logPrefix, error.ex));
+    }
+
+    public interface ContextLogEncoder<CTX> {
+
+        String toLogPrefix(CTX ctx);
+
+        public static class Null<T> implements ContextLogEncoder<T> {
+
+            @Override
+            public String toLogPrefix(T ctx) {
+                return "";
+            }
+
+        }
     }
 
 }
