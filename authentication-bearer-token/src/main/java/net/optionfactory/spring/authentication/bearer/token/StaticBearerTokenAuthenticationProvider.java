@@ -1,6 +1,7 @@
 package net.optionfactory.spring.authentication.bearer.token;
 
 import java.util.Collection;
+import java.util.Map;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
@@ -13,21 +14,23 @@ import org.springframework.security.core.GrantedAuthority;
  */
 public class StaticBearerTokenAuthenticationProvider implements AuthenticationProvider {
 
-    private final String token;
-    private final Collection<? extends GrantedAuthority> authorities;
+    private final Map<String, Collection<? extends GrantedAuthority>> tokenToAuthorities;
 
     public StaticBearerTokenAuthenticationProvider(String token, Collection<? extends GrantedAuthority> authorities) {
-        this.token = token;
-        this.authorities = authorities;
+        this.tokenToAuthorities = Map.of(token, authorities);
+    }
+
+    public StaticBearerTokenAuthenticationProvider(Map<String, Collection<? extends GrantedAuthority>> tokenToAuthorities) {
+        this.tokenToAuthorities = tokenToAuthorities;
     }
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         final BearerTokenAuthentication bearer = (BearerTokenAuthentication) authentication;
-        if (!token.equals(bearer.getCredentials())) {
+        if (!tokenToAuthorities.containsKey(bearer.getCredentials())) {
             throw new BadCredentialsException("Invalid token");
         }
-        return bearer.withAuthorities(authorities);
+        return bearer.withAuthorities(tokenToAuthorities.get(bearer.getCredentials()));
     }
 
     @Override
