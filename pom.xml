@@ -50,8 +50,10 @@
         <module>context-web</module>
         <module>problems</module>
         <module>problems-web</module>
+        <module>feedback-web</module>
         <module>webserver-undertow</module>
         <module>authentication-bearer-token</module>
+        <module>oidc-authorization-code</module>
         <module>upstream</module>
         <module>upstream-rest</module>
         <module>upstream-soap</module>
@@ -144,6 +146,11 @@
             <dependency>
                 <groupId>org.springframework.security</groupId>
                 <artifactId>spring-security-oauth2-client</artifactId>
+                <version>5.3.3.RELEASE</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-oauth2-jose</artifactId>
                 <version>5.3.3.RELEASE</version>
             </dependency>
             <dependency>
