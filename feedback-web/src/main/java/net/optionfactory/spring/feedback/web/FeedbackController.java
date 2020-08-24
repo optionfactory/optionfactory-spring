@@ -5,14 +5,15 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
 import javax.servlet.http.HttpServletRequest;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 
 public class FeedbackController<PRINCIPAL> {
 
-    private final Logger logger = Logger.getLogger(FeedbackController.class);
+    private final Logger logger = LoggerFactory.getLogger(FeedbackController.class);
     private final Function<PRINCIPAL, String> principalToPrefix;
 
     public FeedbackController(Function<PRINCIPAL, String> principalToPrefix) {
