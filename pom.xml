@@ -53,14 +53,15 @@
         <module>feedback-web</module>
         <module>webserver-undertow</module>
         <module>authentication-bearer-token</module>
-        <module>oidc-authorization-code</module>
+	<module>oidc-authorization-code</module>
+        <module>email</module>
         <module>upstream</module>
         <module>upstream-rest</module>
         <module>upstream-soap</module>
         <module>upstream-interceptor-jjwt</module>
         <module>upstream-interceptor-spring-oauth2</module>
         <module>upstream-interceptor-micrometer</module>
-        <module>email</module>
+	<module>upstream-email-faults</module>
     </modules>
 
     <properties>
