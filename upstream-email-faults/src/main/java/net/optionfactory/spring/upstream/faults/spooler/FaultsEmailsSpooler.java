@@ -60,7 +60,7 @@ public class FaultsEmailsSpooler<T> implements UpstreamFaultsSpooler<T> {
             context.setVariable("faults", batch);
             context.setVariable("tag", emailSubjects.subjectTag);
             message.subject = stringTemplates.process(emailSubjects.subjectTemplate.replace("{", "${"), context);
-            message.htmlBody = emailTemplates.process("email.faults.inlined.html", context);
+            message.htmlBody = emailTemplates.process(emailTemplateName, context);
             message.textBody = null;
             message.messageId = Long.toString(Instant.now().toEpochMilli());
             message.recipient = recipient;
