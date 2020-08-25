@@ -26,9 +26,6 @@ public class PhoneNumberValidator implements ConstraintValidator<PhoneNumber, St
         if(phoneNumber == null){
             return true;
         }
-        if (phoneNumber.isEmpty()) {
-            return false;
-        }
         try {
             final Phonenumber.PhoneNumber parsed = PHONES.parse(phoneNumber, defaultRegion);
             if (!PHONES.isValidNumber(parsed)) {
