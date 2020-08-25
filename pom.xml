@@ -53,7 +53,7 @@
         <module>feedback-web</module>
         <module>webserver-undertow</module>
         <module>authentication-bearer-token</module>
-	<module>oidc-authorization-code</module>
+        <module>oidc-authorization-code</module>
         <module>email</module>
         <module>upstream</module>
         <module>upstream-rest</module>
@@ -61,7 +61,8 @@
         <module>upstream-interceptor-jjwt</module>
         <module>upstream-interceptor-spring-oauth2</module>
         <module>upstream-interceptor-micrometer</module>
-	<module>upstream-email-faults</module>
+        <module>upstream-email-faults</module>
+        <module>validators</module>
     </modules>
 
     <properties>
@@ -191,6 +192,16 @@
                 <artifactId>javax.mail-api</artifactId>
                 <version>1.6.2</version>
             </dependency>
+            <dependency>
+                <groupId>javax.validation</groupId>
+                <artifactId>validation-api</artifactId>
+                <version>2.0.1.Final</version>
+            </dependency>
+            <dependency>
+                <groupId>com.googlecode.libphonenumber</groupId>
+                <artifactId>libphonenumber</artifactId>
+                <version>8.12.8</version>
+            </dependency>            
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
