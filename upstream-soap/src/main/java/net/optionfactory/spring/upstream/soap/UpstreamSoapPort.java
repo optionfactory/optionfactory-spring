@@ -7,6 +7,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import net.optionfactory.spring.upstream.UpstreamInterceptor;
 import net.optionfactory.spring.upstream.UpstreamInterceptor.ExchangeContext;
 import net.optionfactory.spring.upstream.UpstreamInterceptor.ErrorContext;
@@ -14,20 +16,18 @@ import net.optionfactory.spring.upstream.UpstreamInterceptor.RequestContext;
 import net.optionfactory.spring.upstream.UpstreamInterceptor.ResponseContext;
 import net.optionfactory.spring.upstream.UpstreamPort;
 import org.apache.http.Header;
-import org.apache.http.HttpException;
 import org.apache.http.HttpResponse;
-import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.protocol.HttpContext;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
@@ -48,10 +48,10 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
     private final String upstreamId;
     private final AtomicLong requestCounter;
     private final WebServiceTemplate soap;
-    private final List<UpstreamInterceptor> interceptors;
+    private final List<UpstreamInterceptor<CTX>> interceptors;
     private final ThreadLocal<ExchangeContext<CTX>> callContexts = new ThreadLocal<>();
 
-    public UpstreamSoapPort(String upstreamId, AtomicLong requestCounter, Resource[] schemas, Class<?> packageToScan, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, List<UpstreamInterceptor> interceptors) throws Exception {
+    public UpstreamSoapPort(String upstreamId, AtomicLong requestCounter, Resource[] schemas, Class<?> packageToScan, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, List<UpstreamInterceptor<CTX>> interceptors) {
         final var builder = HttpClientBuilder.create();
         builder.setSSLSocketFactory(socketFactory);
 
@@ -76,29 +76,37 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
         final var inner = new WebServiceTemplate();
         final SaajSoapMessageFactory mf = new SaajSoapMessageFactory();
         mf.setSoapVersion(SoapVersion.SOAP_12);
-        mf.afterPropertiesSet();
+        initBean(mf);
         inner.setMessageFactory(mf);
         inner.setMessageSender(new HttpComponentsMessageSender(client));
         final var ms = new Jaxb2Marshaller();
         ms.setSchemas(schemas);
         ms.setPackagesToScan(packageToScan.getPackageName());
-        ms.afterPropertiesSet();
+        initBean(ms);
         inner.setMarshaller(ms);
         inner.setUnmarshaller(ms);
         final var validator = new PayloadValidatingInterceptor();
         validator.setSchemas(schemas);
         validator.setValidateRequest(true);
         validator.setValidateResponse(true);
-        validator.afterPropertiesSet();
+        initBean(validator);
         inner.setInterceptors(new ClientInterceptor[]{
             validator,
-            new SoapInterceptors(interceptors, callContexts)
+            new SoapInterceptors<>(interceptors, callContexts)
         });
 
         this.upstreamId = upstreamId;
         this.requestCounter = requestCounter;
         this.interceptors = interceptors;
         this.soap = inner;
+    }
+
+    private void initBean(InitializingBean b) {
+        try {
+            b.afterPropertiesSet();
+        } catch (Exception ex) {
+            throw new IllegalStateException(ex);
+        }
     }
 
     @Override
@@ -139,7 +147,7 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
                 }
             });
             final ResponseEntity<T> response = ResponseEntity.ok().headers(ctx.response.headers).body((T) got);
-            for (UpstreamInterceptor interceptor : interceptors) {
+            for (UpstreamInterceptor<CTX> interceptor : interceptors) {
                 interceptor.mappingSuccess(ctx.prepare, ctx.request, ctx.response, response);
             }
             return response;
