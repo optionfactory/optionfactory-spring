@@ -48,7 +48,7 @@ public class WebServer implements Closeable {
      * @param listeningAddress the address this server is bound to
      * @param listeningPort the port number where the server accepts connections
      * @param deployment deployment configuration
-     * @throws ServletException
+     * @throws ServletException if cannot start WebServer
      */
     public WebServer(String listeningAddress, int listeningPort, Deployment deployment) throws ServletException {
         logger.info("Preparing Undertow for webapp deployment");

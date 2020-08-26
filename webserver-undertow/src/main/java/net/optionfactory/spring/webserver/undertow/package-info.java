@@ -28,23 +28,23 @@ public class Main {
         mainContext.registerShutdownHook();
     }
 
-    @Configuration
-    @Import(ApplicationPropertiesConfig.class)
+    &#64;Configuration
+    &#64;Import(ApplicationPropertiesConfig.class)
     public static class Config {
 
-        @Bean
+        &#64;Bean
         public WebServer webServer(
                 AnnotationConfigApplicationContext applicationContext,
-                @Value("${server.bind}") String listeningAddress,
-                @Value("${server.port}") int listeningPort,
-                @Value("${server.local.resources.path:#{null}}") Optional<String> localResourcesPath,
-                @Value("${server.behind.proxy:false}") boolean behindProxy
+                &#64;Value("${server.bind}") String listeningAddress,
+                &#64;Value("${server.port}") int listeningPort,
+                &#64;Value("${server.local.resources.path:#{null}}") Optional&#60;String&#62; localResourcesPath,
+                &#64;Value("${server.behind.proxy:false}") boolean behindProxy
         ) throws ServletException {
             final SimpleCommandLinePropertySource externalPropertySource = (SimpleCommandLinePropertySource) applicationContext.getEnvironment().getPropertySources().get(SimpleCommandLinePropertySource.COMMAND_LINE_PROPERTY_SOURCE_NAME);
             final DeploymentInfo deployment = localResourcesPath
                     .map(String::trim)
-                    .filter(path -> !path.isEmpty())
-                    .map(path -> Deployment.springWithExternalWebResources(Path.of(path), WebApplication.class))
+                    .filter(path -&#62; !path.isEmpty())
+                    .map(path -&#62; Deployment.springWithExternalWebResources(Path.of(path), WebApplication.class))
                     .orElse(Deployment.springSelfContained(WebApplication.class));
             return new WebServer(listeningAddress, listeningPort, (behindProxy ? deployment.behindProxy() : deployment).withProperties(externalPropertySource));
         }

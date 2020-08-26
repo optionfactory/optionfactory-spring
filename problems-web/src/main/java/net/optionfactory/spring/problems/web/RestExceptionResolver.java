@@ -44,7 +44,7 @@ import org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolv
 
 /**
  * A custom exception resolver resolving Spring and Jackson2 exceptions thrown
- * from an HandlerMethod annotated with {@link @ResponseBody} with a
+ * from an HandlerMethod annotated with &#64;{@link org.springframework.web.bind.annotation.ResponseBody} with a
  * MappingJackson2JsonView. Sample serialized form of the response is:  <code>
  * [
  *   {"type": "", "context": "fieldName", "reason": a field validation error", "details": null},
