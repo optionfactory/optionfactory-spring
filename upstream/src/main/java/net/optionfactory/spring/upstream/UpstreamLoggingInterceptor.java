@@ -22,10 +22,10 @@ public class UpstreamLoggingInterceptor<CTX> implements UpstreamInterceptor<CTX>
     public void before(PrepareContext<CTX> prepare, RequestContext request) {
         final String ctxLogPrefix = contextLogEncoder.toLogPrefix(prepare.ctx);
         if (logHeaders) {
-            logger.info(String.format("[upstream:%s][op:pre]%s[req:%s][ep:%s] headers=%s", prepare.upstreamId, ctxLogPrefix, prepare.requestId, prepare.endpointId, request.headers));
+            logger.info("[upstream:{}][op:pre]{}[req:{}][ep:{}] headers=%s", prepare.upstreamId, ctxLogPrefix, prepare.requestId, prepare.endpointId, request.headers);
         }
         final String logPrefix = String.format("[upstream:%s][op:req]%s[req:%s][ep:%s]", prepare.upstreamId, ctxLogPrefix, prepare.requestId, prepare.endpointId);
-        logger.info(String.format("%s url: %s body: %s", logPrefix, prepare.entity.getUrl(), UpstreamOps.bodyAsString(request.headers.getContentType(), logMultipart, request.body)));
+        logger.info("{} url: {} body: {}", logPrefix, prepare.entity.getUrl(), UpstreamOps.bodyAsString(request.headers.getContentType(), logMultipart, request.body));
     }
 
     @Override
@@ -36,7 +36,7 @@ public class UpstreamLoggingInterceptor<CTX> implements UpstreamInterceptor<CTX>
 
         final MediaType contentType = response.headers.getContentType();
         final String responseBodyAsText = UpstreamOps.bodyAsString(contentType, true, response.body);
-        logger.info(String.format("%s status: %s type: %s body: %s", logPrefix, response.status, contentType, responseBodyAsText));
+        logger.info("%s status: {} type: {} body: {}", logPrefix, response.status, contentType, responseBodyAsText);
     }
 
     @Override
@@ -45,7 +45,7 @@ public class UpstreamLoggingInterceptor<CTX> implements UpstreamInterceptor<CTX>
         final long elapsedMillis = Duration.between(request.at, error.at).toMillis();
 
         final String logPrefix = String.format("[upstream:%s][op:err]%s[req:%s][ep:%s][ms:%s]", prepare.upstreamId, ctxLogPrefix, prepare.requestId, prepare.endpointId, elapsedMillis);
-        logger.info(String.format("%s error: %s", logPrefix, error.ex));
+        logger.info("{} error: {}", logPrefix, error.ex);
     }
 
     public interface ContextLogEncoder<CTX> {

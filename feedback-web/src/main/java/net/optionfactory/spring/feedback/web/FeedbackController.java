@@ -22,12 +22,12 @@ public class FeedbackController<PRINCIPAL> {
     
     @PostMapping("/client-errors/")
     public void clientErrors(@AuthenticationPrincipal PRINCIPAL auth, HttpServletRequest req) {
-        logger.warn(String.format("[op:client-error]%s client-error: %s", principalToPrefix.apply(auth), bodyAsLine(req)));
+        logger.warn("[op:client-error]{} client-error: {}", principalToPrefix.apply(auth), bodyAsLine(req));
     }
 
     @PostMapping("/csp-violations/")
     public void cspViolation(@AuthenticationPrincipal PRINCIPAL auth, HttpServletRequest req) {
-        logger.warn(String.format("[op:csp-violation]%s csp-violation: %s", principalToPrefix.apply(auth), bodyAsLine(req)));
+        logger.warn("[op:csp-violation]{} csp-violation: {}", principalToPrefix.apply(auth), bodyAsLine(req));
     }
 
     

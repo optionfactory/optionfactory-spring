@@ -1,15 +1,12 @@
 package net.optionfactory.spring.upstream;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.http.MediaType;
 import org.springframework.util.StreamUtils;
-import org.springframework.web.util.UriComponentsBuilder;
 
 public class UpstreamOps {
 
