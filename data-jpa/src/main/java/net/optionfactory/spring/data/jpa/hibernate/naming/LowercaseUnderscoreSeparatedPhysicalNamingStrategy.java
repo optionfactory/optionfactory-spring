@@ -13,7 +13,7 @@ import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
  * <br> {@code CustomerSettings} &rarr; {@code customer_settings}
  * <br> {@code useDefaultPriority} &rarr; {@code use_default_priority}.
  */
-public class LowerCaseAndUnderscoreNamingStrategy implements PhysicalNamingStrategy {
+public class LowercaseUnderscoreSeparatedPhysicalNamingStrategy implements PhysicalNamingStrategy {
 
     @Override
     public Identifier toPhysicalTableName(Identifier name, JdbcEnvironment context) {

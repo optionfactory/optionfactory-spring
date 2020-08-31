@@ -6,7 +6,7 @@ import java.util.Properties;
 import javax.sql.DataSource;
 import net.optionfactory.spring.data.jpa.filtering.EnableJpaWhitelistFilteringRepositories;
 import net.optionfactory.spring.data.jpa.filtering.TestMarker;
-import net.optionfactory.spring.data.jpa.hibernate.naming.LowerCaseAndUnderscoreNamingStrategy;
+import net.optionfactory.spring.data.jpa.hibernate.naming.LowercaseUnderscoreSeparatedPhysicalNamingStrategy;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.model.naming.ImplicitNamingStrategyComponentPathImpl;
 import org.hibernate.dialect.PostgreSQL10Dialect;
@@ -39,7 +39,7 @@ public class HibernateTestConfig {
         final LocalSessionFactoryBuilder builder = new LocalSessionFactoryBuilder(dataSource);
         builder.addProperties(hibernateProperties);
         builder.scanPackages(TestMarker.class.getPackage().getName());
-        builder.setPhysicalNamingStrategy(new LowerCaseAndUnderscoreNamingStrategy());
+        builder.setPhysicalNamingStrategy(new LowercaseUnderscoreSeparatedPhysicalNamingStrategy());
         builder.setImplicitNamingStrategy(new ImplicitNamingStrategyComponentPathImpl());
         return builder.buildSessionFactory();
     }
