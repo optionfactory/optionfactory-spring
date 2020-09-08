@@ -22,7 +22,7 @@ public class UpstreamLoggingInterceptor<CTX> implements UpstreamInterceptor<CTX>
     public void before(PrepareContext<CTX> prepare, RequestContext request) {
         final String ctxLogPrefix = contextLogEncoder.toLogPrefix(prepare.ctx);
         if (logHeaders) {
-            logger.info("[upstream:{}][op:pre]{}[req:{}][ep:{}] headers=%s", prepare.upstreamId, ctxLogPrefix, prepare.requestId, prepare.endpointId, request.headers);
+            logger.info("[upstream:{}][op:pre]{}[req:{}][ep:{}] headers={}", prepare.upstreamId, ctxLogPrefix, prepare.requestId, prepare.endpointId, request.headers);
         }
         final String logPrefix = String.format("[upstream:%s][op:req]%s[req:%s][ep:%s]", prepare.upstreamId, ctxLogPrefix, prepare.requestId, prepare.endpointId);
         logger.info("{} url: {} body: {}", logPrefix, prepare.entity.getUrl(), UpstreamOps.bodyAsString(request.headers.getContentType(), logMultipart, request.body));
@@ -36,7 +36,7 @@ public class UpstreamLoggingInterceptor<CTX> implements UpstreamInterceptor<CTX>
 
         final MediaType contentType = response.headers.getContentType();
         final String responseBodyAsText = UpstreamOps.bodyAsString(contentType, true, response.body);
-        logger.info("%s status: {} type: {} body: {}", logPrefix, response.status, contentType, responseBodyAsText);
+        logger.info("{} status: {} type: {} body: {}", logPrefix, response.status, contentType, responseBodyAsText);
     }
 
     @Override
