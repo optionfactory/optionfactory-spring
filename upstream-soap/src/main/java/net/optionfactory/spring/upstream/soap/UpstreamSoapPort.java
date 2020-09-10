@@ -49,7 +49,7 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
     private final List<UpstreamInterceptor<CTX>> interceptors;
     private final ThreadLocal<ExchangeContext<CTX>> callContexts = new ThreadLocal<>();
 
-    public UpstreamSoapPort(String upstreamId, AtomicLong requestCounter, Resource[] schemas, Class<?> packageToScan, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, List<UpstreamInterceptor<CTX>> interceptors) {
+    public UpstreamSoapPort(SoapVersion soapVersion, String upstreamId, AtomicLong requestCounter, Resource[] schemas, Class<?> packageToScan, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, List<UpstreamInterceptor<CTX>> interceptors) {
         final var builder = HttpClientBuilder.create();
         builder.setSSLSocketFactory(socketFactory);
 
@@ -73,7 +73,7 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
 
         final var inner = new WebServiceTemplate();
         final SaajSoapMessageFactory mf = new SaajSoapMessageFactory();
-        mf.setSoapVersion(SoapVersion.SOAP_12);
+        mf.setSoapVersion(soapVersion);
         initBean(mf);
         inner.setMessageFactory(mf);
         inner.setMessageSender(new HttpComponentsMessageSender(client));
