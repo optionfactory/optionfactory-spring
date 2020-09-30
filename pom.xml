@@ -45,6 +45,8 @@
 
 
     <modules>
+	<module>time-jaxb</module>
+	<module>time-jackson</module>
         <module>data-jpa</module>
         <module>data-jpa-web</module>
         <module>context</module>
