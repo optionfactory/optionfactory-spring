@@ -72,8 +72,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <spring.version>5.2.8.RELEASE</spring.version>
-        <spring.security.version>5.3.4.RELEASE</spring.security.version>
+        <spring.version>5.2.9.RELEASE</spring.version>
+        <spring.security.version>5.4.0</spring.security.version>
     </properties>
 
     <dependencyManagement>
@@ -168,7 +168,7 @@
             <dependency>
                 <groupId>org.springframework.ws</groupId>
                 <artifactId>spring-ws-core</artifactId>
-                <version>3.0.9.RELEASE</version>
+                <version>3.0.10.RELEASE</version>
             </dependency>
             <dependency>
                 <groupId>org.glassfish.metro</groupId>
@@ -183,7 +183,7 @@
             <dependency>
                 <groupId>io.micrometer</groupId>
                 <artifactId>micrometer-core</artifactId>
-                <version>1.5.4</version>
+                <version>1.5.5</version>
             </dependency>
             <dependency>
                 <groupId>com.sun.mail</groupId>
@@ -203,7 +203,7 @@
             <dependency>
                 <groupId>com.googlecode.libphonenumber</groupId>
                 <artifactId>libphonenumber</artifactId>
-                <version>8.12.8</version>
+                <version>8.12.9</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
