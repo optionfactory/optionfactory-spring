@@ -15,6 +15,7 @@ public class InstantsTest {
         this.mapper.registerModule(new TimeModule());
     }
 
+    
     @Test
     public void canSerializeInstantAsJavaTimestamp() throws JsonProcessingException {
         final Instant at = Instant.ofEpochMilli(1234);
@@ -33,4 +34,18 @@ public class InstantsTest {
         Assert.assertEquals(Instant.ofEpochMilli(1234), got.at);
     }
 
+    @Test
+    public void canSerializeNull() throws JsonProcessingException {
+        final BeanWithInstant b = new BeanWithInstant();
+        b.at = null;
+        final String got = mapper.writeValueAsString(b);
+        Assert.assertEquals("{\"at\":null}", got);
+    }
+    @Test
+    public void canDeserializeNull() throws JsonProcessingException {
+        final var got = mapper.readValue("{\"at\": null}", BeanWithInstant.class);
+        Assert.assertEquals(null, got.at);
+    }
+    
+    
 }

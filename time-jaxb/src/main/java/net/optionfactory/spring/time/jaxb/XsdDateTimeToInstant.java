@@ -12,7 +12,7 @@ public class XsdDateTimeToInstant extends XmlAdapter<String, Instant> {
 
     @Override
     public Instant unmarshal(String value) {
-        return ZonedDateTime.parse(value, FORMAT).toInstant();
+        return value == null ? null : ZonedDateTime.parse(value, FORMAT).toInstant();
     }
 
     @Override

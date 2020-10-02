@@ -9,8 +9,8 @@ public class XsdDateTimeToOffsetDateTime extends XmlAdapter<String, OffsetDateTi
     public static final DateTimeFormatter FORMAT = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
     @Override
-    public OffsetDateTime unmarshal(String v) {
-        return OffsetDateTime.parse(v, FORMAT);
+    public OffsetDateTime unmarshal(String value) {
+        return value == null ? null : OffsetDateTime.parse(value, FORMAT);
     }
 
     @Override

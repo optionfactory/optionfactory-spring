@@ -9,8 +9,8 @@ public class XsdDateToLocalDate extends XmlAdapter<String, LocalDate> {
     public static final DateTimeFormatter FORMAT = DateTimeFormatter.ISO_LOCAL_DATE;
 
     @Override
-    public LocalDate unmarshal(String v) {
-        return LocalDate.parse(v, FORMAT);
+    public LocalDate unmarshal(String value) {
+        return value == null ? null : LocalDate.parse(value, FORMAT);
     }
 
     @Override
