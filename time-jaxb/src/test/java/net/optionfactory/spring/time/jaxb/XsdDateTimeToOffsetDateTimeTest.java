@@ -1,6 +1,5 @@
 package net.optionfactory.spring.time.jaxb;
 
-import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
@@ -60,8 +59,10 @@ public class XsdDateTimeToOffsetDateTimeTest {
     public void canUnmarshalNull() throws JAXBException {
         BeanWithOffsetDateTime b1 = Marshalling.unmarshall("<B/>", BeanWithOffsetDateTime.class);
         Assert.assertEquals(null, b1.at);
-        BeanWithOffsetDateTime b2 = Marshalling.unmarshall("<B><at xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:nil=\"true\"/></B>", BeanWithOffsetDateTime.class);
+        BeanWithOffsetDateTime b2 = Marshalling.unmarshall("<B><at/></B>", BeanWithOffsetDateTime.class);
         Assert.assertEquals(null, b2.at);
+        BeanWithOffsetDateTime b3 = Marshalling.unmarshall("<B><at xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:nil=\"true\"/></B>", BeanWithOffsetDateTime.class);
+        Assert.assertEquals(null, b3.at);
     }        
         
 }

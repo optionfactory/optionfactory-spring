@@ -1,15 +1,10 @@
 package net.optionfactory.spring.time.jaxb;
 
-import java.io.StringReader;
-import java.io.StringWriter;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
-import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import org.junit.Assert;
@@ -65,8 +60,10 @@ public class XsdDateTimeToInstantTest {
     public void canUnmarshalNull() throws JAXBException {
         BeanWithInstant b1 = Marshalling.unmarshall("<B/>", BeanWithInstant.class);
         Assert.assertEquals(null, b1.at);
-        BeanWithInstant b2 = Marshalling.unmarshall("<B><at xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:nil=\"true\"/></B>", BeanWithInstant.class);
+        BeanWithInstant b2 = Marshalling.unmarshall("<B><at/></B>", BeanWithInstant.class);
         Assert.assertEquals(null, b2.at);
+        BeanWithInstant b3 = Marshalling.unmarshall("<B><at xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:nil=\"true\"/></B>", BeanWithInstant.class);
+        Assert.assertEquals(null, b3.at);
         
     }
 

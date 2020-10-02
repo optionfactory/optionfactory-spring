@@ -1,6 +1,5 @@
 package net.optionfactory.spring.time.jaxb;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.format.DateTimeParseException;
@@ -61,8 +60,10 @@ public class XsdDateTimeToLocalDateTimeTest {
     public void canUnmarshalNull() throws JAXBException {
         BeanWithLocalDateTime b1 = Marshalling.unmarshall("<B/>", BeanWithLocalDateTime.class);
         Assert.assertEquals(null, b1.at);
-        BeanWithLocalDateTime b2 = Marshalling.unmarshall("<B><at xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:nil=\"true\"/></B>", BeanWithLocalDateTime.class);
+        BeanWithLocalDateTime b2 = Marshalling.unmarshall("<B><at/></B>", BeanWithLocalDateTime.class);
         Assert.assertEquals(null, b2.at);
+        BeanWithLocalDateTime b3 = Marshalling.unmarshall("<B><at xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:nil=\"true\"/></B>", BeanWithLocalDateTime.class);
+        Assert.assertEquals(null, b3.at);
     }    
     
 }
