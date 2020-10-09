@@ -6,10 +6,8 @@ import org.springframework.http.MediaType;
 public class UpstreamFaultsInterceptor<CTX> implements UpstreamInterceptor<CTX> {
 
     private final UpstreamFaultsSpooler<CTX> faults;
-    private final UpstreamTracingInterceptor<CTX> tracing;
 
-    public UpstreamFaultsInterceptor(UpstreamTracingInterceptor<CTX> tracing, UpstreamFaultsSpooler<CTX> faults) {
-        this.tracing = tracing;
+    public UpstreamFaultsInterceptor(UpstreamFaultsSpooler<CTX> faults) {
         this.faults = faults;
     }
 
