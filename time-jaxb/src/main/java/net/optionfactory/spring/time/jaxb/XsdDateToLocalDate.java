@@ -6,7 +6,7 @@ import javax.xml.bind.annotation.adapters.XmlAdapter;
 
 public class XsdDateToLocalDate extends XmlAdapter<String, LocalDate> {
 
-    public static final DateTimeFormatter FORMAT = DateTimeFormatter.ISO_LOCAL_DATE;
+    public static final DateTimeFormatter FORMAT = DateTimeFormatter.ISO_DATE;
 
     @Override
     public LocalDate unmarshal(String value) {
