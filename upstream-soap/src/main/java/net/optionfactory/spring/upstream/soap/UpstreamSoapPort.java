@@ -6,13 +6,16 @@ import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 import net.optionfactory.spring.upstream.UpstreamInterceptor;
 import net.optionfactory.spring.upstream.UpstreamInterceptor.ErrorContext;
 import net.optionfactory.spring.upstream.UpstreamInterceptor.ExchangeContext;
 import net.optionfactory.spring.upstream.UpstreamInterceptor.RequestContext;
 import net.optionfactory.spring.upstream.UpstreamInterceptor.ResponseContext;
 import net.optionfactory.spring.upstream.UpstreamPort;
+import net.optionfactory.spring.upstream.soap.UpstreamSoapPort.SoapInterceptors;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
@@ -37,6 +40,7 @@ import org.springframework.ws.client.support.interceptor.PayloadValidatingInterc
 import org.springframework.ws.context.MessageContext;
 import org.springframework.ws.soap.SoapVersion;
 import org.springframework.ws.soap.saaj.SaajSoapMessageFactory;
+import org.springframework.ws.soap.security.wss4j2.Wss4jSecurityInterceptor;
 import org.springframework.ws.transport.context.TransportContextHolder;
 import org.springframework.ws.transport.http.HttpComponentsConnection;
 import org.springframework.ws.transport.http.HttpComponentsMessageSender;
@@ -49,10 +53,10 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
     private final List<UpstreamInterceptor<CTX>> interceptors;
     private final ThreadLocal<ExchangeContext<CTX>> callContexts = new ThreadLocal<>();
 
-    public UpstreamSoapPort(SoapVersion soapVersion, String upstreamId, AtomicLong requestCounter, Resource[] schemas, Class<?> packageToScan, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, List<UpstreamInterceptor<CTX>> interceptors) {
+    public UpstreamSoapPort(SoapVersion soapVersion, String upstreamId, AtomicLong requestCounter, Resource[] schemas, Class<?> packageToScan, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, List<UpstreamInterceptor<CTX>> interceptors, Optional<Wss4jSecurityInterceptor> wssInterceptor) {
         final var builder = HttpClientBuilder.create();
         builder.setSSLSocketFactory(socketFactory);
-
+        
         final var client = builder
                 .setDefaultRequestConfig(RequestConfig.custom().setConnectTimeout(connectionTimeoutInMillis).build())
                 .setDefaultSocketConfig(SocketConfig.custom().setSoKeepAlive(true).build())
@@ -88,10 +92,14 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
         validator.setValidateRequest(true);
         validator.setValidateResponse(true);
         initBean(validator);
-        inner.setInterceptors(new ClientInterceptor[]{
-            validator,
-            new SoapInterceptors<>(interceptors, callContexts)
-        });
+        
+        final ClientInterceptor[] clientInterceptors = Stream.of(
+                Optional.of(validator),
+                wssInterceptor,
+                Optional.of(new SoapInterceptors<>(interceptors, callContexts))
+        ).filter(Optional::isPresent).toArray(n -> new ClientInterceptor[n]);
+        
+        inner.setInterceptors(clientInterceptors);
 
         this.upstreamId = upstreamId;
         this.requestCounter = requestCounter;

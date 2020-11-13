@@ -173,6 +173,11 @@
                 <version>3.0.10.RELEASE</version>
             </dependency>
             <dependency>
+                <groupId>org.springframework.ws</groupId>
+                <artifactId>spring-ws-security</artifactId>
+                <version>3.0.10.RELEASE</version>
+            </dependency>
+            <dependency>
                 <groupId>org.glassfish.metro</groupId>
                 <artifactId>webservices-rt</artifactId>
                 <version>2.4.4</version>
