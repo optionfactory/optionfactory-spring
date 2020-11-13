@@ -38,6 +38,7 @@ import org.springframework.ws.client.core.WebServiceTemplate;
 import org.springframework.ws.client.support.interceptor.ClientInterceptor;
 import org.springframework.ws.client.support.interceptor.PayloadValidatingInterceptor;
 import org.springframework.ws.context.MessageContext;
+import org.springframework.ws.soap.SoapMessage;
 import org.springframework.ws.soap.SoapVersion;
 import org.springframework.ws.soap.saaj.SaajSoapMessageFactory;
 import org.springframework.ws.soap.security.wss4j2.Wss4jSecurityInterceptor;
@@ -97,7 +98,7 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
                 Optional.of(validator),
                 wssInterceptor,
                 Optional.of(new SoapInterceptors<>(interceptors, callContexts))
-        ).filter(Optional::isPresent).toArray(n -> new ClientInterceptor[n]);
+        ).filter(Optional::isPresent).map(Optional::get).toArray(n -> new ClientInterceptor[n]);
         
         inner.setInterceptors(clientInterceptors);
 
@@ -137,14 +138,19 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
         try {
             final var headers = new HttpHeaders();
             headers.addAll(ctx.prepare.entity.getHeaders());
+            headers.remove("SOAPAction");
             for (var interceptor : interceptors) {
                 final var newHeaders = interceptor.prepare(ctx.prepare);
                 if (newHeaders != null) {
                     headers.addAll(newHeaders);
                 }
             }
+            final var soapAction = ctx.prepare.entity.getHeaders().getFirst("SOAPAction");
             ctx.prepare.entity = new RequestEntity<>(ctx.prepare.entity.getBody(), headers, ctx.prepare.entity.getMethod(), ctx.prepare.entity.getUrl(), ctx.prepare.entity.getType());
             final var got = soap.marshalSendAndReceive(ctx.prepare.entity.getUrl().toString(), ctx.prepare.entity.getBody(), (WebServiceMessage message) -> {
+                if(soapAction != null){
+                    ((SoapMessage) message).setSoapAction(soapAction);
+                }
                 final HttpComponentsConnection connection = (HttpComponentsConnection) TransportContextHolder.getTransportContext().getConnection();
                 for (Entry<String, List<String>> header : ctx.prepare.entity.getHeaders().entrySet()) {
                     for (String value : header.getValue()) {
