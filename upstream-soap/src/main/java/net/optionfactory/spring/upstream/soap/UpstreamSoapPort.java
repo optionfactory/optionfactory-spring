@@ -5,9 +5,10 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.List;
+import static java.util.List.of;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import net.optionfactory.spring.upstream.UpstreamInterceptor;
 import net.optionfactory.spring.upstream.UpstreamInterceptor.ErrorContext;
@@ -41,7 +42,6 @@ import org.springframework.ws.context.MessageContext;
 import org.springframework.ws.soap.SoapMessage;
 import org.springframework.ws.soap.SoapVersion;
 import org.springframework.ws.soap.saaj.SaajSoapMessageFactory;
-import org.springframework.ws.soap.security.wss4j2.Wss4jSecurityInterceptor;
 import org.springframework.ws.transport.context.TransportContextHolder;
 import org.springframework.ws.transport.http.HttpComponentsConnection;
 import org.springframework.ws.transport.http.HttpComponentsMessageSender;
@@ -54,7 +54,7 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
     private final List<UpstreamInterceptor<CTX>> interceptors;
     private final ThreadLocal<ExchangeContext<CTX>> callContexts = new ThreadLocal<>();
 
-    public UpstreamSoapPort(SoapVersion soapVersion, String upstreamId, AtomicLong requestCounter, Resource[] schemas, Class<?> packageToScan, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, Optional<Wss4jSecurityInterceptor> wssInterceptor, List<UpstreamInterceptor<CTX>> interceptors) {
+    public UpstreamSoapPort(SoapVersion soapVersion, String upstreamId, AtomicLong requestCounter, Resource[] schemas, Class<?> packageToScan, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, List<ClientInterceptor> additionalInterceptors, List<UpstreamInterceptor<CTX>> interceptors) {
         final var builder = HttpClientBuilder.create();
         builder.setSSLSocketFactory(socketFactory);
         
@@ -95,10 +95,10 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
         initBean(validator);
         
         final ClientInterceptor[] clientInterceptors = Stream.of(
-                Optional.of(validator),
-                wssInterceptor,
-                Optional.of(new SoapInterceptors<>(interceptors, callContexts))
-        ).filter(Optional::isPresent).map(Optional::get).toArray(n -> new ClientInterceptor[n]);
+                Stream.of(validator),
+                additionalInterceptors.stream(),
+                Stream.of(new SoapInterceptors<>(interceptors, callContexts))
+        ).flatMap(Function.identity()).toArray(n -> new ClientInterceptor[n]);
         
         inner.setInterceptors(clientInterceptors);
 
