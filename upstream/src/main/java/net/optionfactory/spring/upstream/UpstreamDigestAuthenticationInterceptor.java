@@ -25,9 +25,8 @@ public class UpstreamDigestAuthenticationInterceptor<T> implements UpstreamInter
         final URI uri = prepare.entity.getUrl();
         final String uriPath = uri.getPath();
         final String serverChallenge = challenge(prepare, uri);        
-        final String auth = digestAuth.authHeader(method.name(), uriPath, serverChallenge);
         final HttpHeaders h = new HttpHeaders();
-        h.set("Authorization", String.format("Digest %s", auth));
+        h.set("Authorization", digestAuth.authHeader(method.name(), uriPath, serverChallenge));
         return h;
     }
 
