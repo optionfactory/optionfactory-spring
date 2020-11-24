@@ -4,10 +4,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicReference;
 import net.optionfactory.spring.email.EmailMessage;
 import net.optionfactory.spring.email.EmailSenderAndCopyAddresses;
 import net.optionfactory.spring.email.marshaller.EmailMarshaller;
@@ -15,12 +17,17 @@ import net.optionfactory.spring.problems.Problem;
 import net.optionfactory.spring.problems.Result;
 import net.optionfactory.spring.upstream.UpstreamFaultsSpooler;
 import net.optionfactory.spring.upstream.UpstreamFaultsSpooler.UpstreamFault;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 public class FaultsEmailsSpooler<T> implements UpstreamFaultsSpooler<T> {
 
+    
+    private final Logger logger = LoggerFactory.getLogger(FaultsEmailsSpooler.class);
+    
     private final EmailMarshaller emailMarshaller = new EmailMarshaller();
     private final EmailSenderAndCopyAddresses senderAndCopyAddresses;
     private final SubjectTemplateConfiguration emailSubjects;
@@ -30,6 +37,9 @@ public class FaultsEmailsSpooler<T> implements UpstreamFaultsSpooler<T> {
     private final Path emailSpoolDirectory;
     private final String recipient;
     private final ConcurrentLinkedQueue<UpstreamFault<T>> faults;
+
+    private final AtomicReference<Instant> lastFaultSpool = new AtomicReference<>(Instant.EPOCH);
+    private final AtomicReference<Duration> gracePeriod = new AtomicReference<>(Duration.ofMinutes(5));    
 
     public FaultsEmailsSpooler(EmailSenderAndCopyAddresses emailSenderConfiguration, SubjectTemplateConfiguration emailSubjects, TemplateEngine emailTemplates, TemplateEngine stringTemplates, String emailTemplateName, Path emailSpoolDirectory, String recipient) {
         Assert.isTrue(Files.isDirectory(emailSpoolDirectory), "emailSpoolDirectory must be a directory");
@@ -49,7 +59,26 @@ public class FaultsEmailsSpooler<T> implements UpstreamFaultsSpooler<T> {
         faults.add(fault);
     }
 
-    public synchronized Result<Path> spool() {
+    public synchronized void spool() {
+        var now = Instant.now();
+        if (Duration.between(lastFaultSpool.get(), now).compareTo(gracePeriod.get()) < 0) {
+            //max one email every grace period
+            return;
+        }
+        final Result<Path> spooled = dumpToEml();
+        if (spooled.isError()) {
+            logger.warn("[spool-emails][faults] failed to dump email: {}", spooled.getErrors());
+            return;
+        }
+        if (spooled.getValue() == null) {
+            //success, but no cigar
+            return;
+        }
+        logger.info("[spool-emails][faults] spooled {}", spooled.getValue().getFileName());
+        lastFaultSpool.set(now);
+    }
+
+    private Result<Path> dumpToEml() {
         try {
             final List<UpstreamFault<T>> batch = drain();
             if(batch.isEmpty()){
