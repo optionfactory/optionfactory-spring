@@ -15,19 +15,17 @@ public class DigestAuth {
     
     private final String clientId;
     private final String clientSecret;
-    private final AtomicInteger counter;
     private final Supplier<Integer> clientNonceFactory;
 
-    public DigestAuth(String clientId, String clientSecret, AtomicInteger counter, Supplier<Integer> clientNonceFactory) {
+    public DigestAuth(String clientId, String clientSecret, Supplier<Integer> clientNonceFactory) {
         this.clientId = clientId;
         this.clientSecret = clientSecret;
-        this.counter = counter;
         this.clientNonceFactory = clientNonceFactory;
     }
 
     public static DigestAuth fromCredentials(String clientId, String clientSecret) {
         final SecureRandom sr = new SecureRandom();
-        return new DigestAuth(clientId, clientSecret, new AtomicInteger(), sr::nextInt);
+        return new DigestAuth(clientId, clientSecret, sr::nextInt);
     }
 
     public String authHeader(String method, String uriPath, String serverChallenge) {
@@ -38,8 +36,8 @@ public class DigestAuth {
         final String serverRealm = challenge.params.get("realm");
         final String serverNonce = challenge.params.get("nonce");
         final String serverOpaque = challenge.params.get("opaque");
-        final String nc = hex8(counter.incrementAndGet());
-        final String clientNonce = hex8(clientNonceFactory.get());
+        final String nc = "00000001";
+        final String clientNonce = String.format("%08x", clientNonceFactory.get());
         final String ha1 = md5LowercaseHex(String.format("%s:%s:%s", clientId, serverRealm, clientSecret));
         final String ha2 = md5LowercaseHex(String.format("%s:%s", method, uriPath));
         final String response = md5LowercaseHex(String.format("%s:%s:%s:%s:%s:%s", ha1, serverNonce, nc, clientNonce, "auth", ha2));
@@ -59,10 +57,6 @@ public class DigestAuth {
 
     private static String quoted(String v) {
         return String.format("\"%s\"", v.replace("\"", "\\\""));
-    }
-
-    private static String hex8(int counter) {
-        return String.format("%08x", counter);
     }
 
     private static String md5LowercaseHex(String v) {
