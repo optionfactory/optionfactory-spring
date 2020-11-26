@@ -68,6 +68,8 @@
         <module>upstream-interceptor-micrometer</module>
         <module>upstream-email-faults</module>
         <module>validators</module>
+        <module>optionfactory-spring-bom</module>
+        
     </modules>
 
     <properties>
