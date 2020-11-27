@@ -118,6 +118,7 @@ public @interface Iban {
             COUNTRY_CODE_TO_FORMAT.put("TN", IbanFormat.of(24, "^TN\\d{22}$")); //  Tunisia
             COUNTRY_CODE_TO_FORMAT.put("TR", IbanFormat.of(26, "^TR\\d{8}[A-Z0-9]{16}$")); //  Turkey
             COUNTRY_CODE_TO_FORMAT.put("UA", IbanFormat.of(29, "^UA\\d{8}[A-Z0-9]{19}$")); //  Ukraine
+            COUNTRY_CODE_TO_FORMAT.put("VA", IbanFormat.of(22, "^VA\\d{2}[A-Z0-9]{18}$")); //  Vatican
             COUNTRY_CODE_TO_FORMAT.put("VG", IbanFormat.of(24, "^VG\\d{2}[A-Z]{4}\\d{16}$")); //  Virgin Islands, British
             COUNTRY_CODE_TO_FORMAT.put("XK", IbanFormat.of(20, "^XK\\d{18}$")); //  Republic of Kosovo
 
