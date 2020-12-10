@@ -14,13 +14,13 @@ import org.springframework.security.core.GrantedAuthority;
  */
 public class StaticBearerTokenAuthenticationProvider implements AuthenticationProvider {
 
-    private final Map<String, Collection<? extends GrantedAuthority>> tokenToAuthorities;
+    private final Map<String, ? extends Collection<? extends GrantedAuthority>> tokenToAuthorities;
 
     public StaticBearerTokenAuthenticationProvider(String token, Collection<? extends GrantedAuthority> authorities) {
-        this.tokenToAuthorities = Map.of(token, authorities);
+        this(Map.of(token, authorities));
     }
 
-    public StaticBearerTokenAuthenticationProvider(Map<String, Collection<? extends GrantedAuthority>> tokenToAuthorities) {
+    public StaticBearerTokenAuthenticationProvider(Map<String, ? extends Collection<? extends GrantedAuthority>> tokenToAuthorities) {
         this.tokenToAuthorities = tokenToAuthorities;
     }
 
