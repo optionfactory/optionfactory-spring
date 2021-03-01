@@ -20,11 +20,11 @@ import org.springframework.context.annotation.PropertySource;
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@PropertySource(value = "classpath:project.properties")
-@PropertySource(value = "classpath:${project.name}.properties")
-@PropertySource(value = "classpath:git.properties", ignoreResourceNotFound = true)
-@PropertySource(value = "file:${user.home}/.${project.name}.properties", ignoreResourceNotFound = true)
-@PropertySource(value = "file:/opt/${project.name}/conf/project.properties", ignoreResourceNotFound = true)
+@PropertySource(value = "classpath:project.properties", encoding = "UTF-8")
+@PropertySource(value = "classpath:${project.name}.properties", encoding = "UTF-8")
+@PropertySource(value = "classpath:git.properties", encoding = "UTF-8", ignoreResourceNotFound = true)
+@PropertySource(value = "file:${user.home}/.${project.name}.properties", encoding = "UTF-8", ignoreResourceNotFound = true)
+@PropertySource(value = "file:/opt/${project.name}/conf/project.properties", encoding = "UTF-8", ignoreResourceNotFound = true)
 @Documented
 public @interface ApplicationProperties {
 }
