@@ -4,14 +4,14 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>4.3-SNAPSHOT</version>
+        <version>4.3</version>
     </parent>    
     <artifactId>optionfactory-spring-bom</artifactId>
     <description>Bill of materials pom optionfactory-spring</description>
     <name>${project.groupId}:${project.artifactId}</name>
     <packaging>pom</packaging>
     <properties>
-        <opfa-spring.version>4.3-SNAPSHOT</opfa-spring.version>
+        <opfa-spring.version>4.3</opfa-spring.version>
     </properties>
 
     <dependencyManagement>
