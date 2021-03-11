@@ -1,10 +1,10 @@
 package net.optionfactory.spring.email.connector;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
+import net.optionfactory.spring.email.connector.EmailConnector.EmailSendException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.PathResource;
@@ -32,22 +32,20 @@ public class EmailSender {
         try (final Stream<Path> paths = Files.walk(spoolDir, 1)) {
             paths.filter(p -> Files.isRegularFile(p))
                     .filter(p -> p.getFileName().toString().endsWith(".eml"))
-                    .forEach(this::sendSpooledEmail);
+                    .forEach(this::trySendSpooledEmail);
         } catch (IOException ex) {
-            throw new UncheckedIOException(ex);
+            throw new EmailSendException(ex.getMessage(), ex);
         }
 
     }
 
-    private void sendSpooledEmail(Path eml) {
-        var result = emails.send(new PathResource(eml));
-        if (result.isError()) {
-            logger.warn(String.format("[send-emails] failed to sendemail: %s", result.getErrors()));
-            return;
-        }
-        logger.info(String.format("[send-emails] sent: %s", eml.getFileName()));
+    private void trySendSpooledEmail(Path eml) {
         try {
+            emails.send(new PathResource(eml));
+            logger.info(String.format("[send-emails] sent: %s", eml.getFileName()));
             Files.delete(eml);
+        } catch (EmailSendException ex) {
+            logger.warn(String.format("[send-emails] failed to sendemail: %s", ex.getMessage()));
         } catch (IOException ex) {
             logger.error("[send-emails] failed to remove sent email", ex);
         }

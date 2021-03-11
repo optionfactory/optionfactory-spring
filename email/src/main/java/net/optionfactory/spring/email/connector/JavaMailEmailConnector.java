@@ -5,9 +5,7 @@ import java.util.Optional;
 import java.util.Properties;
 import javax.mail.internet.MimeMessage;
 import javax.net.ssl.SSLSocketFactory;
-import net.optionfactory.spring.problems.Problem;
-import net.optionfactory.spring.problems.Result;
-import org.springframework.core.io.Resource;
+import org.springframework.core.io.InputStreamSource;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 
 public class JavaMailEmailConnector implements EmailConnector {
@@ -47,15 +45,13 @@ public class JavaMailEmailConnector implements EmailConnector {
         this.mailSender = sender;
     }
 
-
     @Override
-    public Result<Void> send(Resource resource) {
-        try (InputStream emlStream = resource.getInputStream()) {
+    public void send(InputStreamSource emlSource) {
+        try (InputStream emlStream = emlSource.getInputStream()) {
             final MimeMessage message = new MimeMessage(mailSender.getSession(), emlStream);
             mailSender.send(message);
-            return Result.value(null);
         } catch (Exception ex) {
-            return Result.error(Problem.of("MESSAGING_EXCEPTION", null, null, ex.getMessage()));
+            throw new EmailSendException(ex.getMessage(), ex);
         }
     }
 
@@ -74,7 +70,7 @@ public class JavaMailEmailConnector implements EmailConnector {
                 p.put("mail.smtps.socketFactory", sf);
             }, () -> {
                 p.setProperty("mail.smtps.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-            });            
+            });
             conf.username.ifPresent(username -> {
                 p.setProperty("mail.smtps.auth", "true");
             });
@@ -99,7 +95,7 @@ public class JavaMailEmailConnector implements EmailConnector {
                 p.put("mail.smtp.ssl.socketFactory", sf);
             }, () -> {
                 p.setProperty("mail.smtp.ssl.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-            });            
+            });
         }
         return p;
     }

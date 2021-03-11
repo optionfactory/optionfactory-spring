@@ -1,10 +1,17 @@
 package net.optionfactory.spring.email.connector;
 
-import net.optionfactory.spring.problems.Result;
-import org.springframework.core.io.Resource;
+import org.springframework.core.io.InputStreamSource;
 
 public interface EmailConnector {
 
-    Result<Void> send(Resource email);
+    void send(InputStreamSource emlSource);
+
+    public static class EmailSendException extends IllegalStateException {
+
+        public EmailSendException(String reason, Throwable cause) {
+            super(reason, cause);
+        }
+
+    }
 
 }

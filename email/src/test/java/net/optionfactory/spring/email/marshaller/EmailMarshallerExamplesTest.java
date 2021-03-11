@@ -1,21 +1,21 @@
+package net.optionfactory.spring.email.marshaller;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
+
 import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
-import javax.mail.internet.MimeBodyPart;
 import net.optionfactory.spring.email.EmailMessage;
 import net.optionfactory.spring.email.EmailSenderAndCopyAddresses;
-import net.optionfactory.spring.email.marshaller.EmailMarshaller;
+import net.optionfactory.spring.email.marshaller.EmailMarshaller.AttachmentSource;
+import net.optionfactory.spring.email.marshaller.EmailMarshaller.CidSource;
 import org.junit.Test;
-import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
 public class EmailMarshallerExamplesTest {
 
     private final EmailMarshaller m = new EmailMarshaller();
-    private final Resource icon = icon();
+    private final Resource icon = new ClassPathResource("icon.png", EmailMarshallerExamplesTest.class);
 
     @Test
     public void canMarshalCidsAttachmentsTextAndHtml() {
@@ -26,23 +26,21 @@ public class EmailMarshallerExamplesTest {
         config.ccAddresses = List.of();
         config.bccAddresses = List.of();
 
+        final var message = new EmailMessage();
 
-        final MimeBodyPart iconAttachment = m.attachment(icon, "attachment.png", "image/png").getValue();
-        final MimeBodyPart iconCid = m.cid(icon, "1234", "image/png").getValue();
+        message.htmlBody = "<body>this email contains an inline image: <img src='cid:1234'>, html and test and an attachment<hr></body>";
+        message.textBody = "test";
+        message.recipient = "test@example.com";
+        message.subject = "test subject";
+        message.messageId = UUID.randomUUID().toString();
 
-        final EmailMessage email = new EmailMessage();
-
-        email.htmlBody = "<body>this email contains an inline image: <img src='cid:1234'>, html and test and an attachment<hr></body>";
-        email.textBody = "test";
-        email.recipient = "test@example.com";
-        email.subject = "test subject";
-        email.messageId = UUID.randomUUID().toString();
-
-        m.marshal(config, email, List.of(iconAttachment), List.of(iconCid), Path.of("target/all.eml"));
+        final var iconAttachment = AttachmentSource.of(icon, "attachment.png", "image/png");
+        final var iconCid = CidSource.of(icon, "1234", "image/png");
+        m.marshal(config, message, List.of(iconAttachment), List.of(iconCid), Path.of("target/all.eml"));
     }
-    
+
     @Test
-    public void canMarshalTextOnly() {
+    public void canMarshalTextAndAttachment() {
 
         final EmailSenderAndCopyAddresses config = new EmailSenderAndCopyAddresses();
         config.sender = "test.sender@example.com";
@@ -51,7 +49,6 @@ public class EmailMarshallerExamplesTest {
         config.bccAddresses = List.of();
 
         final EmailMessage email = new EmailMessage();
-        final MimeBodyPart iconAttachment = m.attachment(icon, "attachment.png", "image/png").getValue();
 
         email.htmlBody = null;
         email.textBody = "test";
@@ -59,9 +56,10 @@ public class EmailMarshallerExamplesTest {
         email.subject = "test subject";
         email.messageId = UUID.randomUUID().toString();
 
+        final var iconAttachment = AttachmentSource.of(icon, "attachment.png", "image/png");
         m.marshal(config, email, List.of(iconAttachment), List.of(), Path.of("target/text_and_attachment.eml"));
     }
-    
+
     @Test
     public void canMarshalHtmlAndCids() {
 
@@ -72,7 +70,6 @@ public class EmailMarshallerExamplesTest {
         config.bccAddresses = List.of();
 
         final EmailMessage email = new EmailMessage();
-        final MimeBodyPart iconCid = m.cid(icon, "1234", "image/png").getValue();
 
         email.htmlBody = "<body><img src='cid:1234'><h1>test</h1> test test test<hr></body>";
         email.textBody = null;
@@ -80,8 +77,10 @@ public class EmailMarshallerExamplesTest {
         email.subject = "test subject";
         email.messageId = UUID.randomUUID().toString();
 
+        final var iconCid = CidSource.of(icon, "1234", "image/png");
         m.marshal(config, email, List.of(), List.of(iconCid), Path.of("target/html_and_cid.eml"));
     }
+
     @Test
     public void canMarshalHtmlOnly() {
 
@@ -101,9 +100,9 @@ public class EmailMarshallerExamplesTest {
 
         m.marshal(config, email, List.of(), List.of(), Path.of("target/html_only.eml"));
     }
-    
+
     @Test
-    public void canMarshalTextAndAttachments() {
+    public void canMarshalTextOnly() {
 
         final EmailSenderAndCopyAddresses config = new EmailSenderAndCopyAddresses();
         config.sender = "test.sender@example.com";
@@ -120,16 +119,6 @@ public class EmailMarshallerExamplesTest {
         email.messageId = UUID.randomUUID().toString();
 
         m.marshal(config, email, List.of(), List.of(), Path.of("target/text_only.eml"));
-    }
-
-    public ByteArrayResource icon() {
-        try ( var is = EmailMarshallerExamplesTest.class.getResourceAsStream("/icon.png")) {
-            final byte[] buffer = new byte[2929];
-            is.read(buffer);
-            return new ByteArrayResource(buffer);
-        } catch (IOException ex) {
-            throw new UncheckedIOException(ex);
-        }
     }
 
 }
