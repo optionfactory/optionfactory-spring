@@ -39,7 +39,8 @@ import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
 
 /**
  * A custom exception resolver resolving Spring and Jackson2 exceptions thrown
- * from an HandlerMethod annotated with &#64;{@link org.springframework.web.bind.annotation.ResponseBody} with a
+ * from an HandlerMethod annotated with
+ * &#64;{@link org.springframework.web.bind.annotation.ResponseBody} with a
  * MappingJackson2JsonView. Sample serialized form of the response is:  <code>
  * [
  *   {"type": "", "context": "fieldName", "reason": a field validation error", "details": null},
@@ -52,14 +53,12 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
     private final Map<HandlerMethod, Boolean> methodToIsRest = new ConcurrentHashMap<>();
     private final ObjectMapper mapper;
     private final Options options;
-    
+
     public enum Options {
         INCLUDE_DETAILS, OMIT_DETAILS;
     }
-    
 
-    public RestExceptionResolver(ObjectMapper mapper, int order, Options options) {
-        this.setOrder(order);
+    public RestExceptionResolver(ObjectMapper mapper, Options options) {
         this.mapper = mapper;
         this.options = options;
     }
@@ -186,7 +185,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
     protected ModelAndView doResolveException(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
         final HandlerMethod hm = (HandlerMethod) handler;
         final HttpStatusAndFailures statusAndErrors = toStatusAndErrors(request, response, hm, ex);
-        if(options == Options.OMIT_DETAILS){
+        if (options == Options.OMIT_DETAILS) {
             statusAndErrors.failures.forEach(p -> {
                 p.details = null;
             });
@@ -196,7 +195,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
         final MappingJackson2JsonView view = new MappingJackson2JsonView();
         view.setExtractValueFromSingleKeyModel(true);
         view.setObjectMapper(mapper);
-        view.setContentType("application/json;charset=UTF-8");        
+        view.setContentType("application/json;charset=UTF-8");
         return new ModelAndView(view, "errors", statusAndErrors.failures);
     }
 
