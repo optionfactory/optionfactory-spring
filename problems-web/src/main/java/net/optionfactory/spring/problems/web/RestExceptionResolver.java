@@ -2,6 +2,7 @@ package net.optionfactory.spring.problems.web;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import net.optionfactory.spring.problems.Failure;
@@ -9,11 +10,9 @@ import net.optionfactory.spring.problems.Problem;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.servlet.http.HttpServletRequest;
@@ -22,25 +21,21 @@ import javax.servlet.http.HttpServletResponseWrapper;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
-import org.springframework.web.HttpMediaTypeNotAcceptableException;
-import org.springframework.web.accept.ContentNegotiationManager;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolver;
+import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
 
 /**
  * A custom exception resolver resolving Spring and Jackson2 exceptions thrown
@@ -55,8 +50,7 @@ import org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolv
 public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
 
     private final Map<HandlerMethod, Boolean> methodToIsRest = new ConcurrentHashMap<>();
-    private final ContentNegotiationManager cn;
-    private final LinkedHashMap<MediaType, Supplier<View>> mediaTypeToViewFactory;
+    private final ObjectMapper mapper;
     private final Options options;
     
     public enum Options {
@@ -64,10 +58,9 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
     }
     
 
-    public RestExceptionResolver(ContentNegotiationManager cn, LinkedHashMap<MediaType, Supplier<View>> mediaTypeToViewFactory, int order, Options options) {
-        this.cn = cn;
-        this.mediaTypeToViewFactory = mediaTypeToViewFactory;
+    public RestExceptionResolver(ObjectMapper mapper, int order, Options options) {
         this.setOrder(order);
+        this.mapper = mapper;
         this.options = options;
     }
 
@@ -200,24 +193,11 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
         }
         response.setStatus(statusAndErrors.status.value());
 
-        try {
-            final List<MediaType> mts = cn.resolveMediaTypes(new ServletWebRequest(request));
-
-            for (MediaType mt : mts) {
-                for (Map.Entry<MediaType, Supplier<View>> mediaTypeAndViewFactory : mediaTypeToViewFactory.entrySet()) {
-                    final MediaType mediaType = mediaTypeAndViewFactory.getKey();
-                    final Supplier<View> viewFactory = mediaTypeAndViewFactory.getValue();
-                    if (mt.isCompatibleWith(mediaType)) {
-                        return new ModelAndView(viewFactory.get(), "errors", statusAndErrors.failures);
-                    }
-                }
-            }
-            final Supplier<View> firstSupplier = mediaTypeToViewFactory.values().iterator().next();
-            return new ModelAndView(firstSupplier.get(), "errors", statusAndErrors.failures);
-        } catch (HttpMediaTypeNotAcceptableException ex1) {
-            final Supplier<View> firstSupplier = mediaTypeToViewFactory.values().iterator().next();
-            return new ModelAndView(firstSupplier.get(), "errors", statusAndErrors.failures);
-        }
+        final MappingJackson2JsonView view = new MappingJackson2JsonView();
+        view.setExtractValueFromSingleKeyModel(true);
+        view.setObjectMapper(mapper);
+        view.setContentType("application/json;charset=UTF-8");        
+        return new ModelAndView(view, "errors", statusAndErrors.failures);
     }
 
     public static class HttpStatusAndFailures {
