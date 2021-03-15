@@ -13,7 +13,7 @@ public interface UpstreamInterceptor<CTX> {
     public static class PrepareContext<CTX> {
         public String upstreamId;
         public String endpointId;
-        public long requestId;
+        public String requestId;
         public CTX ctx;
         public RequestEntity<?> entity;
     }

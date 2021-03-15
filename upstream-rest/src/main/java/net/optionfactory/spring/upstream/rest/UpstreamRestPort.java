@@ -9,7 +9,6 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
 import net.optionfactory.spring.upstream.UpstreamException;
 import net.optionfactory.spring.upstream.UpstreamInterceptor;
 import net.optionfactory.spring.upstream.UpstreamInterceptor.ExchangeContext;
@@ -18,6 +17,7 @@ import net.optionfactory.spring.upstream.UpstreamInterceptor.RequestContext;
 import net.optionfactory.spring.upstream.UpstreamInterceptor.ResponseContext;
 import net.optionfactory.spring.upstream.UpstreamPort;
 import net.optionfactory.spring.upstream.UpstreamResponseErrorHandler;
+import net.optionfactory.spring.upstream.counters.UpstreamRequestCounter;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
@@ -44,12 +44,12 @@ import org.springframework.web.client.RestTemplate;
 public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
 
     private final String upstreamId;
-    private final AtomicLong requestCounter;
+    private final UpstreamRequestCounter requestCounter;
     private final RestTemplate rest;
     private final List<UpstreamInterceptor<CTX>> interceptors;
     private final ThreadLocal<ExchangeContext<CTX>> callContexts = new ThreadLocal<>();
 
-    public UpstreamRestPort(String upstreamId, AtomicLong requestCounter, ObjectMapper objectMapper, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, List<UpstreamInterceptor<CTX>> interceptors) {
+    public UpstreamRestPort(String upstreamId, UpstreamRequestCounter requestCounter, ObjectMapper objectMapper, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, List<UpstreamInterceptor<CTX>> interceptors) {
         final var builder = HttpClientBuilder.create();
         builder.setSSLSocketFactory(socketFactory);
         final var client = builder.setDefaultRequestConfig(RequestConfig.custom()
@@ -73,8 +73,8 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
 
         final var inner = new RestTemplate(requestFactory);
         inner.setMessageConverters(converters);
-        inner.setInterceptors(List.of(new RestInterceptors(upstreamId, interceptors, callContexts)));
-        inner.setErrorHandler(new UpstreamResponseErrorHandler(upstreamId, interceptors));
+        inner.setInterceptors(List.of(new RestInterceptors<>(upstreamId, interceptors, callContexts)));
+        inner.setErrorHandler(new UpstreamResponseErrorHandler<>(upstreamId, interceptors));
         this.upstreamId = upstreamId;
         this.requestCounter = requestCounter;
         this.interceptors = interceptors;
@@ -85,11 +85,11 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
     public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, Class<T> responseType) {
         final ExchangeContext<CTX> ctx = new ExchangeContext<>();
         ctx.prepare = new UpstreamInterceptor.PrepareContext<>();
-        ctx.prepare.requestId = requestCounter.incrementAndGet();
+        ctx.prepare.requestId = requestCounter.next();
         ctx.prepare.ctx = context;
         ctx.prepare.endpointId = endpointId;
         ctx.prepare.entity = requestEntity;
-        ctx.prepare.upstreamId = upstreamId;        
+        ctx.prepare.upstreamId = upstreamId;
         callContexts.set(ctx);
         try {
             ctx.prepare.entity = makeEntity(ctx.prepare);
@@ -107,11 +107,11 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
     public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, ParameterizedTypeReference<T> responseType) {
         final ExchangeContext<CTX> ctx = new ExchangeContext<>();
         ctx.prepare = new UpstreamInterceptor.PrepareContext<>();
-        ctx.prepare.requestId = requestCounter.incrementAndGet();
+        ctx.prepare.requestId = requestCounter.next();
         ctx.prepare.ctx = context;
         ctx.prepare.endpointId = endpointId;
         ctx.prepare.entity = requestEntity;
-        ctx.prepare.upstreamId = upstreamId;        
+        ctx.prepare.upstreamId = upstreamId;
         callContexts.set(ctx);
         try {
             ctx.prepare.entity = makeEntity(ctx.prepare);
@@ -191,7 +191,7 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
                 });
                 context.error.ex = ex;
                 for (var interceptor : interceptors) {
-                        interceptor.remotingError(context.prepare, context.request, context.error);
+                    interceptor.remotingError(context.prepare, context.request, context.error);
                 }
                 throw new UpstreamException(upstreamId, "GENERIC_ERROR", ex.getMessage());
             }

@@ -12,7 +12,7 @@ public interface UpstreamFaultsSpooler<CTX> {
     public static class UpstreamFault<CTX> {
 
         public CTX context;
-        public long reqId;
+        public String reqId;
         public URI uri;
         public HttpStatus status;
         public MediaType contentType;
@@ -22,7 +22,7 @@ public interface UpstreamFaultsSpooler<CTX> {
         public String response;
         public Throwable exception;
 
-        public static <CTX> UpstreamFault<CTX> of(CTX context, long reqId, URI uri, HttpStatus status, MediaType contentType, Instant requestInstant, String request, Instant responseInstant, String response, Throwable exception) {
+        public static <CTX> UpstreamFault<CTX> of(CTX context, String reqId, URI uri, HttpStatus status, MediaType contentType, Instant requestInstant, String request, Instant responseInstant, String response, Throwable exception) {
             final var f = new UpstreamFault<CTX>();
             f.context = context;
             f.reqId = reqId;

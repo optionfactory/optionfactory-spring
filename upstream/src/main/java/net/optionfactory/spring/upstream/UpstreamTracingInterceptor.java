@@ -19,7 +19,7 @@ public class UpstreamTracingInterceptor<CTX> implements UpstreamInterceptor<CTX>
         contextHeadersEncoder.toMap(prepare.ctx).forEach((k, v) -> {
             headers.add(String.format("%s%s", prefix, k), v);
         });
-        headers.set(String.format("%sREQID", prefix), Long.toString(prepare.requestId));
+        headers.set(String.format("%sREQID", prefix), prepare.requestId);
         return headers;
     }
 

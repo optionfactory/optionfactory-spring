@@ -5,9 +5,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.List;
-import static java.util.List.of;
 import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import net.optionfactory.spring.upstream.UpstreamInterceptor;
@@ -16,6 +14,7 @@ import net.optionfactory.spring.upstream.UpstreamInterceptor.ExchangeContext;
 import net.optionfactory.spring.upstream.UpstreamInterceptor.RequestContext;
 import net.optionfactory.spring.upstream.UpstreamInterceptor.ResponseContext;
 import net.optionfactory.spring.upstream.UpstreamPort;
+import net.optionfactory.spring.upstream.counters.UpstreamRequestCounter;
 import net.optionfactory.spring.upstream.soap.UpstreamSoapPort.SoapInterceptors;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
@@ -49,12 +48,12 @@ import org.springframework.ws.transport.http.HttpComponentsMessageSender;
 public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
 
     private final String upstreamId;
-    private final AtomicLong requestCounter;
+    private final UpstreamRequestCounter requestCounter;
     private final WebServiceTemplate soap;
     private final List<UpstreamInterceptor<CTX>> interceptors;
     private final ThreadLocal<ExchangeContext<CTX>> callContexts = new ThreadLocal<>();
 
-    public UpstreamSoapPort(SoapVersion soapVersion, String upstreamId, AtomicLong requestCounter, Resource[] schemas, Class<?> packageToScan, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, List<ClientInterceptor> additionalInterceptors, List<UpstreamInterceptor<CTX>> interceptors) {
+    public UpstreamSoapPort(SoapVersion soapVersion, String upstreamId, UpstreamRequestCounter requestCounter, Resource[] schemas, Class<?> packageToScan, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, List<ClientInterceptor> additionalInterceptors, List<UpstreamInterceptor<CTX>> interceptors) {
         final var builder = HttpClientBuilder.create();
         builder.setSSLSocketFactory(socketFactory);
         
@@ -129,7 +128,7 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
     private <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity) {
         final ExchangeContext<CTX> ctx = new ExchangeContext<>();
         ctx.prepare = new UpstreamInterceptor.PrepareContext<>();
-        ctx.prepare.requestId = requestCounter.incrementAndGet();
+        ctx.prepare.requestId = requestCounter.next();
         ctx.prepare.ctx = context;
         ctx.prepare.endpointId = endpointId;
         ctx.prepare.entity = requestEntity;

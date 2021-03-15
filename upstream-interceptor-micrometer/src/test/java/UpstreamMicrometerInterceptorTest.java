@@ -14,11 +14,11 @@ public class UpstreamMicrometerInterceptorTest {
     @Test
     public void a() {
         final SimpleMeterRegistry registry = new SimpleMeterRegistry();
-        final UpstreamMicrometerInterceptor<String> interceptor = new UpstreamMicrometerInterceptor<String>(registry);
+        final UpstreamMicrometerInterceptor<String> interceptor = new UpstreamMicrometerInterceptor<>(registry);
 
         ExchangeContext<String> ctx = new UpstreamInterceptor.ExchangeContext<>();
         ctx.prepare = new UpstreamInterceptor.PrepareContext<>();
-        ctx.prepare.requestId = 123;
+        ctx.prepare.requestId = "123";
         ctx.prepare.endpointId = "endpoint";
         ctx.prepare.upstreamId = "vita";
         ctx.request = new UpstreamInterceptor.RequestContext();
