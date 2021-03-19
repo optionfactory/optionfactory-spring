@@ -30,7 +30,7 @@ public class StaticBearerTokenAuthenticationProvider implements AuthenticationPr
         if (!tokenToAuthorities.containsKey(bearer.getCredentials())) {
             throw new BadCredentialsException("Invalid token");
         }
-        return bearer.withAuthorities(tokenToAuthorities.get(bearer.getCredentials()));
+        return bearer.makeAuthenticated(null, tokenToAuthorities.get(bearer.getCredentials()));
     }
 
     @Override

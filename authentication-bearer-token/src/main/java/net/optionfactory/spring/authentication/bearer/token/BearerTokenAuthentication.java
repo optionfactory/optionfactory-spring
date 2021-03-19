@@ -10,19 +10,18 @@ import org.springframework.security.core.GrantedAuthority;
 public class BearerTokenAuthentication extends AbstractAuthenticationToken {
 
     private final String token;
-
-    public BearerTokenAuthentication(String token) {
-        this(token, null);
-    }
-
-    public BearerTokenAuthentication(String token, Collection<? extends GrantedAuthority> authorities) {
+    private final Object principal;
+    
+    
+    public BearerTokenAuthentication(String token, Object principal, Collection<? extends GrantedAuthority> authorities) {
         super(authorities);
         this.token = token;
+        this.principal = principal;
         super.setAuthenticated(authorities != null);
     }
 
-    public BearerTokenAuthentication withAuthorities(Collection<? extends GrantedAuthority> authorities) {
-        final BearerTokenAuthentication bearer = new BearerTokenAuthentication(token, authorities);
+    public BearerTokenAuthentication makeAuthenticated(Object principal, Collection<? extends GrantedAuthority> authorities) {
+        final BearerTokenAuthentication bearer = new BearerTokenAuthentication(token, principal, authorities);
         bearer.setDetails(getDetails());
         return bearer;
     }
@@ -34,6 +33,6 @@ public class BearerTokenAuthentication extends AbstractAuthenticationToken {
 
     @Override
     public Object getPrincipal() {
-        return null;
+        return principal;
     }
 }

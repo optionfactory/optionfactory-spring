@@ -47,7 +47,7 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
                 .filter(header -> header.startsWith(BEARER_PREFIX))
                 .map(header -> header.substring(BEARER_PREFIX.length()).trim())
                 .map(token -> {
-                    final BearerTokenAuthentication bearer = new BearerTokenAuthentication(token);
+                    final BearerTokenAuthentication bearer = new BearerTokenAuthentication(token, null, null);
                     bearer.setDetails(new WebAuthenticationDetails(request));
                     return bearer;
                 });
