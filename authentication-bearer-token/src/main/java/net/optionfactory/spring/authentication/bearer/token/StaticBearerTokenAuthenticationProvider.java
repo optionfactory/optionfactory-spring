@@ -3,7 +3,6 @@ package net.optionfactory.spring.authentication.bearer.token;
 import java.util.Collection;
 import java.util.Map;
 import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
@@ -28,7 +27,7 @@ public class StaticBearerTokenAuthenticationProvider implements AuthenticationPr
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         final BearerTokenAuthentication bearer = (BearerTokenAuthentication) authentication;
         if (!tokenToAuthorities.containsKey(bearer.getCredentials())) {
-            throw new BadCredentialsException("Invalid token");
+            return null;
         }
         return bearer.makeAuthenticated(null, tokenToAuthorities.get(bearer.getCredentials()));
     }
