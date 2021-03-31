@@ -52,15 +52,22 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
 
     private final Map<HandlerMethod, Boolean> methodToIsRest = new ConcurrentHashMap<>();
     private final ObjectMapper mapper;
-    private final Options options;
+    private final ProblemTransformer[] transformers;
 
     public enum Options {
         INCLUDE_DETAILS, OMIT_DETAILS;
     }
 
-    public RestExceptionResolver(ObjectMapper mapper, Options options) {
+    public RestExceptionResolver(ObjectMapper mapper, Options options, ProblemTransformer... transformers) {
         this.mapper = mapper;
-        this.options = options;
+        this.transformers = options == Options.INCLUDE_DETAILS ? transformers : withOmitDetails(transformers);
+    }
+    
+    private ProblemTransformer[] withOmitDetails(ProblemTransformer[] transformers){
+        final ProblemTransformer[] r = new ProblemTransformer[transformers.length + 1];
+        System.arraycopy(transformers, 0, r, 0, transformers.length);
+        r[transformers.length] = new OmitDetails();
+        return r;
     }
 
     protected HttpStatusAndFailures toStatusAndErrors(HttpServletRequest request, HttpServletResponse response, HandlerMethod hm, Exception ex) {
@@ -185,18 +192,26 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
     protected ModelAndView doResolveException(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
         final HandlerMethod hm = (HandlerMethod) handler;
         final HttpStatusAndFailures statusAndErrors = toStatusAndErrors(request, response, hm, ex);
-        if (options == Options.OMIT_DETAILS) {
-            statusAndErrors.failures.forEach(p -> {
-                p.details = null;
-            });
-        }
+        
+        final var transformedFailures = statusAndErrors.failures
+                .stream()
+                .map(p -> applyAllTransformers(p, request, response, hm, ex))
+                .collect(Collectors.toList());
+        
         response.setStatus(statusAndErrors.status.value());
 
         final MappingJackson2JsonView view = new MappingJackson2JsonView();
         view.setExtractValueFromSingleKeyModel(true);
         view.setObjectMapper(mapper);
         view.setContentType("application/json;charset=UTF-8");
-        return new ModelAndView(view, "errors", statusAndErrors.failures);
+        return new ModelAndView(view, "errors", transformedFailures);
+    }
+
+    private Problem applyAllTransformers(Problem p, HttpServletRequest request, HttpServletResponse response, HandlerMethod handler, Exception ex) {
+        for (ProblemTransformer pt : transformers) {
+            p = pt.transform(p, request, response, handler, ex);
+        }
+        return p;
     }
 
     public static class HttpStatusAndFailures {

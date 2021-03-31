@@ -5,29 +5,28 @@ import net.optionfactory.spring.problems.Problem;
 import java.util.List;
 import net.optionfactory.spring.problems.web.RestExceptionResolver.Options;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
+import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
 
 public class RestExceptionResolverTest {
 
-    private RestExceptionResolver er;
-    private HandlerMethod hm;
+    @ResponseBody
+    public void fakeControllerMethod() {
 
-    @Before
-    public void before() throws NoSuchMethodException {
-        final var mapper = new ObjectMapper();
-        er = new RestExceptionResolver(mapper, RestExceptionResolver.LOWEST_PRECEDENCE + 1, Options.INCLUDE_DETAILS);
-        hm = new HandlerMethod(new RestExceptionResolverTest(), RestExceptionResolverTest.class.getMethod("fakeControllerMethod"));
     }
 
     @Test
-    public void exceptionsAreResolvedWithMappingJackson2JsonView() {
+    public void exceptionsAreResolvedWithMappingJackson2JsonView() throws NoSuchMethodException {
+        final var mapper = new ObjectMapper();
+        final var er = new RestExceptionResolver(mapper, Options.INCLUDE_DETAILS);
+        final var hm = new HandlerMethod(new RestExceptionResolverTest(), RestExceptionResolverTest.class.getMethod("fakeControllerMethod"));
         final MockHttpServletRequest req = new MockHttpServletRequest();
         final MockHttpServletResponse res = new MockHttpServletResponse();
         final Exception exception = new IllegalArgumentException();
@@ -38,7 +37,10 @@ public class RestExceptionResolverTest {
     }
 
     @Test
-    public void exceptionsAreReportedAsProblemsInModel() {
+    public void exceptionsAreReportedAsProblemsInModel() throws NoSuchMethodException {
+        final var mapper = new ObjectMapper();
+        final var er = new RestExceptionResolver(mapper, Options.INCLUDE_DETAILS);
+        final var hm = new HandlerMethod(new RestExceptionResolverTest(), RestExceptionResolverTest.class.getMethod("fakeControllerMethod"));
 
         final MockHttpServletRequest req = new MockHttpServletRequest();
         final MockHttpServletResponse res = new MockHttpServletResponse();
@@ -49,9 +51,36 @@ public class RestExceptionResolverTest {
         Assert.assertTrue(failures instanceof List && ((List) failures).get(0) instanceof Problem);
     }
 
-    @ResponseBody
-    public void fakeControllerMethod() {
+    @Test
+    public void detailsAreNullWhenOptionsIsOmitDetails() throws NoSuchMethodException {
+        final var mapper = new ObjectMapper();
+        final RestExceptionResolver er = new RestExceptionResolver(mapper, Options.OMIT_DETAILS);
+        final HandlerMethod hm = new HandlerMethod(new RestExceptionResolverTest(), RestExceptionResolverTest.class.getMethod("fakeControllerMethod"));
 
+        final MockHttpServletRequest req = new MockHttpServletRequest();
+        final MockHttpServletResponse res = new MockHttpServletResponse();
+        final Exception exception = new ResponseStatusException(HttpStatus.BAD_GATEWAY, "details");
+
+        final ModelAndView got = er.resolveException(req, res, hm, exception);
+        final Object failures = got.getModel().get("errors");
+        final Problem problem = (Problem) ((List) failures).get(0);
+        Assert.assertEquals(null, problem.details);
+    }
+
+    @Test
+    public void detailsAreSerializedWhenOptionsIsIncludeDetails() throws NoSuchMethodException {
+        final var mapper = new ObjectMapper();
+        final RestExceptionResolver er = new RestExceptionResolver(mapper, Options.INCLUDE_DETAILS);
+        final HandlerMethod hm = new HandlerMethod(new RestExceptionResolverTest(), RestExceptionResolverTest.class.getMethod("fakeControllerMethod"));
+
+        final MockHttpServletRequest req = new MockHttpServletRequest();
+        final MockHttpServletResponse res = new MockHttpServletResponse();
+        final Exception exception = new ResponseStatusException(HttpStatus.BAD_GATEWAY, "details");
+
+        final ModelAndView got = er.resolveException(req, res, hm, exception);
+        final Object failures = got.getModel().get("errors");
+        final Problem problem = (Problem) ((List) failures).get(0);
+        Assert.assertEquals("details", problem.details);
     }
 
 }
