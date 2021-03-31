@@ -11,7 +11,7 @@
     <name>${project.groupId}:${project.artifactId}</name>
     <packaging>pom</packaging>
     <properties>
-        <opfa-spring.version>4.7-SNAPSHOT</opfa-spring.version>
+        <opfa-spring.version>${project.version}</opfa-spring.version>
     </properties>
 
     <dependencyManagement>
