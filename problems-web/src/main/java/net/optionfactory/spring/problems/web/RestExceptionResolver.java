@@ -118,14 +118,6 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             logger.debug(String.format("Binding failure at %s: %s", requestUri, failures));
             return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, failures);
         }
-        if (ex instanceof MethodArgumentNotValidException) {
-            final MethodArgumentNotValidException manve = (MethodArgumentNotValidException) ex;
-            final Stream<Problem> globalFailures = manve.getBindingResult().getGlobalErrors().stream().map(RestExceptionResolver::objectErrorToProblem);
-            final Stream<Problem> fieldFailures = manve.getBindingResult().getFieldErrors().stream().map(RestExceptionResolver::fieldErrorToProblem);
-            final List<Problem> failures = Stream.concat(globalFailures, fieldFailures).collect(Collectors.toList());
-            logger.debug(String.format("Invalid method argument at %s: %s", requestUri, failures));
-            return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, failures);
-        }
         if (ex instanceof MethodArgumentTypeMismatchException) { // Handles type errors in path variables (Es. not-numeric string when expecting an int)
             final MethodArgumentTypeMismatchException matme = (MethodArgumentTypeMismatchException) ex;
             final String parameterName = matme.getParameter().getParameterName();
