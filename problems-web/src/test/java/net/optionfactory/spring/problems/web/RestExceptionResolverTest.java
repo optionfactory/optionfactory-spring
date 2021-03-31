@@ -3,6 +3,7 @@ package net.optionfactory.spring.problems.web;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.optionfactory.spring.problems.Problem;
 import java.util.List;
+import net.optionfactory.spring.problems.Failure;
 import net.optionfactory.spring.problems.web.RestExceptionResolver.Options;
 import org.junit.Assert;
 import org.junit.Test;
@@ -75,7 +76,7 @@ public class RestExceptionResolverTest {
 
         final MockHttpServletRequest req = new MockHttpServletRequest();
         final MockHttpServletResponse res = new MockHttpServletResponse();
-        final Exception exception = new ResponseStatusException(HttpStatus.BAD_GATEWAY, "details");
+        final Exception exception = new Failure(Problem.of("type", "context", "reason", "details"));
 
         final ModelAndView got = er.resolveException(req, res, hm, exception);
         final Object failures = got.getModel().get("errors");
