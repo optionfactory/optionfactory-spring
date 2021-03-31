@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import net.optionfactory.spring.problems.Failure;
 import net.optionfactory.spring.problems.Problem;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +25,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.method.HandlerMethod;
@@ -81,21 +79,21 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 metadata.put("in", inner.getReferringClass().getSimpleName());
                 final Problem failure = Problem.of("UNRECOGNIZED_PROPERTY", inner.getPropertyName(), "Unrecognized field", metadata);
                 logger.debug(String.format("Unrecognized property at %s: %s", requestUri, failure));
-                return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, Arrays.asList(failure));
+                return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(failure));
             }
             if (cause instanceof InvalidFormatException) {
                 final InvalidFormatException inner = (InvalidFormatException) cause;
                 final String path = inner.getPath().stream().map(p -> p.getFieldName()).collect(Collectors.joining("."));
                 final Problem failure = Problem.of("INVALID_FORMAT", path, "Invalid format", inner.getMessage());
                 logger.debug(String.format("Invalid format at %s: %s", requestUri, failure));
-                return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, Arrays.asList(failure));
+                return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(failure));
             }
             if (cause instanceof JsonMappingException) {
                 final JsonMappingException inner = (JsonMappingException) cause;
                 final String path = inner.getPath().stream().map(p -> p.getFieldName()).collect(Collectors.joining("."));
                 final Problem failure = Problem.of("INVALID_FORMAT", path, "Invalid format", inner.getMessage());
                 logger.debug(String.format("Json mapping exception at %s: %s", requestUri, failure));
-                return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, Arrays.asList(failure));
+                return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(failure));
             }
             if (cause instanceof JsonParseException) {
                 final JsonParseException inner = (JsonParseException) cause;
@@ -104,11 +102,11 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 details.put("message", cause.getMessage());
                 final Problem failure = Problem.of("UNPARSEABLE_MESSAGE", Problem.NO_CONTEXT, "Unpearsable message", details);
                 logger.debug(String.format("Unparseable message: %s", failure.toString()));
-                return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, Arrays.asList(failure));
+                return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(failure));
             }
             final Problem failure = Problem.of("MESSAGE_NOT_READABLE", Problem.NO_CONTEXT, "Message not readable", cause != null ? cause.getMessage() : ex.getMessage());
             logger.debug(String.format("Unreadable message at %s: %s", requestUri, failure));
-            return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, Arrays.asList(failure));
+            return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(failure));
         }
         if (ex instanceof BindException) {
             final BindException be = (BindException) ex;
