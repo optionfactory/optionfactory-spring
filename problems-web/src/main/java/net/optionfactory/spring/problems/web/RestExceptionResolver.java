@@ -136,7 +136,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
         }
         if (ex instanceof ResponseStatusException) {
             final ResponseStatusException rse = (ResponseStatusException) ex;
-            final Problem problem = Problem.of(rse.getStatus().name(), null, null, rse.getReason());
+            final Problem problem = Problem.of(rse.getStatus().name(), null, rse.getReason(), Problem.NO_DETAILS);
             return new HttpStatusAndFailures(rse.getStatus(), Collections.singletonList(problem));
         }
         final ResponseStatus responseStatus = AnnotationUtils.findAnnotation(ex.getClass(), ResponseStatus.class);
