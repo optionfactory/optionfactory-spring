@@ -9,8 +9,8 @@ import net.optionfactory.spring.data.jpa.filtering.TestMarker;
 import net.optionfactory.spring.data.jpa.hibernate.naming.LowercaseUnderscoreSeparatedPhysicalNamingStrategy;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.model.naming.ImplicitNamingStrategyComponentPathImpl;
-import org.hibernate.dialect.PostgreSQL10Dialect;
-import org.springframework.beans.factory.annotation.Value;
+import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.dialect.H2Dialect;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
@@ -18,53 +18,42 @@ import org.springframework.orm.hibernate5.HibernateTransactionManager;
 import org.springframework.orm.hibernate5.LocalSessionFactoryBuilder;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.testcontainers.containers.PostgreSQLContainer;
 
 @Configuration
 @EnableJpaWhitelistFilteringRepositories(
-        basePackageClasses = TestMarker.class, 
-        entityManagerFactoryRef = "hibernate"
+        basePackageClasses = TestMarker.class,
+        entityManagerFactoryRef = "entityManagerFactory"
 )
 @PropertySource(value = "classpath:test.properties")
 public class HibernateTestConfig {
 
     @Bean
-    public SessionFactory hibernate(DataSource dataSource) {
-        final Properties hibernateProperties = new Properties();
-        hibernateProperties.put("hibernate.dialect", PostgreSQL10Dialect.class.getName());
-        hibernateProperties.put("hibernate.hbm2ddl.auto", "update");
-        hibernateProperties.put("hibernate.show_sql", false);
-        hibernateProperties.put("hibernate.format_sql", false);
-        hibernateProperties.put("hibernate.generate_statistics", false);
-        final LocalSessionFactoryBuilder builder = new LocalSessionFactoryBuilder(dataSource);
-        builder.addProperties(hibernateProperties);
+    public SessionFactory entityManagerFactory(DataSource dataSource) {
+        final var properties = new Properties();
+        properties.put(AvailableSettings.HBM2DDL_AUTO, "update");
+        properties.put(AvailableSettings.DIALECT, H2Dialect.class.getName());
+        properties.put(AvailableSettings.SHOW_SQL, false);
+        properties.put(AvailableSettings.FORMAT_SQL, false);
+        properties.put(AvailableSettings.USE_SQL_COMMENTS, false);
+        properties.put(AvailableSettings.GENERATE_STATISTICS, false);
+        properties.put(AvailableSettings.USE_SECOND_LEVEL_CACHE, false);
+        properties.put(AvailableSettings.USE_QUERY_CACHE, false);
+        final var builder = new LocalSessionFactoryBuilder(dataSource);
         builder.scanPackages(TestMarker.class.getPackage().getName());
         builder.setPhysicalNamingStrategy(new LowercaseUnderscoreSeparatedPhysicalNamingStrategy());
         builder.setImplicitNamingStrategy(new ImplicitNamingStrategyComponentPathImpl());
+        builder.addProperties(properties);
         return builder.buildSessionFactory();
     }
 
-    @Bean(initMethod = "start")
-    public PostgreSQLContainer postgres(
-            @Value("${db.schema}") String schema,
-            @Value("${db.username}") String username,
-            @Value("${db.password}") String password
-    ) {
-        return new PostgreSQLContainer("postgres:10.8-alpine")
-                .withDatabaseName(schema)
-                .withUsername(username)
-                .withPassword(password);
-    }
-
     @Bean
-    public DataSource dataSource(PostgreSQLContainer postgres) throws PropertyVetoException {
-        final Properties driverProperties = new Properties();
-        final ComboPooledDataSource dataSource = new ComboPooledDataSource();
-        dataSource.setProperties(driverProperties);
-        dataSource.setUser(postgres.getUsername());
-        dataSource.setPassword(postgres.getPassword());
-        dataSource.setDriverClass(org.postgresql.Driver.class.getName());
-        dataSource.setJdbcUrl(postgres.getJdbcUrl());
+    public DataSource dataSource() throws PropertyVetoException {
+        final var dataSource = new ComboPooledDataSource();
+        dataSource.setProperties(new Properties());
+        dataSource.setUser("sa");
+        dataSource.setPassword("");
+        dataSource.setDriverClass(org.h2.Driver.class.getName());
+        dataSource.setJdbcUrl("jdbc:h2:mem:testdb");
         dataSource.setInitialPoolSize(5);
         dataSource.setMaxPoolSize(50);
         dataSource.setMinPoolSize(5);

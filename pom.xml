@@ -240,7 +240,6 @@
                                 </goals>
                                 <configuration>
                                     <additionalparam>-Xdoclint:none</additionalparam>
-                                    <javadocVersion>11.0.6</javadocVersion>
                                 </configuration>
                             </execution>
                         </executions>
