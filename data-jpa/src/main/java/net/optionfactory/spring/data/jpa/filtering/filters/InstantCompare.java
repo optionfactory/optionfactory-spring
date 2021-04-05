@@ -21,6 +21,7 @@ import javax.persistence.metamodel.EntityType;
 import net.optionfactory.spring.data.jpa.filtering.filters.InstantCompare.InstantCompareFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.spring.data.jpa.filtering.filters.InstantCompare.RepeatableInstantCompare;
+import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
 
 /**
  * Compares an {@link Instant} property. The first argument must be a
@@ -52,7 +53,7 @@ public @interface InstantCompare {
 
     Format format() default Format.ISO_8601;
 
-    String property();
+    String path();
 
     @Documented
     @Target(value = ElementType.TYPE)
@@ -66,13 +67,13 @@ public @interface InstantCompare {
 
         private final String name;
         private final EnumSet<Operator> operators;
-        private final String property;
         private final Format format;
+        private final Traversal traversal;
 
         public InstantCompareFilter(InstantCompare annotation, EntityType<?> entity) {
             this.name = annotation.name();
-            this.property = annotation.property();
-            Filters.ensurePropertyOfAnyType(annotation, entity, property, Instant.class);
+            this.traversal = Filters.traversal(annotation, entity, annotation.path());
+            Filters.ensurePropertyOfAnyType(annotation, entity, traversal, Instant.class);
             this.operators = EnumSet.of(annotation.operators()[0], annotation.operators());
             this.format = annotation.format();
         }
@@ -81,7 +82,7 @@ public @interface InstantCompare {
         public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
             final Operator operator = Operator.valueOf(values[0]);
             Filters.ensure(operators.contains(operator), "operator %s not whitelisted (%s)", operator, operators);
-            final Path<Instant> lhs = Filters.traverseProperty(root, property);
+            final Path<Instant> lhs = Filters.path(root, traversal);
             Filters.ensure(values.length == (operator == Operator.BETWEEN ? 3 : 2), "unexpected number of values: %d", values.length);
             final String value = values[1];
             Filters.ensure(value != null, "value cannot be null");

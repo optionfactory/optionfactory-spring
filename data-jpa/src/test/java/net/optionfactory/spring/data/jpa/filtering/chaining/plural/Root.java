@@ -8,12 +8,12 @@ import javax.persistence.OneToMany;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
 
 @Entity
-@TextCompare(name = "byLeafColor", property = "<JOIN_INNER>leaves.color")
+@TextCompare(name = "byLeafColor", path = "leaves.color")
 public class Root {
 
     @Id
     public long id;
 
-    @OneToMany(cascade = CascadeType.ALL)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "root")
     public List<Leaf> leaves;
 }

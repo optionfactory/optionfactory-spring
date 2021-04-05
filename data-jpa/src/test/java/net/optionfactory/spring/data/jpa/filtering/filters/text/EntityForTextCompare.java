@@ -5,8 +5,8 @@ import javax.persistence.Id;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
 
 @Entity
-@TextCompare(name = "byName", property = "name")
-@TextCompare(name = "byDesc", property = "description")
+@TextCompare(name = "byName", path = "name")
+@TextCompare(name = "byDesc", path = "description")
 public class EntityForTextCompare {
 
     @Id

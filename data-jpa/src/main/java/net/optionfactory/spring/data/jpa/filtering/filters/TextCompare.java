@@ -19,6 +19,7 @@ import javax.persistence.metamodel.EntityType;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare.TextCompareFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare.RepeatableTextCompare;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
+import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
 
 /**
  * Compares a text property. The three arguments must be a whitelisted
@@ -49,7 +50,7 @@ public @interface TextCompare {
         Mode.CASE_SENSITIVE, Mode.IGNORE_CASE
     };
 
-    String property();
+    String path();
 
     @Documented
     @Target(value = ElementType.TYPE)
@@ -64,14 +65,14 @@ public @interface TextCompare {
         private final String name;
         private final EnumSet<Operator> operators;
         private final EnumSet<Mode> modes;
-        private final String property;
+        private final Traversal traversal;
 
-        public TextCompareFilter(TextCompare sc, EntityType<?> entity) {
-            this.name = sc.name();
-            this.property = sc.property();
-            this.operators = EnumSet.of(sc.operators()[0], sc.operators());
-            this.modes = EnumSet.of(sc.modes()[0], sc.modes());
-            Filters.ensurePropertyOfAnyType(sc, entity, property, String.class);
+        public TextCompareFilter(TextCompare annotation, EntityType<?> entity) {
+            this.name = annotation.name();
+            this.operators = EnumSet.of(annotation.operators()[0], annotation.operators());
+            this.modes = EnumSet.of(annotation.modes()[0], annotation.modes());
+            this.traversal = Filters.traversal(annotation, entity, annotation.path());
+            Filters.ensurePropertyOfAnyType(annotation, entity, traversal, String.class);
         }
 
         @Override
@@ -83,7 +84,7 @@ public @interface TextCompare {
             Filters.ensure(modes.contains(mode), "mode %s not whitelisted (%s)", mode, modes);
             final String value = values[2];
             Filters.ensure(value != null, "value cannot be null");
-            final Expression<String> lhs = mode == Mode.CASE_SENSITIVE ? Filters.traverseProperty(root, property) : builder.lower(Filters.traverseProperty(root, property));
+            final Expression<String> lhs = mode == Mode.CASE_SENSITIVE ? Filters.path(root, traversal) : builder.lower(Filters.path(root, traversal));
             final String rhs = mode == Mode.CASE_SENSITIVE ? value : value.toLowerCase();
             switch (operator) {
                 case CONTAINS:

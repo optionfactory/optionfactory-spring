@@ -17,6 +17,7 @@ import javax.persistence.metamodel.EntityType;
 import net.optionfactory.spring.data.jpa.filtering.filters.BooleanCompare.BooleanCompareFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.spring.data.jpa.filtering.filters.BooleanCompare.RepeatableBooleanCompare;
+import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequest;
 
 /**
@@ -33,7 +34,7 @@ public @interface BooleanCompare {
 
     String name();
 
-    String property();
+    String path();
 
     String trueValue() default "true";
 
@@ -52,25 +53,25 @@ public @interface BooleanCompare {
     public static class BooleanCompareFilter implements Filter {
 
         private final String name;
-        private final String property;
         private final String trueValue;
         private final String falseValue;
         private final boolean ignoreCase;
+        private final Traversal traversal;
 
         public BooleanCompareFilter(BooleanCompare annotation, EntityType<?> entity) {
             this.name = annotation.name();
-            this.property = annotation.property();
             this.trueValue = annotation.trueValue();
             this.falseValue = annotation.falseValue();
             this.ignoreCase = annotation.ignoreCase();
-            Filters.ensurePropertyOfAnyType(annotation, entity, property, Boolean.class, boolean.class);
+            this.traversal = Filters.traversal(annotation, entity, annotation.path());
+            Filters.ensurePropertyOfAnyType(annotation, entity, this.traversal, Boolean.class, boolean.class);
         }
 
         @Override
         public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
             Filters.ensure(values.length == 1, "missing value for comparison");
             final String value = values[0];
-            final Path<Boolean> p = Filters.traverseProperty(root, property);
+            final Path<Boolean> p = Filters.path(root, traversal);
             if (value == null) {
                 return p.isNull();
             }

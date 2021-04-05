@@ -6,7 +6,7 @@ import javax.persistence.Id;
 import net.optionfactory.spring.data.jpa.filtering.filters.LocalDateCompare;
 
 @Entity
-@LocalDateCompare(name = "date", property = "date")
+@LocalDateCompare(name = "date", path = "date")
 public class EntityForLocalDate {
 
     @Id

@@ -20,6 +20,7 @@ import javax.persistence.metamodel.EntityType;
 import net.optionfactory.spring.data.jpa.filtering.filters.PostgresFullTextSearch.PostgresFullTextSearchFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.PostgresFullTextSearch.RepeatablePostgresFullTextSearch;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
+import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
 
 @Documented
 @Target(value = ElementType.TYPE)
@@ -30,7 +31,7 @@ public @interface PostgresFullTextSearch {
 
     String name();
 
-    String[] properties();
+    String[] paths();
 
     @Documented
     @Target(value = ElementType.TYPE)
@@ -43,20 +44,22 @@ public @interface PostgresFullTextSearch {
     public static class PostgresFullTextSearchFilter implements Filter {
 
         private final String name;
-        private final String[] properties;
+        private final List<Traversal> traversals;
 
-        public PostgresFullTextSearchFilter(PostgresFullTextSearch ie, EntityType<?> entityType) {
-            this.name = ie.name();
-            this.properties = ie.properties();
-            for (String property : properties) {
-                Filters.ensurePropertyOfAnyType(ie, entityType, property, String.class);
+        public PostgresFullTextSearchFilter(PostgresFullTextSearch annotation, EntityType<?> entityType) {
+            this.name = annotation.name();
+            this.traversals = Stream.of(annotation.paths())
+                    .map(p -> Filters.traversal(annotation, entityType, p))
+                    .collect(Collectors.toList());
+            for (var traversal : traversals) {
+                Filters.ensurePropertyOfAnyType(annotation, entityType, traversal, String.class);
             }
         }
 
         @Override
         public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
             //params = alias, alias, alias, alias, query
-            final List<Expression<?>> paths = Stream.of(properties).map(p -> Filters.traverseProperty(root, p)).collect(Collectors.toList());
+            final List<Expression<?>> paths = traversals.stream().map(p -> Filters.path(root, p)).collect(Collectors.toList());
             final Expression<String> q = builder.literal(values[0]);
             final Expression<?>[] allargs = Stream.concat(paths.stream(), Stream.of(q)).toArray((size) -> new Expression[size]);
             Expression<Boolean> function = builder.function("fts", boolean.class, allargs);

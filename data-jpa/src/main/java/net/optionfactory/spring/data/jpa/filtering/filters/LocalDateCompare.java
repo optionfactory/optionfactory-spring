@@ -21,10 +21,11 @@ import javax.persistence.metamodel.EntityType;
 import net.optionfactory.spring.data.jpa.filtering.filters.LocalDateCompare.LocalDateCompareFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.spring.data.jpa.filtering.filters.LocalDateCompare.RepeatableLocalDateCompare;
+import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
 
 /**
- * Compares a {@link LocalDate} property.The first argument must be a
- * whitelisted {@link Operator}. The {@link Operator#BETWEEN} accepts two
+ * Compares a {@link LocalDate} path.The first argument must be a
+ whitelisted {@link Operator}. The {@link Operator#BETWEEN} accepts two
  * arguments, while the other operators accept a single argument, which format
  * must match the configured {@link #datePattern() datePattern}.
  */
@@ -47,7 +48,7 @@ public @interface LocalDateCompare {
 
     String datePattern() default "yyyy-MM-dd";
 
-    String property();
+    String path();
 
     @Documented
     @Target(value = ElementType.TYPE)
@@ -61,13 +62,13 @@ public @interface LocalDateCompare {
 
         private final String name;
         private final EnumSet<Operator> operators;
-        private final String property;
         private final DateTimeFormatter formatter;
+        private final Traversal traversal;
 
         public LocalDateCompareFilter(LocalDateCompare annotation, EntityType<?> entity) {
             this.name = annotation.name();
-            this.property = annotation.property();
-            Filters.ensurePropertyOfAnyType(annotation, entity, property, LocalDate.class);
+            this.traversal = Filters.traversal(annotation, entity, annotation.path());
+            Filters.ensurePropertyOfAnyType(annotation, entity, traversal, LocalDate.class);
             this.operators = EnumSet.of(annotation.operators()[0], annotation.operators());
             this.formatter = DateTimeFormatter.ofPattern(annotation.datePattern());
         }
@@ -76,7 +77,7 @@ public @interface LocalDateCompare {
         public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
             final Operator operator = Operator.valueOf(values[0]);
             Filters.ensure(operators.contains(operator), "operator %s not whitelisted (%s)", operator, operators);
-            final Path<LocalDate> lhs = Filters.traverseProperty(root, property);
+            final Path<LocalDate> lhs = Filters.path(root, traversal);
             Filters.ensure(values.length == (operator == Operator.BETWEEN ? 3 : 2), "unexpected number of values: %d", values.length);
             final String value = values[1];
             Filters.ensure(value != null, "value cannot be null");

@@ -1,8 +1,5 @@
 package net.optionfactory.spring.data.jpa.filtering.filters.spi;
 
-import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequest;
-import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterConfiguration;
-import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Path;
@@ -10,6 +7,7 @@ import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import net.optionfactory.spring.spring.data.jpa.HibernateTestConfig;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
+import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,7 +30,8 @@ public class FiltersTest {
         final Specification<EntityA> specification = new Specification<EntityA>() {
             @Override
             public Predicate toPredicate(Root<EntityA> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
-                final Path<Object> path = Filters.traverseProperty(root, "b.c.i.n");
+                final Traversal ts = Filters.traversal(null, root.getModel(), "b.c.i.n");
+                final Path<Object> path = Filters.path(root, ts);
                 Assert.assertEquals(long.class, path.getJavaType());
                 return cb.disjunction();
             }
@@ -45,7 +44,8 @@ public class FiltersTest {
         final Specification<EntityA> specification = new Specification<EntityA>() {
             @Override
             public Predicate toPredicate(Root<EntityA> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
-                final Path<Object> nonExistant = Filters.traverseProperty(root, "b.x.id");
+                final Traversal ts = Filters.traversal(null, root.getModel(), "b.x.id");
+                final Path<Object> nonExistant = Filters.path(root, ts);
                 return cb.disjunction();
             }
         };

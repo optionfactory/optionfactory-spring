@@ -21,6 +21,7 @@ import javax.persistence.metamodel.EntityType;
 import net.optionfactory.spring.data.jpa.filtering.filters.InEnum.InEnumFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.InEnum.RepeatableInEnum;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
+import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
 
 /**
  * Filters an enum property with a set of accepted values. Filter arguments list
@@ -40,7 +41,7 @@ public @interface InEnum {
 
     Class<? extends Enum<?>> type();
 
-    String property();
+    String path();
 
     boolean nullable() default false;
 
@@ -55,16 +56,16 @@ public @interface InEnum {
     public static class InEnumFilter implements Filter {
 
         private final String name;
-        private final String property;
         private final boolean nullable;
         private final Class<? extends Enum> type;
+        private final Traversal traversal;
 
-        public InEnumFilter(InEnum annotation, EntityType<?> entityType) {
+        public InEnumFilter(InEnum annotation, EntityType<?> entity) {
             this.name = annotation.name();
-            this.property = annotation.property();
             this.nullable = annotation.nullable();
             this.type = annotation.type();
-            Filters.ensurePropertyOfAnyType(annotation, entityType, property, type);
+            this.traversal = Filters.traversal(annotation, entity, annotation.path());
+            Filters.ensurePropertyOfAnyType(annotation, entity, traversal, type);
         }
 
         @Override
@@ -75,7 +76,7 @@ public @interface InEnum {
                     .filter(Objects::nonNull)
                     .map(value -> Enum.valueOf(type, value))
                     .collect(Collectors.toSet());
-            final Path<Object> enumProperty = Filters.traverseProperty(root, this.property);
+            final Path<Object> enumProperty = Filters.path(root, traversal);
             if (requested.isEmpty()) {
                 return hasNull ? enumProperty.isNull() : builder.disjunction();
             }

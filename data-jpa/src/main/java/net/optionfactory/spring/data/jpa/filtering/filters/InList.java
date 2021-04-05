@@ -19,6 +19,7 @@ import javax.persistence.metamodel.EntityType;
 import net.optionfactory.spring.data.jpa.filtering.filters.InList.InListFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.InList.RepeatableInList;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
+import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Values;
 
 /**
@@ -37,7 +38,7 @@ public @interface InList {
 
     String name();
 
-    String property();
+    String path();
 
     @Documented
     @Target(value = ElementType.TYPE)
@@ -50,14 +51,12 @@ public @interface InList {
     public static class InListFilter implements Filter {
 
         private final String name;
-        private final String property;
-        private final Class<?> propertyClass;
+        private final Traversal traversal;
 
-        public InListFilter(InList annotation, EntityType<?> entityType) {
+        public InListFilter(InList annotation, EntityType<?> entity) {
             this.name = annotation.name();
-            this.property = annotation.property();
-            this.propertyClass = entityType.getAttribute(annotation.property()).getJavaType();
-            Filters.ensurePropertyOfAnyType(annotation, entityType, property, String.class, Number.class, byte.class, short.class, int.class, long.class, float.class, double.class, char.class);
+            this.traversal = Filters.traversal(annotation, entity, annotation.path());
+            Filters.ensurePropertyOfAnyType(annotation, entity, traversal, String.class, Number.class, byte.class, short.class, int.class, long.class, float.class, double.class, char.class);
         }
 
         @Override
@@ -65,8 +64,8 @@ public @interface InList {
             if (values.length == 0) {
                 return builder.disjunction();
             }
-            final Path<?> p = Filters.traverseProperty(root, property);
-            final Object[] nonNullValues = Stream.of(values).filter(Objects::nonNull).map(value -> Values.convert(value, propertyClass)).toArray();
+            final Path<?> p = Filters.path(root, traversal);
+            final Object[] nonNullValues = Stream.of(values).filter(Objects::nonNull).map(value -> Values.convert(value, traversal.attribute.getJavaType())).toArray();
             final boolean hasNullValues = nonNullValues.length < values.length;
             if (hasNullValues) {
                 return builder.or(p.isNull(), p.in(nonNullValues));

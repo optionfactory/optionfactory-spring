@@ -5,9 +5,9 @@ import javax.persistence.Id;
 import net.optionfactory.spring.data.jpa.filtering.filters.InList;
 
 @Entity
-@InList(name = "nameIn", property = "name")
-@InList(name = "maxPersonsIn", property = "maxPersons")
-@InList(name = "ratingIn", property = "rating")
+@InList(name = "nameIn", path = "name")
+@InList(name = "maxPersonsIn", path = "maxPersons")
+@InList(name = "ratingIn", path = "rating")
 public class EntityForInList {
 
     @Id

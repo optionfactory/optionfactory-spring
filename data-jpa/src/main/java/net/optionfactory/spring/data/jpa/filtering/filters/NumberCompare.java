@@ -20,14 +20,15 @@ import javax.persistence.metamodel.EntityType;
 import net.optionfactory.spring.data.jpa.filtering.filters.NumberCompare.NumberCompareFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.NumberCompare.RepeatableNumberCompare;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
+import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Values;
 
 /**
- * Compares a numeric property, either a primitive type (not {@code boolean}) or
+ * Compares a numeric path, either a primitive type (not {@code boolean}) or
  * a {@link Number} (such as boxed primitives, {@link BigInteger} or
  * {@link BigDecimal}). The first argument must be a whitelisted
  * {@link Operator}. All operators accept a single numeric argument, that must
- * be convertible to the relative property type.
+ be convertible to the relative path type.
  */
 @Documented
 @Target(value = ElementType.TYPE)
@@ -46,7 +47,7 @@ public @interface NumberCompare {
         Operator.LT, Operator.LTE, Operator.EQ, Operator.GTE, Operator.GT
     };
 
-    String property();
+    String path();
 
     @Documented
     @Target(value = ElementType.TYPE)
@@ -61,13 +62,13 @@ public @interface NumberCompare {
         private final String name;
         private final EnumSet<Operator> operators;
         private final Class<? extends Number> propertyClass;
-        private final String property;
+        private final Traversal traversal;
 
-        public NumberCompareFilter(NumberCompare nc, EntityType<?> entity) {
-            this.name = nc.name();
-            this.property = nc.property();
-            this.propertyClass = (Class<? extends Number>) Filters.ensurePropertyOfAnyType(nc, entity, property, Number.class, byte.class, short.class, int.class, long.class, float.class, double.class, char.class);
-            this.operators = EnumSet.of(nc.operators()[0], nc.operators());
+        public NumberCompareFilter(NumberCompare annotation, EntityType<?> entity) {
+            this.name = annotation.name();
+            this.traversal = Filters.traversal(annotation, entity, annotation.path());
+            this.propertyClass = (Class<? extends Number>) Filters.ensurePropertyOfAnyType(annotation, entity, traversal, Number.class, byte.class, short.class, int.class, long.class, float.class, double.class, char.class);
+            this.operators = EnumSet.of(annotation.operators()[0], annotation.operators());
         }
 
         @Override
@@ -76,7 +77,7 @@ public @interface NumberCompare {
             Filters.ensure(operators.contains(operator), "operator %s not whitelisted (%s)", operator, operators);
             final String value = values[1];
             Filters.ensure(value != null || operator == Operator.EQ, "value cannot be null when operator is not %s", Operator.EQ.name());
-            final Path<Number> lhs = Filters.traverseProperty(root, property);
+            final Path<Number> lhs = Filters.path(root, traversal);
             final Number rhs = (Number) Values.convert(value, propertyClass);
             switch (operator) {
                 case LT:

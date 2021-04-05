@@ -9,9 +9,9 @@ import net.optionfactory.spring.data.jpa.filtering.filters.InEnum;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
 
 @Entity
-@TextCompare(name = "performerName", property = "performer.name")
-@InEnum(name = "activitySeason", property = "activity.season", type = Activity.Season.class)
-@InEnum(name = "status", property = "status", type = Appointment.Status.class)
+@TextCompare(name = "performerName", path = "performer.name")
+@InEnum(name = "activitySeason", path = "activity.season", type = Activity.Season.class)
+@InEnum(name = "status", path = "status", type = Appointment.Status.class)
 public class Appointment {
 
     @Id

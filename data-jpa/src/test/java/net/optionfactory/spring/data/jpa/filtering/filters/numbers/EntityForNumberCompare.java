@@ -8,9 +8,9 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 
 @Entity
-@NumberCompare(name = "maxPersons", property = "maxPersons")
-@NumberCompare(name = "rating", property = "rating")
-@NumberCompare(name = "container.value", property = "container.value")
+@NumberCompare(name = "maxPersons", path = "maxPersons")
+@NumberCompare(name = "rating", path = "rating")
+@NumberCompare(name = "container.value", path = "container.value")
 public class EntityForNumberCompare {
 
     @Id

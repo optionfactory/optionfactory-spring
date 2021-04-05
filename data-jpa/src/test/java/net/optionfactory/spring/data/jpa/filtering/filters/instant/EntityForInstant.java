@@ -6,10 +6,10 @@ import javax.persistence.Id;
 import net.optionfactory.spring.data.jpa.filtering.filters.InstantCompare;
 
 @Entity
-@InstantCompare(name = "instantIso", property = "instant")
-@InstantCompare(name = "instantUnixS", property = "instant", format = InstantCompare.Format.UNIX_S)
-@InstantCompare(name = "instantUnixMS", property = "instant", format = InstantCompare.Format.UNIX_MS)
-@InstantCompare(name = "instantUnixNS", property = "instant", format = InstantCompare.Format.UNIX_NS)
+@InstantCompare(name = "instantIso", path = "instant")
+@InstantCompare(name = "instantUnixS", path = "instant", format = InstantCompare.Format.UNIX_S)
+@InstantCompare(name = "instantUnixMS", path = "instant", format = InstantCompare.Format.UNIX_MS)
+@InstantCompare(name = "instantUnixNS", path = "instant", format = InstantCompare.Format.UNIX_NS)
 public class EntityForInstant {
 
     @Id
