@@ -4,7 +4,7 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>4.9-SNAPSHOT</version>
+        <version>5.0-SNAPSHOT</version>
     </parent>
     <artifactId>time-jackson</artifactId>
     <description>optionfactory-spring jackson time serializers/deserializers</description>
@@ -19,6 +19,6 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>test</scope>
-        </dependency>             
+        </dependency>
     </dependencies>
 </project>
