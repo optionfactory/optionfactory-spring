@@ -25,8 +25,7 @@ import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal
 
 /**
  * Compares an {@link Instant} property. The first argument must be a
- * whitelisted {@link Operator}. Operators {@link Operator#FROM} (inclusive) and
- * {@link Operator#BEFORE} (exclusive) accept a single argument, while
+ * whitelisted {@link Operator}. Operators accept a single argument, while
  * {@link Operator#BETWEEN} (left inclusive and right exclusive) accepts a
  * range.
  */
@@ -38,7 +37,7 @@ import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal
 public @interface InstantCompare {
 
     public enum Operator {
-        BEFORE, FROM, BETWEEN;
+        EQ, NEQ, LT, GT, LTE, GTE, BETWEEN;
     }
 
     public enum Format {
@@ -48,7 +47,7 @@ public @interface InstantCompare {
     String name();
 
     Operator[] operators() default {
-        Operator.BEFORE, Operator.FROM, Operator.BETWEEN
+        Operator.EQ, Operator.NEQ, Operator.LT, Operator.GT, Operator.LTE, Operator.GTE, Operator.BETWEEN
     };
 
     Format format() default Format.ISO_8601;
@@ -81,20 +80,27 @@ public @interface InstantCompare {
         @Override
         public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
             final Operator operator = Operator.valueOf(values[0]);
-            Filters.ensure(operators.contains(operator), "operator %s not whitelisted (%s)", operator, operators);
+            Filters.ensure(operators.contains(operator), name, root, "operator %s not whitelisted (%s)", operator, operators);
             final Path<Instant> lhs = Filters.path(root, traversal);
-            Filters.ensure(values.length == (operator == Operator.BETWEEN ? 3 : 2), "unexpected number of values: %d", values.length);
+            Filters.ensure(values.length == (operator == Operator.BETWEEN ? 3 : 2), name, root, "unexpected number of values: %d", values.length);
             final String value = values[1];
-            Filters.ensure(value != null, "value cannot be null");
             final Instant rhs = parseInstant(value);
             switch (operator) {
-                case BEFORE:
+                case EQ:
+                    return rhs == null ? lhs.isNull() : builder.equal(lhs, rhs);
+                case NEQ:
+                    return rhs == null ? lhs.isNotNull() : builder.notEqual(lhs, rhs);
+                case LT:
                     return builder.lessThan(lhs, rhs);
-                case FROM:
+                case GT:
+                    return builder.greaterThan(lhs, rhs);
+                case LTE:
+                    return builder.lessThanOrEqualTo(lhs, rhs);
+                case GTE:
                     return builder.greaterThanOrEqualTo(lhs, rhs);
                 case BETWEEN:
                     final String value2 = values[2];
-                    Filters.ensure(value2 != null, "value cannot be null");
+                    Filters.ensure(value2 != null, name, root,"value2 cannot be null");
                     final Instant rhs2 = parseInstant(value2);
                     final Instant[] instants = Stream.of(rhs, rhs2).sorted().toArray((l) -> new Instant[l]);
                     return builder.and(builder.greaterThanOrEqualTo(lhs, instants[0]), builder.lessThan(lhs, instants[1]));
@@ -104,6 +110,9 @@ public @interface InstantCompare {
         }
 
         private Instant parseInstant(String value) {
+            if (value == null) {
+                return null;
+            }
             switch (format) {
                 case ISO_8601:
                     return Instant.parse(value);

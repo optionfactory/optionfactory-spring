@@ -17,9 +17,9 @@ public class CustomFilter implements Filter {
 
     private final String name;
 
-    public CustomFilter(Filterable annotation, EntityType<?> entityType) {
-        if (!CustomEntity.class.isAssignableFrom(entityType.getJavaType())) {
-            throw new InvalidFilterConfiguration(String.format("Unsupported entity type %s for filter %s", entityType.getJavaType().getSimpleName(), annotation.filter().getSimpleName()));
+    public CustomFilter(Filterable annotation, EntityType<?> entity) {
+        if (!CustomEntity.class.isAssignableFrom(entity.getJavaType())) {
+            throw new InvalidFilterConfiguration(annotation, entity, String.format("Unsupported entity type for filter %s", annotation.filter().getSimpleName()));
         }
         this.name = annotation.name();
     }
@@ -31,9 +31,9 @@ public class CustomFilter implements Filter {
 
     @Override
     public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
-        Filters.ensure(values.length == 1, "Custom filter expects a single parameter, but %s were given: %s", values.length, Arrays.toString(values));
+        Filters.ensure(values.length == 1, name, root, "Custom filter expects a single parameter, but %s were given: %s", values.length, Arrays.toString(values));
         final String check = values[0];
-        Filters.ensure(Stream.of(Check.values()).map(Check::name).anyMatch(c -> Objects.equals(c, check)), "Unknown check for custom filter: %s", check);
+        Filters.ensure(Stream.of(Check.values()).map(Check::name).anyMatch(c -> Objects.equals(c, check)), name, root, "Unknown check for custom filter: %s", check);
         switch (Check.valueOf(check)) {
             case LESS:
                 return builder.lessThan(root.get("id"), root.get("x"));

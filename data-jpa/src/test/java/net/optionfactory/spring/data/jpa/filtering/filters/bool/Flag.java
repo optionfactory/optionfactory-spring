@@ -7,7 +7,7 @@ import net.optionfactory.spring.data.jpa.filtering.filters.BooleanCompare;
 @Entity
 @BooleanCompare(name = "javaBoolean", path = "value")
 @BooleanCompare(name = "yesNoBoolean", path = "value", trueValue = "yes", falseValue = "no")
-@BooleanCompare(name = "YNMatchCaseBoolean", path = "value", trueValue = "Y", falseValue = "N", ignoreCase = false)
+@BooleanCompare(name = "YNMatchCaseBoolean", path = "value", trueValue = "Y", falseValue = "N")
 public class Flag {
 
     @Id

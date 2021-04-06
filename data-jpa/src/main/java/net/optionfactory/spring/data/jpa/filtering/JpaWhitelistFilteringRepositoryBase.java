@@ -152,7 +152,7 @@ public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> ext
                         final String values[] = e.getValue();
                         final Filter spec = whitelisted.get(name);
                         if (spec == null) {
-                            throw new InvalidFilterRequest(String.format("requested filter '%s' is not configured for root object '%s'", name, root.getJavaType().getSimpleName()));
+                            throw new InvalidFilterRequest(name, root, "filter not configured in root object");
                         }
                         return spec.toPredicate(root, query, builder, values);
                     })

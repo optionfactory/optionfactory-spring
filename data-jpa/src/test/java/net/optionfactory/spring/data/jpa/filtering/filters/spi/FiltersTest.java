@@ -8,6 +8,8 @@ import javax.persistence.criteria.Root;
 import net.optionfactory.spring.spring.data.jpa.HibernateTestConfig;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
+import org.hibernate.metamodel.model.domain.internal.EntityTypeImpl;
+import org.hibernate.query.criteria.internal.path.RootImpl;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -54,11 +56,11 @@ public class FiltersTest {
 
     @Test
     public void ensureAcceptsTruePrecondition() {
-        Filters.ensure(true, "");
+        Filters.ensure(true, "name", null, "");
     }
 
     @Test(expected = InvalidFilterRequest.class)
     public void ensureThrowsOnFalsePrecondition() {
-        Filters.ensure(false, "");
+        Filters.ensure(false, "name", null, "");
     }
 }

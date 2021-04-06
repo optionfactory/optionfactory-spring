@@ -5,7 +5,6 @@ import javax.persistence.criteria.Root;
 import javax.persistence.metamodel.*;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
@@ -28,22 +27,18 @@ public interface Filters {
         final var path = new ArrayList<AttributeTraversal>();
         for (String attributeTraversalSpec : pathTraversalSpec.split("\\.")) {
             final Matcher m = ATTRIBUTE_TRAVERSAL_PATTERN.matcher(attributeTraversalSpec);
-            if (!m.matches()) {
-                throw new InvalidFilterConfiguration(String.format("filter %s@%s uses an invalid attribute traversal spec: %s", annotation, entity.getJavaType().getSimpleName(), attributeTraversalSpec));
-            }
+            ensureConf(m.matches(), annotation, entity, "invalid attribute traversal spec: %s", attributeTraversalSpec);
             final String type = m.group("type");
             final String attributeName = m.group("attribute");
-            if (currentType == null) {
-                throw new InvalidFilterConfiguration(String.format("filter %s@%s references attribute %s in spec %s owned by the the non-managed type %s", annotation, entity.getJavaType().getSimpleName(), attributeName, pathTraversalSpec, currentAttribute.getJavaType().getSimpleName()));
-            }
+            ensureConf(currentType != null, annotation, entity, "referenced an attribute %s in spec %s owned by a non-managed type", attributeName, pathTraversalSpec);
             try {
                 currentAttribute = currentType.getAttribute(attributeName);
             } catch (IllegalArgumentException exception) {
-                throw new InvalidFilterConfiguration(String.format("filter %s@%s references a non-existent property %s.%s in spec %s", annotation, entity.getJavaType().getSimpleName(), currentType.getJavaType().getSimpleName(), attributeName, pathTraversalSpec));
+                throw new InvalidFilterConfiguration(annotation, entity, String.format("referenced a non-existent property %s.%s in spec %s", currentType.getJavaType().getSimpleName(), attributeName, pathTraversalSpec));
             }
             if (currentAttribute instanceof SingularAttribute) {
                 final AttributeTraversal candidate = new AttributeTraversal(attributeName, Optional.ofNullable(type).map(TraversalType::valueOf).orElse(TraversalType.GET));
-                ensure(TraversalType.GET == candidate.type, "filter %s@%s uses an invalid traversal type '%s' for singular attribute '%s' in spec: '%s'", annotation, entity.getJavaType().getSimpleName(), candidate.type, candidate.name, pathTraversalSpec);
+                ensureConf(TraversalType.GET == candidate.type, annotation, entity, "used an invalid traversal type '%s' for singular attribute '%s' in spec: '%s'", candidate.type, candidate.name, pathTraversalSpec);
                 path.add(candidate);
                 final Type targetType = ((SingularAttribute) currentAttribute).getType();
                 if (targetType instanceof ManagedType) {
@@ -55,7 +50,7 @@ public interface Filters {
             }
             if (currentAttribute instanceof PluralAttribute) {
                 final AttributeTraversal candidate = new AttributeTraversal(attributeName, Optional.ofNullable(type).map(TraversalType::valueOf).orElse(TraversalType.INNER_JOIN));
-                ensure(EnumSet.of(TraversalType.INNER_JOIN, TraversalType.LEFT_JOIN).contains(candidate.type), "filter %s@%s uses an invalid traversal type '%s' for plural attribute '%s' in spec: '%s'", annotation, entity.getJavaType().getSimpleName(), candidate.type, candidate.name, pathTraversalSpec);
+                ensureConf(EnumSet.of(TraversalType.INNER_JOIN, TraversalType.LEFT_JOIN).contains(candidate.type), annotation, entity, "used an invalid traversal type '%s' for plural attribute '%s' in spec: '%s'", candidate.type, candidate.name, pathTraversalSpec);
                 path.add(candidate);
                 final Type targetType = ((PluralAttribute) currentAttribute).getElementType();
                 if (targetType instanceof ManagedType) {
@@ -65,7 +60,7 @@ public interface Filters {
                 }
                 continue;
             }
-            throw new InvalidFilterConfiguration(String.format("filter %s@%s references attribute %s in spec %s which is neither a SingularAttribute nor a PluralAttribute", annotation, entity.getJavaType().getSimpleName(), attributeName, pathTraversalSpec));
+            ensureConf(false, annotation, entity, "referenced an attribute %s with spec %s which is neither a SingularAttribute nor a PluralAttribute", attributeName, pathTraversalSpec);
         }
         return new Traversal(path, currentAttribute);
     }
@@ -75,12 +70,18 @@ public interface Filters {
         return Stream.of(types)
                 .filter(type -> type.isAssignableFrom(javaType))
                 .findFirst()
-                .orElseThrow(() -> new InvalidFilterConfiguration(String.format("filter %s@%s expects traversal %s to be of type %s, got %s", annotation, entity.getJavaType().getSimpleName(), traversal.path, List.of(types), traversal.attribute.getJavaType().getSimpleName())));
+                .orElseThrow(() -> new InvalidFilterConfiguration(annotation, entity, String.format("expected traversal %s to be of type %s, got %s", traversal.path, List.of(types), traversal.attribute.getJavaType().getSimpleName())));
     }
 
-    public static void ensure(boolean test, String format, Object... values) {
+    private static void ensureConf(boolean test, Annotation annotation, EntityType<?> entity, String format, Object... values) {
         if (!test) {
-            throw new InvalidFilterRequest(String.format(format, values));
+            throw new InvalidFilterConfiguration(annotation, entity, String.format(format, values));
+        }
+    }
+
+    public static void ensure(boolean test, String filterName, Root<?> root, String format, Object... values) {
+        if (!test) {
+            throw new InvalidFilterRequest(filterName, root, String.format(format, values));
         }
     }
 
@@ -91,22 +92,18 @@ public interface Filters {
     public static <T> Path<T> path(Root<?> root, Traversal traversal) {
         Path<?> path = root;
         for (AttributeTraversal part : traversal.path) {
-            try {
-                switch (part.type) {
-                    case GET:
-                        path = path.get(part.name);
-                        break;
-                    case INNER_JOIN:
-                        path = join(path, part.name, JoinType.INNER);
-                        break;
-                    case LEFT_JOIN:
-                        path = join(path, part.name, JoinType.LEFT);
-                        break;
-                    default:
-                        throw new IllegalArgumentException(String.format("Unsupported TraversalType: %s", part.type));
-                }
-            } catch (IllegalArgumentException exception) {
-                throw new InvalidFilterConfiguration(String.format("attributes chain %s from entity %s references a non-existent attribute %s.%s", traversal, root.getJavaType().getSimpleName(), path.getJavaType().getSimpleName(), part));
+            switch (part.type) {
+                case GET:
+                    path = path.get(part.name);
+                    break;
+                case INNER_JOIN:
+                    path = join(path, part.name, JoinType.INNER);
+                    break;
+                case LEFT_JOIN:
+                    path = join(path, part.name, JoinType.LEFT);
+                    break;
+                default:
+                    throw new IllegalArgumentException(String.format("Unsupported TraversalType: %s", part.type));
             }
         }
         return (Path<T>) path;

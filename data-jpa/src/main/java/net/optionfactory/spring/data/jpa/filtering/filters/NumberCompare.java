@@ -11,6 +11,7 @@ import java.lang.annotation.Target;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.EnumSet;
+import java.util.stream.Stream;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Path;
@@ -24,11 +25,11 @@ import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Values;
 
 /**
- * Compares a numeric path, either a primitive type (not {@code boolean}) or
- * a {@link Number} (such as boxed primitives, {@link BigInteger} or
+ * Compares a numeric path, either a primitive type (not {@code boolean}) or a
+ * {@link Number} (such as boxed primitives, {@link BigInteger} or
  * {@link BigDecimal}). The first argument must be a whitelisted
  * {@link Operator}. All operators accept a single numeric argument, that must
- be convertible to the relative path type.
+ * be convertible to the relative path type.
  */
 @Documented
 @Target(value = ElementType.TYPE)
@@ -38,13 +39,13 @@ import net.optionfactory.spring.data.jpa.filtering.filters.spi.Values;
 public @interface NumberCompare {
 
     public enum Operator {
-        LT, LTE, EQ, GTE, GT;
+        EQ, NEQ, LT, GT, LTE, GTE, BETWEEN;
     }
 
     String name();
 
     Operator[] operators() default {
-        Operator.LT, Operator.LTE, Operator.EQ, Operator.GTE, Operator.GT
+        Operator.EQ, Operator.NEQ, Operator.LT, Operator.GT, Operator.LTE, Operator.GTE, Operator.BETWEEN
     };
 
     String path();
@@ -74,22 +75,30 @@ public @interface NumberCompare {
         @Override
         public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
             final Operator operator = Operator.valueOf(values[0]);
-            Filters.ensure(operators.contains(operator), "operator %s not whitelisted (%s)", operator, operators);
+            Filters.ensure(operators.contains(operator), name, root, "operator %s not whitelisted (%s)", operator, operators);
             final String value = values[1];
-            Filters.ensure(value != null || operator == Operator.EQ, "value cannot be null when operator is not %s", Operator.EQ.name());
+            Filters.ensure(value != null || operator == Operator.EQ, name, root, "value cannot be null when operator is not %s", Operator.EQ.name());
             final Path<Number> lhs = Filters.path(root, traversal);
-            final Number rhs = (Number) Values.convert(value, propertyClass);
+            final Number rhs = (Number) Values.convert(name, root, value, propertyClass);
             switch (operator) {
-                case LT:
-                    return builder.lt(lhs, rhs);
-                case LTE:
-                    return builder.le(lhs, rhs);
                 case EQ:
                     return rhs == null ? lhs.isNull() : builder.equal(lhs, rhs);
-                case GTE:
-                    return builder.ge(lhs, rhs);
+                case NEQ:
+                    return rhs == null ? lhs.isNotNull() : builder.notEqual(lhs, rhs);
+                case LT:
+                    return builder.lt(lhs, rhs);
                 case GT:
                     return builder.gt(lhs, rhs);
+                case LTE:
+                    return builder.le(lhs, rhs);
+                case GTE:
+                    return builder.ge(lhs, rhs);
+                case BETWEEN:
+                    final String value2 = values[2];
+                    Filters.ensure(value2 != null, name, root, "value2 cannot be null");
+                    final Number rhs2 = (Number) Values.convert(name, root, value2, propertyClass);
+                    final Number[] numbers = Stream.of(rhs, rhs2).sorted().toArray((l) -> new Number[l]);
+                    return builder.and(builder.ge(lhs, numbers[0]), builder.lt(lhs, numbers[1]));
                 default:
                     throw new IllegalStateException("unreachable");
             }

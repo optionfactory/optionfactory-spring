@@ -43,7 +43,7 @@ public class SpecificationsTest {
     @Test
     public void canMixBaseSpecsWithFilterRequest() {
         final FilterRequest fr = FilterRequest.of(Map.of("byDesc", new String[]{
-            TextCompare.Operator.EQUALS.toString(),
+            TextCompare.Operator.EQ.toString(),
             TextCompare.Mode.CASE_SENSITIVE.toString(),
             "description"
         }));

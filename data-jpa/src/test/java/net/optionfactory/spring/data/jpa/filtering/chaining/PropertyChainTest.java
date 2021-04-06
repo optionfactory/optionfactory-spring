@@ -52,7 +52,7 @@ public class PropertyChainTest {
     @Test
     public void canFilterByComparingPerformerName() {
         final FilterRequest fr = FilterRequest.of(Map.of("performerName", new String[]{
-            TextCompare.Operator.EQUALS.toString(),
+            TextCompare.Operator.EQ.toString(),
             TextCompare.Mode.CASE_SENSITIVE.toString(),
             "pietro"
         }));

@@ -40,32 +40,13 @@ public class BooleanCompareTest {
     @Test
     public void canFilterBooleanValueWithDefaultOptions() {
         Assert.assertEquals(Set.of(1L), idsIn(flags.findAll(filter("javaBoolean", "true"), Pageable.unpaged())));
-        Assert.assertEquals(Set.of(1L), idsIn(flags.findAll(filter("javaBoolean", "True"), Pageable.unpaged())));
-        Assert.assertEquals(Set.of(1L), idsIn(flags.findAll(filter("javaBoolean", "TRUE"), Pageable.unpaged())));
         Assert.assertEquals(Set.of(2L), idsIn(flags.findAll(filter("javaBoolean", "false"), Pageable.unpaged())));
-        Assert.assertEquals(Set.of(2L), idsIn(flags.findAll(filter("javaBoolean", "False"), Pageable.unpaged())));
-        Assert.assertEquals(Set.of(2L), idsIn(flags.findAll(filter("javaBoolean", "FALSE"), Pageable.unpaged())));
     }
 
     @Test
-    public void canFilterBooleanValueWithCustomValuesIgnoringCase() {
-        Assert.assertEquals(Set.of(1L), idsIn(flags.findAll(filter("yesNoBoolean", "yes"), Pageable.unpaged())));
-        Assert.assertEquals(Set.of(1L), idsIn(flags.findAll(filter("yesNoBoolean", "Yes"), Pageable.unpaged())));
-        Assert.assertEquals(Set.of(1L), idsIn(flags.findAll(filter("yesNoBoolean", "YES"), Pageable.unpaged())));
-        Assert.assertEquals(Set.of(2L), idsIn(flags.findAll(filter("yesNoBoolean", "no"), Pageable.unpaged())));
-        Assert.assertEquals(Set.of(2L), idsIn(flags.findAll(filter("yesNoBoolean", "No"), Pageable.unpaged())));
-        Assert.assertEquals(Set.of(2L), idsIn(flags.findAll(filter("yesNoBoolean", "NO"), Pageable.unpaged())));
-    }
-
-    @Test
-    public void canFilterBooleanValueWithCustomValuesMatchingCase() {
+    public void canFilterBooleanValueWithCustomValues() {
         Assert.assertEquals(Set.of(1L), idsIn(flags.findAll(filter("YNMatchCaseBoolean", "Y"), Pageable.unpaged())));
         Assert.assertEquals(Set.of(2L), idsIn(flags.findAll(filter("YNMatchCaseBoolean", "N"), Pageable.unpaged())));
-    }
-
-    @Test(expected = InvalidFilterRequest.class)
-    public void throwsWhenValueDoesNotMatchCase() {
-        flags.findAll(filter("YNMatchCaseBoolean", "y"), Pageable.unpaged());
     }
 
     @Test(expected = InvalidFilterRequest.class)
@@ -74,7 +55,7 @@ public class BooleanCompareTest {
     }
 
     private static FilterRequest filter(String filterName, String value) {
-        final FilterRequest fr = FilterRequest.of(Map.of(filterName, new String[]{value}));
+        final FilterRequest fr = FilterRequest.of(Map.of(filterName, new String[]{"EQ", value}));
         return fr;
     }
 

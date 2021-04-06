@@ -1,10 +1,11 @@
 package net.optionfactory.spring.data.jpa.filtering.filters.spi;
 
+import javax.persistence.criteria.Root;
 import org.springframework.util.NumberUtils;
 
 public interface Values {
 
-    public static Object convert(String value, Class<?> target) {
+    public static Object convert(String filterName, Root<?> root, String value, Class<?> target) {
         if (value == null) {
             return null;
         }
@@ -35,6 +36,6 @@ public interface Values {
         if (char.class.isAssignableFrom(target)) {
             return value.charAt(0);
         }
-        throw new InvalidFilterRequest(String.format("Unconvertible value '%s' to %s", value, target.getSimpleName()));
+        throw new InvalidFilterRequest(filterName, root, String.format("Unconvertible value '%s' to %s", value, target.getSimpleName()));
     }
 }

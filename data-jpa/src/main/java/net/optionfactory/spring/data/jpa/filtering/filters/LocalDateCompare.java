@@ -24,10 +24,10 @@ import net.optionfactory.spring.data.jpa.filtering.filters.LocalDateCompare.Repe
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
 
 /**
- * Compares a {@link LocalDate} path.The first argument must be a
- whitelisted {@link Operator}. The {@link Operator#BETWEEN} accepts two
- * arguments, while the other operators accept a single argument, which format
- * must match the configured {@link #datePattern() datePattern}.
+ * Compares a {@link LocalDate} path.The first argument must be a whitelisted
+ * {@link Operator}. The {@link Operator#BETWEEN} accepts two arguments, while
+ * the other operators accept a single argument, which format must match the
+ * configured {@link #datePattern() datePattern}.
  */
 @Documented
 @Target(value = ElementType.TYPE)
@@ -37,13 +37,13 @@ import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal
 public @interface LocalDateCompare {
 
     public enum Operator {
-        EQ, LT, GT, LTE, GTE, BETWEEN;
+        EQ, NEQ, LT, GT, LTE, GTE, BETWEEN;
     }
 
     String name();
 
     Operator[] operators() default {
-        Operator.EQ, Operator.LT, Operator.GT, Operator.LTE, Operator.GTE, Operator.BETWEEN
+        Operator.EQ, Operator.NEQ, Operator.LT, Operator.GT, Operator.LTE, Operator.GTE, Operator.BETWEEN
     };
 
     String datePattern() default "yyyy-MM-dd";
@@ -76,15 +76,16 @@ public @interface LocalDateCompare {
         @Override
         public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
             final Operator operator = Operator.valueOf(values[0]);
-            Filters.ensure(operators.contains(operator), "operator %s not whitelisted (%s)", operator, operators);
+            Filters.ensure(operators.contains(operator), name, root, "operator %s not whitelisted (%s)", operator, operators);
             final Path<LocalDate> lhs = Filters.path(root, traversal);
-            Filters.ensure(values.length == (operator == Operator.BETWEEN ? 3 : 2), "unexpected number of values: %d", values.length);
+            Filters.ensure(values.length == (operator == Operator.BETWEEN ? 3 : 2), name, root, "unexpected number of values: %d", values.length);
             final String value = values[1];
-            Filters.ensure(value != null, "value cannot be null");
-            final LocalDate rhs = LocalDate.parse(value, formatter);
+            final LocalDate rhs = value == null ? null : LocalDate.parse(value, formatter);
             switch (operator) {
                 case EQ:
-                    return builder.equal(lhs, rhs);
+                    return rhs == null ? lhs.isNull() : builder.equal(lhs, rhs);
+                case NEQ:
+                    return rhs == null ? lhs.isNotNull() : builder.notEqual(lhs, rhs);
                 case LT:
                     return builder.lessThan(lhs, rhs);
                 case GT:
@@ -95,7 +96,7 @@ public @interface LocalDateCompare {
                     return builder.greaterThanOrEqualTo(lhs, rhs);
                 case BETWEEN:
                     final String value2 = values[2];
-                    Filters.ensure(value2 != null, "value cannot be null");
+                    Filters.ensure(value2 != null, name, root, "value2 cannot be null");
                     final LocalDate rhs2 = LocalDate.parse(value2, formatter);
                     final LocalDate[] dates = Stream.of(rhs, rhs2).sorted().toArray((l) -> new LocalDate[l]);
                     return builder.and(builder.greaterThanOrEqualTo(lhs, dates[0]), builder.lessThanOrEqualTo(lhs, dates[1]));

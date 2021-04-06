@@ -39,7 +39,7 @@ public class TextCompareTest {
     @Test
     public void textCompareEquals() {
         final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
-            TextCompare.Operator.EQUALS.toString(),
+            TextCompare.Operator.EQ.toString(),
             TextCompare.Mode.CASE_SENSITIVE.toString(),
             "asd"
         }));
@@ -51,7 +51,7 @@ public class TextCompareTest {
     @Test
     public void textCompareEqualsIgnoreCase() {
         final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
-            TextCompare.Operator.EQUALS.toString(),
+            TextCompare.Operator.EQ.toString(),
             TextCompare.Mode.IGNORE_CASE.toString(),
             "ASD"
         }));

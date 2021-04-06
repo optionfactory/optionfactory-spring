@@ -65,7 +65,7 @@ public @interface InList {
                 return builder.disjunction();
             }
             final Path<?> p = Filters.path(root, traversal);
-            final Object[] nonNullValues = Stream.of(values).filter(Objects::nonNull).map(value -> Values.convert(value, traversal.attribute.getJavaType())).toArray();
+            final Object[] nonNullValues = Stream.of(values).filter(Objects::nonNull).map(value -> Values.convert(name, root, value, traversal.attribute.getJavaType())).toArray();
             final boolean hasNullValues = nonNullValues.length < values.length;
             if (hasNullValues) {
                 return builder.or(p.isNull(), p.in(nonNullValues));

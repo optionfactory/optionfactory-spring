@@ -8,6 +8,8 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.EnumSet;
+import java.util.Set;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Path;
@@ -18,7 +20,6 @@ import net.optionfactory.spring.data.jpa.filtering.filters.BooleanCompare.Boolea
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.spring.data.jpa.filtering.filters.BooleanCompare.RepeatableBooleanCompare;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
-import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequest;
 
 /**
  * Filters a boolean property. Accepts a single parameter as truth value, which
@@ -32,15 +33,21 @@ import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequ
 @Repeatable(RepeatableBooleanCompare.class)
 public @interface BooleanCompare {
 
+    public enum Operator {
+        EQ, NEQ;
+    }
+
     String name();
+
+    Operator[] operators() default {
+        Operator.EQ, Operator.NEQ
+    };
 
     String path();
 
     String trueValue() default "true";
 
     String falseValue() default "false";
-
-    boolean ignoreCase() default true;
 
     @Documented
     @Target(value = ElementType.TYPE)
@@ -53,40 +60,38 @@ public @interface BooleanCompare {
     public static class BooleanCompareFilter implements Filter {
 
         private final String name;
+        private final EnumSet<Operator> operators;
         private final String trueValue;
-        private final String falseValue;
-        private final boolean ignoreCase;
+        private final Set<String> validValues;
         private final Traversal traversal;
 
         public BooleanCompareFilter(BooleanCompare annotation, EntityType<?> entity) {
             this.name = annotation.name();
             this.trueValue = annotation.trueValue();
-            this.falseValue = annotation.falseValue();
-            this.ignoreCase = annotation.ignoreCase();
+            this.validValues = Set.of(annotation.trueValue(), annotation.falseValue());
             this.traversal = Filters.traversal(annotation, entity, annotation.path());
             Filters.ensurePropertyOfAnyType(annotation, entity, this.traversal, Boolean.class, boolean.class);
+            this.operators = EnumSet.of(annotation.operators()[0], annotation.operators());
         }
 
         @Override
         public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
-            Filters.ensure(values.length == 1, "missing value for comparison");
-            final String value = values[0];
+            final Operator operator = Operator.valueOf(values[0]);
+            Filters.ensure(operators.contains(operator), name, root, "operator %s not whitelisted (%s)", operator, operators);
+            Filters.ensure(values.length == 2, name, root, "missing value for comparison");
+            final String value = values[1];
             final Path<Boolean> p = Filters.path(root, traversal);
             if (value == null) {
-                return p.isNull();
+                return operator == Operator.EQ ? p.isNull() : p.isNotNull();
             }
-            if ((ignoreCase && value.equalsIgnoreCase(trueValue)) || value.equals(trueValue)) {
-                return builder.isTrue(p);
-            }
-            if ((ignoreCase && value.equalsIgnoreCase(falseValue)) || value.equals(falseValue)) {
-                return builder.isFalse(p);
-            }
-            throw new InvalidFilterRequest(String.format("unexpected boolean value '%s', expecting either '%s' or '%s'", value, trueValue, falseValue));
+            Filters.ensure(validValues.contains(value), name, root, "value does not match valid values: %s", validValues);
+            return operator == Operator.EQ == trueValue.equals(value) ? builder.isTrue(p) : builder.isFalse(p);
         }
 
         @Override
         public String name() {
             return name;
         }
+
     }
 }

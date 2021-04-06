@@ -40,7 +40,7 @@ public class PluralAttributesChainTest {
     @Test
     public void setupIsGoodEnough() {
         final FilterRequest fr = FilterRequest.of(Map.of("byLeafColor", new String[]{
-            TextCompare.Operator.EQUALS.toString(),
+            TextCompare.Operator.EQ.toString(),
             TextCompare.Mode.CASE_SENSITIVE.toString(),
             "brown"
         }));

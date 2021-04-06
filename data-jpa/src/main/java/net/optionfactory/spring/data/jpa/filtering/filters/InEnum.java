@@ -71,7 +71,7 @@ public @interface InEnum {
         @Override
         public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
             final boolean hasNull = Stream.of(values).anyMatch(Objects::isNull);
-            Filters.ensure(!hasNull || nullable, "Null enum filter values not allowed");
+            Filters.ensure(!hasNull || nullable, name, root, "null enum filter values is not whitelisted");
             final Set<Enum> requested = Stream.of(values)
                     .filter(Objects::nonNull)
                     .map(value -> Enum.valueOf(type, value))
