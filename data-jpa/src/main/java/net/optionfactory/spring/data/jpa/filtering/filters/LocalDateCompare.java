@@ -87,19 +87,24 @@ public @interface LocalDateCompare {
                 case NEQ:
                     return rhs == null ? lhs.isNotNull() : builder.notEqual(lhs, rhs);
                 case LT:
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);                    
                     return builder.lessThan(lhs, rhs);
                 case GT:
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);                    
                     return builder.greaterThan(lhs, rhs);
                 case LTE:
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);                    
                     return builder.lessThanOrEqualTo(lhs, rhs);
                 case GTE:
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);                    
                     return builder.greaterThanOrEqualTo(lhs, rhs);
                 case BETWEEN:
                     final String value2 = values[2];
-                    Filters.ensure(value2 != null, name, root, "value2 cannot be null");
-                    final LocalDate rhs2 = LocalDate.parse(value2, formatter);
-                    final LocalDate[] dates = Stream.of(rhs, rhs2).sorted().toArray((l) -> new LocalDate[l]);
-                    return builder.and(builder.greaterThanOrEqualTo(lhs, dates[0]), builder.lessThanOrEqualTo(lhs, dates[1]));
+                    final LocalDate rhs2 = value == null ? null : LocalDate.parse(value2, formatter);
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
+                    Filters.ensure(rhs2 != null, name, root, "value cannot be null for operator %s", operator);
+                    final LocalDate[] sorted = Stream.of(rhs, rhs2).sorted().toArray((l) -> new LocalDate[l]);
+                    return builder.and(builder.greaterThanOrEqualTo(lhs, sorted[0]), builder.lessThanOrEqualTo(lhs, sorted[1]));
                 default:
                     throw new IllegalStateException("unreachable");
             }

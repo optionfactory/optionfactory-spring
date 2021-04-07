@@ -91,17 +91,22 @@ public @interface InstantCompare {
                 case NEQ:
                     return rhs == null ? lhs.isNotNull() : builder.notEqual(lhs, rhs);
                 case LT:
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);                    
                     return builder.lessThan(lhs, rhs);
                 case GT:
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);                    
                     return builder.greaterThan(lhs, rhs);
                 case LTE:
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);                    
                     return builder.lessThanOrEqualTo(lhs, rhs);
                 case GTE:
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);                    
                     return builder.greaterThanOrEqualTo(lhs, rhs);
                 case BETWEEN:
                     final String value2 = values[2];
-                    Filters.ensure(value2 != null, name, root,"value2 cannot be null");
                     final Instant rhs2 = parseInstant(value2);
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);                    
+                    Filters.ensure(rhs2 != null, name, root, "value2 cannot be null for operator %s", operator);                    
                     final Instant[] instants = Stream.of(rhs, rhs2).sorted().toArray((l) -> new Instant[l]);
                     return builder.and(builder.greaterThanOrEqualTo(lhs, instants[0]), builder.lessThan(lhs, instants[1]));
                 default:

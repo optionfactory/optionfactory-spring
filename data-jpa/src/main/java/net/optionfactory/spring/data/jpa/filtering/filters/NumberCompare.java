@@ -76,9 +76,8 @@ public @interface NumberCompare {
         public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
             final Operator operator = Operator.valueOf(values[0]);
             Filters.ensure(operators.contains(operator), name, root, "operator %s not whitelisted (%s)", operator, operators);
-            final String value = values[1];
-            Filters.ensure(value != null || operator == Operator.EQ, name, root, "value cannot be null when operator is not %s", Operator.EQ.name());
             final Path<Number> lhs = Filters.path(root, traversal);
+            final String value = values[1];
             final Number rhs = (Number) Values.convert(name, root, value, propertyClass);
             switch (operator) {
                 case EQ:
@@ -86,19 +85,24 @@ public @interface NumberCompare {
                 case NEQ:
                     return rhs == null ? lhs.isNotNull() : builder.notEqual(lhs, rhs);
                 case LT:
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
                     return builder.lt(lhs, rhs);
                 case GT:
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
                     return builder.gt(lhs, rhs);
                 case LTE:
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
                     return builder.le(lhs, rhs);
                 case GTE:
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
                     return builder.ge(lhs, rhs);
                 case BETWEEN:
                     final String value2 = values[2];
-                    Filters.ensure(value2 != null, name, root, "value2 cannot be null");
                     final Number rhs2 = (Number) Values.convert(name, root, value2, propertyClass);
-                    final Number[] numbers = Stream.of(rhs, rhs2).sorted().toArray((l) -> new Number[l]);
-                    return builder.and(builder.ge(lhs, numbers[0]), builder.lt(lhs, numbers[1]));
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
+                    Filters.ensure(rhs2 != null, name, root, "value2 cannot be null for operator %s", operator);
+                    final Number[] sorted = Stream.of(rhs, rhs2).sorted().toArray((l) -> new Number[l]);
+                    return builder.and(builder.ge(lhs, sorted[0]), builder.lt(lhs, sorted[1]));
                 default:
                     throw new IllegalStateException("unreachable");
             }

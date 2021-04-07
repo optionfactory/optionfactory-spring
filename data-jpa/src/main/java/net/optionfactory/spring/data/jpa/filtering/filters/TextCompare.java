@@ -93,24 +93,32 @@ public @interface TextCompare {
                 case NEQ:
                     return rhs == null ? lhs.isNotNull() : builder.notEqual(lhs, rhs);
                 case LT:
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);                    
                     return builder.lessThan(lhs, rhs);
                 case GT:
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);                    
                     return builder.greaterThan(lhs, rhs);
                 case LTE:
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);                    
                     return builder.lessThanOrEqualTo(lhs, rhs);
                 case GTE:
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);                    
                     return builder.greaterThanOrEqualTo(lhs, rhs);
                 case BETWEEN:
                     final String value2 = values[3];
                     final String rhs2 = mode == Mode.CASE_SENSITIVE || value2 == null ? null : value2.toLowerCase();
-                    Filters.ensure(rhs2 != null, name, root, "value2 cannot be null");
-                    final String[] strings = Stream.of(rhs, rhs2).sorted().toArray((l) -> new String[l]);
-                    return builder.and(builder.greaterThanOrEqualTo(lhs, strings[0]), builder.lessThan(lhs, strings[1]));
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);                    
+                    Filters.ensure(rhs2 != null, name, root, "value2 cannot be null for operator %s", operator);                    
+                    final String[] sorted = Stream.of(rhs, rhs2).sorted().toArray((l) -> new String[l]);
+                    return builder.and(builder.greaterThanOrEqualTo(lhs, sorted[0]), builder.lessThan(lhs, sorted[1]));
                 case CONTAINS:
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);                    
                     return builder.like(lhs, "%" + rhs + "%");
                 case STARTS_WITH:
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);                    
                     return builder.like(lhs, rhs + "%");
                 case ENDS_WITH:
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);                    
                     return builder.like(lhs, "%" + rhs);
                 default:
                     throw new IllegalStateException("unreachable");
