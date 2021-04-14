@@ -20,7 +20,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
  */
 public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final String BEARER_PREFIX = "Bearer ";
+    private static final String BEARER_PREFIX = "BEARER ";
 
     private final AuthenticationManager authenticationManager;
 
@@ -44,7 +44,7 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
 
     private static Optional<BearerTokenAuthentication> searchBearerToken(HttpServletRequest request) {
         return Optional.ofNullable(request.getHeader(HttpHeaders.AUTHORIZATION))
-                .filter(header -> header.startsWith(BEARER_PREFIX))
+                .filter(header -> header.toUpperCase().startsWith(BEARER_PREFIX))
                 .map(header -> header.substring(BEARER_PREFIX.length()).trim())
                 .map(token -> {
                     final BearerTokenAuthentication bearer = new BearerTokenAuthentication(token, null, null);
