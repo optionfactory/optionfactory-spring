@@ -5,7 +5,7 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>5.4</version>
+        <version>5.5-SNAPSHOT</version>
     </parent>
     <artifactId>webserver-undertow</artifactId>
     <description>optionfactory-spring embedded undertow server</description>
