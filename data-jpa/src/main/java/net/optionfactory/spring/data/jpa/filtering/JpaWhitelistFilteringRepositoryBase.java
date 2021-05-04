@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javassist.Modifier;
@@ -19,6 +20,7 @@ import javax.persistence.criteria.Order;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.metamodel.EntityType;
+import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository.StreamingMode;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequest;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.data.domain.Page;
@@ -35,9 +37,11 @@ import org.springframework.data.jpa.repository.query.QueryUtils;
 public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> extends SimpleJpaRepository<T, ID> {
 
     private final Map<String, Filter> whitelist;
+    private final EntityManager entityManager;
 
     public JpaWhitelistFilteringRepositoryBase(JpaEntityInformation<T, ?> ei, EntityManager em) {
         super(ei, em);
+        this.entityManager = em;
         this.whitelist = Stream
                 .of(ei.getJavaType().getAnnotations())
                 .flatMap(repeatableAnnotation -> flattenRepeatables(repeatableAnnotation))
@@ -118,6 +122,31 @@ public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> ext
 
     public List<T> findAll(Specification<T> base, FilterRequest filters, Sort sort) {
         return findAll(Specification.where(base).and(new SortSpecificationAdapter<>(sort)).and(new WhitelistFilteringSpecificationAdapter<>(filters, whitelist)), Sort.unsorted());
+    }
+
+    public Stream<T> findAll(FilterRequest filters, Sort sort, StreamingMode mode) {
+        return findAll(null, filters, sort, mode);
+    }
+
+    public <R> Stream<R> findAll(FilterRequest filters, Sort sort, StreamingMode mode, Function<T, R> beforeDetaching) {
+        return findAll(null, filters, sort, mode, beforeDetaching);
+    }
+
+    public Stream<T> findAll(Specification<T> base, FilterRequest filters, Sort sort, StreamingMode mode) {
+        final var spec = new WhitelistFilteringSpecificationAdapter<T>(filters, whitelist);
+        final Stream<T> stream = getQuery(Specification.where(base).and(spec), sort).getResultStream();
+        return mode == StreamingMode.DETACHED ? stream.peek(entity -> entityManager.detach(entity)) : stream;
+    }
+
+    public <R> Stream<R> findAll(Specification<T> base, FilterRequest filters, Sort sort, StreamingMode mode, Function<T, R> beforeDetaching) {
+        final var spec = new WhitelistFilteringSpecificationAdapter<T>(filters, whitelist);
+        return getQuery(Specification.where(base).and(spec), sort).getResultStream().map(entity -> {
+            final var r = beforeDetaching.apply(entity);
+            if (mode == StreamingMode.DETACHED) {
+                entityManager.detach(entity);
+            }
+            return r;
+        });
     }
 
     public long count(FilterRequest filters) {
