@@ -41,37 +41,37 @@ public class LocalDateCompareTest {
 
     @Test
     public void canFilterByLocalDateEquality() {
-        final Page<EntityForLocalDate> page = repo.findAll(filter(LocalDateCompare.Operator.EQ, "2019-01-11"), Pageable.unpaged());
+        final Page<EntityForLocalDate> page = repo.findAll(null, filter(LocalDateCompare.Operator.EQ, "2019-01-11"), Pageable.unpaged());
         Assert.assertEquals(Set.of(2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void canFilterByLocalDateLessThan() {
-        final Page<EntityForLocalDate> page = repo.findAll(filter(LocalDateCompare.Operator.LT, "2019-01-11"), Pageable.unpaged());
+        final Page<EntityForLocalDate> page = repo.findAll(null, filter(LocalDateCompare.Operator.LT, "2019-01-11"), Pageable.unpaged());
         Assert.assertEquals(Set.of(1L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void canFilterByLocalDateGreaterThan() {
-        final Page<EntityForLocalDate> page = repo.findAll(filter(LocalDateCompare.Operator.GT, "2019-01-11"), Pageable.unpaged());
+        final Page<EntityForLocalDate> page = repo.findAll(null, filter(LocalDateCompare.Operator.GT, "2019-01-11"), Pageable.unpaged());
         Assert.assertEquals(Set.of(4L, 5L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void canFilterByLocalDateLessThanOrEqualTo() {
-        final Page<EntityForLocalDate> page = repo.findAll(filter(LocalDateCompare.Operator.LTE, "2019-01-11"), Pageable.unpaged());
+        final Page<EntityForLocalDate> page = repo.findAll(null, filter(LocalDateCompare.Operator.LTE, "2019-01-11"), Pageable.unpaged());
         Assert.assertEquals(Set.of(1L, 2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void canFilterByLocalDateGreaterThanOrEqualTo() {
-        final Page<EntityForLocalDate> page = repo.findAll(filter(LocalDateCompare.Operator.GTE, "2019-01-11"), Pageable.unpaged());
+        final Page<EntityForLocalDate> page = repo.findAll(null, filter(LocalDateCompare.Operator.GTE, "2019-01-11"), Pageable.unpaged());
         Assert.assertEquals(Set.of(2L, 3L, 4L, 5L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void canFilterByLocalDateBetween() {
-        final Page<EntityForLocalDate> page = repo.findAll(filter(LocalDateCompare.Operator.BETWEEN, "2019-01-11", "2019-09-30"), Pageable.unpaged());
+        final Page<EntityForLocalDate> page = repo.findAll(null, filter(LocalDateCompare.Operator.BETWEEN, "2019-01-11", "2019-09-30"), Pageable.unpaged());
         Assert.assertEquals(Set.of(2L, 3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 

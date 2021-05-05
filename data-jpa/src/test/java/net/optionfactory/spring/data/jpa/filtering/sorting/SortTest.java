@@ -55,9 +55,26 @@ public class SortTest {
     }
 
     @Test
-    public void canSortWithSpecificationAndThenGivenOrders() {
+    public void canSortWithSpecificationFiltersAndThenGivenOrders() {
         final Sort sort = Sort.by(Sort.Order.asc("a"), Sort.Order.desc("b"));
         final List<EntityForSort> all = repo.findAll(new EvenIdFirst(), FilterRequest.unfiltered(), sort);
+        final List<String> expected = List.of("D", "B", "F", "C", "E", "A");
+        Assert.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()));
+    }
+
+    @Test
+    public void canSortWithSpecificationAndThenGivenOrders() {
+        final Sort sort = Sort.by(Sort.Order.asc("a"), Sort.Order.desc("b"));
+        final List<EntityForSort> all = repo.findAll(new EvenIdFirst(), sort);
+        final List<String> expected = List.of("D", "B", "F", "C", "E", "A");
+        Assert.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()));
+    }
+
+    @Test
+    public void canSortWithSpecificationAndThenPagination() {
+        final Sort sort = Sort.by(Sort.Order.asc("a"), Sort.Order.desc("b"));
+        final PageRequest pr = PageRequest.of(0, 10, sort);
+        final Page<EntityForSort> all = repo.findAll(new EvenIdFirst(), pr);
         final List<String> expected = List.of("D", "B", "F", "C", "E", "A");
         Assert.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()));
     }
@@ -89,7 +106,7 @@ public class SortTest {
                                     .otherwise(1)
                     )
             );
-            return criteriaBuilder.conjunction();
+            return null;
         }
     }
 

@@ -40,36 +40,36 @@ public class NumberCompareTest {
 
     @Test
     public void canFilterEqualityByNullValue() {
-        final Page<EntityForNumberCompare> page = repo.findAll(filter("maxPersons", NumberCompare.Operator.EQ, null), Pageable.unpaged());
+        final Page<EntityForNumberCompare> page = repo.findAll(null, filter("maxPersons", NumberCompare.Operator.EQ, null), Pageable.unpaged());
         Assert.assertEquals(Set.of(1L), idsIn(page));
     }
 
     @Test(expected = InvalidFilterRequest.class)
     public void cannotFilterInequalityByNullValue() {
-        repo.findAll(filter("maxPersons", NumberCompare.Operator.LTE, null), Pageable.unpaged());
+        repo.findAll(null, filter("maxPersons", NumberCompare.Operator.LTE, null), Pageable.unpaged());
     }
 
     @Test
     public void canFilterByBoxedValue() {
-        Assert.assertEquals(Set.of(3L), idsIn(repo.findAll(filter("maxPersons", NumberCompare.Operator.EQ, "10"), Pageable.unpaged())));
-        Assert.assertEquals(Set.of(4L), idsIn(repo.findAll(filter("maxPersons", NumberCompare.Operator.LT, "10"), Pageable.unpaged())));
-        Assert.assertEquals(Set.of(2L), idsIn(repo.findAll(filter("maxPersons", NumberCompare.Operator.GT, "10"), Pageable.unpaged())));
-        Assert.assertEquals(Set.of(3L, 4L), idsIn(repo.findAll(filter("maxPersons", NumberCompare.Operator.LTE, "10"), Pageable.unpaged())));
-        Assert.assertEquals(Set.of(2L, 3L), idsIn(repo.findAll(filter("maxPersons", NumberCompare.Operator.GTE, "10"), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(3L), idsIn(repo.findAll(null, filter("maxPersons", NumberCompare.Operator.EQ, "10"), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(4L), idsIn(repo.findAll(null, filter("maxPersons", NumberCompare.Operator.LT, "10"), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(2L), idsIn(repo.findAll(null, filter("maxPersons", NumberCompare.Operator.GT, "10"), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(3L, 4L), idsIn(repo.findAll(null, filter("maxPersons", NumberCompare.Operator.LTE, "10"), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(2L, 3L), idsIn(repo.findAll(null, filter("maxPersons", NumberCompare.Operator.GTE, "10"), Pageable.unpaged())));
     }
 
     @Test
     public void canFilterByPrimitiveValue() {
-        Assert.assertEquals(Set.of(3L), idsIn(repo.findAll(filter("rating", NumberCompare.Operator.EQ, Double.toString(Math.PI)), Pageable.unpaged())));
-        Assert.assertEquals(Set.of(1L, 2L), idsIn(repo.findAll(filter("rating", NumberCompare.Operator.LT, Double.toString(Math.PI)), Pageable.unpaged())));
-        Assert.assertEquals(Set.of(4L), idsIn(repo.findAll(filter("rating", NumberCompare.Operator.GT, Double.toString(Math.PI)), Pageable.unpaged())));
-        Assert.assertEquals(Set.of(1L, 2L, 3L), idsIn(repo.findAll(filter("rating", NumberCompare.Operator.LTE, Double.toString(Math.PI)), Pageable.unpaged())));
-        Assert.assertEquals(Set.of(3L, 4L), idsIn(repo.findAll(filter("rating", NumberCompare.Operator.GTE, Double.toString(Math.PI)), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(3L), idsIn(repo.findAll(null, filter("rating", NumberCompare.Operator.EQ, Double.toString(Math.PI)), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(1L, 2L), idsIn(repo.findAll(null, filter("rating", NumberCompare.Operator.LT, Double.toString(Math.PI)), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(4L), idsIn(repo.findAll(null, filter("rating", NumberCompare.Operator.GT, Double.toString(Math.PI)), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(1L, 2L, 3L), idsIn(repo.findAll(null, filter("rating", NumberCompare.Operator.LTE, Double.toString(Math.PI)), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(3L, 4L), idsIn(repo.findAll(null, filter("rating", NumberCompare.Operator.GTE, Double.toString(Math.PI)), Pageable.unpaged())));
     }
 
     @Test
     public void canFilterOnEmbeddedValues() {
-        Assert.assertEquals(Set.of(1L), idsIn(repo.findAll(filter("container.value", NumberCompare.Operator.EQ, "42"), Pageable.unpaged())));
+        Assert.assertEquals(Set.of(1L), idsIn(repo.findAll(null, filter("container.value", NumberCompare.Operator.EQ, "42"), Pageable.unpaged())));
     }
 
     private static FilterRequest filter(String filterName, NumberCompare.Operator operator, String value) {

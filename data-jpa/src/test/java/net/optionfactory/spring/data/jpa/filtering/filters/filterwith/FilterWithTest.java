@@ -48,13 +48,13 @@ public class FilterWithTest {
     @Test(expected = InvalidFilterRequest.class)
     public void throwsWhenCustomFilterDoesNotMeetParametersPreconditions() {
         final FilterRequest request = FilterRequest.of(Map.of("custom", new String[0]));
-        customs.findAll(request, Pageable.unpaged());
+        customs.findAll(null, request, Pageable.unpaged());
     }
 
     @Test
     public void canApplyCustomFilterWithParameter() {
         final FilterRequest request = FilterRequest.of(Map.of("custom", new String[]{CustomFilter.Check.LESS.name()}));
-        final Page<CustomEntity> page = customs.findAll(request, Pageable.unpaged());
+        final Page<CustomEntity> page = customs.findAll(null, request, Pageable.unpaged());
         Assert.assertEquals(Set.of(3L, 5L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 }

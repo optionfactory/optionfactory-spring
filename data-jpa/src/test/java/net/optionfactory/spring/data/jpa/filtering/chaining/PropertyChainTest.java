@@ -57,7 +57,7 @@ public class PropertyChainTest {
             "pietro"
         }));
         final Pageable pr = Pageable.unpaged();
-        final Page<Appointment> page = appointments.findAll(fr, pr);
+        final Page<Appointment> page = appointments.findAll(null, fr, pr);
         Assert.assertEquals(Set.of(1L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
@@ -65,7 +65,7 @@ public class PropertyChainTest {
     public void canFilterByEmptyEnum() {
         final FilterRequest fr = FilterRequest.of(Map.of("status", new String[0]));
         final Pageable pr = Pageable.unpaged();
-        final Page<Appointment> page = appointments.findAll(fr, pr);
+        final Page<Appointment> page = appointments.findAll(null, fr, pr);
         Assert.assertTrue(page.isEmpty());
     }
 
@@ -73,7 +73,7 @@ public class PropertyChainTest {
     public void canFilterByStatusInEnum() {
         final FilterRequest fr = FilterRequest.of(Map.of("status", new String[]{Appointment.Status.CONFIRMED.name()}));
         final Pageable pr = Pageable.unpaged();
-        final Page<Appointment> page = appointments.findAll(fr, pr);
+        final Page<Appointment> page = appointments.findAll(null, fr, pr);
         Assert.assertEquals(Set.of(1L, 2L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
@@ -81,7 +81,7 @@ public class PropertyChainTest {
     public void canFilterByActivitySeasonInEnum() {
         final FilterRequest fr = FilterRequest.of(Map.of("activitySeason", new String[]{Activity.Season.SUMMER.name()}));
         final Pageable pr = Pageable.unpaged();
-        final Page<Appointment> page = appointments.findAll(fr, pr);
+        final Page<Appointment> page = appointments.findAll(null, fr, pr);
         Assert.assertEquals(Set.of(4L, 5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 

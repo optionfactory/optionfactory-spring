@@ -44,7 +44,7 @@ public class TextCompareTest {
             "asd"
         }));
         final Pageable pr = Pageable.unpaged();
-        Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(fr, pr));
+        Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
     }
 
@@ -56,7 +56,7 @@ public class TextCompareTest {
             "ASD"
         }));
         final Pageable pr = Pageable.unpaged();
-        Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(fr, pr));
+        Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
     }
 
@@ -68,7 +68,7 @@ public class TextCompareTest {
             "s"
         }));
         final Pageable pr = Pageable.unpaged();
-        Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(fr, pr));
+        Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
     }
 
@@ -80,7 +80,7 @@ public class TextCompareTest {
             "S"
         }));
         final Pageable pr = Pageable.unpaged();
-        Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(fr, pr));
+        Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
     }
 
@@ -92,7 +92,7 @@ public class TextCompareTest {
             "a"
         }));
         final Pageable pr = Pageable.unpaged();
-        Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(fr, pr));
+        Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
     }
 
@@ -104,7 +104,7 @@ public class TextCompareTest {
             "A"
         }));
         final Pageable pr = Pageable.unpaged();
-        Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(fr, pr));
+        Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
     }
 
@@ -116,7 +116,7 @@ public class TextCompareTest {
             "d"
         }));
         final Pageable pr = Pageable.unpaged();
-        Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(fr, pr));
+        Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
     }
 
@@ -128,7 +128,7 @@ public class TextCompareTest {
             "D"
         }));
         final Pageable pr = Pageable.unpaged();
-        Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(fr, pr));
+        Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
     }
 }

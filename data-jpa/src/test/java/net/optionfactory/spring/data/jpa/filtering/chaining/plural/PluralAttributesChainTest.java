@@ -45,7 +45,7 @@ public class PluralAttributesChainTest {
             "brown"
         }));
         final Pageable pr = Pageable.unpaged();
-        final Page<Root> page = roots.findAll(fr, pr);
+        final Page<Root> page = roots.findAll(null, fr, pr);
         Assert.assertEquals(2, page.getContent().get(0).leaves.size());
 
     }

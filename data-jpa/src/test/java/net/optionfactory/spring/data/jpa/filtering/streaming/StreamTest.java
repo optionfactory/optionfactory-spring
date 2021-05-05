@@ -36,7 +36,7 @@ public class StreamTest {
     @Test
     public void canStreamDetachedObjects() {
         final var all = tx.execute(txs
-                -> repo.findAll(FilterRequest.unfiltered(), Sort.unsorted(), StreamingMode.DETACHED)
+                -> repo.findAll(null, FilterRequest.unfiltered(), Sort.unsorted(), StreamingMode.DETACHED)
                         .collect(Collectors.toList())
         );
 
@@ -46,7 +46,7 @@ public class StreamTest {
     @Test
     public void canStreamAttachedObjects() {
         final var all = tx.execute(txs
-                -> repo.findAll(FilterRequest.unfiltered(), Sort.unsorted(), StreamingMode.NORMAL)
+                -> repo.findAll(null, FilterRequest.unfiltered(), Sort.unsorted(), StreamingMode.NORMAL)
                         .collect(Collectors.toList())
         );
 
