@@ -28,9 +28,7 @@ public interface WhitelistFilteringRepository<T> {
      */
     Optional<T> findOne(@Nullable Specification<T> base, FilterRequest filters);
 
-    default Optional<T> findOne(FilterRequest filters) {
-        return findOne(null, filters);
-    }
+    Optional<T> findOne(FilterRequest filters);
 
     /**
      * Finds a page of entries accepted by the given filters and base
@@ -43,9 +41,7 @@ public interface WhitelistFilteringRepository<T> {
      */
     Page<T> findAll(@Nullable Specification<T> base, FilterRequest filters, Pageable pageable);
 
-    default Page<T> findAll(FilterRequest filters, Pageable pageable) {
-        return findAll(null, filters, pageable);
-    }
+    Page<T> findAll(FilterRequest filters, Pageable pageable);
 
     /**
      * Finds all entries accepted by the given filters and base
@@ -66,17 +62,11 @@ public interface WhitelistFilteringRepository<T> {
      * @param filters filters parameters
      * @return the found entries
      */
-    default List<T> findAll(@Nullable Specification<T> base, FilterRequest filters) {
-        return findAll(base, filters, Sort.unsorted());
-    }
+    List<T> findAll(@Nullable Specification<T> base, FilterRequest filters);
 
-    default List<T> findAll(FilterRequest filters) {
-        return findAll(null, filters, Sort.unsorted());
-    }
+    List<T> findAll(FilterRequest filters);
 
-    default List<T> findAll(FilterRequest filters, Sort sort) {
-        return findAll(null, filters, sort);
-    }
+    List<T> findAll(FilterRequest filters, Sort sort);
 
     /**
      * Streams all entries accepted by the given filters and base
@@ -91,9 +81,7 @@ public interface WhitelistFilteringRepository<T> {
      */
     Stream<T> findAll(@Nullable Specification<T> base, FilterRequest filters, Sort sort, StreamingOptions options);
 
-    default Stream<T> findAll(FilterRequest filters, Sort sort, StreamingOptions options) {
-        return findAll(null, filters, sort, options);
-    }
+    Stream<T> findAll(FilterRequest filters, Sort sort, StreamingOptions options);
 
     /**
      * Streams all entries accepted by the given filters and base
@@ -112,9 +100,7 @@ public interface WhitelistFilteringRepository<T> {
      */
     <R> Stream<R> findAll(@Nullable Specification<T> base, FilterRequest filters, Sort sort, StreamingOptions options, Function<T, R> beforeDetaching);
 
-    default <R> Stream<R> findAll(FilterRequest filters, Sort sort, StreamingOptions options, Function<T, R> beforeDetaching) {
-        return findAll(null, filters, sort, options, beforeDetaching);
-    }
+    <R> Stream<R> findAll(FilterRequest filters, Sort sort, StreamingOptions options, Function<T, R> beforeDetaching);
 
     /**
      * Counts all entries accepted by the given filters and base
@@ -126,9 +112,7 @@ public interface WhitelistFilteringRepository<T> {
      */
     long count(@Nullable Specification<T> base, FilterRequest filters);
 
-    default long count(FilterRequest filters) {
-        return count(null, filters);
-    }
+    long count(FilterRequest filters);
 
     public static class StreamingOptions {
 

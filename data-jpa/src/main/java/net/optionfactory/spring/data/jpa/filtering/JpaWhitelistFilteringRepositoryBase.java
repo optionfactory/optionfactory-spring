@@ -81,6 +81,40 @@ public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> ext
         return count(Specification.where(base).and(filter(filters)));
     }
 
+    
+    public Optional<T> findOne(FilterRequest filters) {
+        return findOne(null, filters);
+    }
+
+    public Page<T> findAll(FilterRequest filters, Pageable pageable) {
+        return findAll(null, filters, pageable);
+    }
+
+    public List<T> findAll(@Nullable Specification<T> base, FilterRequest filters) {
+        return findAll(base, filters, Sort.unsorted());
+    }
+
+    public List<T> findAll(FilterRequest filters) {
+        return findAll(null, filters, Sort.unsorted());
+    }
+
+    public List<T> findAll(FilterRequest filters, Sort sort) {
+        return findAll(null, filters, sort);
+    }
+
+    public Stream<T> findAll(FilterRequest filters, Sort sort, StreamingOptions options) {
+        return findAll(null, filters, sort, options);
+    }
+
+    public <R> Stream<R> findAll(FilterRequest filters, Sort sort, StreamingOptions options, Function<T, R> beforeDetaching) {
+        return findAll(null, filters, sort, options, beforeDetaching);
+    }
+
+    public long count(FilterRequest filters) {
+        return count(null, filters);
+    }    
+    
+    
     @Override
     protected <S extends T> TypedQuery<S> getQuery(@Nullable Specification<S> spec, Class<S> domainClass, Sort sort) {
         return super.getQuery(spec, domainClass, Sorters.validateAndTransform(domainClass, sort, allowedSorters));
