@@ -41,7 +41,7 @@ public class SortTest {
 
     @Test
     public void canSortWithGivenOrders() {
-        final Sort sort = Sort.by(Sort.Order.asc("a"), Sort.Order.desc("b"));
+        final Sort sort = Sort.by(Sort.Order.asc("byA"), Sort.Order.desc("byB"));
         final List<EntityForSort> all = repo.findAll(sort);
         final List<String> expected = List.of("D", "C", "B", "F", "E", "A");
         Assert.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()));
@@ -56,7 +56,7 @@ public class SortTest {
 
     @Test
     public void canSortWithSpecificationFiltersAndThenGivenOrders() {
-        final Sort sort = Sort.by(Sort.Order.asc("a"), Sort.Order.desc("b"));
+        final Sort sort = Sort.by(Sort.Order.asc("byA"), Sort.Order.desc("byB"));
         final List<EntityForSort> all = repo.findAll(new EvenIdFirst(), FilterRequest.unfiltered(), sort);
         final List<String> expected = List.of("D", "B", "F", "C", "E", "A");
         Assert.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()));
@@ -64,7 +64,7 @@ public class SortTest {
 
     @Test
     public void canSortWithSpecificationAndThenGivenOrders() {
-        final Sort sort = Sort.by(Sort.Order.asc("a"), Sort.Order.desc("b"));
+        final Sort sort = Sort.by(Sort.Order.asc("byA"), Sort.Order.desc("byB"));
         final List<EntityForSort> all = repo.findAll(new EvenIdFirst(), sort);
         final List<String> expected = List.of("D", "B", "F", "C", "E", "A");
         Assert.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()));
@@ -72,7 +72,7 @@ public class SortTest {
 
     @Test
     public void canSortWithSpecificationAndThenPagination() {
-        final Sort sort = Sort.by(Sort.Order.asc("a"), Sort.Order.desc("b"));
+        final Sort sort = Sort.by(Sort.Order.asc("byA"), Sort.Order.desc("byB"));
         final PageRequest pr = PageRequest.of(0, 10, sort);
         final Page<EntityForSort> all = repo.findAll(new EvenIdFirst(), pr);
         final List<String> expected = List.of("D", "B", "F", "C", "E", "A");
@@ -81,7 +81,7 @@ public class SortTest {
 
     @Test
     public void canSortPageWithGivenOrders() {
-        final Sort sort = Sort.by(Sort.Order.asc("a"), Sort.Order.desc("b"));
+        final Sort sort = Sort.by(Sort.Order.asc("byA"), Sort.Order.desc("byB"));
         final Page<EntityForSort> page = repo.findAll(PageRequest.of(0, Integer.MAX_VALUE, sort));
         final List<String> expected = List.of("D", "C", "B", "F", "E", "A");
         Assert.assertEquals(expected, page.stream().map(e -> e.b).collect(Collectors.toList()));
@@ -89,7 +89,7 @@ public class SortTest {
 
     @Test
     public void canSortPageWithSpecificationAndThenGivenOrders() {
-        final Sort sort = Sort.by(Sort.Order.asc("a"), Sort.Order.desc("b"));
+        final Sort sort = Sort.by(Sort.Order.asc("byA"), Sort.Order.desc("byB"));
         final Page<EntityForSort> page = repo.findAll(new EvenIdFirst(), FilterRequest.unfiltered(), PageRequest.of(0, Integer.MAX_VALUE, sort));
         final List<String> expected = List.of("D", "B", "F", "C", "E", "A");
         Assert.assertEquals(expected, page.stream().map(e -> e.b).collect(Collectors.toList()));

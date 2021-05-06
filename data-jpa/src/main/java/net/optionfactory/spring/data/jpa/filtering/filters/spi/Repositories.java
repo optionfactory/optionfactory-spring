@@ -33,7 +33,7 @@ public interface Repositories {
         return Stream
                 .of(ei.getJavaType().getAnnotations())
                 .flatMap(repeatableAnnotation -> flattenRepeatables(repeatableAnnotation))
-                .filter(annotation -> null != AnnotationUtils.findAnnotation(annotation.annotationType(), Sortable.class))
+                .filter(annotation -> annotation.annotationType().equals(Sortable.class))
                 .map(annotation -> createSorterFromAnnotation(annotation, ei, em))
                 .collect(Collectors.toMap(sspec -> sspec.getFirst(), sspec -> sspec.getSecond()));
     }
