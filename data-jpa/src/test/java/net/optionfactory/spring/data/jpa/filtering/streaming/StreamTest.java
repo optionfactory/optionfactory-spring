@@ -2,7 +2,6 @@ package net.optionfactory.spring.data.jpa.filtering.streaming;
 
 import java.util.stream.Collectors;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
-import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository.StreamingOptions;
 import net.optionfactory.spring.spring.data.jpa.HibernateTestConfig;
 import org.junit.Assert;
 import org.junit.Before;
@@ -36,7 +35,7 @@ public class StreamTest {
     @Test
     public void canStreamDetachedObjects() {
         final var all = tx.execute(txs
-                -> repo.findAll(null, FilterRequest.unfiltered(), Sort.unsorted(), StreamingOptions.detatched(100))
+                -> repo.findAll(null, FilterRequest.unfiltered(), Sort.unsorted(), 100, (sp, e) -> e)
                         .collect(Collectors.toList())
         );
 
@@ -47,7 +46,7 @@ public class StreamTest {
     @Test
     public void canStreamAttachedObjects() {
         final var all = tx.execute(txs
-                -> repo.findAll(null, FilterRequest.unfiltered(), Sort.unsorted(), StreamingOptions.attached(100))
+                -> repo.findAll(null, FilterRequest.unfiltered(), Sort.unsorted(), 100, (sp, e) -> e)
                         .collect(Collectors.toList())
         );
 

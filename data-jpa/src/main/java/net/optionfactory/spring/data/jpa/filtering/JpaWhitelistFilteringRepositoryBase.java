@@ -4,12 +4,12 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
-import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository.StreamingMode;
-import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository.StreamingOptions;
+import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository.SessionPolicy;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Repositories;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Sorters;
 import org.hibernate.jpa.QueryHints;
@@ -57,31 +57,20 @@ public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> ext
         return findAll(Specification.where(base).and(filter(filters)).and(sort(sort)), Sort.unsorted());
     }
 
-    public Stream<T> findAll(@Nullable Specification<T> base, FilterRequest filters, Sort sort, StreamingOptions so) {
-        final var stream = getQuery(Specification.where(base).and(filter(filters)).and(sort(sort)), Sort.unsorted())
-                .setHint(QueryHints.HINT_FETCH_SIZE, so.fetchSize)
-                .getResultStream();
-        return so.mode == StreamingMode.DETACHED ? stream.peek(entityManager::detach) : stream;
-    }
-
-    public <R> Stream<R> findAll(@Nullable Specification<T> base, FilterRequest filters, Sort sort, StreamingOptions so, Function<T, R> beforeDetaching) {
+    public <R> Stream<R> findAll(@Nullable Specification<T> base, FilterRequest filters, Sort sort, int fetchSize, BiFunction<SessionPolicy, T, R> callback) {
+        final AtomicLong counter = new AtomicLong(-1);
+        final SessionPolicy policy = new SessionPolicy(entityManager, counter);
         return getQuery(Specification.where(base).and(filter(filters)).and(sort(sort)), Sort.unsorted())
-                .setHint(QueryHints.HINT_FETCH_SIZE, so.fetchSize)
+                .setHint(QueryHints.HINT_FETCH_SIZE, fetchSize)
                 .getResultStream()
-                .map(entity -> {
-                    final var r = beforeDetaching.apply(entity);
-                    if (so.mode == StreamingMode.DETACHED) {
-                        entityManager.detach(entity);
-                    }
-                    return r;
-                });
+                .peek(entity -> counter.incrementAndGet())
+                .map(entity -> callback.apply(policy, entity));
     }
 
     public long count(@Nullable Specification<T> base, FilterRequest filters) {
         return count(Specification.where(base).and(filter(filters)));
     }
 
-    
     public Optional<T> findOne(FilterRequest filters) {
         return findOne(null, filters);
     }
@@ -102,19 +91,14 @@ public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> ext
         return findAll(null, filters, sort);
     }
 
-    public Stream<T> findAll(FilterRequest filters, Sort sort, StreamingOptions options) {
-        return findAll(null, filters, sort, options);
-    }
-
-    public <R> Stream<R> findAll(FilterRequest filters, Sort sort, StreamingOptions options, Function<T, R> beforeDetaching) {
-        return findAll(null, filters, sort, options, beforeDetaching);
+    public <R> Stream<R> findAll(FilterRequest filters, Sort sort, int fetchSize, BiFunction<SessionPolicy, T, R> cb) {
+        return findAll(null, filters, sort, fetchSize, cb);
     }
 
     public long count(FilterRequest filters) {
         return count(null, filters);
-    }    
-    
-    
+    }
+
     @Override
     protected <S extends T> TypedQuery<S> getQuery(@Nullable Specification<S> spec, Class<S> domainClass, Sort sort) {
         return super.getQuery(spec, domainClass, Sorters.validateAndTransform(domainClass, sort, allowedSorters));
