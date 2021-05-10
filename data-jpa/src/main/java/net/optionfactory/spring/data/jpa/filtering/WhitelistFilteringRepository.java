@@ -72,9 +72,8 @@ public interface WhitelistFilteringRepository<T> {
 
     /**
      * Streams all entries accepted by the given filters and base
-     * {@link Specification}, ordered by a {@link Sort}, using the passed
-     * {@link StreamingMode}, calling the passed Function before possibly
-     * detaching the streamed entity.
+     * {@link Specification}, ordered by a {@link Sort}, calling the passed
+     * Function before possibly detaching the streamed entity.
      *
      * @param <R> result type
      * @param base a base filter that should be always applied
