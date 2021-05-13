@@ -43,7 +43,6 @@ public interface Filters {
             }
             if (currentAttribute instanceof SingularAttribute) {
                 final AttributeTraversal candidate = new AttributeTraversal(attributeName, Optional.ofNullable(type).map(TraversalType::valueOf).orElse(TraversalType.GET));
-                ensureConf(TraversalType.GET == candidate.type, annotation, entity, "used an invalid traversal type '%s' for singular attribute '%s' in spec: '%s'", candidate.type, candidate.name, pathTraversalSpec);
                 path.add(candidate);
                 final Type targetType = ((SingularAttribute) currentAttribute).getType();
                 if (targetType instanceof ManagedType) {
