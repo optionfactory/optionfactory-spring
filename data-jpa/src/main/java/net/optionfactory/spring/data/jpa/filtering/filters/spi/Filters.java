@@ -25,6 +25,11 @@ public interface Filters {
         ManagedType<?> currentType = entity;
         Attribute<?, ?> currentAttribute = null;
         final var path = new ArrayList<AttributeTraversal>();
+        
+        if(pathTraversalSpec == null || pathTraversalSpec.isEmpty()){
+            return new Traversal(path, currentAttribute);
+        }
+        
         for (String attributeTraversalSpec : pathTraversalSpec.split("\\.")) {
             final Matcher m = ATTRIBUTE_TRAVERSAL_PATTERN.matcher(attributeTraversalSpec);
             ensureConf(m.matches(), annotation, entity, "invalid attribute traversal spec: %s", attributeTraversalSpec);
@@ -66,7 +71,7 @@ public interface Filters {
     }
 
     public static Class<?> ensurePropertyOfAnyType(Annotation annotation, EntityType<?> entity, Traversal traversal, Class<?>... types) {
-        final Class<?> javaType = traversal.attribute.getJavaType();
+        final Class<?> javaType = traversal.attribute == null ? entity.getJavaType() : traversal.attribute.getJavaType();
         return Stream.of(types)
                 .filter(type -> type.isAssignableFrom(javaType))
                 .findFirst()

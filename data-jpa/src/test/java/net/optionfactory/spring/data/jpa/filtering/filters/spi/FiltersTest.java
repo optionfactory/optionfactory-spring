@@ -8,8 +8,6 @@ import javax.persistence.criteria.Root;
 import net.optionfactory.spring.spring.data.jpa.HibernateTestConfig;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
-import org.hibernate.metamodel.model.domain.internal.EntityTypeImpl;
-import org.hibernate.query.criteria.internal.path.RootImpl;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,6 +26,19 @@ public class FiltersTest {
     private EntityARepository repository;
 
     @Test
+    public void canSpecifyEmptyTraversal() {
+        final Specification<EntityA> specification = new Specification<EntityA>() {
+            @Override
+            public Predicate toPredicate(Root<EntityA> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
+                final Traversal ts = Filters.traversal(null, root.getModel(), "");
+                final Path<?> path = Filters.path(root, ts);
+                Assert.assertEquals(EntityA.class, path.getJavaType());
+                return null;
+            }
+        };
+        repository.findOne(specification, FilterRequest.unfiltered());
+    }
+    @Test
     public void canTraversePropertyChain() {
         final Specification<EntityA> specification = new Specification<EntityA>() {
             @Override
@@ -35,7 +46,7 @@ public class FiltersTest {
                 final Traversal ts = Filters.traversal(null, root.getModel(), "b.c.i.n");
                 final Path<Object> path = Filters.path(root, ts);
                 Assert.assertEquals(long.class, path.getJavaType());
-                return cb.disjunction();
+                return null;
             }
         };
         repository.findOne(specification, FilterRequest.unfiltered());
@@ -48,7 +59,7 @@ public class FiltersTest {
             public Predicate toPredicate(Root<EntityA> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
                 final Traversal ts = Filters.traversal(null, root.getModel(), "b.x.id");
                 final Path<Object> nonExistant = Filters.path(root, ts);
-                return cb.disjunction();
+                return null;
             }
         };
         repository.findOne(specification, FilterRequest.unfiltered());
