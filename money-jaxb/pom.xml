@@ -4,7 +4,7 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>5.11-SNAPSHOT</version>
+        <version>5.11</version>
     </parent>
     <artifactId>money-jaxb</artifactId>
     <description>optionfactory-spring jaxb time adapters</description>
