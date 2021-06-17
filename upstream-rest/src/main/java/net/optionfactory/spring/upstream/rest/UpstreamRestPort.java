@@ -39,6 +39,7 @@ import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.util.StreamUtils;
+import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
 
 public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
@@ -49,7 +50,7 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
     private final List<UpstreamInterceptor<CTX>> interceptors;
     private final ThreadLocal<ExchangeContext<CTX>> callContexts = new ThreadLocal<>();
 
-    public UpstreamRestPort(String upstreamId, UpstreamRequestCounter requestCounter, ObjectMapper objectMapper, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, List<UpstreamInterceptor<CTX>> interceptors) {
+    public UpstreamRestPort(String upstreamId, UpstreamRequestCounter requestCounter, ObjectMapper objectMapper, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, Optional<ResponseErrorHandler> errorHandler, List<UpstreamInterceptor<CTX>> interceptors) {
         final var builder = HttpClientBuilder.create();
         builder.setSSLSocketFactory(socketFactory);
         final var client = builder.setDefaultRequestConfig(RequestConfig.custom()
@@ -74,7 +75,7 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
         final var inner = new RestTemplate(requestFactory);
         inner.setMessageConverters(converters);
         inner.setInterceptors(List.of(new RestInterceptors<>(upstreamId, interceptors, callContexts)));
-        inner.setErrorHandler(new UpstreamResponseErrorHandler<>(upstreamId, interceptors));
+        inner.setErrorHandler(errorHandler.orElseGet(() -> new UpstreamResponseErrorHandler<>(upstreamId, interceptors)));
         this.upstreamId = upstreamId;
         this.requestCounter = requestCounter;
         this.interceptors = interceptors;
