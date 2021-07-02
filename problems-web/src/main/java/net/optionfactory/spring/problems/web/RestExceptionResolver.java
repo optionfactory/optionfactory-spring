@@ -60,8 +60,8 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
         this.mapper = mapper;
         this.transformers = options == Options.INCLUDE_DETAILS ? transformers : withOmitDetails(transformers);
     }
-    
-    private ProblemTransformer[] withOmitDetails(ProblemTransformer[] transformers){
+
+    private ProblemTransformer[] withOmitDetails(ProblemTransformer[] transformers) {
         final ProblemTransformer[] r = new ProblemTransformer[transformers.length + 1];
         System.arraycopy(transformers, 0, r, 0, transformers.length);
         r[transformers.length] = new OmitDetails();
@@ -173,21 +173,25 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
 
     @Override
     protected boolean shouldApplyTo(HttpServletRequest request, Object handler) {
-        return super.shouldApplyTo(request, handler) && (handler == null || methodToIsRest.computeIfAbsent((HandlerMethod) handler, m -> {
+        if (handler instanceof HandlerMethod == false) {
+            return false;
+        }
+        final var handlerMethod = (HandlerMethod) handler;
+        return super.shouldApplyTo(request, handler) && methodToIsRest.computeIfAbsent(handlerMethod, m -> {
             return m.hasMethodAnnotation(ResponseBody.class) || AnnotatedElementUtils.hasAnnotation(m.getBeanType(), ResponseBody.class);
-        }));
+        });
     }
 
     @Override
     protected ModelAndView doResolveException(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
         final HandlerMethod hm = (HandlerMethod) handler;
         final HttpStatusAndFailures statusAndErrors = toStatusAndErrors(request, response, hm, ex);
-        
+
         final var transformedFailures = statusAndErrors.failures
                 .stream()
                 .map(p -> applyAllTransformers(p, request, response, hm, ex))
                 .collect(Collectors.toList());
-        
+
         response.setStatus(statusAndErrors.status.value());
 
         final MappingJackson2JsonView view = new MappingJackson2JsonView();
