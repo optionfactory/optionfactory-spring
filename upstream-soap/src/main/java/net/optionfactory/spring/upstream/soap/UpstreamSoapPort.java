@@ -31,6 +31,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.Nullable;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 import org.springframework.ws.WebServiceMessage;
 import org.springframework.ws.client.WebServiceClientException;
@@ -56,7 +57,7 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
     public UpstreamSoapPort(SoapVersion soapVersion, String upstreamId, UpstreamRequestCounter requestCounter, Resource[] schemas, Class<?> packageToScan, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, List<ClientInterceptor> additionalInterceptors, List<UpstreamInterceptor<CTX>> interceptors) {
         final var builder = HttpClientBuilder.create();
         builder.setSSLSocketFactory(socketFactory);
-        
+
         final var client = builder
                 .setDefaultRequestConfig(RequestConfig.custom().setConnectTimeout(connectionTimeoutInMillis).build())
                 .setDefaultSocketConfig(SocketConfig.custom().setSoKeepAlive(true).build())
@@ -92,13 +93,13 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
         validator.setValidateRequest(true);
         validator.setValidateResponse(true);
         initBean(validator);
-        
+
         final ClientInterceptor[] clientInterceptors = Stream.of(
                 Stream.of(validator),
                 additionalInterceptors.stream(),
                 Stream.of(new SoapInterceptors<>(interceptors, callContexts))
         ).flatMap(Function.identity()).toArray(n -> new ClientInterceptor[n]);
-        
+
         inner.setInterceptors(clientInterceptors);
 
         this.upstreamId = upstreamId;
@@ -116,17 +117,18 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
     }
 
     @Override
-    public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, Class<T> responseType) {
-        return exchange(context, endpointId, requestEntity);
+    public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, Class<T> responseType, @Nullable UpstreamErrorHandler<CTX> errorHandler) {
+        return exchange(context, endpointId, requestEntity, errorHandler);
     }
 
     @Override
-    public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, ParameterizedTypeReference<T> responseType) {
-        return exchange(context, endpointId, requestEntity);
+    public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, ParameterizedTypeReference<T> responseType, @Nullable UpstreamErrorHandler<CTX> errorHandler) {
+        return exchange(context, endpointId, requestEntity, errorHandler);
     }
 
-    private <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity) {
+    private <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, @Nullable UpstreamErrorHandler<CTX> errorHandler) {
         final ExchangeContext<CTX> ctx = new ExchangeContext<>();
+        ctx.upstreamErrorHandler = errorHandler;
         ctx.prepare = new UpstreamInterceptor.PrepareContext<>();
         ctx.prepare.requestId = requestCounter.next();
         ctx.prepare.ctx = context;
@@ -147,7 +149,7 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
             final var soapAction = ctx.prepare.entity.getHeaders().getFirst("SOAPAction");
             ctx.prepare.entity = new RequestEntity<>(ctx.prepare.entity.getBody(), headers, ctx.prepare.entity.getMethod(), ctx.prepare.entity.getUrl(), ctx.prepare.entity.getType());
             final var got = soap.marshalSendAndReceive(ctx.prepare.entity.getUrl().toString(), ctx.prepare.entity.getBody(), (WebServiceMessage message) -> {
-                if(soapAction != null){
+                if (soapAction != null) {
                     ((SoapMessage) message).setSoapAction(soapAction);
                 }
                 final HttpComponentsConnection connection = (HttpComponentsConnection) TransportContextHolder.getTransportContext().getConnection();

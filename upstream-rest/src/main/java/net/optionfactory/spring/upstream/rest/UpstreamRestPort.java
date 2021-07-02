@@ -16,7 +16,7 @@ import net.optionfactory.spring.upstream.UpstreamInterceptor.PrepareContext;
 import net.optionfactory.spring.upstream.UpstreamInterceptor.RequestContext;
 import net.optionfactory.spring.upstream.UpstreamInterceptor.ResponseContext;
 import net.optionfactory.spring.upstream.UpstreamPort;
-import net.optionfactory.spring.upstream.UpstreamResponseErrorHandler;
+import net.optionfactory.spring.upstream.CompositeUpstreamResponseErrorHandler;
 import net.optionfactory.spring.upstream.counters.UpstreamRequestCounter;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.SocketConfig;
@@ -38,8 +38,8 @@ import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.lang.Nullable;
 import org.springframework.util.StreamUtils;
-import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
 
 public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
@@ -75,7 +75,7 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
         final var inner = new RestTemplate(requestFactory);
         inner.setMessageConverters(converters);
         inner.setInterceptors(List.of(new RestInterceptors<>(upstreamId, interceptors, callContexts)));
-        inner.setErrorHandler(new UpstreamResponseErrorHandler<>(upstreamId, interceptors, callContexts));
+        inner.setErrorHandler(new CompositeUpstreamResponseErrorHandler<>(upstreamId, interceptors, callContexts));
         this.upstreamId = upstreamId;
         this.requestCounter = requestCounter;
         this.interceptors = interceptors;
@@ -83,8 +83,9 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
     }
 
     @Override
-    public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, Class<T> responseType) {
+    public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, Class<T> responseType, @Nullable UpstreamErrorHandler<CTX> errorStrategy) {
         final ExchangeContext<CTX> ctx = new ExchangeContext<>();
+        ctx.upstreamErrorHandler = errorStrategy;
         ctx.prepare = new UpstreamInterceptor.PrepareContext<>();
         ctx.prepare.requestId = requestCounter.next();
         ctx.prepare.ctx = context;
@@ -105,8 +106,9 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
     }
 
     @Override
-    public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, ParameterizedTypeReference<T> responseType) {
+    public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, ParameterizedTypeReference<T> responseType, @Nullable UpstreamErrorHandler<CTX> errorStrategy) {
         final ExchangeContext<CTX> ctx = new ExchangeContext<>();
+        ctx.upstreamErrorHandler = errorStrategy;
         ctx.prepare = new UpstreamInterceptor.PrepareContext<>();
         ctx.prepare.requestId = requestCounter.next();
         ctx.prepare.ctx = context;

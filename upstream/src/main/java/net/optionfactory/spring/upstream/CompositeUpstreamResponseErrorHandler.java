@@ -2,17 +2,18 @@ package net.optionfactory.spring.upstream;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import net.optionfactory.spring.upstream.UpstreamInterceptor.ExchangeContext;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.DefaultResponseErrorHandler;
 
-public class UpstreamResponseErrorHandler<CTX> extends DefaultResponseErrorHandler {
+public class CompositeUpstreamResponseErrorHandler<CTX> extends DefaultResponseErrorHandler {
 
     private final String upstreamId;
     private final List<UpstreamInterceptor<CTX>> interceptors;
     private final ThreadLocal<ExchangeContext<CTX>> callContexts;
 
-    public UpstreamResponseErrorHandler(String upstreamId, List<UpstreamInterceptor<CTX>> interceptors, ThreadLocal<ExchangeContext<CTX>> callContexts) {
+    public CompositeUpstreamResponseErrorHandler(String upstreamId, List<UpstreamInterceptor<CTX>> interceptors, ThreadLocal<ExchangeContext<CTX>> callContexts) {
         this.upstreamId = upstreamId;
         this.interceptors = interceptors;
         this.callContexts = callContexts;
@@ -22,11 +23,13 @@ public class UpstreamResponseErrorHandler<CTX> extends DefaultResponseErrorHandl
     public void handleError(ClientHttpResponse response) throws IOException {
         final var rawStatusCode = response.getRawStatusCode();
         final var ctx = callContexts.get();
-        interceptors.stream()
+        Optional.ofNullable(ctx.upstreamErrorHandler)
+                .map(strategy -> strategy.apply(ctx.prepare, ctx.request, ctx.response))
+                .orElseGet(() -> interceptors.stream()
                 .map(i -> i.errorStrategy(ctx.prepare, ctx.request, ctx.response))
                 .filter(r -> r.isPresent())
                 .map(r -> r.get())
-                .findFirst()
+                .findFirst())
                 .ifPresentOrElse(result -> {
                     if (result.success) {
                         return;

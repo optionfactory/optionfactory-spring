@@ -2,6 +2,7 @@ package net.optionfactory.spring.upstream;
 
 import java.time.Instant;
 import java.util.Optional;
+import net.optionfactory.spring.upstream.UpstreamPort.UpstreamErrorHandler;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -42,6 +43,7 @@ public interface UpstreamInterceptor<CTX> {
 
     public static class ExchangeContext<CTX> {
 
+        public UpstreamErrorHandler<CTX> upstreamErrorHandler;
         public PrepareContext<CTX> prepare;
         public RequestContext request;
         public ResponseContext response;
