@@ -14,9 +14,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
+import javax.validation.Path;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.http.HttpStatus;
@@ -25,6 +29,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.method.HandlerMethod;
@@ -115,6 +120,18 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             final List<Problem> failures = Stream.concat(globalFailures, fieldFailures).collect(Collectors.toList());
             logger.debug(String.format("Binding failure at %s: %s", requestUri, failures));
             return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, failures);
+        }
+        if (ex instanceof ConstraintViolationException) {
+            final ConstraintViolationException cve = (ConstraintViolationException) ex;
+            final Stream<Problem> fieldFailures = cve.getConstraintViolations().stream().map(RestExceptionResolver::contraintViolationToProblem);
+            final List<Problem> failures = fieldFailures.collect(Collectors.toList());
+            logger.debug(String.format("Constraint violations at %s: %s", requestUri, failures));
+            return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, failures);
+        }
+        if (ex instanceof MissingServletRequestParameterException) {
+            final MissingServletRequestParameterException msrpe = (MissingServletRequestParameterException) ex;
+            final Problem problem = Problem.of("FIELD_ERROR", msrpe.getParameterName(), "Parameter is missing", Problem.NO_DETAILS);
+            return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, Collections.singletonList(problem));
         }
         if (ex instanceof MethodArgumentTypeMismatchException) { // Handles type errors in path variables (Es. not-numeric string when expecting an int)
             final MethodArgumentTypeMismatchException matme = (MethodArgumentTypeMismatchException) ex;
@@ -218,6 +235,14 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             this.failures = failures;
         }
 
+    }
+
+    private static Problem contraintViolationToProblem(ConstraintViolation error) {
+        final var path = StreamSupport.stream(error.getPropertyPath().spliterator(), false)
+                .skip(1)
+                .map(node -> node.getName())
+                .collect(Collectors.joining("."));
+        return Problem.of("FIELD_ERROR", path, error.getMessage(), null);
     }
 
     private static Problem fieldErrorToProblem(FieldError error) {
