@@ -85,7 +85,7 @@ public class MethodValidationTest {
                 .perform(MockMvcRequestBuilders.get("/request-param"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.[0].type").value("FIELD_ERROR"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.[0].context").value("letter"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.[0].reason").value("missing"));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.[0].reason").value("Parameter is missing"));
     }
 
     @Test
