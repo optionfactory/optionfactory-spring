@@ -68,11 +68,6 @@
             </dependency>
             <dependency>
                 <groupId>net.optionfactory.spring</groupId>
-                <artifactId>webserver-undertow</artifactId>
-                <version>${opfa-spring.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>net.optionfactory.spring</groupId>
                 <artifactId>authentication-bearer-token</artifactId>
                 <version>${opfa-spring.version}</version>
             </dependency>
@@ -124,6 +119,16 @@
             <dependency>
                 <groupId>net.optionfactory.spring</groupId>
                 <artifactId>validators</artifactId>
+                <version>${opfa-spring.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.optionfactory.spring</groupId>
+                <artifactId>pdf</artifactId>
+                <version>${opfa-spring.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.optionfactory.spring</groupId>
+                <artifactId>pdf-signing</artifactId>
                 <version>${opfa-spring.version}</version>
             </dependency>
 
