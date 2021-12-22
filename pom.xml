@@ -70,9 +70,9 @@
         <module>validators</module>
         <module>pdf</module>
         <module>pdf-signing</module>
-        
+
         <module>optionfactory-spring-bom</module>
-        
+
     </modules>
 
     <properties>
@@ -88,7 +88,7 @@
                 <groupId>org.springframework.ws</groupId>
                 <artifactId>spring-ws-core</artifactId>
                 <version>3.1.1</version>
-            </dependency>            
+            </dependency>
             <dependency>
                 <groupId>org.springframework.data</groupId>
                 <artifactId>spring-data-bom</artifactId>
@@ -126,13 +126,43 @@
             <dependency>
                 <groupId>org.hibernate</groupId>
                 <artifactId>hibernate-core</artifactId>
-                <version>5.5.2.Final</version>
+                <version>5.6.1.Final</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate</groupId>
+                <artifactId>hibernate-c3p0</artifactId>
+                <version>5.6.1.Final</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+                <version>1.4.200</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate.validator</groupId>
+                <artifactId>hibernate-validator</artifactId>
+                <version>6.2.0.Final</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>javax.el</groupId>
+                <artifactId>javax.el-api</artifactId>
+                <version>3.0.0</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.web</groupId>
+                <artifactId>javax.el</artifactId>
+                <version>2.2.6</version>
+                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.thymeleaf</groupId>
                 <artifactId>thymeleaf-spring5</artifactId>
                 <version>3.0.11.RELEASE</version>
-            </dependency>            
+            </dependency>
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt</artifactId>
@@ -187,7 +217,7 @@
                 <groupId>javax.xml.bind</groupId>
                 <artifactId>jaxb-api</artifactId>
                 <version>2.3.1</version>
-            </dependency>            
+            </dependency>
             <dependency>
                 <groupId>com.openhtmltopdf</groupId>
                 <artifactId>openhtmltopdf-core</artifactId>
@@ -202,12 +232,25 @@
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcpkix-jdk15on</artifactId>
                 <version>1.69</version>
-            </dependency>            
+            </dependency>
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
                 <version>4.13.2</version>
-            </dependency>            
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.jayway.jsonpath</groupId>
+                <artifactId>json-path</artifactId>
+                <version>2.6.0</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-slf4j-impl</artifactId>
+                <version>2.17.0</version>
+                <scope>test</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -217,7 +260,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
-            </plugin>               
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
