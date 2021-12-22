@@ -68,6 +68,9 @@
         <module>upstream-interceptor-micrometer</module>
         <module>upstream-email-faults</module>
         <module>validators</module>
+        <module>pdf</module>
+        <module>pdf-signing</module>
+        
         <module>optionfactory-spring-bom</module>
         
     </modules>
@@ -184,6 +187,21 @@
                 <groupId>javax.xml.bind</groupId>
                 <artifactId>jaxb-api</artifactId>
                 <version>2.3.1</version>
+            </dependency>            
+            <dependency>
+                <groupId>com.openhtmltopdf</groupId>
+                <artifactId>openhtmltopdf-core</artifactId>
+                <version>1.0.10</version>
+            </dependency>
+            <dependency>
+                <groupId>com.openhtmltopdf</groupId>
+                <artifactId>openhtmltopdf-pdfbox</artifactId>
+                <version>1.0.10</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpkix-jdk15on</artifactId>
+                <version>1.69</version>
             </dependency>            
             <dependency>
                 <groupId>junit</groupId>
