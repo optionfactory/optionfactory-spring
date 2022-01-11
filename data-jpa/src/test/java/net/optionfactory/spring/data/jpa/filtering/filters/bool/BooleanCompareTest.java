@@ -39,16 +39,12 @@ public class BooleanCompareTest {
     }
 
     @Test
-    @Ignore
-    //bug in h2dialect (Values of types "BOOLEAN" and "INTEGER" are not comparable)
     public void canFilterBooleanValueWithDefaultOptions() {
         Assert.assertEquals(Set.of(1L), idsIn(flags.findAll(null, filter("javaBoolean", "true"), Pageable.unpaged())));
         Assert.assertEquals(Set.of(2L), idsIn(flags.findAll(null, filter("javaBoolean", "false"), Pageable.unpaged())));
     }
 
     @Test
-    @Ignore
-    //bug in h2dialect (Values of types "BOOLEAN" and "INTEGER" are not comparable)
     public void canFilterBooleanValueWithCustomValues() {
         Assert.assertEquals(Set.of(1L), idsIn(flags.findAll(null, filter("YNMatchCaseBoolean", "Y"), Pageable.unpaged())));
         Assert.assertEquals(Set.of(2L), idsIn(flags.findAll(null, filter("YNMatchCaseBoolean", "N"), Pageable.unpaged())));
