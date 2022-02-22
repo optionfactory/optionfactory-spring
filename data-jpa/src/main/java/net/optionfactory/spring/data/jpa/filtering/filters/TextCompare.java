@@ -8,8 +8,8 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.stream.Stream;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -78,7 +78,7 @@ public @interface TextCompare {
 
         @Override
         public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
-            Filters.ensure(values.length == 3, name, root, "expected operator,mode,value got %s", List.of(values));
+            Filters.ensure(values.length == 3, name, root, "expected operator,mode,value got %s", Arrays.toString(values));
             final Operator operator = Operator.valueOf(values[0]);
             Filters.ensure(operators.contains(operator), name, root, "operator %s not whitelisted (%s)", operator, operators);
             final Mode mode = Mode.valueOf(values[1]);
