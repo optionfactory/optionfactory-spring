@@ -1,5 +1,7 @@
 package net.optionfactory.spring.data.jpa.filtering.filters.numbers;
 
+import net.optionfactory.spring.data.jpa.filtering.filters.LocalDateCompare;
+import net.optionfactory.spring.data.jpa.filtering.filters.localdate.EntityForLocalDate;
 import net.optionfactory.spring.spring.data.jpa.HibernateTestConfig;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.filters.NumberCompare;
@@ -70,6 +72,13 @@ public class NumberCompareTest {
     @Test
     public void canFilterOnEmbeddedValues() {
         Assert.assertEquals(Set.of(1L), idsIn(repo.findAll(null, filter("container.value", NumberCompare.Operator.EQ, "42"), Pageable.unpaged())));
+    }
+
+    @Test
+    public void filteringWithNeqIncludesNullValues() {
+        final Page<EntityForNumberCompare> all = repo.findAll(Pageable.unpaged());
+        final Page<EntityForNumberCompare> page = repo.findAll(null, filter("maxPersons", NumberCompare.Operator.NEQ, "9999"), Pageable.unpaged());
+        Assert.assertEquals(all.getTotalElements(), page.getTotalElements());
     }
 
     private static FilterRequest filter(String filterName, NumberCompare.Operator operator, String value) {

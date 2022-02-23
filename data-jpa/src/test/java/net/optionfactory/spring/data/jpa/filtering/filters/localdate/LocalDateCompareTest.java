@@ -6,6 +6,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import net.optionfactory.spring.data.jpa.filtering.filters.InstantCompare.Operator;
+import net.optionfactory.spring.data.jpa.filtering.filters.instant.EntityForInstant;
 import net.optionfactory.spring.spring.data.jpa.HibernateTestConfig;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.filters.LocalDateCompare;
@@ -35,7 +38,8 @@ public class LocalDateCompareTest {
                 entity(2, LocalDate.parse("2019-01-11")),
                 entity(3, LocalDate.parse("2019-01-11")),
                 entity(4, LocalDate.parse("2019-02-25")),
-                entity(5, LocalDate.parse("2019-10-01"))
+                entity(5, LocalDate.parse("2019-10-01")),
+                entity(6, null)
         ));
     }
 
@@ -73,6 +77,13 @@ public class LocalDateCompareTest {
     public void canFilterByLocalDateBetween() {
         final Page<EntityForLocalDate> page = repo.findAll(null, filter(LocalDateCompare.Operator.BETWEEN, "2019-01-11", "2019-09-30"), Pageable.unpaged());
         Assert.assertEquals(Set.of(2L, 3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void filteringWithNeqIncludesNullValues() {
+        final Page<EntityForLocalDate> all = repo.findAll(Pageable.unpaged());
+        final Page<EntityForLocalDate> page = repo.findAll(null, filter(LocalDateCompare.Operator.NEQ, "2222-02-02"), Pageable.unpaged());
+        Assert.assertEquals(all.getTotalElements(), page.getTotalElements());
     }
 
     private static FilterRequest filter(LocalDateCompare.Operator operator, String... values) {

@@ -1,6 +1,10 @@
 package net.optionfactory.spring.data.jpa.filtering.filters.text;
 
 import java.util.Map;
+
+import net.optionfactory.spring.data.jpa.filtering.filters.NumberCompare;
+import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare.Operator;
+import net.optionfactory.spring.data.jpa.filtering.filters.numbers.EntityForNumberCompare;
 import net.optionfactory.spring.spring.data.jpa.HibernateTestConfig;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
@@ -30,6 +34,7 @@ public class TextCompareTest {
             a.id = 123;
             a.name = "asd";
             a.description = "test";
+            a.title = null;
             repo.save(a);
 
             return null;
@@ -130,5 +135,18 @@ public class TextCompareTest {
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
+    }
+
+
+    @Test
+    public void filteringWithNeqIncludesNullValues() {
+        final FilterRequest fr = FilterRequest.of(Map.of("byTitle", new String[]{
+                Operator.NEQ.toString(),
+                TextCompare.Mode.IGNORE_CASE.toString(),
+                "D"
+        }));
+        final Page<EntityForTextCompare> all = repo.findAll(Pageable.unpaged());
+        final Page<EntityForTextCompare> page = repo.findAll(null, fr, Pageable.unpaged());
+        Assert.assertEquals(all.getTotalElements(), page.getTotalElements());
     }
 }

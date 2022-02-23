@@ -90,7 +90,7 @@ public @interface TextCompare {
                 case EQ:
                     return rhs == null ? lhs.isNull() : builder.equal(lhs, rhs);
                 case NEQ:
-                    return rhs == null ? lhs.isNotNull() : builder.notEqual(lhs, rhs);
+                    return rhs == null ? lhs.isNotNull() : builder.or(lhs.isNull(), builder.notEqual(lhs, rhs));
                 case LT:
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);                    
                     return builder.lessThan(lhs, rhs);

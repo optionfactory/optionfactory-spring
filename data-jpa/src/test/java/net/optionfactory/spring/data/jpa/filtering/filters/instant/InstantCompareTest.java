@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import net.optionfactory.spring.data.jpa.filtering.filters.InstantCompare.Operator;
 import net.optionfactory.spring.spring.data.jpa.HibernateTestConfig;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.filters.InstantCompare;
@@ -36,7 +38,8 @@ public class InstantCompareTest {
                 entity(3, Instant.ofEpochMilli(1_000)),
                 entity(4, Instant.ofEpochSecond(1_000)),
                 entity(5, Instant.parse("1970-01-01T12:00:00.123Z")),
-                entity(6, Instant.parse("1970-01-01T12:00:00.123456Z"))
+                entity(6, Instant.parse("1970-01-01T12:00:00.123456Z")),
+                entity(7, null)
         ));
     }
 
@@ -152,6 +155,13 @@ public class InstantCompareTest {
     public void filterBetweenIsRightExclusiveOnInputWithMorePrecision() {
         final Page<EntityForInstant> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.BETWEEN, "1970-01-01T12:00:00.123455Z", "1970-01-01T12:00:00.123456Z"), Pageable.unpaged());
         Assert.assertEquals(Set.<Long>of(), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void filteringWithNeqIncludesNullValues() {
+        final Page<EntityForInstant> all = repo.findAll(Pageable.unpaged());
+        final Page<EntityForInstant> page = repo.findAll(null, filter("instantIso", Operator.NEQ, "2222-02-02T02:02:02.222Z"), Pageable.unpaged());
+        Assert.assertEquals(all.getTotalElements(), page.getTotalElements());
     }
 
     private static FilterRequest filter(String filterName, InstantCompare.Operator operator, String... values) {
