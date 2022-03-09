@@ -51,15 +51,10 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
     private final ThreadLocal<ExchangeContext<CTX>> callContexts = new ThreadLocal<>();
 
     public UpstreamRestPort(String upstreamId, UpstreamRequestCounter requestCounter, ObjectMapper objectMapper, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, List<UpstreamInterceptor<CTX>> interceptors) {
-        final var builder = HttpClientBuilder.create();
-        builder.setSSLSocketFactory(socketFactory);
-        final var client = builder.setDefaultRequestConfig(RequestConfig.custom()
-                .setConnectTimeout(connectionTimeoutInMillis).build())
-                .setDefaultSocketConfig(SocketConfig.custom().setSoKeepAlive(true).build())
-                .build();
-        final var innerRequestFactory = new HttpComponentsClientHttpRequestFactory(client);
-        final var requestFactory = new BufferingClientHttpRequestFactory(innerRequestFactory);
+        this(upstreamId, requestCounter, objectMapper, socketFactory, connectionTimeoutInMillis, interceptors, makeDefaultConverters(objectMapper));
+    }
 
+    public static List<HttpMessageConverter<?>> makeDefaultConverters(ObjectMapper objectMapper) {
         final var byteArrayMessageConverter = new ByteArrayHttpMessageConverter();
         final var mappingJacksonMessageConverter = new MappingJackson2HttpMessageConverter(objectMapper);
         final var formMessageConverter = new FormHttpMessageConverter();
@@ -71,6 +66,18 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
                 formMessageConverter,
                 mappingJacksonMessageConverter,
                 resourceMessageConverter);
+        return converters;
+    }
+
+    public UpstreamRestPort(String upstreamId, UpstreamRequestCounter requestCounter, ObjectMapper objectMapper, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, List<UpstreamInterceptor<CTX>> interceptors, List<HttpMessageConverter<?>> converters) {
+        final var builder = HttpClientBuilder.create();
+        builder.setSSLSocketFactory(socketFactory);
+        final var client = builder.setDefaultRequestConfig(RequestConfig.custom()
+                .setConnectTimeout(connectionTimeoutInMillis).build())
+                .setDefaultSocketConfig(SocketConfig.custom().setSoKeepAlive(true).build())
+                .build();
+        final var innerRequestFactory = new HttpComponentsClientHttpRequestFactory(client);
+        final var requestFactory = new BufferingClientHttpRequestFactory(innerRequestFactory);
 
         final var inner = new RestTemplate(requestFactory);
         inner.setMessageConverters(converters);
