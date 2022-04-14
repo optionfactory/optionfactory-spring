@@ -4,7 +4,7 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>6.4</version>
+        <version>6.5-SNAPSHOT</version>
     </parent>
     <artifactId>upstream-interceptor-micrometer</artifactId>
     <description>optionfactory-spring micrometer upstream interceptor</description>
