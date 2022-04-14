@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.function.Function;
 import net.optionfactory.spring.upstream.UpstreamInterceptor;
+import net.optionfactory.spring.upstream.UpstreamPort.Hints;
 import org.springframework.http.HttpHeaders;
 
 public class UpstreamJwtInterceptor<CTX> implements UpstreamInterceptor<CTX> {
@@ -25,7 +26,7 @@ public class UpstreamJwtInterceptor<CTX> implements UpstreamInterceptor<CTX> {
     }
 
     @Override
-    public HttpHeaders prepare(PrepareContext<CTX> prepare) {
+    public HttpHeaders prepare(Hints<CTX> hints, PrepareContext<CTX> prepare) {
         final var headers = new HttpHeaders();
         final var claims = new HashMap<String, Object>();
         final var jwtIssuedAt = new Date();

@@ -11,6 +11,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import net.optionfactory.spring.upstream.UpstreamPort.Hints;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
@@ -49,7 +50,7 @@ public class UpstreamOauthInterceptor<T> implements UpstreamInterceptor<T> {
     }
 
     @Override
-    public HttpHeaders prepare(PrepareContext<T> prepare) {
+    public HttpHeaders prepare(Hints<T> hints, PrepareContext<T> prepare) {
         try {
             final String token = provideToken(prepare);
             final var headers = new HttpHeaders();

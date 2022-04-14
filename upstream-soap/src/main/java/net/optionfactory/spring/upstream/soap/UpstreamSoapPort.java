@@ -117,18 +117,18 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
     }
 
     @Override
-    public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, Class<T> responseType, @Nullable UpstreamErrorHandler<CTX> errorHandler) {
-        return exchange(context, endpointId, requestEntity, errorHandler);
+    public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, Class<T> responseType, Hints<CTX> hints) {
+        return exchange(context, endpointId, requestEntity, hints);
     }
 
     @Override
-    public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, ParameterizedTypeReference<T> responseType, @Nullable UpstreamErrorHandler<CTX> errorHandler) {
-        return exchange(context, endpointId, requestEntity, errorHandler);
+    public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, ParameterizedTypeReference<T> responseType, Hints<CTX> hints) {
+        return exchange(context, endpointId, requestEntity, hints);
     }
 
-    private <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, @Nullable UpstreamErrorHandler<CTX> errorHandler) {
+    private <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, Hints<CTX> hints) {
         final ExchangeContext<CTX> ctx = new ExchangeContext<>();
-        ctx.upstreamErrorHandler = errorHandler;
+        ctx.hints = hints;
         ctx.prepare = new UpstreamInterceptor.PrepareContext<>();
         ctx.prepare.requestId = requestCounter.next();
         ctx.prepare.ctx = context;
@@ -141,7 +141,7 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
             headers.addAll(ctx.prepare.entity.getHeaders());
             headers.remove("SOAPAction");
             for (var interceptor : interceptors) {
-                final var newHeaders = interceptor.prepare(ctx.prepare);
+                final var newHeaders = interceptor.prepare(ctx.hints, ctx.prepare);
                 if (newHeaders != null) {
                     headers.addAll(newHeaders);
                 }
@@ -161,7 +161,7 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
             });
             final ResponseEntity<T> response = ResponseEntity.ok().headers(ctx.response.headers).body((T) got);
             for (UpstreamInterceptor<CTX> interceptor : interceptors) {
-                interceptor.mappingSuccess(ctx.prepare, ctx.request, ctx.response, response);
+                interceptor.mappingSuccess(ctx.hints, ctx.prepare, ctx.request, ctx.response, response);
             }
             return response;
         } finally {
@@ -187,7 +187,7 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
             ctx.request.body = toResource(messageContext.getRequest());
             ctx.request.headers = ctx.prepare.entity.getHeaders();
             for (var interceptor : interceptors) {
-                interceptor.before(ctx.prepare, ctx.request);
+                interceptor.before(ctx.hints, ctx.prepare, ctx.request);
             }
 
             return true;
@@ -198,7 +198,7 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
             final ExchangeContext<CTX> ctx = callContexts.get();
             ctx.response.body = toResource(messageContext.getResponse());
             for (var interceptor : interceptors) {
-                interceptor.remotingSuccess(ctx.prepare, ctx.request, ctx.response);
+                interceptor.remotingSuccess(ctx.hints, ctx.prepare, ctx.request, ctx.response);
             }
             return true;
         }
@@ -208,7 +208,7 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
             final ExchangeContext<CTX> ctx = callContexts.get();
             ctx.response.body = toResource(messageContext.getResponse());
             for (var interceptor : interceptors) {
-                interceptor.remotingSuccess(ctx.prepare, ctx.request, ctx.response);
+                interceptor.remotingSuccess(ctx.hints, ctx.prepare, ctx.request, ctx.response);
             }
             return true;
         }
@@ -223,7 +223,7 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
             ctx.error.at = Instant.now();
             ctx.error.ex = ex;
             for (var interceptor : interceptors) {
-                interceptor.remotingError(ctx.prepare, ctx.request, ctx.error);
+                interceptor.remotingError(ctx.hints, ctx.prepare, ctx.request, ctx.error);
             }
         }
 

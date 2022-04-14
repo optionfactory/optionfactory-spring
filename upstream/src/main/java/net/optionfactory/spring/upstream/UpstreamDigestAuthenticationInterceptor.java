@@ -2,6 +2,7 @@ package net.optionfactory.spring.upstream;
 
 import java.io.IOException;
 import java.net.URI;
+import net.optionfactory.spring.upstream.UpstreamPort.Hints;
 import net.optionfactory.spring.upstream.digest.DigestAuth;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -20,7 +21,7 @@ public class UpstreamDigestAuthenticationInterceptor<T> implements UpstreamInter
     }
 
     @Override
-    public HttpHeaders prepare(PrepareContext<T> prepare) {
+    public HttpHeaders prepare(Hints<T> hints, PrepareContext<T> prepare) {
         final HttpMethod method = prepare.entity.getMethod();
         final URI uri = prepare.entity.getUrl();
         final String uriPath = uri.getPath();

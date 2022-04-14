@@ -1,34 +1,57 @@
 package net.optionfactory.spring.upstream;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Set;
-import org.springframework.core.io.InputStreamSource;
-import org.springframework.http.MediaType;
+import net.optionfactory.spring.upstream.UpstreamInterceptor.PrepareContext;
+import net.optionfactory.spring.upstream.UpstreamInterceptor.RequestContext;
+import net.optionfactory.spring.upstream.UpstreamInterceptor.ResponseContext;
+import org.springframework.lang.Nullable;
 import org.springframework.util.StreamUtils;
+import static org.springframework.util.StreamUtils.BUFFER_SIZE;
 
 public class UpstreamOps {
 
-    private static final Set<String> LOGGED_MEDIA_TYPES = Set.of(
-            "JSON",
-            "TEXT",
-            "XML",
-            "HTML",
-            "XHTML"
-    );
+    public static <CTX> boolean defaultFaultStrategy(PrepareContext<CTX> prepare, RequestContext request, ResponseContext response) {
+        if (response.status == null) {
+            return false;
+        }
+        return response.status.is4xxClientError() || response.status.is5xxServerError();
+    }
 
-    public static String bodyAsString(MediaType contentType, boolean logMultipart, InputStreamSource body) {
-        if (contentType != null && contentType.isCompatibleWith(MediaType.MULTIPART_MIXED) && !logMultipart) {
-            return "(multipart body)";
-        }
-        if (contentType != null && !LOGGED_MEDIA_TYPES.stream().anyMatch(t -> contentType.toString().toUpperCase().contains(t))) {
-            return String.format("(binary:%s)", contentType);
-        }
-        try (var is = body.getInputStream()) {
-            return StreamUtils.copyToString(is, StandardCharsets.UTF_8);
+    public static <CTX> String defaultRequestToString(PrepareContext<CTX> prepare, RequestContext request, ResponseContext response) {
+        try ( var is = request.body.getInputStream()) {
+            return copyToString(is, StandardCharsets.UTF_8, 256*1024);
         } catch (IOException ex) {
-            return String.format("(binary:%s)", contentType);
+            return "(binary)";
         }
+
+    }
+
+    public static <CTX> String defaultResponseToString(PrepareContext<CTX> prepare, RequestContext request, ResponseContext response) {
+        try ( var is = response.body.getInputStream()) {
+            return copyToString(is, StandardCharsets.UTF_8, 256*1024);
+        } catch (IOException ex) {
+            return "(binary)";
+        }
+
+    }
+
+    public static String copyToString(@Nullable InputStream in, Charset charset, int maxChars) throws IOException {
+        if (in == null) {
+            return "";
+        }
+        final StringBuilder out = new StringBuilder(4096);
+        final InputStreamReader reader = new InputStreamReader(in, charset);
+        final char[] buffer = new char[4096];
+        int charsRead;
+        while ((charsRead = reader.read(buffer)) != -1 && maxChars > 0) {
+            out.append(buffer, 0, Math.min(charsRead, maxChars));
+            maxChars -= charsRead;
+        }
+        return out.toString();
     }
 
 }

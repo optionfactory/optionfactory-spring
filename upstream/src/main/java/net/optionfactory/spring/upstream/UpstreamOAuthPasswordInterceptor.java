@@ -2,6 +2,7 @@ package net.optionfactory.spring.upstream;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
+import net.optionfactory.spring.upstream.UpstreamPort.Hints;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
@@ -38,7 +39,7 @@ public class UpstreamOAuthPasswordInterceptor<T> implements UpstreamInterceptor<
     }
 
     @Override
-    public HttpHeaders prepare(PrepareContext<T> prepare) {
+    public HttpHeaders prepare(Hints<T> hints, PrepareContext<T> prepare) {
         final String token = getOauthToken();
 
         final var headers = new HttpHeaders();

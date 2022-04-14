@@ -4,7 +4,7 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>6.5-SNAPSHOT</version>
+        <version>7.0-SNAPSHOT</version>
     </parent>
     <artifactId>upstream-interceptor-jjwt</artifactId>
     <description>optionfactory-spring jjwt upstream interceptor</description>

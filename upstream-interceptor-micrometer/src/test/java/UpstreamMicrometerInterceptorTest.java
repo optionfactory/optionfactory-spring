@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import net.optionfactory.spring.upstream.UpstreamInterceptor;
 import net.optionfactory.spring.upstream.UpstreamInterceptor.ExchangeContext;
+import net.optionfactory.spring.upstream.UpstreamPort.Hints;
 import net.optionfactory.spring.upstream.micometer.UpstreamMicrometerInterceptor;
 import org.junit.Assert;
 import org.junit.Test;
@@ -17,6 +18,7 @@ public class UpstreamMicrometerInterceptorTest {
         final UpstreamMicrometerInterceptor<String> interceptor = new UpstreamMicrometerInterceptor<>(registry);
 
         ExchangeContext<String> ctx = new UpstreamInterceptor.ExchangeContext<>();
+        ctx.hints = new Hints<String>();
         ctx.prepare = new UpstreamInterceptor.PrepareContext<>();
         ctx.prepare.requestId = "123";
         ctx.prepare.endpointId = "endpoint";
@@ -27,7 +29,7 @@ public class UpstreamMicrometerInterceptorTest {
         ctx.response.at = Instant.now();
         ctx.response.status = HttpStatus.I_AM_A_TEAPOT;
 
-        interceptor.remotingSuccess(ctx.prepare, ctx.request, ctx.response);
+        interceptor.remotingSuccess(ctx.hints, ctx.prepare, ctx.request, ctx.response);
 
         Assert.assertEquals("upstream_duration_seconds", registry.getMeters().get(0).getId().getName());
     }

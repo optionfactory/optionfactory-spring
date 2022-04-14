@@ -1,6 +1,7 @@
 package net.optionfactory.spring.upstream;
 
 import java.util.Map;
+import net.optionfactory.spring.upstream.UpstreamPort.Hints;
 import org.springframework.http.HttpHeaders;
 
 public class UpstreamTracingInterceptor<CTX> implements UpstreamInterceptor<CTX> {
@@ -14,7 +15,7 @@ public class UpstreamTracingInterceptor<CTX> implements UpstreamInterceptor<CTX>
     }
 
     @Override
-    public HttpHeaders prepare(PrepareContext<CTX> prepare) {
+    public HttpHeaders prepare(Hints<CTX> hints, PrepareContext<CTX> prepare) {
         final HttpHeaders headers = new HttpHeaders();
         contextHeadersEncoder.toMap(prepare.ctx).forEach((k, v) -> {
             headers.add(String.format("%s%s", prefix, k), v);

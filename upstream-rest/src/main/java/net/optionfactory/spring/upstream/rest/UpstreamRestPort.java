@@ -90,9 +90,9 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
     }
 
     @Override
-    public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, Class<T> responseType, @Nullable UpstreamErrorHandler<CTX> errorStrategy) {
+    public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, Class<T> responseType, Hints<CTX> hints) {
         final ExchangeContext<CTX> ctx = new ExchangeContext<>();
-        ctx.upstreamErrorHandler = errorStrategy;
+        ctx.hints = hints;
         ctx.prepare = new UpstreamInterceptor.PrepareContext<>();
         ctx.prepare.requestId = requestCounter.next();
         ctx.prepare.ctx = context;
@@ -101,10 +101,10 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
         ctx.prepare.upstreamId = upstreamId;
         callContexts.set(ctx);
         try {
-            ctx.prepare.entity = makeEntity(ctx.prepare);
+            ctx.prepare.entity = makeEntity(ctx.hints, ctx.prepare);
             final ResponseEntity<T> response = rest.exchange(ctx.prepare.entity, responseType);
             for (UpstreamInterceptor<CTX> interceptor : interceptors) {
-                interceptor.mappingSuccess(ctx.prepare, ctx.request, ctx.response, response);
+                interceptor.mappingSuccess(ctx.hints, ctx.prepare, ctx.request, ctx.response, response);
             }
             return response;
         } finally {
@@ -113,9 +113,9 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
     }
 
     @Override
-    public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, ParameterizedTypeReference<T> responseType, @Nullable UpstreamErrorHandler<CTX> errorStrategy) {
+    public <T> ResponseEntity<T> exchange(CTX context, String endpointId, RequestEntity<?> requestEntity, ParameterizedTypeReference<T> responseType, Hints<CTX> hints) {
         final ExchangeContext<CTX> ctx = new ExchangeContext<>();
-        ctx.upstreamErrorHandler = errorStrategy;
+        ctx.hints = hints;
         ctx.prepare = new UpstreamInterceptor.PrepareContext<>();
         ctx.prepare.requestId = requestCounter.next();
         ctx.prepare.ctx = context;
@@ -124,10 +124,10 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
         ctx.prepare.upstreamId = upstreamId;
         callContexts.set(ctx);
         try {
-            ctx.prepare.entity = makeEntity(ctx.prepare);
+            ctx.prepare.entity = makeEntity(ctx.hints, ctx.prepare);
             final ResponseEntity<T> response = rest.exchange(ctx.prepare.entity, responseType);
             for (UpstreamInterceptor<CTX> interceptor : interceptors) {
-                interceptor.mappingSuccess(ctx.prepare, ctx.request, ctx.response, response);
+                interceptor.mappingSuccess(ctx.hints, ctx.prepare, ctx.request, ctx.response, response);
             }
             return response;
         } finally {
@@ -135,11 +135,11 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
         }
     }
 
-    private RequestEntity<?> makeEntity(PrepareContext<CTX> prepare) {
+    private RequestEntity<?> makeEntity(Hints<CTX> hints, PrepareContext<CTX> prepare) {
         final var headers = new HttpHeaders();
         headers.addAll(prepare.entity.getHeaders());
         for (var interceptor : interceptors) {
-            final var newHeaders = interceptor.prepare(prepare);
+            final var newHeaders = interceptor.prepare(hints, prepare);
             if (newHeaders != null) {
                 headers.addAll(newHeaders);
             }
@@ -167,7 +167,7 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
             context.request.body = new ByteArrayResource(requestBodyBytes);
             context.request.headers = request.getHeaders();
             for (var interceptor : interceptors) {
-                interceptor.before(context.prepare, context.request);
+                interceptor.before(context.hints, context.prepare, context.request);
             }
             try {
                 final ClientHttpResponse response = execution.execute(request, requestBodyBytes);
@@ -179,7 +179,7 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
                     context.response.body = new ByteArrayResource(StreamUtils.copyToByteArray(body));
                 }
                 for (var interceptor : interceptors) {
-                    interceptor.remotingSuccess(context.prepare, context.request, context.response);
+                    interceptor.remotingSuccess(context.hints, context.prepare, context.request, context.response);
                 }
                 return response;
             } catch (IOException | RuntimeException ex) {
@@ -188,20 +188,20 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
                 searchCauseOfType(ex, JsonMappingException.class).ifPresent(cex -> {
                     context.error.ex = cex;
                     for (var interceptor : interceptors) {
-                        interceptor.remotingError(context.prepare, context.request, context.error);
+                        interceptor.remotingError(context.hints, context.prepare, context.request, context.error);
                     }
                     throw new UpstreamException(upstreamId, "MAPPING_ERROR", cex.getMessage());
                 });
                 searchCauseOfType(ex, SocketException.class).ifPresent(cex -> {
                     context.error.ex = cex;
                     for (var interceptor : interceptors) {
-                        interceptor.remotingError(context.prepare, context.request, context.error);
+                        interceptor.remotingError(context.hints, context.prepare, context.request, context.error);
                     }
                     throw new UpstreamException(upstreamId, "UPSTREAM_DOWN", cex.getMessage());
                 });
                 context.error.ex = ex;
                 for (var interceptor : interceptors) {
-                    interceptor.remotingError(context.prepare, context.request, context.error);
+                    interceptor.remotingError(context.hints, context.prepare, context.request, context.error);
                 }
                 throw new UpstreamException(upstreamId, "GENERIC_ERROR", ex.getMessage());
             }

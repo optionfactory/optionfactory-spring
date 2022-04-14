@@ -4,6 +4,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import net.optionfactory.spring.upstream.UpstreamInterceptor;
+import net.optionfactory.spring.upstream.UpstreamPort.Hints;
 
 public class UpstreamMicrometerInterceptor<CTX> implements UpstreamInterceptor<CTX> {
     
@@ -13,7 +14,7 @@ public class UpstreamMicrometerInterceptor<CTX> implements UpstreamInterceptor<C
         this.metrics = metrics;
     }
     @Override
-    public void remotingSuccess(PrepareContext<CTX> prepare, RequestContext request, ResponseContext response) {
+    public void remotingSuccess(Hints<CTX> hints, PrepareContext<CTX> prepare, RequestContext request, ResponseContext response) {
         Timer.builder("upstream_duration_seconds")
               .tags("upstream", prepare.upstreamId)
               .tags("endpoint", prepare.endpointId)
@@ -24,7 +25,7 @@ public class UpstreamMicrometerInterceptor<CTX> implements UpstreamInterceptor<C
     }
 
     @Override
-    public void remotingError(PrepareContext<CTX> prepare, RequestContext request, ErrorContext error) {
+    public void remotingError(Hints<CTX> hints, PrepareContext<CTX> prepare, RequestContext request, ErrorContext error) {
         Timer.builder("upstream_duration_seconds")
               .tags("upstream", prepare.upstreamId)
               .tags("endpoint", prepare.endpointId)

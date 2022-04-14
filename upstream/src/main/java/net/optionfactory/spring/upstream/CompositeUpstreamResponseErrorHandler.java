@@ -23,10 +23,10 @@ public class CompositeUpstreamResponseErrorHandler<CTX> extends DefaultResponseE
     public void handleError(ClientHttpResponse response) throws IOException {
         final var rawStatusCode = response.getRawStatusCode();
         final var ctx = callContexts.get();
-        Optional.ofNullable(ctx.upstreamErrorHandler)
+        Optional.ofNullable(ctx.hints.errorHandler)
                 .map(strategy -> strategy.apply(ctx.prepare, ctx.request, ctx.response))
                 .orElseGet(() -> interceptors.stream()
-                .map(i -> i.errorStrategy(ctx.prepare, ctx.request, ctx.response))
+                .map(i -> i.errorStrategy(ctx.hints, ctx.prepare, ctx.request, ctx.response))
                 .filter(r -> r.isPresent())
                 .map(r -> r.get())
                 .findFirst())

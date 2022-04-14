@@ -1,5 +1,6 @@
 package net.optionfactory.spring.upstream;
 
+import net.optionfactory.spring.upstream.UpstreamPort.Hints;
 import org.springframework.http.HttpHeaders;
 
 public class UpstreamStaticAuthorizationTokenInterceptor<T> implements UpstreamInterceptor<T> {
@@ -13,7 +14,7 @@ public class UpstreamStaticAuthorizationTokenInterceptor<T> implements UpstreamI
     }
 
     @Override
-    public HttpHeaders prepare(PrepareContext<T> prepare) {
+    public HttpHeaders prepare(Hints<T> hints, PrepareContext<T> prepare) {
         final var headers = new HttpHeaders();
         headers.set("Authorization", String.format("%s %s", tokenType, token));
         return headers;

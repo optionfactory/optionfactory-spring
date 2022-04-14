@@ -1,6 +1,9 @@
 package net.optionfactory.spring.upstream;
 
 import net.optionfactory.spring.upstream.UpstreamFaultsSpooler.UpstreamFault;
+import net.optionfactory.spring.upstream.UpstreamPort.Hints;
+import net.optionfactory.spring.upstream.UpstreamPort.UpstreamBodyToString;
+import net.optionfactory.spring.upstream.UpstreamPort.UpstreamFaultPredicate;
 import org.springframework.http.MediaType;
 
 public class UpstreamFaultsInterceptor<CTX> implements UpstreamInterceptor<CTX> {
@@ -12,46 +15,46 @@ public class UpstreamFaultsInterceptor<CTX> implements UpstreamInterceptor<CTX> 
     }
 
     @Override
-    public void remotingSuccess(PrepareContext<CTX> prepare, RequestContext request, ResponseContext response) {
-        if (response.status == null) {
+    public void remotingSuccess(Hints<CTX> hints, PrepareContext<CTX> prepare, RequestContext request, ResponseContext response) {
+        final UpstreamFaultPredicate<CTX> isFault = hints.isFault != null ? hints.isFault : UpstreamOps::defaultFaultStrategy;
+        if (!isFault.apply(prepare, request, response)){
             return;
         }
-        if (!response.status.is4xxClientError() && !response.status.is5xxServerError()) {
-            return;
-        }
-        final MediaType contentType = response.headers.getContentType();
-        final String responseBodyAsText = UpstreamOps.bodyAsString(contentType, true, response.body);
+        final UpstreamBodyToString<CTX> requestToString = hints.requestToString != null ? hints.requestToString : UpstreamOps::defaultRequestToString;
+        final String requestBodyAsString = requestToString.apply(prepare, request, response);
 
-        final String requestBodyAsString = UpstreamOps.bodyAsString(MediaType.TEXT_XML /*fixme*/, true, request.body);
-        
+        final UpstreamBodyToString<CTX> responseToString = hints.responseToString != null ? hints.responseToString : UpstreamOps::defaultResponseToString;
+        final String responseBodyAsText = responseToString.apply(prepare, request, response);
+
         faults.add(UpstreamFault.of(
-                prepare.ctx, 
-                prepare.requestId, 
-                prepare.entity.getUrl(), 
+                prepare.ctx,
+                prepare.requestId,
+                prepare.entity.getUrl(),
                 response.status,
-                contentType, 
-                request.at, 
-                requestBodyAsString, 
-                response.at, 
-                responseBodyAsText, 
+                response.headers.getContentType(),
+                request.at,
+                requestBodyAsString,
+                response.at,
+                responseBodyAsText,
                 null
         ));
     }
 
     @Override
-    public void remotingError(PrepareContext<CTX> prepare, RequestContext request, ErrorContext error) {
-        final String requestBodyAsString = UpstreamOps.bodyAsString(MediaType.TEXT_XML /*fixme*/, true, request.body);
+    public void remotingError(Hints<CTX> hints, PrepareContext<CTX> prepare, RequestContext request, ErrorContext error) {
+        final UpstreamBodyToString<CTX> requestToString = hints.requestToString != null ? hints.requestToString : UpstreamOps::defaultRequestToString;
+        final String requestBodyAsString = requestToString.apply(prepare, request, null);
 
         faults.add(UpstreamFault.of(
-                prepare.ctx, 
-                prepare.requestId, 
-                prepare.entity.getUrl(), 
-                null, 
-                null, 
-                request.at, 
-                requestBodyAsString, 
-                error.at, 
-                null, 
+                prepare.ctx,
+                prepare.requestId,
+                prepare.entity.getUrl(),
+                null,
+                null,
+                request.at,
+                requestBodyAsString,
+                error.at,
+                null,
                 error.ex));
     }
 

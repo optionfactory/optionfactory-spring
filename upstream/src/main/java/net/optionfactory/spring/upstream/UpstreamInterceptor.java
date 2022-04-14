@@ -2,7 +2,7 @@ package net.optionfactory.spring.upstream;
 
 import java.time.Instant;
 import java.util.Optional;
-import net.optionfactory.spring.upstream.UpstreamPort.UpstreamErrorHandler;
+import net.optionfactory.spring.upstream.UpstreamPort.Hints;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -42,32 +42,31 @@ public interface UpstreamInterceptor<CTX> {
     }
 
     public static class ExchangeContext<CTX> {
-
-        public UpstreamErrorHandler<CTX> upstreamErrorHandler;
+        public Hints<CTX> hints;
         public PrepareContext<CTX> prepare;
         public RequestContext request;
         public ResponseContext response;
         public ErrorContext error;
     }
 
-    default HttpHeaders prepare(PrepareContext<CTX> prepare) {
+    default HttpHeaders prepare(Hints<CTX> hints, PrepareContext<CTX> prepare) {
         return null;
     }
 
-    default void before(PrepareContext<CTX> prepare, RequestContext request) {
+    default void before(Hints<CTX> hints, PrepareContext<CTX> prepare, RequestContext request) {
     }
 
-    default void remotingSuccess(PrepareContext<CTX> prepare, RequestContext request, ResponseContext response) {
+    default void remotingSuccess(Hints<CTX> hints, PrepareContext<CTX> prepare, RequestContext request, ResponseContext response) {
     }
 
-    default Optional<UpstreamResult> errorStrategy(PrepareContext<CTX> prepare, RequestContext request, ResponseContext response) {
+    default Optional<UpstreamResult> errorStrategy(Hints<CTX> hints, PrepareContext<CTX> prepare, RequestContext request, ResponseContext response) {
         return Optional.empty();
     }
 
-    default void remotingError(PrepareContext<CTX> prepare, RequestContext request, ErrorContext error) {
+    default void remotingError(Hints<CTX> hints, PrepareContext<CTX> prepare, RequestContext request, ErrorContext error) {
     }
 
-    default void mappingSuccess(PrepareContext<CTX> prepare, RequestContext request, ResponseContext response, ResponseEntity<?> mapped) {
+    default void mappingSuccess(Hints<CTX> hints, PrepareContext<CTX> prepare, RequestContext request, ResponseContext response, ResponseEntity<?> mapped) {
 
     }
 
