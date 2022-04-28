@@ -4,7 +4,6 @@ import net.optionfactory.spring.upstream.UpstreamFaultsSpooler.UpstreamFault;
 import net.optionfactory.spring.upstream.UpstreamPort.Hints;
 import net.optionfactory.spring.upstream.UpstreamPort.UpstreamBodyToString;
 import net.optionfactory.spring.upstream.UpstreamPort.UpstreamFaultPredicate;
-import org.springframework.http.MediaType;
 
 public class UpstreamFaultsInterceptor<CTX> implements UpstreamInterceptor<CTX> {
 

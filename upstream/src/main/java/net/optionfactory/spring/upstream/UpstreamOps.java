@@ -9,8 +9,6 @@ import net.optionfactory.spring.upstream.UpstreamInterceptor.PrepareContext;
 import net.optionfactory.spring.upstream.UpstreamInterceptor.RequestContext;
 import net.optionfactory.spring.upstream.UpstreamInterceptor.ResponseContext;
 import org.springframework.lang.Nullable;
-import org.springframework.util.StreamUtils;
-import static org.springframework.util.StreamUtils.BUFFER_SIZE;
 
 public class UpstreamOps {
 

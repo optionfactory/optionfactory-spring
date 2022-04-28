@@ -15,14 +15,21 @@ public interface UpstreamPort<CTX> {
 
     <T> ResponseEntity<T> exchange(CTX context, String endpoint, RequestEntity<?> requestEntity, ParameterizedTypeReference<T> responseType, Hints<CTX> hints);
 
+    default <T> ResponseEntity<T> exchange(CTX context, String endpoint, RequestEntity<?> requestEntity, Class<T> responseType) {
+        return exchange(context, endpoint, requestEntity, responseType, new Hints<>());
+    }
+
+    default <T> ResponseEntity<T> exchange(CTX context, String endpoint, RequestEntity<?> requestEntity, ParameterizedTypeReference<T> responseType) {
+        return exchange(context, endpoint, requestEntity, responseType, new Hints<>());
+    }
+
     public static class Hints<CTX> {
 
         public UpstreamErrorHandler<CTX> errorHandler;
         public UpstreamFaultPredicate<CTX> isFault;
         public UpstreamBodyToString<CTX> requestToString;
         public UpstreamBodyToString<CTX> responseToString;
-        
-        
+
         public static <CTX> Hints<CTX> empty(Class<CTX> cls) {
             return new Hints<>();
         }
