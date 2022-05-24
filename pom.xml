@@ -68,10 +68,11 @@
         <module>upstream-email-faults</module>
         <module>validators</module>
         <module>pdf</module>
-        <module>pdf-signing</module>
+	<module>pdf-signing</module>
+        <module>mock-resources-json</module>
+        <module>mock-resources-jaxb</module>
 
         <module>optionfactory-spring-bom</module>
-
     </modules>
 
     <properties>
