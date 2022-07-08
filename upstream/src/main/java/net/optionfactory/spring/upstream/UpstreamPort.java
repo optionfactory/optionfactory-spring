@@ -25,6 +25,7 @@ public interface UpstreamPort<CTX> {
 
     public static class Hints<CTX> {
 
+        public UpstreamErrorStrategy<CTX> errorStrategy;
         public UpstreamErrorHandler<CTX> errorHandler;
         public UpstreamFaultPredicate<CTX> isFault;
         public UpstreamBodyToString<CTX> requestToString;
@@ -32,6 +33,11 @@ public interface UpstreamPort<CTX> {
 
         public static <CTX> Hints<CTX> empty(Class<CTX> cls) {
             return new Hints<>();
+        }
+
+        public Hints<CTX> with(UpstreamErrorStrategy<CTX> errorStrategy) {
+            this.errorStrategy = errorStrategy;
+            return this;
         }
 
         public Hints<CTX> with(UpstreamErrorHandler<CTX> errorHandler) {
@@ -50,6 +56,11 @@ public interface UpstreamPort<CTX> {
             return this;
         }
 
+    }
+
+    public static interface UpstreamErrorStrategy<CTX> {
+
+        void ensureSuccess(PrepareContext<CTX> prepare, RequestContext request, ResponseContext response);
     }
 
     public static interface UpstreamErrorHandler<CTX> {

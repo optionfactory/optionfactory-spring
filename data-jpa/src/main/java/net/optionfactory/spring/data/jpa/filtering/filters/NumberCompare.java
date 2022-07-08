@@ -1,6 +1,5 @@
 package net.optionfactory.spring.data.jpa.filtering.filters;
 
-import net.optionfactory.spring.data.jpa.filtering.Filter;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -13,11 +12,11 @@ import java.math.BigInteger;
 import java.util.EnumSet;
 import java.util.stream.Stream;
 import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.metamodel.EntityType;
+import net.optionfactory.spring.data.jpa.filtering.TraversalFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.NumberCompare.NumberCompareFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.NumberCompare.RepeatableNumberCompare;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
@@ -44,6 +43,8 @@ public @interface NumberCompare {
 
     String name();
 
+    QueryMode mode() default QueryMode.JOIN;
+
     Operator[] operators() default {
         Operator.EQ, Operator.NEQ, Operator.LT, Operator.GT, Operator.LTE, Operator.GTE, Operator.BETWEEN
     };
@@ -58,25 +59,26 @@ public @interface NumberCompare {
         NumberCompare[] value();
     }
 
-    public static class NumberCompareFilter implements Filter {
+    public static class NumberCompareFilter implements TraversalFilter<Number> {
 
         private final String name;
+        private final QueryMode mode;
         private final EnumSet<Operator> operators;
         private final Class<? extends Number> propertyClass;
         private final Traversal traversal;
 
         public NumberCompareFilter(NumberCompare annotation, EntityType<?> entity) {
             this.name = annotation.name();
+            this.mode = annotation.mode();
             this.traversal = Filters.traversal(annotation, entity, annotation.path());
             this.propertyClass = (Class<? extends Number>) Filters.ensurePropertyOfAnyType(annotation, entity, traversal, Number.class, byte.class, short.class, int.class, long.class, float.class, double.class, char.class);
             this.operators = EnumSet.of(annotation.operators()[0], annotation.operators());
         }
 
         @Override
-        public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
+        public Predicate condition(Root<?> root, Path<Number> lhs, CriteriaBuilder builder, String[] values) {
             final Operator operator = Operator.valueOf(values[0]);
             Filters.ensure(operators.contains(operator), name, root, "operator %s not whitelisted (%s)", operator, operators);
-            final Path<Number> lhs = Filters.path(root, traversal);
             final String value = values[1];
             final Number rhs = (Number) Values.convert(name, root, value, propertyClass);
             switch (operator) {
@@ -111,6 +113,16 @@ public @interface NumberCompare {
         @Override
         public String name() {
             return name;
+        }
+
+        @Override
+        public QueryMode mode() {
+            return mode;
+        }
+
+        @Override
+        public Traversal traversal() {
+            return traversal;
         }
     }
 }

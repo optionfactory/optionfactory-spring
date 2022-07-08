@@ -2,6 +2,7 @@ package net.optionfactory.spring.data.jpa.filtering.filters.spi;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Expression;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
@@ -31,20 +32,21 @@ public class FiltersTest {
             @Override
             public Predicate toPredicate(Root<EntityA> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
                 final Traversal ts = Filters.traversal(null, root.getModel(), "");
-                final Path<?> path = Filters.path(root, ts);
+                final Path<?> path = Filters.path("myFilter", root, ts);
                 Assert.assertEquals(EntityA.class, path.getJavaType());
                 return null;
             }
         };
         repository.findOne(specification, FilterRequest.unfiltered());
     }
+
     @Test
     public void canTraversePropertyChain() {
         final Specification<EntityA> specification = new Specification<EntityA>() {
             @Override
             public Predicate toPredicate(Root<EntityA> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
                 final Traversal ts = Filters.traversal(null, root.getModel(), "b.c.i.n");
-                final Path<Object> path = Filters.path(root, ts);
+                final Expression<Object> path = Filters.path("myFilter", root, ts);
                 Assert.assertEquals(long.class, path.getJavaType());
                 return null;
             }
@@ -58,7 +60,7 @@ public class FiltersTest {
             @Override
             public Predicate toPredicate(Root<EntityA> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
                 final Traversal ts = Filters.traversal(null, root.getModel(), "b.x.id");
-                final Path<Object> nonExistant = Filters.path(root, ts);
+                final Expression<Object> nonExistant = Filters.path("myFilter", root, ts);
                 return null;
             }
         };
@@ -74,4 +76,5 @@ public class FiltersTest {
     public void ensureThrowsOnFalsePrecondition() {
         Filters.ensure(false, "name", null, "");
     }
+
 }

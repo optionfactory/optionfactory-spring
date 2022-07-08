@@ -41,7 +41,7 @@ public class PluralAttributesChainTest {
     public void setupIsGoodEnough() {
         final FilterRequest fr = FilterRequest.of(Map.of("byLeafColor", new String[]{
             TextCompare.Operator.EQ.toString(),
-            TextCompare.Mode.CASE_SENSITIVE.toString(),
+            TextCompare.CaseSensitivity.CASE_SENSITIVE.toString(),
             "brown"
         }));
         final Pageable pr = Pageable.unpaged();

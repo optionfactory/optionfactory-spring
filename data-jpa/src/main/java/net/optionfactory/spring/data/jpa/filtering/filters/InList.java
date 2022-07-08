@@ -1,6 +1,5 @@
 package net.optionfactory.spring.data.jpa.filtering.filters;
 
-import net.optionfactory.spring.data.jpa.filtering.Filter;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -16,6 +15,7 @@ import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.metamodel.EntityType;
+import net.optionfactory.spring.data.jpa.filtering.TraversalFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.InList.InListFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.InList.RepeatableInList;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
@@ -38,6 +38,8 @@ public @interface InList {
 
     String name();
 
+    QueryMode mode() default QueryMode.JOIN;
+
     String path();
 
     @Documented
@@ -48,34 +50,48 @@ public @interface InList {
         InList[] value();
     }
 
-    public static class InListFilter implements Filter {
+    public static class InListFilter implements TraversalFilter<Object> {
 
         private final String name;
+        private final QueryMode mode;
         private final Traversal traversal;
 
         public InListFilter(InList annotation, EntityType<?> entity) {
             this.name = annotation.name();
+            this.mode = annotation.mode();
             this.traversal = Filters.traversal(annotation, entity, annotation.path());
             Filters.ensurePropertyOfAnyType(annotation, entity, traversal, String.class, Number.class, byte.class, short.class, int.class, long.class, float.class, double.class, char.class);
         }
 
         @Override
-        public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
+        public Predicate condition(Root<?> root, Path<Object> path, CriteriaBuilder builder, String[] values) {
             if (values.length == 0) {
                 return builder.disjunction();
             }
-            final Path<?> p = Filters.path(root, traversal);
-            final Object[] nonNullValues = Stream.of(values).filter(Objects::nonNull).map(value -> Values.convert(name, root, value, traversal.attribute.getJavaType())).toArray();
+            final Object[] nonNullValues = Stream.of(values)
+                    .filter(Objects::nonNull)
+                    .map(value -> Values.convert(name, root, value, traversal.attribute.getJavaType()))
+                    .toArray();
             final boolean hasNullValues = nonNullValues.length < values.length;
             if (hasNullValues) {
-                return builder.or(p.isNull(), p.in(nonNullValues));
+                return builder.or(path.isNull(), path.in(nonNullValues));
             }
-            return p.in(nonNullValues);
+            return path.in(nonNullValues);
         }
 
         @Override
         public String name() {
             return name;
+        }
+
+        @Override
+        public QueryMode mode() {
+            return mode;
+        }
+
+        @Override
+        public Traversal traversal() {
+            return traversal;
         }
     }
 }

@@ -1,6 +1,5 @@
 package net.optionfactory.spring.data.jpa.filtering.filters;
 
-import net.optionfactory.spring.data.jpa.filtering.Filter;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -13,11 +12,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
 import java.util.stream.Stream;
 import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.metamodel.EntityType;
+import net.optionfactory.spring.data.jpa.filtering.TraversalFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.LocalDateCompare.LocalDateCompareFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.spring.data.jpa.filtering.filters.LocalDateCompare.RepeatableLocalDateCompare;
@@ -42,6 +41,8 @@ public @interface LocalDateCompare {
 
     String name();
 
+    QueryMode mode() default QueryMode.JOIN;
+
     Operator[] operators() default {
         Operator.EQ, Operator.NEQ, Operator.LT, Operator.GT, Operator.LTE, Operator.GTE, Operator.BETWEEN
     };
@@ -58,15 +59,17 @@ public @interface LocalDateCompare {
         LocalDateCompare[] value();
     }
 
-    public static class LocalDateCompareFilter implements Filter {
+    public static class LocalDateCompareFilter implements TraversalFilter<LocalDate> {
 
         private final String name;
+        private final QueryMode mode;
         private final EnumSet<Operator> operators;
         private final DateTimeFormatter formatter;
         private final Traversal traversal;
 
         public LocalDateCompareFilter(LocalDateCompare annotation, EntityType<?> entity) {
             this.name = annotation.name();
+            this.mode = annotation.mode();
             this.traversal = Filters.traversal(annotation, entity, annotation.path());
             Filters.ensurePropertyOfAnyType(annotation, entity, traversal, LocalDate.class);
             this.operators = EnumSet.of(annotation.operators()[0], annotation.operators());
@@ -74,10 +77,9 @@ public @interface LocalDateCompare {
         }
 
         @Override
-        public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
+        public Predicate condition(Root<?> root, Path<LocalDate> lhs, CriteriaBuilder builder, String[] values) {
             final Operator operator = Operator.valueOf(values[0]);
             Filters.ensure(operators.contains(operator), name, root, "operator %s not whitelisted (%s)", operator, operators);
-            final Path<LocalDate> lhs = Filters.path(root, traversal);
             Filters.ensure(values.length == (operator == Operator.BETWEEN ? 3 : 2), name, root, "unexpected number of values: %d", values.length);
             final String value = values[1];
             final LocalDate rhs = value == null ? null : LocalDate.parse(value, formatter);
@@ -87,16 +89,16 @@ public @interface LocalDateCompare {
                 case NEQ:
                     return rhs == null ? lhs.isNotNull() : builder.or(lhs.isNull(), builder.notEqual(lhs, rhs));
                 case LT:
-                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);                    
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
                     return builder.lessThan(lhs, rhs);
                 case GT:
-                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);                    
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
                     return builder.greaterThan(lhs, rhs);
                 case LTE:
-                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);                    
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
                     return builder.lessThanOrEqualTo(lhs, rhs);
                 case GTE:
-                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);                    
+                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
                     return builder.greaterThanOrEqualTo(lhs, rhs);
                 case BETWEEN:
                     final String value2 = values[2];
@@ -115,6 +117,15 @@ public @interface LocalDateCompare {
             return name;
         }
 
+        @Override
+        public QueryMode mode() {
+            return mode;
+        }
+
+        @Override
+        public Traversal traversal() {
+            return traversal;
+        }
     }
 
 }

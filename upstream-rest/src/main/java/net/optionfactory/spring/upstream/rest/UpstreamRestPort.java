@@ -38,7 +38,6 @@ import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.lang.Nullable;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestTemplate;
 
@@ -180,6 +179,9 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
                 }
                 for (var interceptor : interceptors) {
                     interceptor.remotingSuccess(context.hints, context.prepare, context.request, context.response);
+                }
+                if (context.hints.errorStrategy != null) {
+                    context.hints.errorStrategy.ensureSuccess(context.prepare, context.request, context.response);
                 }
                 return response;
             } catch (IOException | RuntimeException ex) {

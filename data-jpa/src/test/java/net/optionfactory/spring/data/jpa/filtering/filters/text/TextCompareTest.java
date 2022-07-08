@@ -45,7 +45,7 @@ public class TextCompareTest {
     public void textCompareEquals() {
         final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
             TextCompare.Operator.EQ.toString(),
-            TextCompare.Mode.CASE_SENSITIVE.toString(),
+            TextCompare.CaseSensitivity.CASE_SENSITIVE.toString(),
             "asd"
         }));
         final Pageable pr = Pageable.unpaged();
@@ -57,7 +57,7 @@ public class TextCompareTest {
     public void textCompareEqualsIgnoreCase() {
         final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
             TextCompare.Operator.EQ.toString(),
-            TextCompare.Mode.IGNORE_CASE.toString(),
+            TextCompare.CaseSensitivity.IGNORE_CASE.toString(),
             "ASD"
         }));
         final Pageable pr = Pageable.unpaged();
@@ -69,7 +69,7 @@ public class TextCompareTest {
     public void textCompareContains() {
         final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
             TextCompare.Operator.CONTAINS.toString(),
-            TextCompare.Mode.CASE_SENSITIVE.toString(),
+            TextCompare.CaseSensitivity.CASE_SENSITIVE.toString(),
             "s"
         }));
         final Pageable pr = Pageable.unpaged();
@@ -81,7 +81,7 @@ public class TextCompareTest {
     public void textCompareContainsIgnoreCase() {
         final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
             TextCompare.Operator.CONTAINS.toString(),
-            TextCompare.Mode.IGNORE_CASE.toString(),
+            TextCompare.CaseSensitivity.IGNORE_CASE.toString(),
             "S"
         }));
         final Pageable pr = Pageable.unpaged();
@@ -93,7 +93,7 @@ public class TextCompareTest {
     public void textCompareStartsWith() {
         final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
             TextCompare.Operator.STARTS_WITH.toString(),
-            TextCompare.Mode.CASE_SENSITIVE.toString(),
+            TextCompare.CaseSensitivity.CASE_SENSITIVE.toString(),
             "a"
         }));
         final Pageable pr = Pageable.unpaged();
@@ -105,7 +105,7 @@ public class TextCompareTest {
     public void textCompareStartsWithIgnoreCase() {
         final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
             TextCompare.Operator.STARTS_WITH.toString(),
-            TextCompare.Mode.IGNORE_CASE.toString(),
+            TextCompare.CaseSensitivity.IGNORE_CASE.toString(),
             "A"
         }));
         final Pageable pr = Pageable.unpaged();
@@ -117,7 +117,7 @@ public class TextCompareTest {
     public void textCompareEndsWith() {
         final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
             TextCompare.Operator.ENDS_WITH.toString(),
-            TextCompare.Mode.CASE_SENSITIVE.toString(),
+            TextCompare.CaseSensitivity.CASE_SENSITIVE.toString(),
             "d"
         }));
         final Pageable pr = Pageable.unpaged();
@@ -129,7 +129,7 @@ public class TextCompareTest {
     public void textCompareEndsWithIgnoreCase() {
         final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
             TextCompare.Operator.ENDS_WITH.toString(),
-            TextCompare.Mode.IGNORE_CASE.toString(),
+            TextCompare.CaseSensitivity.IGNORE_CASE.toString(),
             "D"
         }));
         final Pageable pr = Pageable.unpaged();
@@ -142,7 +142,7 @@ public class TextCompareTest {
     public void filteringWithNeqIncludesNullValues() {
         final FilterRequest fr = FilterRequest.of(Map.of("byTitle", new String[]{
                 Operator.NEQ.toString(),
-                TextCompare.Mode.IGNORE_CASE.toString(),
+                TextCompare.CaseSensitivity.IGNORE_CASE.toString(),
                 "D"
         }));
         final Page<EntityForTextCompare> all = repo.findAll(Pageable.unpaged());

@@ -44,7 +44,7 @@ public class SpecificationsTest {
     public void canMixBaseSpecsWithFilterRequest() {
         final FilterRequest fr = FilterRequest.of(Map.of("byDesc", new String[]{
             TextCompare.Operator.EQ.toString(),
-            TextCompare.Mode.CASE_SENSITIVE.toString(),
+            TextCompare.CaseSensitivity.CASE_SENSITIVE.toString(),
             "description"
         }));
         List<EntityForSpecification> page = tx.execute(txs -> repo.findAllByName("name2", fr));

@@ -53,7 +53,7 @@ public class PropertyChainTest {
     public void canFilterByComparingPerformerName() {
         final FilterRequest fr = FilterRequest.of(Map.of("performerName", new String[]{
             TextCompare.Operator.EQ.toString(),
-            TextCompare.Mode.CASE_SENSITIVE.toString(),
+            TextCompare.CaseSensitivity.CASE_SENSITIVE.toString(),
             "pietro"
         }));
         final Pageable pr = Pageable.unpaged();

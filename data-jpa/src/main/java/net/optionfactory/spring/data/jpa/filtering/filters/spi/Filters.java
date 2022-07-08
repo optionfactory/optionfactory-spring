@@ -5,31 +5,38 @@ import javax.persistence.criteria.Root;
 import javax.persistence.metamodel.*;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.From;
 import javax.persistence.criteria.JoinType;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Subquery;
+import net.optionfactory.spring.data.jpa.filtering.filters.QueryMode;
 
 /**
  * Utility methods for defining filters.
  */
 public interface Filters {
 
-    public static final Pattern ATTRIBUTE_TRAVERSAL_PATTERN = Pattern.compile("(?:<(?<type>GET|INNER_JOIN|LEFT_JOIN)>)?(?<attribute>.+)");
+    public static final Pattern ATTRIBUTE_TRAVERSAL_PATTERN = Pattern.compile(String.format(
+            "(?:<(?<type>%s)>)?(?<attribute>.+)", Stream.of(TraversalType.values()).map(TraversalType::name).collect(Collectors.joining("|"))
+    ));
 
     public static Traversal traversal(Annotation annotation, EntityType<?> entity, String pathTraversalSpec) {
         ManagedType<?> currentType = entity;
         Attribute<?, ?> currentAttribute = null;
         final var path = new ArrayList<AttributeTraversal>();
-        
-        if(pathTraversalSpec == null || pathTraversalSpec.isEmpty()){
+
+        if (pathTraversalSpec == null || pathTraversalSpec.isEmpty()) {
             return new Traversal(path, currentAttribute);
         }
-        
+
         for (String attributeTraversalSpec : pathTraversalSpec.split("\\.")) {
             final Matcher m = ATTRIBUTE_TRAVERSAL_PATTERN.matcher(attributeTraversalSpec);
             ensureConf(m.matches(), annotation, entity, "invalid attribute traversal spec: %s", attributeTraversalSpec);
@@ -53,8 +60,8 @@ public interface Filters {
                 continue;
             }
             if (currentAttribute instanceof PluralAttribute) {
-                final AttributeTraversal candidate = new AttributeTraversal(attributeName, Optional.ofNullable(type).map(TraversalType::valueOf).orElse(TraversalType.INNER_JOIN));
-                ensureConf(EnumSet.of(TraversalType.INNER_JOIN, TraversalType.LEFT_JOIN).contains(candidate.type), annotation, entity, "used an invalid traversal type '%s' for plural attribute '%s' in spec: '%s'", candidate.type, candidate.name, pathTraversalSpec);
+                final AttributeTraversal candidate = new AttributeTraversal(attributeName, Optional.ofNullable(type).map(TraversalType::valueOf).orElse(TraversalType.INNER_JOIN_REUSE));
+                ensureConf(TraversalType.GET != candidate.type, annotation, entity, "used an invalid traversal type '%s' for plural attribute '%s' in spec: '%s'", candidate.type, candidate.name, pathTraversalSpec);
                 path.add(candidate);
                 final Type targetType = ((PluralAttribute) currentAttribute).getElementType();
                 if (targetType instanceof ManagedType) {
@@ -89,11 +96,60 @@ public interface Filters {
         }
     }
 
-    private static Path<?> join(Path<?> root, String attribute, JoinType jt) {
-        return ((From<?, ?>) root).join(attribute, jt);
+    private static Path<?> join(String filterName, Root<?> root, Path<?> path, String attribute, JoinType jt, boolean reuse) {
+        if (!reuse) {
+            return ((From<?, ?>) path).join(attribute, jt);
+        }
+        final var from = ((From<?, ?>) path);
+        return from
+                .getJoins()
+                .stream()
+                .filter(j -> j.getAttribute().getName().equals(attribute))
+                .peek(j -> ensure(j.getJoinType() == jt, filterName, root, "Inconsistent join in filter: Requested join:(%s,%s) Former join:(%s,%s)", attribute, jt, j.getAttribute().getName(), j.getJoinType()))
+                .findFirst()
+                .orElseGet(() -> from.join(attribute, jt));
     }
 
-    public static <T> Path<T> path(Root<?> root, Traversal traversal) {
+    public static class ModalQuery {
+
+        public final CriteriaBuilder builder;
+        public final Root<?> root;
+        public final Root<?> conditionRoot;
+        public final Subquery<Integer> sq;
+
+        public ModalQuery(CriteriaBuilder builder, Root<?> root, Root<?> conditionRoot, Subquery<Integer> sq) {
+            this.builder = builder;
+            this.root = root;
+            this.conditionRoot = conditionRoot;
+            this.sq = sq;
+        }
+    }
+
+    public static ModalQuery prepare(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, QueryMode mode) {
+        if (mode == QueryMode.JOIN) {
+            return new ModalQuery(builder, root, root, null);
+        }
+        final Subquery<Integer> sq = query.subquery(Integer.class);
+        final Root<?> conditionRoot = sq.from(root.getJavaType());
+        return new ModalQuery(builder, root, conditionRoot, sq);
+    }
+
+    public static Predicate apply(ModalQuery mq, Predicate condition) {
+        final var builder = mq.builder;
+        final var subquery = mq.sq;
+        if (subquery == null) {
+            return condition;
+        }
+        return builder.exists(
+                subquery.select(builder.literal(1))
+                        .where(builder.and(
+                                builder.equal(mq.conditionRoot, mq.root),
+                                condition
+                        ))
+        );
+    }
+
+    public static <T> Path<T> path(String filterName, Root<?> root, Traversal traversal) {
         Path<?> path = root;
         for (AttributeTraversal part : traversal.path) {
             switch (part.type) {
@@ -101,13 +157,19 @@ public interface Filters {
                     path = path.get(part.name);
                     break;
                 case INNER_JOIN:
-                    path = join(path, part.name, JoinType.INNER);
+                    path = join(filterName, root, path, part.name, JoinType.INNER, false);
+                    break;
+                case INNER_JOIN_REUSE:
+                    path = join(filterName, root, path, part.name, JoinType.INNER, true);
                     break;
                 case LEFT_JOIN:
-                    path = join(path, part.name, JoinType.LEFT);
+                    path = join(filterName, root, path, part.name, JoinType.LEFT, false);
+                    break;
+                case LEFT_JOIN_REUSE:
+                    path = join(filterName, root, path, part.name, JoinType.LEFT, true);
                     break;
                 default:
-                    throw new IllegalArgumentException(String.format("Unsupported TraversalType: %s", part.type));
+                    ensure(false, filterName, root, "Unsupported TraversalType: %s for %s in traversal %s", part.type, part.name, traversal);
             }
         }
         return (Path<T>) path;
@@ -116,6 +178,8 @@ public interface Filters {
     public enum TraversalType {
         LEFT_JOIN,
         INNER_JOIN,
+        INNER_JOIN_REUSE,
+        LEFT_JOIN_REUSE,
         GET;
     }
 

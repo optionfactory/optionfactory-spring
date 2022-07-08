@@ -1,6 +1,5 @@
 package net.optionfactory.spring.data.jpa.filtering.filters;
 
-import net.optionfactory.spring.data.jpa.filtering.Filter;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -18,6 +17,7 @@ import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.metamodel.EntityType;
+import net.optionfactory.spring.data.jpa.filtering.TraversalFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.InEnum.InEnumFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.InEnum.RepeatableInEnum;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
@@ -39,6 +39,8 @@ public @interface InEnum {
 
     String name();
 
+    QueryMode mode() default QueryMode.JOIN;
+
     Class<? extends Enum<?>> type();
 
     String path();
@@ -53,15 +55,17 @@ public @interface InEnum {
         InEnum[] value();
     }
 
-    public static class InEnumFilter implements Filter {
+    public static class InEnumFilter implements TraversalFilter<Enum<?>> {
 
         private final String name;
+        private final QueryMode mode;
         private final boolean nullable;
         private final Class<? extends Enum> type;
         private final Traversal traversal;
 
         public InEnumFilter(InEnum annotation, EntityType<?> entity) {
             this.name = annotation.name();
+            this.mode = annotation.mode();
             this.nullable = annotation.nullable();
             this.type = annotation.type();
             this.traversal = Filters.traversal(annotation, entity, annotation.path());
@@ -69,23 +73,32 @@ public @interface InEnum {
         }
 
         @Override
-        public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
+        public Predicate condition(Root<?> root, Path<Enum<?>> path, CriteriaBuilder builder, String[] values) {
             final boolean hasNull = Stream.of(values).anyMatch(Objects::isNull);
             Filters.ensure(!hasNull || nullable, name, root, "null enum filter values is not whitelisted");
             final Set<Enum> requested = Stream.of(values)
                     .filter(Objects::nonNull)
                     .map(value -> Enum.valueOf(type, value))
                     .collect(Collectors.toSet());
-            final Path<Object> enumProperty = Filters.path(root, traversal);
             if (requested.isEmpty()) {
-                return hasNull ? enumProperty.isNull() : builder.disjunction();
+                return hasNull ? path.isNull() : builder.disjunction();
             }
-            return hasNull ? builder.or(enumProperty.isNull(), enumProperty.in(requested)) : enumProperty.in(requested);
+            return hasNull ? builder.or(path.isNull(), path.in(requested)) : path.in(requested);
         }
 
         @Override
         public String name() {
             return name;
+        }
+
+        @Override
+        public QueryMode mode() {
+            return mode;
+        }
+
+        @Override
+        public Traversal traversal() {
+            return traversal;
         }
     }
 }
