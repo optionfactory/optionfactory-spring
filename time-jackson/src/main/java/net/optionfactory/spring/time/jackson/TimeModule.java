@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.module.SimpleSerializers;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import net.optionfactory.spring.time.jackson.adapters.InstantFromEpochMillis;
@@ -15,6 +16,8 @@ import net.optionfactory.spring.time.jackson.adapters.LocalDateAsIsoString;
 import net.optionfactory.spring.time.jackson.adapters.LocalDateFromIsoString;
 import net.optionfactory.spring.time.jackson.adapters.LocalDateTimeAsIsoString;
 import net.optionfactory.spring.time.jackson.adapters.LocalDateTimeFromIsoString;
+import net.optionfactory.spring.time.jackson.adapters.LocalTimeAsIsoString;
+import net.optionfactory.spring.time.jackson.adapters.LocalTimeFromIsoString;
 import net.optionfactory.spring.time.jackson.adapters.OffsetDateTimeAsIsoString;
 import net.optionfactory.spring.time.jackson.adapters.OffsetDateTimeFromIsoString;
 import net.optionfactory.spring.time.jackson.adapters.ZonedDateTimeAsIsoString;
@@ -36,27 +39,27 @@ public class TimeModule extends Module {
     public void setupModule(SetupContext sc) {
         final SimpleSerializers ss = new SimpleSerializers();
         final SimpleDeserializers ds = new SimpleDeserializers();
-        
+
         ss.addSerializer(Instant.class, new InstantToEpochMillis());
         ds.addDeserializer(Instant.class, new InstantFromEpochMillis());
-        
+
         ss.addSerializer(LocalDate.class, new LocalDateAsIsoString());
         ds.addDeserializer(LocalDate.class, new LocalDateFromIsoString());
-        
+
+        ss.addSerializer(LocalTime.class, new LocalTimeAsIsoString());
+        ds.addDeserializer(LocalTime.class, new LocalTimeFromIsoString());
+
         ss.addSerializer(LocalDateTime.class, new LocalDateTimeAsIsoString());
         ds.addDeserializer(LocalDateTime.class, new LocalDateTimeFromIsoString());
-        
+
         ss.addSerializer(OffsetDateTime.class, new OffsetDateTimeAsIsoString());
         ds.addDeserializer(OffsetDateTime.class, new OffsetDateTimeFromIsoString());
-        
+
         ss.addSerializer(ZonedDateTime.class, new ZonedDateTimeAsIsoString());
         ds.addDeserializer(ZonedDateTime.class, new ZonedDateTimeFromIsoString());
-        
+
         sc.addSerializers(ss);
         sc.addDeserializers(ds);
     }
-
-
-
 
 }

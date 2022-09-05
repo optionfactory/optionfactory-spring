@@ -151,4 +151,58 @@ public @interface InstantCompare {
             return traversal;
         }
     }
+
+    public static class Filter {
+
+        private static String str(Format format, Instant value) {
+            if (value == null) {
+                return null;
+            }
+            switch(format){
+                case ISO_8601:
+                    return value.toString();
+                case UNIX_S:
+                    return Long.toString(value.getEpochSecond());
+                case UNIX_MS:
+                    return Long.toString(value.toEpochMilli());
+                case UNIX_NS:
+                    return BigInteger.valueOf(value.getEpochSecond())
+                            .multiply(BigInteger.valueOf(1_000_000_000))
+                            .add(BigInteger.valueOf(value.getNano()))
+                            .toString();
+                default:
+                    throw new IllegalStateException("unreachable");
+            }
+        }
+
+        public static String[] eq(Format format, Instant value) {
+            return new String[]{Operator.EQ.name(), str(format, value)};
+        }
+
+        public static String[] neq(Format format, Instant value) {
+            return new String[]{Operator.NEQ.name(), str(format, value)};
+        }
+
+        public static String[] lt(Format format, Instant value) {
+            return new String[]{Operator.LT.name(), str(format, value)};
+        }
+
+        public static String[] gt(Format format, Instant value) {
+            return new String[]{Operator.GT.name(), str(format, value)};
+        }
+
+        public static String[] lte(Format format, Instant value) {
+            return new String[]{Operator.LTE.name(), str(format, value)};
+        }
+
+        public static String[] gte(Format format, Instant value) {
+            return new String[]{Operator.GTE.name(), str(format, value)};
+        }
+
+        public static String[] between(Format format, Instant value1, Instant value2) {
+            return new String[]{Operator.BETWEEN.name(), str(format, value1), str(format, value2)};
+        }
+
+    }
+
 }

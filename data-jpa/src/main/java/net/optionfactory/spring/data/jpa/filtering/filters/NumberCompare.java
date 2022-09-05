@@ -125,4 +125,41 @@ public @interface NumberCompare {
             return traversal;
         }
     }
+
+    public static class Filter {
+
+        private static String str(Number n) {
+            return n == null ? null : n.toString();
+        }
+
+        public static String[] eq(Number value) {
+            return new String[]{Operator.EQ.name(), str(value)};
+        }
+
+        public static String[] neq(Number value) {
+            return new String[]{Operator.NEQ.name(), str(value)};
+        }
+
+        public static String[] lt(Number value) {
+            return new String[]{Operator.LT.name(), str(value)};
+        }
+
+        public static String[] gt(Number value) {
+            return new String[]{Operator.GT.name(), str(value)};
+        }
+
+        public static String[] lte(Number value) {
+            return new String[]{Operator.LTE.name(), str(value)};
+        }
+
+        public static String[] gte(Number value) {
+            return new String[]{Operator.GTE.name(), str(value)};
+        }
+
+        public static String[] between(Number value1, Number value2) {
+            return new String[]{Operator.BETWEEN.name(), str(value1), str(value2)};
+        }
+
+    }
+
 }

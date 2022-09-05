@@ -12,7 +12,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
@@ -101,4 +100,15 @@ public @interface InEnum {
             return traversal;
         }
     }
+
+    public static class Filter {
+
+        public static String[] in(Enum<?>... values) {
+            return Stream.of(values)
+                    .map(ev -> ev == null ? null : ev.name())
+                    .toArray(i -> new String[i]);
+        }
+
+    }
+
 }

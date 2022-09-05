@@ -106,4 +106,19 @@ public @interface BooleanCompare {
         }
 
     }
+
+    public static class Filter {
+
+        private static String str(Boolean b) {
+            return b == null ? null : b.toString();
+        }
+
+        public static String[] eq(Boolean value) {
+            return new String[]{Operator.EQ.name(), str(value)};
+        }
+
+        public static String[] neq(Boolean value) {
+            return new String[]{Operator.NEQ.name(), str(value)};
+        }
+    }
 }

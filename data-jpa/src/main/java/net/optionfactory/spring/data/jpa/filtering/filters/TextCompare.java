@@ -145,4 +145,87 @@ public @interface TextCompare {
         }
     }
 
+    public static class Filter {
+
+        public static String[] eq(String value) {
+            return new String[]{Operator.EQ.name(), CaseSensitivity.CASE_SENSITIVE.name(), value};
+        }
+
+        public static String[] eq(CaseSensitivity sensitivity, String value) {
+            return new String[]{Operator.EQ.name(), sensitivity.name(), value};
+        }
+
+        public static String[] neq(String value) {
+            return new String[]{Operator.NEQ.name(), CaseSensitivity.CASE_SENSITIVE.name(), value};
+        }
+
+        public static String[] neq(CaseSensitivity sensitivity, String value) {
+            return new String[]{Operator.NEQ.name(), sensitivity.name(), value};
+        }
+
+        public static String[] lt(String value) {
+            return new String[]{Operator.LT.name(), CaseSensitivity.CASE_SENSITIVE.name(), value};
+        }
+
+        public static String[] lt(CaseSensitivity sensitivity, String value) {
+            return new String[]{Operator.LT.name(), sensitivity.name(), value};
+        }
+
+        public static String[] gt(String value) {
+            return new String[]{Operator.GT.name(), CaseSensitivity.CASE_SENSITIVE.name(), value};
+        }
+
+        public static String[] gt(CaseSensitivity sensitivity, String value) {
+            return new String[]{Operator.GT.name(), sensitivity.name(), value};
+        }
+
+        public static String[] lte(String value) {
+            return new String[]{Operator.LTE.name(), CaseSensitivity.CASE_SENSITIVE.name(), value};
+        }
+
+        public static String[] lte(CaseSensitivity sensitivity, String value) {
+            return new String[]{Operator.LTE.name(), sensitivity.name(), value};
+        }
+
+        public static String[] gte(String value) {
+            return new String[]{Operator.GTE.name(), CaseSensitivity.CASE_SENSITIVE.name(), value};
+        }
+
+        public static String[] gte(CaseSensitivity sensitivity, String value) {
+            return new String[]{Operator.GTE.name(), sensitivity.name(), value};
+        }
+
+        public static String[] between(String value1, String value2) {
+            return new String[]{Operator.BETWEEN.name(), CaseSensitivity.CASE_SENSITIVE.name(), value1, value2};
+        }
+
+        public static String[] between(CaseSensitivity sensitivity, String value1, String value2) {
+            return new String[]{Operator.BETWEEN.name(), sensitivity.name(), value1, value2};
+        }
+
+        public static String[] contains(String value) {
+            return new String[]{Operator.CONTAINS.name(), CaseSensitivity.CASE_SENSITIVE.name(), value};
+        }
+
+        public static String[] contains(CaseSensitivity sensitivity, String value) {
+            return new String[]{Operator.CONTAINS.name(), sensitivity.name(), value};
+        }
+
+        public static String[] startsWith(String value) {
+            return new String[]{Operator.STARTS_WITH.name(), CaseSensitivity.CASE_SENSITIVE.name(), value};
+        }
+
+        public static String[] startsWith(CaseSensitivity sensitivity, String value) {
+            return new String[]{Operator.STARTS_WITH.name(), sensitivity.name(), value};
+        }
+
+        public static String[] endsWith(String value) {
+            return new String[]{Operator.ENDS_WITH.name(), CaseSensitivity.CASE_SENSITIVE.name(), value};
+        }
+
+        public static String[] endsWith(CaseSensitivity sensitivity, String value) {
+            return new String[]{Operator.ENDS_WITH.name(), sensitivity.name(), value};
+        }
+    }
+
 }
