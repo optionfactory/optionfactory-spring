@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import net.optionfactory.spring.time.jackson.adapters.InstantFromEpochMillis;
 import net.optionfactory.spring.time.jackson.adapters.InstantToEpochMillis;
@@ -20,6 +21,8 @@ import net.optionfactory.spring.time.jackson.adapters.LocalTimeAsIsoString;
 import net.optionfactory.spring.time.jackson.adapters.LocalTimeFromIsoString;
 import net.optionfactory.spring.time.jackson.adapters.OffsetDateTimeAsIsoString;
 import net.optionfactory.spring.time.jackson.adapters.OffsetDateTimeFromIsoString;
+import net.optionfactory.spring.time.jackson.adapters.ZoneIdAsIdString;
+import net.optionfactory.spring.time.jackson.adapters.ZoneIdFromIdString;
 import net.optionfactory.spring.time.jackson.adapters.ZonedDateTimeAsIsoString;
 import net.optionfactory.spring.time.jackson.adapters.ZonedDateTimeFromIsoString;
 
@@ -57,6 +60,9 @@ public class TimeModule extends Module {
 
         ss.addSerializer(ZonedDateTime.class, new ZonedDateTimeAsIsoString());
         ds.addDeserializer(ZonedDateTime.class, new ZonedDateTimeFromIsoString());
+
+        ss.addSerializer(ZoneId.class, new ZoneIdAsIdString());
+        ds.addDeserializer(ZoneId.class, new ZoneIdFromIdString());
 
         sc.addSerializers(ss);
         sc.addDeserializers(ds);
