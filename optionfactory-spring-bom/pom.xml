@@ -4,7 +4,7 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>7.4-SNAPSHOT</version>
+        <version>7.4</version>
     </parent>
     <artifactId>optionfactory-spring-bom</artifactId>
     <description>Bill of materials pom optionfactory-spring</description>
