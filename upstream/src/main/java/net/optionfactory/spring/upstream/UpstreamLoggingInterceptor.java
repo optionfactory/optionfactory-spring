@@ -12,22 +12,23 @@ public class UpstreamLoggingInterceptor<CTX> implements UpstreamInterceptor<CTX>
     private final Logger logger = LoggerFactory.getLogger(UpstreamLoggingInterceptor.class);
     private final ContextLogEncoder<CTX> contextLogEncoder;
     private final boolean logHeaders;
-    private final boolean logMultipart;
 
-    public UpstreamLoggingInterceptor(ContextLogEncoder<CTX> contextLogEncoder, boolean logHeaders, boolean logMultipart) {
+    public UpstreamLoggingInterceptor(ContextLogEncoder<CTX> contextLogEncoder, boolean logHeaders) {
         this.contextLogEncoder = contextLogEncoder;
         this.logHeaders = logHeaders;
-        this.logMultipart = logMultipart;
     }
 
     @Override
     public void before(Hints<CTX> hints, PrepareContext<CTX> prepare, RequestContext request) {
+        if (hints.skipLogging) {
+            return;
+        }
         final String ctxLogPrefix = contextLogEncoder.toLogPrefix(prepare.ctx);
         if (logHeaders) {
             logger.info("[upstream:{}][op:pre]{}[req:{}][ep:{}] headers={}", prepare.upstreamId, ctxLogPrefix, prepare.requestId, prepare.endpointId, request.headers);
         }
         final String logPrefix = String.format("[upstream:%s][op:req]%s[req:%s][ep:%s]", prepare.upstreamId, ctxLogPrefix, prepare.requestId, prepare.endpointId);
-        
+
         final UpstreamBodyToString<CTX> requestToString = hints.requestToString != null ? hints.requestToString : UpstreamOps::defaultRequestToString;
         final String requestBodyAsString = requestToString.apply(prepare, request, null);
         logger.info("{} url: {} body: {}", logPrefix, prepare.entity.getUrl(), requestBodyAsString);
@@ -35,10 +36,13 @@ public class UpstreamLoggingInterceptor<CTX> implements UpstreamInterceptor<CTX>
 
     @Override
     public void remotingSuccess(Hints<CTX> hints, PrepareContext<CTX> prepare, RequestContext request, ResponseContext response) {
+        if (hints.skipLogging) {
+            return;
+        }
         final String ctxLogPrefix = contextLogEncoder.toLogPrefix(prepare.ctx);
         final long elapsedMillis = Duration.between(request.at, response.at).toMillis();
         final String logPrefix = String.format("[upstream:%s][op:res]%s[req:%s][ep:%s][ms:%s]", prepare.upstreamId, ctxLogPrefix, prepare.requestId, prepare.endpointId, elapsedMillis);
-        
+
         final MediaType contentType = response.headers.getContentType();
         final UpstreamBodyToString<CTX> responseToString = hints.responseToString != null ? hints.responseToString : UpstreamOps::defaultResponseToString;
         final String responseBodyAsText = responseToString.apply(prepare, request, response);
@@ -48,6 +52,9 @@ public class UpstreamLoggingInterceptor<CTX> implements UpstreamInterceptor<CTX>
 
     @Override
     public void remotingError(Hints<CTX> hints, PrepareContext<CTX> prepare, RequestContext request, ErrorContext error) {
+        if (hints.skipLogging) {
+            return;
+        }
         final String ctxLogPrefix = contextLogEncoder.toLogPrefix(prepare.ctx);
         final long elapsedMillis = Duration.between(request.at, error.at).toMillis();
 

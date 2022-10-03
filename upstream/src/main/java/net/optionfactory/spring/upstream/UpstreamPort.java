@@ -24,7 +24,7 @@ public interface UpstreamPort<CTX> {
     }
 
     public static class Hints<CTX> {
-
+        public boolean skipLogging;
         public UpstreamErrorStrategy<CTX> errorStrategy;
         public UpstreamErrorHandler<CTX> errorHandler;
         public UpstreamFaultPredicate<CTX> isFault;
@@ -34,7 +34,12 @@ public interface UpstreamPort<CTX> {
         public static <CTX> Hints<CTX> empty(Class<CTX> cls) {
             return new Hints<>();
         }
-
+ 
+        public Hints<CTX> skipLogging() {
+            this.skipLogging = true;
+            return this;
+        }
+        
         public Hints<CTX> with(UpstreamErrorStrategy<CTX> errorStrategy) {
             this.errorStrategy = errorStrategy;
             return this;
