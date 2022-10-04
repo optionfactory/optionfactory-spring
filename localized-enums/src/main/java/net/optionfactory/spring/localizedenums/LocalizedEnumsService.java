@@ -38,7 +38,7 @@ public class LocalizedEnumsService {
                     final LocalizedEnum md = enumValue.getClass().getAnnotation(LocalizedEnum.class);
                     final String category = md.category().isBlank() ? enumValue.getDeclaringClass().getSimpleName() : md.category();
                     return EnumKey.of(category, enumValue.name());
-                }).toList();
+                }).collect(Collectors.toList());
         this.prefix = prefix;
         this.bundle = bundle;
         this.mode = mode;
@@ -49,7 +49,7 @@ public class LocalizedEnumsService {
         return keys.stream()
                 .filter(sc -> category.map(t -> t.equals(sc.category)).orElse(true))
                 .map(ek -> ek.toLabel(resolve(bundle, ek, locale)))
-                .toList();
+                .collect(Collectors.toList());
     }
 
     public Optional<String> translate(EnumKey key, Locale locale) {
