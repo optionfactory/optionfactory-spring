@@ -123,6 +123,16 @@
             </dependency>
             <dependency>
                 <groupId>net.optionfactory.spring</groupId>
+                <artifactId>thymeleaf</artifactId>
+                <version>${opfa-spring.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.optionfactory.spring</groupId>
+                <artifactId>localized-enums</artifactId>
+                <version>${opfa-spring.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.optionfactory.spring</groupId>
                 <artifactId>pdf</artifactId>
                 <version>${opfa-spring.version}</version>
             </dependency>
@@ -131,7 +141,16 @@
                 <artifactId>pdf-signing</artifactId>
                 <version>${opfa-spring.version}</version>
             </dependency>
-
+            <dependency>
+                <groupId>net.optionfactory.spring</groupId>
+                <artifactId>mock-resources-json</artifactId>
+                <version>${opfa-spring.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.optionfactory.spring</groupId>
+                <artifactId>mock-resources-jaxb</artifactId>
+                <version>${opfa-spring.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>
