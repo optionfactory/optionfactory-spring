@@ -1,5 +1,6 @@
 package net.optionfactory.spring.localizedenums.dialects;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import net.optionfactory.spring.localizedenums.EnumKey;
@@ -25,6 +26,10 @@ public class LocalizedEnums {
 
     public List<LocalizedEnumResponse> values(String category) {
         return les.values(Optional.of(category), LocaleContextHolder.getLocale());
+    }
+
+    public boolean in(LocalizedEnumResponse le, Collection<Enum<?>> haystack) {
+        return haystack.stream().anyMatch(e -> e.name().equals(le.name));
     }
 
 }
