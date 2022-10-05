@@ -10,7 +10,7 @@ import org.springframework.context.annotation.ClassPathScanningCandidateComponen
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 
-public class LocalizedEnumsService {
+public class ResourceBundleEnumsLocalizationService implements EnumsLocalizationService {
 
     private final String prefix;
     private final List<EnumKey> keys;
@@ -21,39 +21,44 @@ public class LocalizedEnumsService {
         MISSING_AS_NAME, MISSING_AS_NULL;
     }
 
-    public LocalizedEnumsService(String prefix, ResourceBundleMessageSource bundle, Class<?> root, ResolutionMode mode) {
+    public ResourceBundleEnumsLocalizationService(String prefix, ResourceBundleMessageSource bundle, Class<?> root, ResolutionMode mode) {
         final var cps = new ClassPathScanningCandidateComponentProvider(false);
         cps.addIncludeFilter(new AnnotationTypeFilter(LocalizedEnum.class));
 
         final List<Enum> enums = cps.findCandidateComponents(root.getPackageName())
                 .stream()
                 .map(BeanDefinition::getBeanClassName)
-                .map(LocalizedEnumsService::enumForName)
+                .map(ResourceBundleEnumsLocalizationService::enumForName)
                 .map(Class::getEnumConstants)
                 .flatMap(Arrays::stream)
                 .collect(Collectors.toList());
 
-        this.keys = enums.stream()
-                .map(enumValue -> {
-                    final LocalizedEnum md = enumValue.getClass().getAnnotation(LocalizedEnum.class);
-                    final String category = md.category().isBlank() ? enumValue.getDeclaringClass().getSimpleName() : md.category();
-                    return EnumKey.of(category, enumValue.name());
-                }).collect(Collectors.toList());
+        this.keys = enums.stream().map(this::enumValueToEnumKey).collect(Collectors.toList());
         this.prefix = prefix;
         this.bundle = bundle;
         this.mode = mode;
 
     }
 
-    public List<LocalizedEnumResponse> search(Optional<String> category, Locale locale) {
-        return keys.stream()
-                .filter(sc -> category.map(t -> t.equals(sc.category)).orElse(true))
-                .map(ek -> ek.toLabel(resolve(bundle, ek, locale)))
-                .collect(Collectors.toList());
+    @Override
+    public List<LocalizedEnumResponse> values(Class<Enum<?>> category, Locale locale) {
+        return Arrays.stream(category.getEnumConstants()).map(this::enumValueToEnumKey).map(ek -> ek.toLabel(resolve(bundle, ek, locale))).collect(Collectors.toList());
     }
 
-    public Optional<String> translate(EnumKey key, Locale locale) {
+    @Override
+    public List<LocalizedEnumResponse> values(Optional<String> category, Locale locale) {
+        return keys.stream().filter(sc -> category.map(t -> t.equals(sc.category)).orElse(true)).map(ek -> ek.toLabel(resolve(bundle, ek, locale))).collect(Collectors.toList());
+    }
+
+    @Override
+    public Optional<String> value(EnumKey key, Locale locale) {
         return Optional.ofNullable(resolve(bundle, key, locale));
+    }
+
+    private EnumKey enumValueToEnumKey(Enum enumValue) {
+        final LocalizedEnum md = enumValue.getClass().getAnnotation(LocalizedEnum.class);
+        final String category = md.category().isBlank() ? enumValue.getDeclaringClass().getSimpleName() : md.category();
+        return EnumKey.of(category, enumValue.name());
     }
 
     private String resolve(ResourceBundleMessageSource bundle, EnumKey ek, Locale locale) {
