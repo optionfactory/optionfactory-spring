@@ -54,7 +54,7 @@ public class ResourceBundleEnumsLocalizationService implements EnumsLocalization
     public Optional<String> value(EnumKey key, Locale locale) {
         return Optional.ofNullable(resolve(bundle, key, locale));
     }
-
+    
     private EnumKey enumValueToEnumKey(Enum enumValue) {
         final LocalizedEnum md = enumValue.getClass().getAnnotation(LocalizedEnum.class);
         final String category = md.category().isBlank() ? enumValue.getDeclaringClass().getSimpleName() : md.category();

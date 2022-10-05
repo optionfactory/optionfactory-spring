@@ -14,6 +14,13 @@ public class CdnResourcesTest {
     }
 
     @Test
+    public void canComposePath() {
+        CdnResources cdn = new CdnResources(URI.create("https://cdn.test.com/"));
+        String url = cdn.url("folder", "id.png");
+        Assert.assertEquals("https://cdn.test.com/folder/id.png", url);
+    }
+
+    @Test
     public void handlesDoubleSlashes() {
         CdnResources cdn = new CdnResources(URI.create("https://cdn.test.com/"));
         String url = cdn.url("/folder/id.png");

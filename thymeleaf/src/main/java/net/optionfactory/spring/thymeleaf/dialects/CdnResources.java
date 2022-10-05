@@ -1,6 +1,8 @@
 package net.optionfactory.spring.thymeleaf.dialects;
 
 import java.net.URI;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 public class CdnResources {
 
@@ -11,7 +13,8 @@ public class CdnResources {
         this.baseUri = s.endsWith("/") ? baseUri : URI.create(s + "/");
     }
 
-    public String url(String resource) {
-        return baseUri.resolve(resource).toString();
+    public String url(String... parts) {
+        final var path = Arrays.stream(parts).collect(Collectors.joining("/"));
+        return baseUri.resolve(path).toString();
     }
 }
