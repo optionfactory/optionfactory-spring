@@ -8,7 +8,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.MonthDay;
 import java.time.OffsetDateTime;
+import java.time.Year;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import net.optionfactory.spring.time.jackson.adapters.InstantFromEpochMillis;
@@ -19,8 +22,14 @@ import net.optionfactory.spring.time.jackson.adapters.LocalDateTimeAsIsoString;
 import net.optionfactory.spring.time.jackson.adapters.LocalDateTimeFromIsoString;
 import net.optionfactory.spring.time.jackson.adapters.LocalTimeAsIsoString;
 import net.optionfactory.spring.time.jackson.adapters.LocalTimeFromIsoString;
+import net.optionfactory.spring.time.jackson.adapters.MonthDayAsIsoString;
+import net.optionfactory.spring.time.jackson.adapters.MonthDayFromIsoString;
 import net.optionfactory.spring.time.jackson.adapters.OffsetDateTimeAsIsoString;
 import net.optionfactory.spring.time.jackson.adapters.OffsetDateTimeFromIsoString;
+import net.optionfactory.spring.time.jackson.adapters.YearAsIsoString;
+import net.optionfactory.spring.time.jackson.adapters.YearFromIsoString;
+import net.optionfactory.spring.time.jackson.adapters.YearMonthAsIsoString;
+import net.optionfactory.spring.time.jackson.adapters.YearMonthFromIsoString;
 import net.optionfactory.spring.time.jackson.adapters.ZoneIdAsIdString;
 import net.optionfactory.spring.time.jackson.adapters.ZoneIdFromIdString;
 import net.optionfactory.spring.time.jackson.adapters.ZonedDateTimeAsIsoString;
@@ -46,6 +55,15 @@ public class TimeModule extends Module {
         ss.addSerializer(Instant.class, new InstantToEpochMillis());
         ds.addDeserializer(Instant.class, new InstantFromEpochMillis());
 
+        ss.addSerializer(Year.class, new YearAsIsoString());
+        ds.addDeserializer(Year.class, new YearFromIsoString());
+        
+        ss.addSerializer(YearMonth.class, new YearMonthAsIsoString());
+        ds.addDeserializer(YearMonth.class, new YearMonthFromIsoString());
+        
+        ss.addSerializer(MonthDay.class, new MonthDayAsIsoString());
+        ds.addDeserializer(MonthDay.class, new MonthDayFromIsoString());
+        
         ss.addSerializer(LocalDate.class, new LocalDateAsIsoString());
         ds.addDeserializer(LocalDate.class, new LocalDateFromIsoString());
 
