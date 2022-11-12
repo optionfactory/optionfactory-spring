@@ -4,7 +4,7 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>7.8</version>
+        <version>7.9-SNAPSHOT</version>
     </parent>
     <artifactId>mock-resources-jaxb</artifactId>
     <description>optionfactory-spring unmarshalling for jaxb xml mocks</description>
