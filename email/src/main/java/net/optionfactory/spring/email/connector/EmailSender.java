@@ -91,8 +91,11 @@ public class EmailSender {
             if (paths.dead != null) {
                 Path target = paths.dead.resolve(eml.getFileName());
                 Files.move(eml, target, StandardCopyOption.ATOMIC_MOVE);
+                logger.info(String.format("[send-emails] moved %s to dead directory", eml.getFileName()));
+
             } else {
                 Files.delete(eml);
+                logger.info(String.format("[send-emails] removed %s: dead", eml.getFileName()));
             }
         } catch (IOException ex) {
             logger.warn(String.format("[send-emails] failed to process dead email: %s", eml), ex);
