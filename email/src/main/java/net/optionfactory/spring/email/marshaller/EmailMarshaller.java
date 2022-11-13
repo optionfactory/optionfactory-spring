@@ -4,8 +4,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,10 +21,23 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import net.optionfactory.spring.email.EmailMessage;
+import net.optionfactory.spring.email.EmailPaths;
 import net.optionfactory.spring.email.EmailSenderAndCopyAddresses;
 import org.springframework.core.io.InputStreamSource;
 
 public class EmailMarshaller {
+
+    public Path marshalToSpool(EmailSenderAndCopyAddresses messageConfiguration, EmailMessage emailMessage, List<AttachmentSource> attachments, List<CidSource> cids, EmailPaths paths, String prefix) {
+        try {
+            final Path tempPath = Files.createTempFile(paths.spool, prefix, ".tmp");
+            marshal(messageConfiguration, emailMessage, attachments, cids, tempPath);
+            final Path targetPath = paths.spool.resolve(tempPath.getFileName().toString().replace(".tmp", ".eml"));
+            Files.move(tempPath, targetPath, StandardCopyOption.ATOMIC_MOVE);
+            return targetPath;
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
+    }
 
     public Path marshal(EmailSenderAndCopyAddresses messageConfiguration, EmailMessage emailMessage, List<AttachmentSource> attachments, List<CidSource> cids, Path path) {
         try (final var os = Files.newOutputStream(path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
