@@ -55,7 +55,7 @@ public class EmailSender {
             if (!placebo) {
                 emails.send(new PathResource(eml));
             }
-            logger.info(String.format("[send-emails] sent%s: %s", placebo ? "" : "(placebo)", eml.getFileName()));
+            logger.info(String.format("[send-emails] sent%s: %s", placebo ? "(placebo)" :"" , eml.getFileName()));
             if (paths.sent != null) {
                 Path target = paths.sent.resolve(eml.getFileName());
                 Files.move(eml, target, StandardCopyOption.ATOMIC_MOVE);
