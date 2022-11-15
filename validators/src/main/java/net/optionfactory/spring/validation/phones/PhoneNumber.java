@@ -24,7 +24,7 @@ public @interface PhoneNumber {
     
     String defaultRegion() default "IT";
 
-    String message() default "Numero di telefono non valido";
+    String message() default "{javax.validation.constraints.PhoneNumber.message}";
 
     Class<?>[] groups() default {};
 
