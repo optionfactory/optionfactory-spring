@@ -73,6 +73,11 @@
             </dependency>
             <dependency>
                 <groupId>net.optionfactory.spring</groupId>
+                <artifactId>authentication-jwt</artifactId>
+                <version>${opfa-spring.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.optionfactory.spring</groupId>
                 <artifactId>oidc-authorization-code</artifactId>
                 <version>${opfa-spring.version}</version>
             </dependency>

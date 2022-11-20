@@ -21,14 +21,19 @@ public class StaticBearerTokenAuthenticationProvider implements AuthenticationPr
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-        final BearerTokenAuthentication bearer = (BearerTokenAuthentication) authentication;
+        final BearerToken bearer = (BearerToken) authentication;
         final PrincipalAndAuthorities got = tokenToPrincipalAndAuthorities.get(bearer.getCredentials());
-        return got == null ? null : bearer.makeAuthenticated(got.principal, got.authorities);
+        if (got == null) {
+            return null;
+        }
+        final var token = new StaticBearerAuthenticatedToken(bearer.getCredentials(), got.principal, got.authorities);
+        token.setDetails(bearer.getDetails());
+        return token;
     }
 
     @Override
     public boolean supports(Class<?> authentication) {
-        return BearerTokenAuthentication.class.isAssignableFrom(authentication);
+        return BearerToken.class.isAssignableFrom(authentication);
     }
 
     public static StaticBearerTokenAuthenticationProvider of(String token, Object principal, List<GrantedAuthority> authorities) {

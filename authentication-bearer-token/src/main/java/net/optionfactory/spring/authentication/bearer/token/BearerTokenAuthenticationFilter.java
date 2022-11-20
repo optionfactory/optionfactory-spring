@@ -30,7 +30,7 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        final Optional<BearerTokenAuthentication> bearer = searchBearerToken(request);
+        final Optional<BearerToken> bearer = searchBearerToken(request);
         if (bearer.isPresent()) {
             try {
                 final Authentication authentication = authenticationManager.authenticate(bearer.get());
@@ -42,12 +42,12 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private static Optional<BearerTokenAuthentication> searchBearerToken(HttpServletRequest request) {
+    private static Optional<BearerToken> searchBearerToken(HttpServletRequest request) {
         return Optional.ofNullable(request.getHeader(HttpHeaders.AUTHORIZATION))
                 .filter(header -> header.toUpperCase().startsWith(BEARER_PREFIX))
                 .map(header -> header.substring(BEARER_PREFIX.length()).trim())
                 .map(token -> {
-                    final BearerTokenAuthentication bearer = new BearerTokenAuthentication(token, null, null);
+                    final BearerToken bearer = new BearerToken(token);
                     bearer.setDetails(new WebAuthenticationDetails(request));
                     return bearer;
                 });

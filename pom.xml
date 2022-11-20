@@ -57,6 +57,7 @@
         <module>problems-web</module>
         <module>feedback-web</module>
         <module>authentication-bearer-token</module>
+        <module>authentication-jws</module>
         <module>oidc-authorization-code</module>
         <module>email</module>
         <module>upstream</module>
