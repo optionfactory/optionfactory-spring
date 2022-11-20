@@ -6,6 +6,7 @@ import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.Authentication;
@@ -39,7 +40,7 @@ public class JwsAuthenticationProvider implements AuthenticationProvider {
         return Stream.concat(
                 Stream.concat(defaultAuthorities, roleAuthorities),
                 groupAuthorities
-        ).toList();
+        ).collect(Collectors.toList());
     }
 
     @Override
