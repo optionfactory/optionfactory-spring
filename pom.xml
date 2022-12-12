@@ -5,7 +5,7 @@
 
     <groupId>net.optionfactory.spring</groupId>
     <artifactId>optionfactory-spring</artifactId>
-    <version>7.13</version>
+    <version>7.14-SNAPSHOT</version>
     <packaging>pom</packaging>
     <description>optionfactory-spring parent pom</description>
 
@@ -59,6 +59,7 @@
         <module>authentication-bearer-token</module>
         <module>authentication-jws</module>
         <module>oidc-authorization-code</module>
+        <module>content-security-policies</module>
         <module>email</module>
         <module>upstream</module>
         <module>upstream-rest</module>

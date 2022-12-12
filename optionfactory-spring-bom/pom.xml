@@ -4,7 +4,7 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>7.13</version>
+        <version>7.14-SNAPSHOT</version>
     </parent>
     <artifactId>optionfactory-spring-bom</artifactId>
     <description>Bill of materials pom optionfactory-spring</description>
@@ -79,6 +79,11 @@
             <dependency>
                 <groupId>net.optionfactory.spring</groupId>
                 <artifactId>oidc-authorization-code</artifactId>
+                <version>${opfa-spring.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.optionfactory.spring</groupId>
+                <artifactId>content-security-policies</artifactId>
                 <version>${opfa-spring.version}</version>
             </dependency>
             <dependency>
