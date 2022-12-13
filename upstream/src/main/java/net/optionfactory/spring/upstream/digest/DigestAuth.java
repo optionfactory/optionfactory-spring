@@ -6,10 +6,9 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.apache.commons.codec.binary.Hex;
+import org.apache.hc.client5.http.utils.Hex;
 
 public class DigestAuth {
     
@@ -62,7 +61,7 @@ public class DigestAuth {
     private static String md5LowercaseHex(String v) {
         try {
             final byte[] md5 = MessageDigest.getInstance("MD5").digest(v.getBytes(StandardCharsets.UTF_8));
-            return Hex.encodeHexString(md5, true);
+            return Hex.encodeHexString(md5);
         } catch (NoSuchAlgorithmException ex) {
             throw new IllegalStateException(ex);
         }

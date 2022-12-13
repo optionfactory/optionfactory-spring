@@ -1,10 +1,10 @@
 package net.optionfactory.spring.csp;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.security.SecureRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.crypto.codec.Hex;
 import org.springframework.security.web.header.HeaderWriter;
 

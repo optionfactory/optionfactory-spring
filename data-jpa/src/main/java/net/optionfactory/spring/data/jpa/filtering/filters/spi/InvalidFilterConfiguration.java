@@ -1,7 +1,7 @@
 package net.optionfactory.spring.data.jpa.filtering.filters.spi;
 
+import jakarta.persistence.metamodel.EntityType;
 import java.lang.annotation.Annotation;
-import javax.persistence.metamodel.EntityType;
 
 public class InvalidFilterConfiguration extends IllegalStateException {
 

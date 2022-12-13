@@ -1,6 +1,6 @@
 package net.optionfactory.spring.data.jpa.filtering.filters.spi;
 
-import javax.persistence.metamodel.EntityType;
+import jakarta.persistence.metamodel.EntityType;
 import net.optionfactory.spring.data.jpa.filtering.Filter;
 import net.optionfactory.spring.data.jpa.filtering.filters.Filterable;
 

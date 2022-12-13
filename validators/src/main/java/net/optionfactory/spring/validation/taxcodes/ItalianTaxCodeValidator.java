@@ -1,11 +1,11 @@
 package net.optionfactory.spring.validation.taxcodes;
 
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.IntStream;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
 import net.optionfactory.spring.validation.taxcodes.ItalianTaxCode.Type;
 
 public class ItalianTaxCodeValidator implements ConstraintValidator<ItalianTaxCode, String> {

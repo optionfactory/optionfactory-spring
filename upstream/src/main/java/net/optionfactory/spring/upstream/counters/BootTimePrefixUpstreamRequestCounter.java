@@ -3,7 +3,7 @@ package net.optionfactory.spring.upstream.counters;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.commons.codec.binary.Hex;
+import org.apache.hc.client5.http.utils.Hex;
 
 public class BootTimePrefixUpstreamRequestCounter implements UpstreamRequestCounter {
 
@@ -13,7 +13,7 @@ public class BootTimePrefixUpstreamRequestCounter implements UpstreamRequestCoun
     public BootTimePrefixUpstreamRequestCounter(Instant bootTime) {
         final ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES);
         buffer.putInt((int) bootTime.getEpochSecond());
-        prefix = Hex.encodeHexString(buffer.array(), true);
+        prefix = Hex.encodeHexString(buffer.array());
     }
 
     @Override

@@ -1,11 +1,11 @@
 package net.optionfactory.spring.data.jpa.filtering.filters.spi;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Expression;
-import javax.persistence.criteria.Path;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Path;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import net.optionfactory.spring.spring.data.jpa.HibernateTestConfig;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
@@ -47,7 +47,7 @@ public class FiltersTest {
             public Predicate toPredicate(Root<EntityA> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
                 final Traversal ts = Filters.traversal(null, root.getModel(), "b.c.i.n");
                 final Expression<Object> path = Filters.path("myFilter", root, ts);
-                Assert.assertEquals(long.class, path.getJavaType());
+                Assert.assertEquals(Long.class, path.getJavaType());
                 return null;
             }
         };

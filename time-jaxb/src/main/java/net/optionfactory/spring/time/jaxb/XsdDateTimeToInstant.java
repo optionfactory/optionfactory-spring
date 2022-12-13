@@ -1,10 +1,10 @@
 package net.optionfactory.spring.time.jaxb;
 
+import jakarta.xml.bind.annotation.adapters.XmlAdapter;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import javax.xml.bind.annotation.adapters.XmlAdapter;
 
 public class XsdDateTimeToInstant extends XmlAdapter<String, Instant> {
 

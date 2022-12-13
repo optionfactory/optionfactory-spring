@@ -1,11 +1,11 @@
 package net.optionfactory.spring.data.jpa.filtering.filters.numbers;
 
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 import net.optionfactory.spring.data.jpa.filtering.filters.NumberCompare;
 
-import javax.persistence.Embeddable;
-import javax.persistence.Embedded;
-import javax.persistence.Entity;
-import javax.persistence.Id;
 
 @Entity
 @NumberCompare(name = "maxPersons", path = "maxPersons")

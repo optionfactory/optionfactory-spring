@@ -1,7 +1,7 @@
 package net.optionfactory.spring.data.jpa.filtering.filters.bool;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 import net.optionfactory.spring.data.jpa.filtering.filters.BooleanCompare;
 
 @Entity

@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import net.optionfactory.spring.upstream.UpstreamException;
 import net.optionfactory.spring.upstream.UpstreamInterceptor;
 import net.optionfactory.spring.upstream.UpstreamInterceptor.ExchangeContext;
@@ -18,14 +19,17 @@ import net.optionfactory.spring.upstream.UpstreamInterceptor.ResponseContext;
 import net.optionfactory.spring.upstream.UpstreamPort;
 import net.optionfactory.spring.upstream.CompositeUpstreamResponseErrorHandler;
 import net.optionfactory.spring.upstream.counters.UpstreamRequestCounter;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.config.SocketConfig;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.hc.client5.http.config.ConnectionConfig;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
+import org.apache.hc.core5.http.io.SocketConfig;
+
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
@@ -69,11 +73,12 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
     }
 
     public UpstreamRestPort(String upstreamId, UpstreamRequestCounter requestCounter, ObjectMapper objectMapper, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, List<UpstreamInterceptor<CTX>> interceptors, List<HttpMessageConverter<?>> converters) {
-        final var builder = HttpClientBuilder.create();
-        builder.setSSLSocketFactory(socketFactory);
-        final var client = builder.setDefaultRequestConfig(RequestConfig.custom()
-                .setConnectTimeout(connectionTimeoutInMillis).build())
-                .setDefaultSocketConfig(SocketConfig.custom().setSoKeepAlive(true).build())
+        final var client = HttpClientBuilder.create()
+                .setConnectionManager(PoolingHttpClientConnectionManagerBuilder.create()
+                        .setSSLSocketFactory(socketFactory)
+                        .setDefaultConnectionConfig(ConnectionConfig.custom().setConnectTimeout(5, TimeUnit.SECONDS).build())
+                        .setDefaultSocketConfig(SocketConfig.custom().setSoKeepAlive(true).build())
+                        .build())
                 .build();
         final var innerRequestFactory = new HttpComponentsClientHttpRequestFactory(client);
         final var requestFactory = new BufferingClientHttpRequestFactory(innerRequestFactory);
@@ -173,7 +178,7 @@ public class UpstreamRestPort<CTX> implements UpstreamPort<CTX> {
                 try (final InputStream body = response.getBody()) {
                     context.response = new ResponseContext();
                     context.response.at = Instant.now();
-                    context.response.status = response.getStatusCode();
+                    context.response.status = HttpStatus.resolve(response.getStatusCode().value());
                     context.response.headers = response.getHeaders();
                     context.response.body = new ByteArrayResource(StreamUtils.copyToByteArray(body));
                 }

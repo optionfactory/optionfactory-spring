@@ -8,14 +8,16 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import net.optionfactory.spring.upstream.UpstreamPort.Hints;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.config.SocketConfig;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.hc.client5.http.config.ConnectionConfig;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
+import org.apache.hc.core5.http.io.SocketConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -38,11 +40,12 @@ public class UpstreamOauthInterceptor<T> implements UpstreamInterceptor<T> {
     private final Function<PrepareContext<T>, RequestEntity<?>> requestFactory;
 
     public UpstreamOauthInterceptor(SSLConnectionSocketFactory socketFactory, Supplier<Instant> clock, Function<PrepareContext<T>, RequestEntity<?>> requestFactory) {
-        final var builder = HttpClientBuilder.create();
-        builder.setSSLSocketFactory(socketFactory);
-        final var client = builder.setDefaultRequestConfig(RequestConfig.custom()
-                .setConnectTimeout(5000).build())
-                .setDefaultSocketConfig(SocketConfig.custom().setSoKeepAlive(true).build())
+        final var client = HttpClientBuilder.create()
+                .setConnectionManager(PoolingHttpClientConnectionManagerBuilder.create()
+                        .setSSLSocketFactory(socketFactory)
+                        .setDefaultConnectionConfig(ConnectionConfig.custom().setConnectTimeout(5, TimeUnit.SECONDS).build())
+                        .setDefaultSocketConfig(SocketConfig.custom().setSoKeepAlive(true).build())
+                        .build())
                 .build();
         this.restOauth = new RestTemplate(new HttpComponentsClientHttpRequestFactory(client));
         this.clock = clock;

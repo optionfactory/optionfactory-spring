@@ -1,8 +1,8 @@
 package net.optionfactory.spring.data.jpa.filtering.filters.spi;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
 
 @Entity
 public class EntityA {

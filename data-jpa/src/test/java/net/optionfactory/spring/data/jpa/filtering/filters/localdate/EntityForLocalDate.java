@@ -1,8 +1,8 @@
 package net.optionfactory.spring.data.jpa.filtering.filters.localdate;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 import java.time.LocalDate;
-import javax.persistence.Entity;
-import javax.persistence.Id;
 import net.optionfactory.spring.data.jpa.filtering.filters.LocalDateCompare;
 
 @Entity

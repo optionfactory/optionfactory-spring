@@ -1,5 +1,7 @@
 package net.optionfactory.spring.data.jpa.filtering;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -7,8 +9,6 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
-import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository.SessionPolicy;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Repositories;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Sorters;

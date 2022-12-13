@@ -1,10 +1,10 @@
 package net.optionfactory.spring.money.jaxb;
 
+import jakarta.xml.bind.annotation.adapters.XmlAdapter;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.ParseException;
-import javax.xml.bind.annotation.adapters.XmlAdapter;
 
 public class XsdDecimalToLongCents extends XmlAdapter<String, Long> {
 

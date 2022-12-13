@@ -2,11 +2,13 @@ package net.optionfactory.spring.upstream;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
+import java.util.concurrent.TimeUnit;
 import net.optionfactory.spring.upstream.UpstreamPort.Hints;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.config.SocketConfig;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.hc.client5.http.config.ConnectionConfig;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
+import org.apache.hc.core5.http.io.SocketConfig;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -28,12 +30,13 @@ public class UpstreamOAuthPasswordInterceptor<T> implements UpstreamInterceptor<
         this.clientSecret = clientSecret;
         this.tokenURI = tokenURI;
 
-        final var builder = HttpClientBuilder.create();
-        builder.setSSLSocketFactory(socketFactory);
-        final var client = builder.setDefaultRequestConfig(RequestConfig.custom()
-                .setConnectTimeout(5000).build())
-                .setDefaultSocketConfig(SocketConfig.custom().setSoKeepAlive(true).build())
-                .build();
+        final var client = HttpClientBuilder.create()
+                .setConnectionManager(PoolingHttpClientConnectionManagerBuilder.create()
+                        .setSSLSocketFactory(socketFactory)
+                        .setDefaultConnectionConfig(ConnectionConfig.custom().setConnectTimeout(5, TimeUnit.SECONDS).build())
+                        .setDefaultSocketConfig(SocketConfig.custom().setSoKeepAlive(true).build())
+                        .build())
+                .build();        
         final var requestFactory = new HttpComponentsClientHttpRequestFactory(client);
         this.restOauth = new RestTemplate(requestFactory);
     }

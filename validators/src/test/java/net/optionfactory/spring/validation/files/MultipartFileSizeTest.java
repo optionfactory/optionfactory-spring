@@ -1,9 +1,9 @@
 package net.optionfactory.spring.validation.files;
 
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import java.util.Locale;
 import java.util.Set;
-import javax.validation.Validation;
-import javax.validation.Validator;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 import org.junit.Assert;
 import org.junit.Test;

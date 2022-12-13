@@ -1,7 +1,7 @@
 package net.optionfactory.spring.data.jpa.filtering.chaining;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 
 @Entity
 public class Performer {

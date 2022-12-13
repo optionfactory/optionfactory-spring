@@ -31,7 +31,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
-import org.springframework.lang.Nullable;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 import org.springframework.ws.WebServiceMessage;
 import org.springframework.ws.client.WebServiceClientException;
@@ -60,7 +59,7 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
 
         final var client = builder
                 .setDefaultRequestConfig(RequestConfig.custom().setConnectTimeout(connectionTimeoutInMillis).build())
-                .setDefaultSocketConfig(SocketConfig.custom().setSoKeepAlive(true).build())
+                        .setDefaultSocketConfig(SocketConfig.custom().setSoKeepAlive(true).build())
                 .addInterceptorFirst(new HttpComponentsMessageSender.RemoveSoapHeadersInterceptor())
                 .addInterceptorLast((HttpResponse hr, HttpContext hc) -> {
                     final var headers = new HttpHeaders();

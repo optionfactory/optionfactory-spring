@@ -1,6 +1,6 @@
 package net.optionfactory.spring.data.jpa.filtering.filters.spi;
 
-import javax.persistence.criteria.Root;
+import jakarta.persistence.criteria.Root;
 
 public class InvalidFilterRequest extends IllegalArgumentException {
 

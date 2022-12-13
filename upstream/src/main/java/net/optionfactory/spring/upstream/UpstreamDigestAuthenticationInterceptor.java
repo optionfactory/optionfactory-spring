@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.net.URI;
 import net.optionfactory.spring.upstream.UpstreamPort.Hints;
 import net.optionfactory.spring.upstream.digest.DigestAuth;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 

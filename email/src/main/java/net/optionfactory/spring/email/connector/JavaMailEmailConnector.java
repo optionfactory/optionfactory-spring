@@ -1,9 +1,9 @@
 package net.optionfactory.spring.email.connector;
 
+import jakarta.mail.internet.MimeMessage;
 import java.io.InputStream;
 import java.util.Optional;
 import java.util.Properties;
-import javax.mail.internet.MimeMessage;
 import javax.net.ssl.SSLSocketFactory;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
