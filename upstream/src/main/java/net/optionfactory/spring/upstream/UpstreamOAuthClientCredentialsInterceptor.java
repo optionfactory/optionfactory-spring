@@ -49,7 +49,7 @@ public class UpstreamOAuthClientCredentialsInterceptor<T> implements UpstreamInt
         return headers;
     }
 
-    private String getOauthToken() throws RestClientException {
+    protected String getOauthToken() throws RestClientException {
         final var headers = new HttpHeaders();
         headers.setAccept(List.of(MediaType.APPLICATION_JSON_UTF8));
         headers.setContentType(MediaType.valueOf(MediaType.APPLICATION_FORM_URLENCODED_VALUE + ";charset=UTF-8"));
