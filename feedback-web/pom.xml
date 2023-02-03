@@ -4,7 +4,7 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>7.15</version>
+        <version>7.16-SNAPSHOT</version>
     </parent>
     <artifactId>feedback-web</artifactId>
     <description>optionfactory-spring feedback web</description>
