@@ -1,0 +1,44 @@
+package net.optionfactory.spring.csp;
+
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.web.header.HeaderWriter;
+
+public class StrictContentSecurityPolicyHeaderWriter implements HeaderWriter {
+
+    public static final String CONTENT_SECURITY_POLICY_HEADER = "Content-Security-Policy";
+    public static final String CONTENT_SECURITY_POLICY_REPORT_ONLY_HEADER = "Content-Security-Policy-Report-Only";
+
+    public enum ContentSecurityPolicyMode {
+        DISABLE, ENFORCE, REPORT
+    }
+
+    private final ContentSecurityPolicyMode mode;
+    private final String directives;
+
+    public StrictContentSecurityPolicyHeaderWriter(ContentSecurityPolicyMode mode) {
+        this.mode = mode;
+        this.directives = Stream.of(
+            "object-src 'none'",
+            "script-src 'nonce-{cspnonce}' 'unsafe-inline' 'unsafe-eval' 'strict-dynamic' https: http:",
+            "base-uri 'none'",
+            "report-uri /csp-violations/"        
+        ).collect(Collectors.joining(";"));
+    }
+
+    @Override
+    public void writeHeaders(HttpServletRequest request, HttpServletResponse response) {
+        if (mode == ContentSecurityPolicyMode.DISABLE) {
+            return;
+        }
+        final String header = mode == ContentSecurityPolicyMode.ENFORCE ? CONTENT_SECURITY_POLICY_HEADER : CONTENT_SECURITY_POLICY_REPORT_ONLY_HEADER;
+        final String cspnonce = (String) request.getAttribute("cspnonce");
+        if (cspnonce == null) {
+            throw new IllegalStateException("cspnonce filter is not configured");
+        }
+        response.setHeader(header, directives.replace("{cspnonce}", cspnonce));
+    }
+
+}
