@@ -30,7 +30,7 @@ public class EmailMarshallerExamplesTest {
 
         message.htmlBody = "<body>this email contains an inline image: <img src='cid:1234'>, html and test and an attachment<hr></body>";
         message.textBody = "test";
-        message.recipient = "test@example.com";
+        message.recipient = "tèst@example.com";
         message.subject = "test subject";
         message.messageId = UUID.randomUUID().toString();
 
