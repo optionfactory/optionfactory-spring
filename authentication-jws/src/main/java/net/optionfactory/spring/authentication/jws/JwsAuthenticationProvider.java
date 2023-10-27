@@ -46,7 +46,7 @@ public class JwsAuthenticationProvider implements AuthenticationProvider {
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         final BearerToken bearer = (BearerToken) authentication;
-        final Jws<Claims> jws = Jwts.parser().setSigningKey(key).parseClaimsJws(bearer.getCredentials());
+        final Jws<Claims> jws = Jwts.parser().setSigningKey(key).build().parseClaimsJws(bearer.getCredentials());
         final Claims principal = jws.getBody();
         final var authorities = authoritiesMapper.apply(principal);
         final var a = new JwsAuthenticatedToken(bearer.getCredentials(), principal, authorities);
