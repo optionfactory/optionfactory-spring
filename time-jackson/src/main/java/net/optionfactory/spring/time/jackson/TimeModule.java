@@ -15,7 +15,9 @@ import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import net.optionfactory.spring.time.jackson.adapters.InstantFromEpochMillis;
+import net.optionfactory.spring.time.jackson.adapters.InstantFromIsoInstant;
 import net.optionfactory.spring.time.jackson.adapters.InstantToEpochMillis;
+import net.optionfactory.spring.time.jackson.adapters.InstantToIsoInstant;
 import net.optionfactory.spring.time.jackson.adapters.LocalDateAsIsoString;
 import net.optionfactory.spring.time.jackson.adapters.LocalDateFromIsoString;
 import net.optionfactory.spring.time.jackson.adapters.LocalDateTimeAsIsoString;
@@ -37,6 +39,20 @@ import net.optionfactory.spring.time.jackson.adapters.ZonedDateTimeFromIsoString
 
 public class TimeModule extends Module {
 
+    private final boolean instantAsIsoInstant;
+
+    public TimeModule(boolean instantAsIsoInstant) {
+        this.instantAsIsoInstant = instantAsIsoInstant;
+    }
+
+    public static TimeModule withInstantsAsTimestamps() {
+        return new TimeModule(false);
+    }
+
+    public static TimeModule withIsoInstants() {
+        return new TimeModule(true);
+    }
+
     @Override
     public String getModuleName() {
         return "time-module";
@@ -51,19 +67,17 @@ public class TimeModule extends Module {
     public void setupModule(SetupContext sc) {
         final SimpleSerializers ss = new SimpleSerializers();
         final SimpleDeserializers ds = new SimpleDeserializers();
-
-        ss.addSerializer(Instant.class, new InstantToEpochMillis());
-        ds.addDeserializer(Instant.class, new InstantFromEpochMillis());
-
+        ss.addSerializer(Instant.class, instantAsIsoInstant ? new InstantToIsoInstant() : new InstantToEpochMillis());
+        ds.addDeserializer(Instant.class, instantAsIsoInstant ? new InstantFromIsoInstant() : new InstantFromEpochMillis());
         ss.addSerializer(Year.class, new YearAsIsoString());
         ds.addDeserializer(Year.class, new YearFromIsoString());
-        
+
         ss.addSerializer(YearMonth.class, new YearMonthAsIsoString());
         ds.addDeserializer(YearMonth.class, new YearMonthFromIsoString());
-        
+
         ss.addSerializer(MonthDay.class, new MonthDayAsIsoString());
         ds.addDeserializer(MonthDay.class, new MonthDayFromIsoString());
-        
+
         ss.addSerializer(LocalDate.class, new LocalDateAsIsoString());
         ds.addDeserializer(LocalDate.class, new LocalDateFromIsoString());
 

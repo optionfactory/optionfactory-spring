@@ -6,7 +6,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 
 public class ZonedIdsTest {
 
@@ -14,7 +13,7 @@ public class ZonedIdsTest {
 
     public ZonedIdsTest() {
         this.mapper = new ObjectMapper();
-        this.mapper.registerModule(new TimeModule());
+        this.mapper.registerModule(new TimeModule(false));
     }
 
     @Test
