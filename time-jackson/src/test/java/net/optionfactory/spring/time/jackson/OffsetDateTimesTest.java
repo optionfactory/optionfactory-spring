@@ -14,7 +14,7 @@ public class OffsetDateTimesTest {
 
     public OffsetDateTimesTest() {
         this.mapper = new ObjectMapper();
-        this.mapper.registerModule(new TimeModule());
+        this.mapper.registerModule(new TimeModule(false));
     }
 
     @Test
