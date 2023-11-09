@@ -6,6 +6,7 @@ import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import net.optionfactory.spring.upstream.UpstreamInterceptor;
@@ -16,13 +17,15 @@ import net.optionfactory.spring.upstream.UpstreamInterceptor.ResponseContext;
 import net.optionfactory.spring.upstream.UpstreamPort;
 import net.optionfactory.spring.upstream.counters.UpstreamRequestCounter;
 import net.optionfactory.spring.upstream.soap.UpstreamSoapPort.SoapInterceptors;
-import org.apache.http.Header;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.config.SocketConfig;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.protocol.HttpContext;
+import org.apache.hc.client5.http.config.ConnectionConfig;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
+import org.apache.hc.core5.http.EntityDetails;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.HttpResponse;
+import org.apache.hc.core5.http.io.SocketConfig;
+import org.apache.hc.core5.http.protocol.HttpContext;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
@@ -42,8 +45,8 @@ import org.springframework.ws.soap.SoapMessage;
 import org.springframework.ws.soap.SoapVersion;
 import org.springframework.ws.soap.saaj.SaajSoapMessageFactory;
 import org.springframework.ws.transport.context.TransportContextHolder;
+import org.springframework.ws.transport.http.HttpComponents5MessageSender;
 import org.springframework.ws.transport.http.HttpComponentsConnection;
-import org.springframework.ws.transport.http.HttpComponentsMessageSender;
 
 public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
 
@@ -54,22 +57,22 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
     private final ThreadLocal<ExchangeContext<CTX>> callContexts = new ThreadLocal<>();
 
     public UpstreamSoapPort(SoapVersion soapVersion, String upstreamId, UpstreamRequestCounter requestCounter, Resource[] schemas, Class<?> packageToScan, SSLConnectionSocketFactory socketFactory, int connectionTimeoutInMillis, List<ClientInterceptor> additionalInterceptors, List<UpstreamInterceptor<CTX>> interceptors) {
-        final var builder = HttpClientBuilder.create();
-        builder.setSSLSocketFactory(socketFactory);
-
-        final var client = builder
-                .setDefaultRequestConfig(RequestConfig.custom().setConnectTimeout(connectionTimeoutInMillis).build())
+        final var client = HttpClientBuilder.create()
+                .setConnectionManager(PoolingHttpClientConnectionManagerBuilder.create()
+                        .setSSLSocketFactory(socketFactory)
+                        .setDefaultConnectionConfig(ConnectionConfig.custom().setConnectTimeout(5, TimeUnit.SECONDS).build())
                         .setDefaultSocketConfig(SocketConfig.custom().setSoKeepAlive(true).build())
-                .addInterceptorFirst(new HttpComponentsMessageSender.RemoveSoapHeadersInterceptor())
-                .addInterceptorLast((HttpResponse hr, HttpContext hc) -> {
+                        .build())
+                .addRequestInterceptorFirst(new HttpComponents5MessageSender.RemoveSoapHeadersInterceptor())
+                .addResponseInterceptorLast((HttpResponse hr, EntityDetails entity, HttpContext hc) -> {
                     final var headers = new HttpHeaders();
-                    for (Header header : hr.getAllHeaders()) {
+                    for (Header header : hr.getHeaders()) {
                         headers.add(header.getName(), header.getValue());
                     }
                     final ExchangeContext<CTX> ctx = callContexts.get();
                     ctx.response = new ResponseContext();
                     ctx.response.headers = headers;
-                    ctx.response.status = HttpStatus.resolve(hr.getStatusLine().getStatusCode());
+                    ctx.response.status = HttpStatus.resolve(hr.getCode());
                     ctx.response.at = Instant.now();
                     ctx.response.body = null;
                 })
@@ -80,7 +83,7 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
         mf.setSoapVersion(soapVersion);
         initBean(mf);
         inner.setMessageFactory(mf);
-        inner.setMessageSender(new HttpComponentsMessageSender(client));
+        inner.setMessageSender(new HttpComponents5MessageSender(client));
         final var ms = new Jaxb2Marshaller();
         ms.setSchemas(schemas);
         ms.setPackagesToScan(packageToScan.getPackageName());
