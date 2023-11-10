@@ -36,14 +36,14 @@ public class XsdDateTimeToInstantTest {
     public void canMarshalNotNull() throws JAXBException {
         final BeanWithInstant b = new BeanWithInstant();
         b.at = Instant.EPOCH;
-        final String got = Marshalling.marshall(b);
+        final String got = Marshalling.marshal(b);
         final String expected = "<at>1970-01-01T00:00:00Z</at>";
         Assert.assertTrue(String.format("expected to contain: %s, got: %s", expected, got), got.contains(expected));
     }
 
     @Test
     public void canUnmarshalNotNull() throws JAXBException {
-        BeanWithInstant b = Marshalling.unmarshall("<B><at>1970-01-01T00:00:00Z</at></B>", BeanWithInstant.class);
+        BeanWithInstant b = Marshalling.unmarshal("<B><at>1970-01-01T00:00:00Z</at></B>", BeanWithInstant.class);
         Assert.assertEquals(Instant.EPOCH, b.at);
     }
     
@@ -51,18 +51,18 @@ public class XsdDateTimeToInstantTest {
     public void canMarshalNull() throws JAXBException {
         final BeanWithInstant b = new BeanWithInstant();
         b.at = null;
-        final String got = Marshalling.marshall(b);
+        final String got = Marshalling.marshal(b);
         final String expected = "<B/>";
         Assert.assertTrue(String.format("expected to contain: %s, got: %s", expected, got), got.contains(expected));
     }
 
     @Test
     public void canUnmarshalNull() throws JAXBException {
-        BeanWithInstant b1 = Marshalling.unmarshall("<B/>", BeanWithInstant.class);
+        BeanWithInstant b1 = Marshalling.unmarshal("<B/>", BeanWithInstant.class);
         Assert.assertEquals(null, b1.at);
-        BeanWithInstant b2 = Marshalling.unmarshall("<B><at/></B>", BeanWithInstant.class);
+        BeanWithInstant b2 = Marshalling.unmarshal("<B><at/></B>", BeanWithInstant.class);
         Assert.assertEquals(null, b2.at);
-        BeanWithInstant b3 = Marshalling.unmarshall("<B><at xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:nil=\"true\"/></B>", BeanWithInstant.class);
+        BeanWithInstant b3 = Marshalling.unmarshal("<B><at xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:nil=\"true\"/></B>", BeanWithInstant.class);
         Assert.assertEquals(null, b3.at);
         
     }

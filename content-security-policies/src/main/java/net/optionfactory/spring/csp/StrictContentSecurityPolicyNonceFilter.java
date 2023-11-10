@@ -1,11 +1,11 @@
 package net.optionfactory.spring.csp;
 
-import java.io.IOException;
-import java.security.SecureRandom;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.security.SecureRandom;
 import org.springframework.security.crypto.codec.Hex;
 import org.springframework.web.filter.OncePerRequestFilter;
 

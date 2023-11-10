@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Faults</title>
+    </head>
+    <body>
+        <style type="text/css">
+            h1,h2 {
+                font-weight: 400;
+                color: #006347;
+            }
+            h1{
+                text-align: center;
+            }
+            h2{
+                border-bottom: 1px solid #006347;
+            }
+            table {
+                font-family: Arial;
+                max-width: 1000px;
+                width: 100%;
+                margin: 20px auto;
+                padding: 20px;
+                color: #333;
+                box-shadow: 10px 10px 43px 0px rgba(224,224,224,1);
+            }
+            td.key {
+                font-weight: 700;
+                vertical-align: top;
+            }
+            table.heading {
+                color: white;
+                background-color: #006347;
+            }
+            table.alert {
+                border: 3px solid #006347;
+            }
+            pre {
+                border: 1px solid #ccc;
+                margin: 10px 0 10px 20px;
+                padding: 10px;
+                white-space: pre-wrap;
+                background-color: #ffffee;
+                word-break: break-all;
+            }
+        </style>
+        <table class="heading">
+            <tr><td><h1 style="color: white">Test Fault</h1></td></tr>
+            <tr><td>Sono stati rilevati i seguenti errori con le integrazioni esterne:</td></tr>
+        </table>
+        <table data-th-each="fault: ${faults}" class="alert">
+            <tr>
+                <td colspan="2">
+                    <h1>REQUEST [[${fault.bootId()}]].[[${fault.requestId()}]]</h1>            
+                    <h1>Upstream [[${fault.upstreamId()}]]</h1>            
+                </td>
+            </tr>
+            <tbody data-th-remove="tag" data-th-if="${fault.principal() != null}" data-th-with="u=${fault.principal}">
+                <tr><td colspan="2"><h2>USER</h2></td></tr>
+                <tr>
+                    <td class="key" width="250">Id:</td>
+                    <td>[[${u.id}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Username:</td>
+                    <td>[[${u.username}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">First name:</td>
+                    <td>[[${u.firstName}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Last name:</td>
+                    <td>[[${u.lastName}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Email:</td>
+                    <td>[[${u.email}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Taxcode:</td>
+                    <td>[[${u.taxCode}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Mobile number:</td>
+                    <td>[[u.mobileNumber]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Vita:</td>
+                    <td>[[${u.vita}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Danni:</td>
+                    <td>[[${u.danni}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Slave:</td>
+                    <td>[[${u.slave}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Dispositivo:</td>
+                    <td>[[${u.dispositivo}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Admin:</td>
+                    <td>[[${u.admin}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Support Vita:</td>
+                    <td>[[${u.supportVita}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Support Danni:</td>
+                    <td>[[${u.supportDanni}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Fake:</td>
+                    <td>[[${u.fake}]]</td>
+                </tr>
+            </tbody>
+            <tbody data-th-remove="tag" data-th-if="${fault.principal != null && fault.principal.impersonator != null}" data-th-with="u=${fault.principal.impersonator}">
+                <tr><td colspan="2"><h2>IMPERSONATOR</h2></td></tr>            
+                <tr>
+                    <td class="key" width="250">Id:</td>
+                    <td>[[${u.id}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Username:</td>
+                    <td>[[${u.username}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">First name:</td>
+                    <td>[[${u.firstName}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Last name:</td>
+                    <td>[[${u.lastName}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Email:</td>
+                    <td>[[${u.email}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Taxcode:</td>
+                    <td>[[${u.taxCode}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Mobile number:</td>
+                    <td>[[u.mobileNumber]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Vita:</td>
+                    <td>[[${u.vita}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Danni:</td>
+                    <td>[[${u.danni}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Slave:</td>
+                    <td>[[${u.slave}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Dispositivo:</td>
+                    <td>[[${u.dispositivo}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Admin:</td>
+                    <td>[[${u.admin}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Support Vita:</td>
+                    <td>[[${u.supportVita}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Support Danni:</td>
+                    <td>[[${u.supportDanni}]]</td>
+                </tr>
+                <tr>
+                    <td class="key" width="250">Fake:</td>
+                    <td>[[${u.fake}]]</td>
+                </tr>
+            </tbody>
+            <tr><td colspan="2"><h2>REQUEST</h2></td></tr>
+            <tr>
+                <td class="key">REQUEST URI:</td>
+                <td>[[${fault.requestUri()}]]</td>
+            </tr>
+            <tr>
+                <td class="key">SENT AT:</td>
+                <td>[[${fault.requestedAt()}]]</td>
+            </tr>
+            <tr>
+                <td class="key">REQUEST BODY:</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <pre>[[${#bodies.abbreviated(fault.requestBody(), 2048)}]]</pre>
+                </td>
+            </tr>
+            <tr><td colspan="2"><h2>RESPONSE</h2></td></tr>
+            <tr data-th-if="${fault.responseStatus() != null}">
+                <td class="key">HTTP STATUS:</td>
+                <td>[[${fault.responseStatus()}]]</td>
+            </tr>
+            <tr data-th-if="${fault.responseHeaders() != null}">
+                <td class="key">CONTENT-TYPE:</td>
+                <td>[[${fault.responseHeaders().getContentType()}]]</td>
+            </tr>
+            <tr>
+                <td class="key">RECEIVED AT:</td>
+                <td>[[${fault.handledAt()}]]</td>
+            </tr>
+            <tr data-th-if="${fault.responseBody() != null}">
+                <td class="key">RESPONSE BODY:</td>
+                <td></td>
+            </tr>            
+            <tr data-th-if="${fault.responseBody() != null}">
+                <td colspan="2">
+                    <pre>[[${#bodies.abbreviated(fault.responseBody(), 2048)}]]</pre>
+                </td>
+            </tr>
+            <tr data-th-if="${fault.exception() != null}">
+                <td class="key">Exception:</td>
+                <td></td>
+            </tr>            
+            <tr data-th-if="${fault.exception() != null}">
+                <td colspan="2">
+                    <pre>[[${fault.exception().getMessage()}]]</pre>
+                </td>
+            </tr>
+        </table>
+
+    </body>
+</html>

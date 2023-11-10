@@ -1,6 +1,5 @@
 package net.optionfactory.spring.authentication.jws;
 
-import net.optionfactory.spring.authentication.bearer.token.BearerToken;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
@@ -8,6 +7,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import net.optionfactory.spring.authentication.bearer.token.BearerToken;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;

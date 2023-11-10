@@ -5,7 +5,6 @@ import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.metamodel.EntityType;
-import net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
@@ -20,6 +19,7 @@ import net.optionfactory.spring.data.jpa.filtering.filters.InList.RepeatableInLi
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Values;
+import net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter;
 
 /**
  * Filters a property with a set of accepted values. The property type should be

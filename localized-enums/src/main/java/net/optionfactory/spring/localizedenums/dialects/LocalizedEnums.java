@@ -4,9 +4,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import net.optionfactory.spring.localizedenums.EnumKey;
+import net.optionfactory.spring.localizedenums.EnumsLocalizationService;
 import net.optionfactory.spring.localizedenums.LocalizedEnumResponse;
 import org.springframework.context.i18n.LocaleContextHolder;
-import net.optionfactory.spring.localizedenums.EnumsLocalizationService;
 
 public class LocalizedEnums {
 

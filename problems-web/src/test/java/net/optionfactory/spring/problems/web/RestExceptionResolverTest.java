@@ -1,9 +1,9 @@
 package net.optionfactory.spring.problems.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.optionfactory.spring.problems.Problem;
 import java.util.List;
 import net.optionfactory.spring.problems.Failure;
+import net.optionfactory.spring.problems.Problem;
 import net.optionfactory.spring.problems.web.RestExceptionResolver.Options;
 import org.junit.Assert;
 import org.junit.Test;

@@ -1,9 +1,9 @@
 package net.optionfactory.spring.csp;
 
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.springframework.security.web.header.HeaderWriter;
 
 public class StrictContentSecurityPolicyHeaderWriter implements HeaderWriter {

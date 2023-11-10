@@ -6,11 +6,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import net.optionfactory.spring.data.jpa.filtering.filters.InstantCompare.Operator;
-import net.optionfactory.spring.spring.data.jpa.HibernateTestConfig;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.filters.InstantCompare;
+import net.optionfactory.spring.data.jpa.filtering.filters.InstantCompare.Operator;
+import net.optionfactory.spring.spring.data.jpa.HibernateTestConfig;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

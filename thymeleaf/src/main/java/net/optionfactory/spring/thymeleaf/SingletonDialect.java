@@ -1,10 +1,9 @@
 package net.optionfactory.spring.thymeleaf;
 
+import java.util.Set;
 import org.thymeleaf.context.IExpressionContext;
 import org.thymeleaf.dialect.IExpressionObjectDialect;
 import org.thymeleaf.expression.IExpressionObjectFactory;
-
-import java.util.Set;
 
 public class SingletonDialect implements IExpressionObjectDialect {
 

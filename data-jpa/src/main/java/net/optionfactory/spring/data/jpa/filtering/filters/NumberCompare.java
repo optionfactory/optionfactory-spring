@@ -5,7 +5,6 @@ import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.metamodel.EntityType;
-import net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
@@ -22,6 +21,7 @@ import net.optionfactory.spring.data.jpa.filtering.filters.NumberCompare.Repeata
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Values;
+import net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter;
 
 /**
  * Compares a numeric path, either a primitive type (not {@code boolean}) or a

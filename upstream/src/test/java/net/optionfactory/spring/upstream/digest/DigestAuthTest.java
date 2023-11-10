@@ -1,5 +1,6 @@
 package net.optionfactory.spring.upstream.digest;
 
+import net.optionfactory.spring.upstream.auth.digest.DigestAuth;
 import org.junit.Assert;
 import org.junit.Test;
 

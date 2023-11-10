@@ -5,7 +5,6 @@ import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.metamodel.EntityType;
-import net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
@@ -21,6 +20,7 @@ import net.optionfactory.spring.data.jpa.filtering.filters.InEnum.InEnumFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.InEnum.RepeatableInEnum;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
+import net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter;
 
 /**
  * Filters an enum property with a set of accepted values. Filter arguments list

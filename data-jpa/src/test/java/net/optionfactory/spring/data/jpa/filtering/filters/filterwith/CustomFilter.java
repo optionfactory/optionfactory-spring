@@ -9,8 +9,8 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Stream;
 import net.optionfactory.spring.data.jpa.filtering.Filter;
-import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.spring.data.jpa.filtering.filters.Filterable;
+import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterConfiguration;
 
 public class CustomFilter implements Filter {

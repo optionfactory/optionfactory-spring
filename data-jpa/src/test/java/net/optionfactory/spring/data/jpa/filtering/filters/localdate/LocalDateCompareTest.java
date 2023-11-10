@@ -6,15 +6,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import net.optionfactory.spring.data.jpa.filtering.filters.InstantCompare.Operator;
-import net.optionfactory.spring.data.jpa.filtering.filters.instant.EntityForInstant;
-import net.optionfactory.spring.spring.data.jpa.HibernateTestConfig;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.filters.LocalDateCompare;
+import net.optionfactory.spring.spring.data.jpa.HibernateTestConfig;
 import org.junit.Assert;
-import org.junit.Test;
 import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;

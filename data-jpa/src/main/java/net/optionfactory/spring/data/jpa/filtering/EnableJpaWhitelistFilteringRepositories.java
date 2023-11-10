@@ -1,13 +1,12 @@
 package net.optionfactory.spring.data.jpa.filtering;
 
+import java.lang.annotation.*;
 import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.core.annotation.AliasFor;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.jpa.repository.support.JpaRepositoryFactoryBean;
 import org.springframework.data.repository.config.BootstrapMode;
 import org.springframework.data.repository.query.QueryLookupStrategy.Key;
-
-import java.lang.annotation.*;
 
 /**
  * Enable use of JPA repositories extending the
@@ -20,7 +19,7 @@ import java.lang.annotation.*;
         repositoryBaseClass = JpaWhitelistFilteringRepositoryBase.class
 )
 public @interface EnableJpaWhitelistFilteringRepositories {
-
+    
     @AliasFor(annotation = EnableJpaRepositories.class)
     String[] value() default {};
 

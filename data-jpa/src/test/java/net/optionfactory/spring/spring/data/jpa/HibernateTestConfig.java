@@ -10,8 +10,6 @@ import net.optionfactory.spring.data.jpa.hibernate.naming.LowercaseUnderscoreSep
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.model.naming.ImplicitNamingStrategyComponentPathImpl;
 import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.dialect.H2Dialect;
-import org.hibernate.dialect.SimpleDatabaseVersion;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
@@ -28,23 +26,10 @@ import org.springframework.transaction.support.TransactionTemplate;
 @PropertySource(value = "classpath:test.properties")
 public class HibernateTestConfig {
 
-    public static class H2DialectWithBooleanSupport extends H2Dialect {
-
-        public H2DialectWithBooleanSupport() {
-            super(new SimpleDatabaseVersion(2, 1, 214));
-        }
-
-        @Override
-        public String toBooleanValueString(boolean bool) {
-            return bool ? "true" : "false";
-        }
-    }
-
     @Bean
     public SessionFactory entityManagerFactory(DataSource dataSource) {
         final var properties = new Properties();
         properties.put(AvailableSettings.HBM2DDL_AUTO, "update");
-        properties.put(AvailableSettings.DIALECT, H2DialectWithBooleanSupport.class.getName());
         properties.put(AvailableSettings.SHOW_SQL, false);
         properties.put(AvailableSettings.FORMAT_SQL, false);
         properties.put(AvailableSettings.USE_SQL_COMMENTS, false);

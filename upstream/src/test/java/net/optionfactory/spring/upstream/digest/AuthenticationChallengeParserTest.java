@@ -1,6 +1,7 @@
 package net.optionfactory.spring.upstream.digest;
 
-import net.optionfactory.spring.upstream.digest.AuthenticationChallengeParser.AuthenticationChallenge;
+import net.optionfactory.spring.upstream.auth.digest.AuthenticationChallengeParser;
+import net.optionfactory.spring.upstream.auth.digest.AuthenticationChallengeParser.AuthenticationChallenge;
 import org.junit.Assert;
 import org.junit.Test;
 

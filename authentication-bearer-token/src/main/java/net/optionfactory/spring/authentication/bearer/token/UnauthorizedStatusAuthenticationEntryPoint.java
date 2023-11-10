@@ -2,11 +2,10 @@ package net.optionfactory.spring.authentication.bearer.token;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.AuthenticationEntryPoint;
-
 import java.io.IOException;
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.AuthenticationEntryPoint;
 
 /**
  * Suggests the client to use the Bearer token authentication mechanism.

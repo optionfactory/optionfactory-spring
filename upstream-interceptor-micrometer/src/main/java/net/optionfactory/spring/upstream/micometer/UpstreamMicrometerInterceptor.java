@@ -2,37 +2,43 @@ package net.optionfactory.spring.upstream.micometer;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import java.io.IOException;
 import java.time.Duration;
-import net.optionfactory.spring.upstream.UpstreamInterceptor;
-import net.optionfactory.spring.upstream.UpstreamPort.Hints;
+import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
+import org.springframework.http.HttpRequest;
+import org.springframework.http.client.ClientHttpRequestExecution;
+import org.springframework.http.client.ClientHttpResponse;
 
-public class UpstreamMicrometerInterceptor<CTX> implements UpstreamInterceptor<CTX> {
-    
+public class UpstreamMicrometerInterceptor implements UpstreamHttpInterceptor {
+
     private final MeterRegistry metrics;
 
     public UpstreamMicrometerInterceptor(MeterRegistry metrics) {
         this.metrics = metrics;
     }
-    @Override
-    public void remotingSuccess(Hints<CTX> hints, PrepareContext<CTX> prepare, RequestContext request, ResponseContext response) {
-        Timer.builder("upstream_duration_seconds")
-              .tags("upstream", prepare.upstreamId)
-              .tags("endpoint", prepare.endpointId)
-              .tags("response.status", response.status.name())
-              .tags("outcome", "success")
-              .register(metrics)
-              .record(Duration.between(request.at, response.at));
-    }
 
     @Override
-    public void remotingError(Hints<CTX> hints, PrepareContext<CTX> prepare, RequestContext request, ErrorContext error) {
-        Timer.builder("upstream_duration_seconds")
-              .tags("upstream", prepare.upstreamId)
-              .tags("endpoint", prepare.endpointId)
-              .tags("response.status", "NO_RESPONSE")
-              .tags("outcome", "error")
-              .register(metrics)
-              .record(Duration.between(request.at, error.at));
+    public ClientHttpResponse intercept(InvocationContext ctx, HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
+        try {
+            final var response = execution.execute(request, body);
+            Timer.builder("upstream_duration_seconds")
+                    .tags("upstream", ctx.upstreamId())
+                    .tags("endpoint", ctx.method().getName())
+                    .tags("response.status", response.getStatusCode().toString())
+                    .tags("outcome", "success")
+                    .register(metrics)
+                    .record(Duration.between(ctx.requestedAt(), ctx.clock().instant()));
+            return response;
+        } catch (Exception ex) {
+            Timer.builder("upstream_duration_seconds")
+                    .tags("upstream", ctx.upstreamId())
+                    .tags("endpoint", ctx.method().getName())
+                    .tags("response.status", "NO_RESPONSE")
+                    .tags("outcome", "error")
+                    .register(metrics)
+                    .record(Duration.between(ctx.requestedAt(), ctx.clock().instant()));
+            throw ex;
+        }
     }
 
 }

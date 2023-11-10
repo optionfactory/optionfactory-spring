@@ -2,9 +2,7 @@ package net.optionfactory.spring.time.jackson;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.Month;
 import org.junit.Assert;
 import org.junit.Test;
 

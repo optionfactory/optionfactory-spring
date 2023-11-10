@@ -12,14 +12,14 @@ import java.util.stream.Stream;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository.SessionPolicy;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Repositories;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Sorters;
-import org.hibernate.jpa.QueryHints;
+import org.hibernate.jpa.AvailableHints;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.support.JpaEntityInformation;
 import org.springframework.data.jpa.repository.support.SimpleJpaRepository;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.lang.Nullable;
 
 public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> extends SimpleJpaRepository<T, ID> {
@@ -61,7 +61,7 @@ public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> ext
         final AtomicLong counter = new AtomicLong(-1);
         final SessionPolicy policy = new SessionPolicy(entityManager, counter);
         return getQuery(Specification.where(base).and(filter(filters)).and(sort(sort)), Sort.unsorted())
-                .setHint(QueryHints.HINT_FETCH_SIZE, fetchSize)
+                .setHint(AvailableHints.HINT_FETCH_SIZE, fetchSize)
                 .getResultStream()
                 .peek(entity -> counter.incrementAndGet())
                 .map(entity -> callback.apply(policy, entity));

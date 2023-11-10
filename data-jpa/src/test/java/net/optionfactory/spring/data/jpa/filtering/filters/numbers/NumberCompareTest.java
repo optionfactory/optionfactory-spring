@@ -1,11 +1,13 @@
 package net.optionfactory.spring.data.jpa.filtering.filters.numbers;
 
-import net.optionfactory.spring.data.jpa.filtering.filters.LocalDateCompare;
-import net.optionfactory.spring.data.jpa.filtering.filters.localdate.EntityForLocalDate;
-import net.optionfactory.spring.spring.data.jpa.HibernateTestConfig;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.filters.NumberCompare;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequest;
+import net.optionfactory.spring.spring.data.jpa.HibernateTestConfig;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -16,11 +18,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = HibernateTestConfig.class)

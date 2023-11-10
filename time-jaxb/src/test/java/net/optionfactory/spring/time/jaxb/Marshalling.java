@@ -9,7 +9,7 @@ import java.io.StringWriter;
 
 public class Marshalling {
 
-    public static <B> String marshall(B bean) throws JAXBException {
+    public static <B> String marshal(B bean) throws JAXBException {
         final JAXBContext ctx = JAXBContext.newInstance(bean.getClass());
         final Marshaller marshaller = ctx.createMarshaller();
         final StringWriter writer = new StringWriter();
@@ -17,7 +17,7 @@ public class Marshalling {
         return writer.toString();
     }
 
-    public static <B> B unmarshall(String source, Class<B> beanType) throws JAXBException {
+    public static <B> B unmarshal(String source, Class<B> beanType) throws JAXBException {
         final JAXBContext ctx = JAXBContext.newInstance(beanType);
         final Unmarshaller unmarshaller = ctx.createUnmarshaller();
         return (B) unmarshaller.unmarshal(new StringReader(source));        

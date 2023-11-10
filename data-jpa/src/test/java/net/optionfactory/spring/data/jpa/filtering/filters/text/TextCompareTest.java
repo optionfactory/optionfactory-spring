@@ -1,13 +1,10 @@
 package net.optionfactory.spring.data.jpa.filtering.filters.text;
 
 import java.util.Map;
-
-import net.optionfactory.spring.data.jpa.filtering.filters.NumberCompare;
-import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare.Operator;
-import net.optionfactory.spring.data.jpa.filtering.filters.numbers.EntityForNumberCompare;
-import net.optionfactory.spring.spring.data.jpa.HibernateTestConfig;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
+import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare.Operator;
+import net.optionfactory.spring.spring.data.jpa.HibernateTestConfig;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

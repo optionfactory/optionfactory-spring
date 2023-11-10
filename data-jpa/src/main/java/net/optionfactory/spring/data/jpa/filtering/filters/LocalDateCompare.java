@@ -5,7 +5,6 @@ import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.metamodel.EntityType;
-import net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
@@ -18,9 +17,10 @@ import java.util.EnumSet;
 import java.util.stream.Stream;
 import net.optionfactory.spring.data.jpa.filtering.TraversalFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.LocalDateCompare.LocalDateCompareFilter;
-import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.spring.data.jpa.filtering.filters.LocalDateCompare.RepeatableLocalDateCompare;
+import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
+import net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter;
 
 /**
  * Compares a {@link LocalDate} path.The first argument must be a whitelisted

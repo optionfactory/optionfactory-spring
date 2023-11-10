@@ -2,10 +2,9 @@ package net.optionfactory.spring.time.jackson;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.ZoneId;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.time.ZoneId;
 
 public class ZonedIdsTest {
 
