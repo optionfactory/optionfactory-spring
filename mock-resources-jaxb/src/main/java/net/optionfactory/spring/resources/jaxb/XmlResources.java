@@ -23,16 +23,20 @@ public class XmlResources {
     private final Class<?> baseClass;
     private final Path basePath;
 
-    public XmlResources(Class<?> jaxbContextClass, FallbackStrategy strategy, Class<?> baseClass, String basePath) {
-        this.jaxb = context(jaxbContextClass);
+    public XmlResources(JAXBContext jaxbContext, FallbackStrategy strategy, Class<?> baseClass, String basePath) {
+        this.jaxb = jaxbContext;
         this.strategy = strategy;
         this.baseClass = baseClass;
         this.basePath = Path.of(basePath);
     }
 
-    private static JAXBContext context(Class<?> kl) {
+    public static JAXBContext context(Class<?> clazz, Class<?>... more) {
+     final var contextPath = Stream
+                .concat(Stream.of(clazz), Stream.of(more))
+                .map(k -> k.getPackageName())
+                .collect(Collectors.joining(":"));
         try {
-            return JAXBContext.newInstance(kl.getPackageName());
+            return JAXBContext.newInstance(contextPath);
         } catch (JAXBException ex) {
             throw new IllegalStateException(ex);
         }

@@ -14,4 +14,5 @@ public @interface Upstream {
     int connectionTimeout() default 5;
 
     int socketTimeout() default 30;
+    
 }

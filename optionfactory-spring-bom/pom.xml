@@ -98,16 +98,6 @@
             </dependency>
             <dependency>
                 <groupId>net.optionfactory.spring</groupId>
-                <artifactId>upstream-rest</artifactId>
-                <version>${opfa-spring.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>net.optionfactory.spring</groupId>
-                <artifactId>upstream-soap</artifactId>
-                <version>${opfa-spring.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>net.optionfactory.spring</groupId>
                 <artifactId>upstream-interceptor-jjwt</artifactId>
                 <version>${opfa-spring.version}</version>
             </dependency>

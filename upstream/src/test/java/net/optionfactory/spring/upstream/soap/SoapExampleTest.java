@@ -2,6 +2,7 @@ package net.optionfactory.spring.upstream.soap;
 
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.soap.SOAPFault;
+import net.optionfactory.spring.upstream.UpstreamBuilder;
 import net.optionfactory.spring.upstream.log.UpstreamLogging;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
 import net.optionfactory.spring.upstream.soap.calculator.Add;
@@ -15,10 +16,11 @@ public class SoapExampleTest {
 
     @Test
     public void canDoSoap11Call() throws JAXBException {
-        final var client = UpstreamSoapBuilder.create(Protocol.SOAP_1_1, Add.class)
+        final var client = UpstreamBuilder.create(CalculatorClient.class)
+                .soap(Protocol.SOAP_1_1, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
                 .intercept(new UpstreamLogging.Interceptor())
-                .build(CalculatorClient.class);
+                .build();
 
         Add req = new Add();
         req.setIntA(3);
@@ -29,10 +31,12 @@ public class SoapExampleTest {
 
     @Test
     public void canDoSoap12Call() throws JAXBException {
-        final var client = UpstreamSoapBuilder.create(Protocol.SOAP_1_2, Add.class)
+        final var client = UpstreamBuilder
+                .create(CalculatorClient.class)
+                .soap(Protocol.SOAP_1_2, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
                 .intercept(new UpstreamLogging.Interceptor())
-                .build(CalculatorClient.class);
+                .build();
 
         Add req = new Add();
         req.setIntA(3);
@@ -43,10 +47,12 @@ public class SoapExampleTest {
 
     @Test
     public void canReadFault() throws JAXBException {
-        final var client = UpstreamSoapBuilder.create(Protocol.SOAP_1_1, Add.class)
+        final var client = UpstreamBuilder
+                .create(CalculatorClient.class)
+                .soap(Protocol.SOAP_1_1, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
                 .intercept(new UpstreamLogging.Interceptor())
-                .build(CalculatorClient.class);
+                .build();
 
         Add req = new Add();
         req.setIntA(3);

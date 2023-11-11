@@ -61,8 +61,6 @@
         <module>content-security-policies</module>
         <module>email</module>
         <module>upstream</module>
-        <module>upstream-rest</module>
-        <module>upstream-soap</module>
         <module>upstream-interceptor-jjwt</module>
         <module>upstream-interceptor-spring-oauth2</module>
         <module>upstream-interceptor-micrometer</module>

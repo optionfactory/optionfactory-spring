@@ -38,10 +38,6 @@ public class SoapJaxbHttpMessageConverter implements HttpMessageConverter<Object
     private final Protocol protocol;
     private final SoapHeaderWriter headerWriter;
 
-    public interface SoapHeaderWriter {
-
-        public void write(SOAPHeader header);
-    }
 
     public SoapJaxbHttpMessageConverter(Protocol protocol, JAXBContext context, SoapHeaderWriter headerWriter) {
         this.context = context;

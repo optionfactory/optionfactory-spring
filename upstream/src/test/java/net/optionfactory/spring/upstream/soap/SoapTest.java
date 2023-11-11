@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
-import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.SoapHeaderWriter;
+import net.optionfactory.spring.upstream.soap.SoapHeaderWriter;
 import net.optionfactory.spring.upstream.soap.calculator.Add;
 import org.junit.Assert;
 import org.junit.Test;
