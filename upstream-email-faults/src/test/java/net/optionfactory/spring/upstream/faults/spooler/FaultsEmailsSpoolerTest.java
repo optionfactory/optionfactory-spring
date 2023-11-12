@@ -62,7 +62,7 @@ public class FaultsEmailsSpoolerTest {
         }
 
         @Bean
-        public FaultsEmailsSpoolerScheduler spooler(EmailPaths paths, ApplicationEventPublisher publisher) throws IOException {
+        public FaultsEmailsSpoolerScheduler faultsSpooler(EmailPaths paths, ApplicationEventPublisher publisher) throws IOException {
             final var sender = new EmailSenderAndCopyAddresses();
             sender.sender = "test@example.com";
             sender.senderDescription = null;

@@ -5,6 +5,7 @@ import jakarta.xml.bind.JAXBException;
 import jakarta.xml.soap.SOAPFault;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import javax.xml.validation.Schema;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import net.optionfactory.spring.upstream.log.UpstreamLogging;
@@ -14,6 +15,7 @@ import net.optionfactory.spring.upstream.soap.calc.Add;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -24,6 +26,8 @@ public class SoapClientTest {
 
     @Test
     public void canDoSoap11Call() throws JAXBException {
+        final Schema schema = Schemas.load(new ClassPathResource("/calculator/schema.xsd"));
+        
         final var client = UpstreamBuilder.create(CalculatorClient.class)
                 .requestFactory((UpstreamHttpInterceptor.InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
                     final var h = new HttpHeaders();
@@ -40,7 +44,7 @@ public class SoapClientTest {
                                         """;
                     return new MockClientHttpResponse(HttpStatus.OK, HttpStatus.OK.getReasonPhrase(), headers, new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8)));
                 })
-                .soap(Protocol.SOAP_1_1, SoapHeaderWriter.NONE, Add.class)
+                .soap(Protocol.SOAP_1_1, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
                 .intercept(new UpstreamLogging.Interceptor())
                 .build();
@@ -54,6 +58,7 @@ public class SoapClientTest {
 
     @Test
     public void canDoSoap12Call() throws JAXBException {
+        final Schema schema = null;
         final var client = UpstreamBuilder
                 .create(CalculatorClient.class)
                 .requestFactory((UpstreamHttpInterceptor.InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
@@ -71,7 +76,7 @@ public class SoapClientTest {
                                         """;
                     return new MockClientHttpResponse(HttpStatus.OK, HttpStatus.OK.getReasonPhrase(), headers, new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8)));
                 })
-                .soap(Protocol.SOAP_1_2, SoapHeaderWriter.NONE, Add.class)
+                .soap(Protocol.SOAP_1_2, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
                 .intercept(new UpstreamLogging.Interceptor())
                 .build();
@@ -85,6 +90,7 @@ public class SoapClientTest {
 
     @Test
     public void canReadFault() throws JAXBException {
+        final Schema schema = null;        
         final var client = UpstreamBuilder
                 .create(CalculatorClient.class)
                 .requestFactory((UpstreamHttpInterceptor.InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
@@ -104,7 +110,7 @@ public class SoapClientTest {
                                         """;
                     return new MockClientHttpResponse(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(), headers, new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8)));
                 })
-                .soap(Protocol.SOAP_1_1, SoapHeaderWriter.NONE, Add.class)
+                .soap(Protocol.SOAP_1_1, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
                 .intercept(new UpstreamLogging.Interceptor())
                 .build();

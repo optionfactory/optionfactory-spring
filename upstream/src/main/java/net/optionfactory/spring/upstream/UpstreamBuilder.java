@@ -10,6 +10,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.xml.validation.Schema;
 import net.optionfactory.spring.upstream.mocks.MockResourcesUpstreamHttpResponseFactory;
 import net.optionfactory.spring.upstream.mocks.MockUpstreamRequestFactory;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
@@ -34,6 +35,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpResponseFactory;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 public class UpstreamBuilder<T> {
@@ -129,19 +131,19 @@ public class UpstreamBuilder<T> {
         return this;
     }
 
-    public UpstreamBuilder<T> soap(Protocol protocol, SoapHeaderWriter headerWriter, Class<?> clazz, Class<?>... more) {
+    public UpstreamBuilder<T> soap(Protocol protocol, @Nullable Schema schema, @Nullable SoapHeaderWriter headerWriter, Class<?> clazz, Class<?>... more) {
         try {
             final var contextPaths = Stream
                     .concat(Stream.of(clazz), Stream.of(more))
                     .map(k -> k.getPackageName())
                     .collect(Collectors.joining(":"));
-            return soap(protocol, headerWriter, JAXBContext.newInstance(contextPaths));
+            return soap(protocol, schema, headerWriter, JAXBContext.newInstance(contextPaths));
         } catch (JAXBException ex) {
             throw new IllegalStateException(ex);
         }
     }
 
-    public UpstreamBuilder<T> soap(Protocol protocol, SoapHeaderWriter headerWriter, JAXBContext context) {
+    public UpstreamBuilder<T> soap(Protocol protocol, @Nullable Schema schema, @Nullable SoapHeaderWriter headerWriter, JAXBContext context) {
         if (protocol == Protocol.SOAP_1_1) {
             this.interceptors.add(new UpstreamSoapActionInterceptor());
         }
@@ -149,7 +151,7 @@ public class UpstreamBuilder<T> {
             b.messageConverters(c -> {
                 c.clear();
                 c.add(new SoapMessageHttpMessageConverter(protocol));
-                c.add(new SoapJaxbHttpMessageConverter(protocol, context, headerWriter));
+                c.add(new SoapJaxbHttpMessageConverter(protocol, context, schema, headerWriter));
             });
         });
         return this;

@@ -4,8 +4,7 @@ import jakarta.xml.soap.SOAPHeader;
 
 public interface SoapHeaderWriter {
 
-    public static SoapHeaderWriter NONE = (header) -> {
-    };
+    public static SoapHeaderWriter NONE = null;
 
     public void write(SOAPHeader header);
 }
