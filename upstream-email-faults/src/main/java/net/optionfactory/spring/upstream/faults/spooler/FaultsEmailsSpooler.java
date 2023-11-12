@@ -11,7 +11,7 @@ import net.optionfactory.spring.email.EmailPaths;
 import net.optionfactory.spring.email.EmailSenderAndCopyAddresses;
 import net.optionfactory.spring.email.marshaller.EmailMarshaller;
 import net.optionfactory.spring.thymeleaf.SingletonDialect;
-import net.optionfactory.spring.upstream.BodyRendering;
+import net.optionfactory.spring.upstream.rendering.BodyRendering;
 import net.optionfactory.spring.upstream.faults.UpstreamFaults.UpstreamFaultEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

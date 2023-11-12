@@ -10,6 +10,9 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import net.optionfactory.spring.upstream.mocks.MockResourcesUpstreamHttpResponseFactory;
+import net.optionfactory.spring.upstream.mocks.MockUpstreamRequestFactory;
+import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
 import net.optionfactory.spring.upstream.scopes.ThreadLocalScopeHandler;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
@@ -30,12 +33,15 @@ import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
+import net.optionfactory.spring.upstream.mocks.UpstreamHttpResponseFactory;
+import org.springframework.util.Assert;
 
 public class UpstreamBuilder<T> {
 
     protected final List<Consumer<RestClient.Builder>> restClientCustomizers = new ArrayList<>();
     protected final List<UpstreamHttpInterceptor> interceptors = new ArrayList<>();
     protected final List<Consumer<HttpServiceProxyFactory.Builder>> serviceProxyCustomizers = new ArrayList<>();
+    protected UpstreamHttpRequestFactory upstreamRequestFactory;
     protected ClientHttpRequestFactory requestFactory;
     protected final Class<?> klass;
     protected final Upstream conf;
@@ -51,9 +57,62 @@ public class UpstreamBuilder<T> {
         return new UpstreamBuilder(klass);
     }
 
-    public UpstreamBuilder<T> requestFactory(ClientHttpRequestFactory requestFactory) {
-        this.requestFactory = requestFactory;
+    public UpstreamBuilder<T> requestFactoryMockResourcesIf(boolean test) {
+        if (!test) {
+            return this;
+        }
+        return requestFactoryMockResources();
+    }
+
+    public UpstreamBuilder<T> requestFactoryMockResources() {
+        final var factory = new MockResourcesUpstreamHttpResponseFactory();
+        factory.prepare(klass);
+        this.upstreamRequestFactory = new MockUpstreamRequestFactory(factory);
         return this;
+    }
+
+    public UpstreamBuilder<T> requestFactoryIf(boolean test, UpstreamHttpResponseFactory factory) {
+        if (!test) {
+            return this;
+        }
+        return requestFactory(factory);
+    }
+
+    public UpstreamBuilder<T> requestFactory(UpstreamHttpResponseFactory factory) {
+        factory.prepare(klass);
+        this.upstreamRequestFactory = new MockUpstreamRequestFactory(factory);
+        return this;
+    }
+
+    public UpstreamBuilder<T> requestFactoryIf(boolean test, UpstreamHttpRequestFactory factory) {
+        if (!test) {
+            return this;
+        }
+        return requestFactory(factory);
+    }
+
+    public UpstreamBuilder<T> requestFactory(UpstreamHttpRequestFactory factory) {
+        this.upstreamRequestFactory = factory;
+        return this;
+    }
+
+    public UpstreamBuilder<T> requestFactoryIf(boolean test, ClientHttpRequestFactory factory) {
+        if (!test) {
+            return this;
+        }
+        return requestFactory(factory);
+    }
+
+    public UpstreamBuilder<T> requestFactory(ClientHttpRequestFactory factory) {
+        this.requestFactory = factory;
+        return this;
+    }
+
+    public UpstreamBuilder<T> requestFactoryIf(boolean test, LayeredConnectionSocketFactory factory) {
+        if (!test) {
+            return this;
+        }
+        return requestFactory(factory);
     }
 
     public UpstreamBuilder<T> requestFactory(LayeredConnectionSocketFactory sslSocketFactory) {
@@ -130,13 +189,26 @@ public class UpstreamBuilder<T> {
                 return null;
             }
         };
-        final var scopeHandler = new ThreadLocalScopeHandler(upstreamId, principalOrDefault, clockOrDefault);
+        final var endpointNames = Stream.of(klass.getDeclaredMethods())
+                .collect(Collectors.toMap(
+                        m -> m,
+                        m -> m.getAnnotation(UpstreamEndpoint.class) != null ? m.getAnnotation(UpstreamEndpoint.class).value() : m.getName()
+                ));
 
-        final var wrappedRequestFactory = new BufferingClientHttpRequestFactory(requestFactory);
+        final var scopeHandler = new ThreadLocalScopeHandler(upstreamId, principalOrDefault, clockOrDefault, endpointNames);
+        if (requestFactory == null && upstreamRequestFactory == null) {
+            this.requestFactory((LayeredConnectionSocketFactory) null);
+        }
+        Assert.state(upstreamRequestFactory == null || requestFactory == null, "either upstreamRequestFactory or requestFactory must be configured");
+        final var bufferedRequestFactory = new BufferingClientHttpRequestFactory(
+                upstreamRequestFactory != null
+                        ? scopeHandler.adapt(upstreamRequestFactory)
+                        : requestFactory
+        );
 
-        final var rcb = RestClient.builder().requestFactory(wrappedRequestFactory);
+        final var rcb = RestClient.builder().requestFactory(bufferedRequestFactory);
         restClientCustomizers.forEach(c -> c.accept(rcb));
-        final var is = interceptors.stream().peek(i -> i.preprocess(klass, wrappedRequestFactory)).map(scopeHandler::adapt).toList();
+        final var is = interceptors.stream().peek(i -> i.preprocess(klass, bufferedRequestFactory)).map(scopeHandler::adapt).toList();
         rcb.requestInterceptors(ris -> ris.addAll(is));
 
         final List<HttpMessageConverter<?>> messageConverters = new ArrayList<>();

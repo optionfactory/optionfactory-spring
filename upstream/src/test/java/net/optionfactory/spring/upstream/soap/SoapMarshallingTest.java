@@ -9,22 +9,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
-import net.optionfactory.spring.upstream.soap.SoapHeaderWriter;
-import net.optionfactory.spring.upstream.soap.calculator.Add;
+import net.optionfactory.spring.upstream.soap.calc.Add;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpOutputMessage;
 
-public class SoapTest {
+public class SoapMarshallingTest {
 
     @Test
     public void canMarshalAndUnmarshal() throws SOAPException, IOException, JAXBException {
         final var context = JAXBContext.newInstance(Add.class.getPackageName());
         final var req = new Add();
-        req.setIntA(123);
-        req.setIntB(345);
+        req.intA = 123;
+        req.intB = 345;
         final Protocol protocol = Protocol.SOAP_1_2;
         final SoapHeaderWriter headerWriter = null;
         final var c = new SoapJaxbHttpMessageConverter(protocol, context, headerWriter);
@@ -53,8 +52,8 @@ public class SoapTest {
                 return new HttpHeaders();
             }
         });
-        Assert.assertEquals(123, read.getIntA());
-        Assert.assertEquals(345, read.getIntB());
+        Assert.assertEquals(123, read.intA);
+        Assert.assertEquals(345, read.intB);
     }
 
 }

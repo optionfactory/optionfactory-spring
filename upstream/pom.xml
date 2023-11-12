@@ -56,34 +56,14 @@
             <artifactId>jaxb-runtime</artifactId>
         </dependency>              
         <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j2-impl</artifactId>
+            <scope>test</scope>
+        </dependency>                
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.jvnet.jaxb</groupId>
-                <artifactId>jaxb-maven-plugin</artifactId>
-                <version>4.0.0</version>
-                <executions>
-                    <execution>
-                        <id>calculator</id>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                        <configuration>
-                            <schemaDirectory>src/test/resources/calculator/</schemaDirectory>
-                            <bindingDirectory>src/test/resources/calculator/</bindingDirectory>
-                            <bindingIncludes>jaxb-bindings.xml</bindingIncludes>
-                            <schemaIncludes>schema.xsd</schemaIncludes>
-                            <generateDirectory>target/generated-test-sources/calculator</generateDirectory>
-                            <generatePackage>net.optionfactory.spring.upstream.soap.calculator</generatePackage>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 </project>

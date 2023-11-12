@@ -10,6 +10,7 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor.InvocationContext;
@@ -41,6 +42,7 @@ public @interface UpstreamFaults {
             String bootId,
             String upstreamId,
             Object principal,
+            String endpoint,
             Method method,
             Object[] arguments,
             long requestId,
@@ -69,10 +71,12 @@ public @interface UpstreamFaults {
 
         @Override
         public void preprocess(Class<?> k, ClientHttpRequestFactory rf) {
-            final UpstreamFaults defaultAnn = AnnotationUtils.synthesizeAnnotation(UpstreamFaults.class);
+            final var defaultAnn = AnnotationUtils.synthesizeAnnotation(UpstreamFaults.class);
+            final var interfaceAnn = Optional.ofNullable(k.getAnnotation(UpstreamFaults.class));
             for (Method m : k.getDeclaredMethods()) {
-                final UpstreamFaults found = AnnotationUtils.findAnnotation(m, UpstreamFaults.class);
-                final UpstreamFaults ann = found != null ? found : defaultAnn;
+                final var ann = Optional.ofNullable(m.getAnnotation(UpstreamFaults.class))
+                        .or(() -> interfaceAnn)
+                        .orElse(defaultAnn);
                 remotingSuccessConfs.put(m, make(ann.onRemotingSuccess()));
                 remotingErrorConfs.put(m, make(ann.onRemotingError()));
             }
@@ -93,12 +97,13 @@ public @interface UpstreamFaults {
                 final ClientHttpResponse response = execution.execute(request, body);
                 if (remotingSuccessConfs.get(ctx.method()).isFault(ctx, request, body, response)) {
                     publisher.publishEvent(new UpstreamFaultEvent(
-                            ctx.bootId(),
-                            ctx.upstreamId(),
+                            ctx.boot(),
+                            ctx.upstream(),
                             ctx.principal(),
+                            ctx.endpoint(),
                             ctx.method(),
                             ctx.arguments(),
-                            ctx.requestId(),
+                            ctx.request(),
                             ctx.requestedAt(),
                             request.getURI(),
                             request.getMethod(),
@@ -114,12 +119,13 @@ public @interface UpstreamFaults {
             } catch (Exception ex) {
                 if (remotingErrorConfs.get(ctx.method()).isFault(ctx, request, body, ex)) {
                     publisher.publishEvent(new UpstreamFaultEvent(
-                            ctx.bootId(),
-                            ctx.upstreamId(),
+                            ctx.boot(),
+                            ctx.upstream(),
                             ctx.principal(),
+                            ctx.endpoint(),
                             ctx.method(),
                             ctx.arguments(),
-                            ctx.requestId(),
+                            ctx.request(),
                             ctx.requestedAt(),
                             request.getURI(),
                             request.getMethod(),

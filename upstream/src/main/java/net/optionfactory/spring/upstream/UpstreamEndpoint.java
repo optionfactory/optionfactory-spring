@@ -5,14 +5,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface Upstream {
+@Retention(value = RetentionPolicy.RUNTIME)
+@Target(value = ElementType.METHOD)
+public @interface UpstreamEndpoint {
 
-    String value() default "";
-
-    int connectionTimeout() default 5;
-
-    int socketTimeout() default 30;
+    String value();
 
 }

@@ -21,15 +21,16 @@ public interface UpstreamHttpInterceptor {
     }
 
     public static record InvocationContext(
-            String upstreamId,
+            String upstream,
             List<HttpMessageConverter<?>> converters,
             InstantSource clock,
             Instant requestedAt,
+            String endpoint,
             Method method,
             Object[] arguments,
-            String bootId,
+            String boot,
             Object principal,
-            long requestId) {
+            long request) {
 
     }
 }

@@ -58,7 +58,7 @@ public class UpstreamOauthInterceptor<T> implements UpstreamHttpInterceptor {
         try {
             request.getHeaders().set("Authorization", String.format("Bearer %s", provideToken(ctx)));
         } catch (InterruptedException | ExecutionException ex) {
-            throw new IllegalStateException(ex);
+            throw new RestClientException("Authentication failed", ex);
         }
         return execution.execute(request, body);
     }

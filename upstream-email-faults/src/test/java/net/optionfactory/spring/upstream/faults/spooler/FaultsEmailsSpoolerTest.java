@@ -103,6 +103,7 @@ public class FaultsEmailsSpoolerTest {
                 "boot-id",
                 "upstream-id",
                 principal,
+                "endpoint",
                 Object.class.getMethod("toString"),
                 new Object[0],
                 100,

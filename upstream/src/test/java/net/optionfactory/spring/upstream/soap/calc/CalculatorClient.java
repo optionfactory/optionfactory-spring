@@ -1,9 +1,6 @@
-/*
- */
-package net.optionfactory.spring.upstream.soap;
+package net.optionfactory.spring.upstream.soap.calc;
 
-import net.optionfactory.spring.upstream.soap.calculator.Add;
-import net.optionfactory.spring.upstream.soap.calculator.AddResponse;
+import net.optionfactory.spring.upstream.soap.UpstreamSoapAction;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.service.annotation.PostExchange;
 

@@ -27,7 +27,7 @@ public class UpstreamDigestAuthenticationInterceptor implements UpstreamHttpInte
                     response -> response.getFirstHeader("WWW-Authenticate").getValue()
             );
             request.getHeaders().set("Authorization", digestAuth.authHeader(request.getMethod().name(), request.getURI().getPath(), challenge));
-        } catch (IOException ex) {
+        } catch (IOException | RuntimeException ex) {
             throw new RestClientException("Authentication failed", ex);
         }
         return execution.execute(request, body);
