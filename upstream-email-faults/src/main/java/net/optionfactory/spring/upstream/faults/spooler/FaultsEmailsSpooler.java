@@ -9,12 +9,12 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
+
 import net.optionfactory.spring.email.EmailMessage;
 import net.optionfactory.spring.email.EmailPaths;
 import net.optionfactory.spring.email.EmailSenderAndCopyAddresses;
 import net.optionfactory.spring.email.marshaller.EmailMarshaller;
 import net.optionfactory.spring.upstream.UpstreamFaultsSpooler;
-import net.optionfactory.spring.upstream.UpstreamFaultsSpooler.UpstreamFault;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.thymeleaf.TemplateEngine;
