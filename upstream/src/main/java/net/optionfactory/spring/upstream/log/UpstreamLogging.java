@@ -58,21 +58,24 @@ public @interface UpstreamLogging {
         public ClientHttpResponse intercept(InvocationContext ctx, HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
             final var principal = ctx.principal() == null || ctx.principal().toString().isBlank() ? "" : String.format("[user:%s]", ctx.principal());
             final var conf = confs.get(ctx.method());
+
+            final var prefix = "[boot:%s][upstream:%s][ep:%s][req:%s]%s".formatted(ctx.boot(), ctx.upstream(), ctx.endpoint(), ctx.request(), principal);
+
             if (conf.headers()) {
-                logger.info("[upstream:{}][op:req]{}[req:{}.{}][ep:{}] headers: {}", ctx.upstream(), principal, ctx.boot(), ctx.request(), ctx.endpoint(), request.getHeaders());
+                logger.info("{}[t:oh] headers: {}", prefix, request.getHeaders());
             }
-            logger.info("[upstream:{}][op:req]{}[req:{}.{}][ep:{}] method: {} url: {} body: {}", ctx.upstream(), principal, ctx.boot(), ctx.request(), ctx.endpoint(), request.getMethod(), request.getURI(), BodyRendering.render(conf.value(), request.getHeaders().getContentType(), body, conf.infix(), conf.maxSize()));
+            logger.info("{}[t:ob] method: {} url: {} body: {}", prefix, request.getMethod(), request.getURI(), BodyRendering.render(conf.value(), request.getHeaders().getContentType(), body, conf.infix(), conf.maxSize()));
             try {
                 final ClientHttpResponse response = execution.execute(request, body);
                 final var elapsed = Duration.between(ctx.requestedAt(), ctx.clock().instant()).toMillis();
                 if (conf.headers()) {
-                    logger.info("[upstream:{}][op:res]{}[req:{}.{}][ep:{}][ms:{}] headers: {}", ctx.upstream(), principal, ctx.boot(), ctx.request(), ctx.endpoint(), elapsed, response.getHeaders());
+                    logger.info("{}[t:ih][ms:{}] headers: {}", prefix, elapsed, response.getHeaders());
                 }
-                logger.info("[upstream:{}][op:res]{}[req:{}.{}][ep:{}][ms:{}] status: {} type: {} body: {}", ctx.upstream(), principal, ctx.boot(), ctx.request(), ctx.endpoint(), elapsed, response.getStatusCode(), response.getHeaders().getContentType(), BodyRendering.render(conf.value(), response.getHeaders().getContentType(), response.getBody(), conf.infix(), conf.maxSize()));
+                logger.info("{}[t:ib][ms:{}] status: {} type: {} body: {}", prefix, elapsed, response.getStatusCode(), response.getHeaders().getContentType(), BodyRendering.render(conf.value(), response.getHeaders().getContentType(), response.getBody(), conf.infix(), conf.maxSize()));
                 return response;
             } catch (Exception ex) {
                 final var elapsed = Duration.between(ctx.requestedAt(), ctx.clock().instant()).toMillis();
-                logger.info("[upstream:{}][op:res]{}[req:{}.{}][ep:{}][ms:{}] error: {}", ctx.upstream(), principal, ctx.boot(), ctx.request(), ctx.endpoint(), elapsed, ex);
+                logger.info("{}[t:ie][ms:{}] error: {}", prefix, elapsed, ex);
                 throw ex;
             }
         }
