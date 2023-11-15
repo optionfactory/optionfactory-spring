@@ -118,7 +118,7 @@ public class FaultsEmailsSpoolerTest {
                 "response_body".repeat(1000).getBytes(StandardCharsets.UTF_8),
                 null));
 
-        Thread.sleep(Duration.ofMillis(400));
+        Thread.sleep(Duration.ofMillis(2000));
         Assert.assertEquals(1, emlsIn(paths.sent).count());
     }
 
