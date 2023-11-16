@@ -10,6 +10,10 @@ import org.springframework.mail.javamail.JavaMailSenderImpl;
 
 public class JavaMailEmailConnector implements EmailConnector {
 
+    public enum Protocol {
+        PLAIN, TLS, START_TLS_SUPPORTED, START_TLS_REQUIRED;
+    }
+    
     public static class Configuration {
 
         public int connectionTimeoutMs;
@@ -19,11 +23,9 @@ public class JavaMailEmailConnector implements EmailConnector {
         public String host;
         public Optional<SSLSocketFactory> sslSocketFactory;
 
+        public Protocol protocol; 
         public int port;
-        public boolean startTlsEnabled;
-        public boolean startTlsRequired;
-        public boolean useSsl;
-
+        
         public Optional<String> username;
         public Optional<String> password;
 
@@ -57,7 +59,7 @@ public class JavaMailEmailConnector implements EmailConnector {
 
     private static Properties confToProperties(Configuration conf) {
         final var p = new Properties();
-        if (conf.useSsl) {
+        if (conf.protocol == Protocol.TLS) {
             p.setProperty("mail.transport.protocol", "smtps");
             p.setProperty("mail.smtps.connectiontimeout", Integer.toString(conf.connectionTimeoutMs));
             p.setProperty("mail.smtps.timeout", Integer.toString(conf.readTimeoutMs));
@@ -82,13 +84,13 @@ public class JavaMailEmailConnector implements EmailConnector {
         conf.username.ifPresent(username -> {
             p.setProperty("mail.smtp.auth", "true");
         });
-        if (conf.startTlsEnabled) {
+        if (conf.protocol == Protocol.START_TLS_REQUIRED || conf.protocol == Protocol.START_TLS_SUPPORTED) {
             p.setProperty("mail.smtp.starttls.enable", "true");
             p.setProperty("mail.smtp.socketFactory.fallback", "false");
             p.setProperty("mail.smtp.ssl.protocols", "TLSv1.2 TLSv1.3");
             p.setProperty("mail.smtp.ssl.checkserveridentity", "false");
             p.setProperty("mail.smtp.ssl.trust", "*");
-            if (conf.startTlsRequired) {
+            if (conf.protocol == Protocol.START_TLS_REQUIRED) {
                 p.setProperty("mail.smtp.starttls.required", "true");
             }
             conf.sslSocketFactory.ifPresentOrElse(sf -> {
