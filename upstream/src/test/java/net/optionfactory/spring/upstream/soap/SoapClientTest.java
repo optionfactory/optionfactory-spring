@@ -27,12 +27,10 @@ public class SoapClientTest {
     @Test
     public void canDoSoap11Call() throws JAXBException {
         final Schema schema = Schemas.load(new ClassPathResource("/calculator/schema.xsd"));
-        
+
         final var client = UpstreamBuilder.create(CalculatorClient.class)
                 .requestFactory((UpstreamHttpInterceptor.InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
-                    final var h = new HttpHeaders();
-                    h.setContentType(MediaType.TEXT_XML); //Content-Type=[text/xml; charset=utf-8
-                    final var content = """
+                    return MockClientHttpResponse.okUtf8(MediaType.TEXT_XML, """
                                         <?xml version="1.0" encoding="utf-8"?>
                                         <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
                                             <soap:Body>
@@ -41,8 +39,7 @@ public class SoapClientTest {
                                                 </AddResponse>
                                             </soap:Body>
                                         </soap:Envelope>
-                                        """;
-                    return new MockClientHttpResponse(HttpStatus.OK, HttpStatus.OK.getReasonPhrase(), headers, new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8)));
+                                        """);
                 })
                 .soap(Protocol.SOAP_1_1, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
@@ -90,7 +87,7 @@ public class SoapClientTest {
 
     @Test
     public void canReadFault() throws JAXBException {
-        final Schema schema = null;        
+        final Schema schema = null;
         final var client = UpstreamBuilder
                 .create(CalculatorClient.class)
                 .requestFactory((UpstreamHttpInterceptor.InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {

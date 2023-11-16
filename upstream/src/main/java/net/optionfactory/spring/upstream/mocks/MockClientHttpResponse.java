@@ -2,9 +2,13 @@ package net.optionfactory.spring.upstream.mocks;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
 
 public class MockClientHttpResponse implements ClientHttpResponse {
@@ -19,6 +23,16 @@ public class MockClientHttpResponse implements ClientHttpResponse {
         this.statusText = statusText;
         this.headers = headers;
         this.body = body;
+    }
+
+    public static MockClientHttpResponse ok(MediaType mediaType, byte[] content) {
+        final HttpHeaders h = new HttpHeaders();
+        h.setContentType(mediaType);
+        return new MockClientHttpResponse(HttpStatus.OK, HttpStatus.OK.getReasonPhrase(), h, new ByteArrayResource(content));
+    }
+
+    public static MockClientHttpResponse okUtf8(MediaType mediaType, String content) {
+        return ok(mediaType, content.getBytes(StandardCharsets.UTF_8));
     }
 
     @Override

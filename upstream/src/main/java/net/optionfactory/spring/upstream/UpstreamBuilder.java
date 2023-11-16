@@ -1,5 +1,6 @@
 package net.optionfactory.spring.upstream;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import java.time.Duration;
@@ -12,6 +13,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.xml.validation.Schema;
+import net.optionfactory.spring.upstream.caching.FetchMode;
 import net.optionfactory.spring.upstream.mocks.MockResourcesUpstreamHttpResponseFactory;
 import net.optionfactory.spring.upstream.mocks.MockUpstreamRequestFactory;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
@@ -31,6 +33,11 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpResponseFactory;
+import org.springframework.http.converter.ByteArrayHttpMessageConverter;
+import org.springframework.http.converter.ResourceHttpMessageConverter;
+import org.springframework.http.converter.StringHttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.support.AllEncompassingFormHttpMessageConverter;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -148,6 +155,20 @@ public class UpstreamBuilder<T> {
         return this;
     }
 
+    public UpstreamBuilder<T> json(ObjectMapper objectMapper) {
+        restClientCustomizers.add(b -> {
+            b.messageConverters(c -> {
+                c.clear();
+                c.add(new ByteArrayHttpMessageConverter());
+                c.add(new StringHttpMessageConverter());
+                c.add(new ResourceHttpMessageConverter(false));
+                c.add(new AllEncompassingFormHttpMessageConverter());
+                c.add(new MappingJackson2HttpMessageConverter(objectMapper));
+            });
+        });
+        return this;
+    }
+
     public UpstreamBuilder<T> restClient(Consumer<RestClient.Builder> c) {
         restClientCustomizers.add(c);
         return this;
@@ -209,7 +230,8 @@ public class UpstreamBuilder<T> {
             messageConverters.addAll(mcs);
         });
 
-        final var serviceProxyFactoryBuilder = HttpServiceProxyFactory.builder().exchangeAdapter(RestClientAdapter.create(rcb.build()));
+        final var serviceProxyFactoryBuilder = HttpServiceProxyFactory.builderFor(RestClientAdapter.create(rcb.build()));
+        serviceProxyFactoryBuilder.customArgumentResolver(new FetchMode.ArgumentResolver());
         serviceProxyCustomizers.forEach(c -> c.accept(serviceProxyFactoryBuilder));
 
         final var client = serviceProxyFactoryBuilder.build().createClient(klass);
