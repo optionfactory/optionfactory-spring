@@ -65,6 +65,7 @@
         <module>upstream-interceptor-spring-oauth2</module>
         <module>upstream-interceptor-micrometer</module>
         <module>upstream-email-faults</module>
+        <module>upstream-legacy</module>
         <module>validators</module>
         <module>thymeleaf</module>
         <module>localized-enums</module>

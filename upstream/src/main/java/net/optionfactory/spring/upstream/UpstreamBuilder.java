@@ -2,10 +2,11 @@ package net.optionfactory.spring.upstream;
 
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
+import java.time.Duration;
 import java.time.InstantSource;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -20,16 +21,11 @@ import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Proto
 import net.optionfactory.spring.upstream.soap.SoapHeaderWriter;
 import net.optionfactory.spring.upstream.soap.SoapMessageHttpMessageConverter;
 import net.optionfactory.spring.upstream.soap.UpstreamSoapActionInterceptor;
-import org.apache.hc.client5.http.config.ConnectionConfig;
-import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
-import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.socket.LayeredConnectionSocketFactory;
-import org.apache.hc.core5.http.io.SocketConfig;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestFactory;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
@@ -118,16 +114,11 @@ public class UpstreamBuilder<T> {
     }
 
     public UpstreamBuilder<T> requestFactory(LayeredConnectionSocketFactory sslSocketFactory) {
-        final var httpClientBuilder = HttpClientBuilder.create()
-                .setConnectionManager(PoolingHttpClientConnectionManagerBuilder.create()
-                        .setSSLSocketFactory(sslSocketFactory)
-                        .setDefaultConnectionConfig(ConnectionConfig.custom()
-                                .setConnectTimeout(conf.connectionTimeout(), TimeUnit.SECONDS)
-                                .setSocketTimeout(conf.socketTimeout(), TimeUnit.SECONDS)
-                                .build())
-                        .setDefaultSocketConfig(SocketConfig.custom().setSoKeepAlive(true).build())
-                        .build());
-        this.requestFactory = new HttpComponentsClientHttpRequestFactory(httpClientBuilder.build());
+        this.requestFactory = RequestFactories.create(
+                Duration.of(conf.connectionTimeout(), ChronoUnit.SECONDS),
+                Duration.of(conf.socketTimeout(), ChronoUnit.SECONDS),
+                sslSocketFactory
+        );
         return this;
     }
 
