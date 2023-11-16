@@ -12,8 +12,8 @@ import org.springframework.lang.Nullable;
 
 public class RequestFactories {
 
-    public static HttpComponentsClientHttpRequestFactory create(Duration connectionTimeout, Duration socketTimeout, @Nullable LayeredConnectionSocketFactory sslSocketFactory) {
-        final var httpClientBuilder = HttpClientBuilder.create()
+    public static HttpClientBuilder httpClientBuilder(Duration connectionTimeout, Duration socketTimeout, @Nullable LayeredConnectionSocketFactory sslSocketFactory) {
+        return HttpClientBuilder.create()
                 .setConnectionManager(PoolingHttpClientConnectionManagerBuilder.create()
                         .setSSLSocketFactory(sslSocketFactory)
                         .setDefaultConnectionConfig(ConnectionConfig.custom()
@@ -22,6 +22,10 @@ public class RequestFactories {
                                 .build())
                         .setDefaultSocketConfig(SocketConfig.custom().setSoKeepAlive(true).build())
                         .build());
+    }
+
+    public static HttpComponentsClientHttpRequestFactory create(Duration connectionTimeout, Duration socketTimeout, @Nullable LayeredConnectionSocketFactory sslSocketFactory) {
+        final var httpClientBuilder = httpClientBuilder(connectionTimeout, socketTimeout, sslSocketFactory);
         return new HttpComponentsClientHttpRequestFactory(httpClientBuilder.build());
     }
 }
