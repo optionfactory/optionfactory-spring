@@ -10,9 +10,6 @@ import org.springframework.mail.javamail.JavaMailSenderImpl;
 
 public class JavaMailEmailConnector implements EmailConnector {
 
-    public enum Protocol {
-        PLAIN, TLS, START_TLS_SUPPORTED, START_TLS_REQUIRED;
-    }
     
     public static class Configuration {
 

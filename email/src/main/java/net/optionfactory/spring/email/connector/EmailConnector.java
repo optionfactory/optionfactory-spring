@@ -4,6 +4,10 @@ import org.springframework.core.io.InputStreamSource;
 
 public interface EmailConnector {
 
+    public enum Protocol {
+        PLAIN, TLS, START_TLS_SUPPORTED, START_TLS_REQUIRED;
+    }
+
     void send(InputStreamSource emlSource);
 
     public static class EmailSendException extends IllegalStateException {
