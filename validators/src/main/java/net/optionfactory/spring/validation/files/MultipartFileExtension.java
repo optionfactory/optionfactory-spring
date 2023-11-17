@@ -19,7 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Documented
 public @interface MultipartFileExtension {
 
-    String message() default "{javax.validation.constraints.MultipartFileExtension.message}";
+    String message() default "{jakarta.validation.constraints.MultipartFileExtension.message}";
 
     String[] types();
 

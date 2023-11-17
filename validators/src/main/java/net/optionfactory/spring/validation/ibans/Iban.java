@@ -21,7 +21,7 @@ import net.optionfactory.spring.validation.ibans.Iban.IbanValidator;
 @Documented
 public @interface Iban {
 
-    String message() default "{javax.validation.constraints.Iban.message}";
+    String message() default "{jakarta.validation.constraints.Iban.message}";
 
     Class<?>[] groups() default {};
 

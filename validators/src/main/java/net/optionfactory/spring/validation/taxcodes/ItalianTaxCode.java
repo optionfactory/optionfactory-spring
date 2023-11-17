@@ -22,7 +22,7 @@ public @interface ItalianTaxCode {
 
     boolean lenient() default false;
 
-    String message() default "{javax.validation.constraints.ItalianTaxCode.message}";
+    String message() default "{jakarta.validation.constraints.ItalianTaxCode.message}";
 
     Class<?>[] groups() default {};
 

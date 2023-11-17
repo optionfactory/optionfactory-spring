@@ -22,7 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Documented
 public @interface MultipartFileContentType {
 
-    String message() default "{javax.validation.constraints.MultipartFileContentType.message}";
+    String message() default "{jakarta.validation.constraints.MultipartFileContentType.message}";
 
     String[] types();
 

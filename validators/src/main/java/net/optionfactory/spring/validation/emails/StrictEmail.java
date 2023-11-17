@@ -19,7 +19,7 @@ public @interface StrictEmail {
     public static final String LOCAL_PART = "[a-zA-Z0-9_]+([+.-][a-zA-Z0-9_]+)*";
     public static final String DOMAIN_PART = "[a-zA-Z]?([a-zA-Z0-9-]+[.])+[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]";
 
-    String message() default "{javax.validation.constraints.StrictEmail.message}";
+    String message() default "{jakarta.validation.constraints.StrictEmail.message}";
 
     Class<?>[] groups() default {};
 

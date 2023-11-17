@@ -24,7 +24,7 @@ public @interface PhoneNumber {
     
     String defaultRegion() default "IT";
 
-    String message() default "{javax.validation.constraints.PhoneNumber.message}";
+    String message() default "{jakarta.validation.constraints.PhoneNumber.message}";
 
     Class<?>[] groups() default {};
 

@@ -18,7 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Documented
 public @interface MultipartFileMaxSize {
 
-    String message() default "{javax.validation.constraints.MultipartFileMaxSize.message}";
+    String message() default "{jakarta.validation.constraints.MultipartFileMaxSize.message}";
 
     long value() default 1;
 
