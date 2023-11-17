@@ -209,7 +209,7 @@ public class UpstreamBuilder<T> {
                         m -> m.getAnnotation(UpstreamEndpoint.class) != null ? m.getAnnotation(UpstreamEndpoint.class).value() : m.getName()
                 ));
 
-        final var scopeHandler = new ThreadLocalScopeHandler(upstreamId, principalOrDefault, clockOrDefault, endpointNames);
+        final var scopeHandler = new ThreadLocalScopeHandler(klass, upstreamId, principalOrDefault, clockOrDefault, endpointNames);
         if (requestFactory == null && upstreamRequestFactory == null) {
             this.requestFactory((LayeredConnectionSocketFactory) null);
         }
