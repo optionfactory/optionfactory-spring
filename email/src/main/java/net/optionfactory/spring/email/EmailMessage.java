@@ -1,7 +1,9 @@
 package net.optionfactory.spring.email;
 
 import jakarta.mail.internet.InternetAddress;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -9,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import net.optionfactory.spring.email.marshaller.EmailMarshaller;
 import net.optionfactory.spring.email.marshaller.EmailMarshaller.EmailMarshallingException;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -330,6 +333,22 @@ public record EmailMessage(
                     attachments != null ? attachments : List.of(),
                     cids != null ? cids : List.of()
             );
+        }
+
+        public Path marshal(Path path){
+            return new EmailMarshaller().marshal(build(), path);
+        }
+        
+        public byte[] marshal(){
+            return new EmailMarshaller().marshal(build());
+        }
+        
+        public void marshal(OutputStream os){
+            new EmailMarshaller().marshal(build(), os);
+        }
+        
+        public Path marshalToSpool(EmailPaths paths, String prefix) {
+            return new EmailMarshaller().marshalToSpool(build(), paths, prefix);
         }
 
     }

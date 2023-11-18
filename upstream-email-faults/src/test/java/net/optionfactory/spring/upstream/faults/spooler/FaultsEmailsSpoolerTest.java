@@ -76,7 +76,7 @@ public class FaultsEmailsSpoolerTest {
                     .htmlBodyTemplate("example-email.faults.inlined.html")
                     .prototype();
 
-            final var spooler = new FaultsEmailsSpooler(paths, messagePrototype, "TESTING");
+            final var spooler = new FaultsEmailsSpooler(paths, messagePrototype);
             return new FaultsEmailsSpoolerScheduler(spooler, publisher);
         }
 
