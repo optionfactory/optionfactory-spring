@@ -14,6 +14,7 @@ import net.optionfactory.spring.email.EmailPaths;
 import net.optionfactory.spring.email.EmailSender;
 import net.optionfactory.spring.email.EmailSenderConfiguration;
 import net.optionfactory.spring.email.EmailSenderScheduler;
+import net.optionfactory.spring.thymeleaf.SingletonDialect;
 import net.optionfactory.spring.upstream.faults.UpstreamFaults.UpstreamFaultEvent;
 import net.optionfactory.spring.upstream.faults.spooler.FaultsEmailsSpoolerTest.Conf;
 import org.junit.Assert;
@@ -69,16 +70,13 @@ public class FaultsEmailsSpoolerTest {
             final var messagePrototype = EmailMessage.builder()
                     .sender("test@example.com", null)
                     .recipient("recipient@example.com")
+                    .subjectTemplateEngine()
+                    .subjectTemplate("[{{tag}}] Subject")
+                    .htmlBodyTemplateEngine("/email/", new SingletonDialect("bodies", new FaultBodiesFunctions()))
+                    .htmlBodyTemplate("example-email.faults.inlined.html")
                     .prototype();
 
-            final var spooler = FaultsEmailsSpooler.withDefaultTemplateEngines(
-                    paths,
-                    messagePrototype,
-                    new FaultsEmailsSpooler.SubjectTemplate("subject", ""),
-                    "/email/",
-                    "example-email.faults.inlined.html"
-            );
-
+            final var spooler = new FaultsEmailsSpooler(paths, messagePrototype, "TESTING");
             return new FaultsEmailsSpoolerScheduler(spooler, publisher);
         }
 

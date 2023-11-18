@@ -12,6 +12,11 @@
     <name>${project.groupId}:${project.artifactId}</name>
     <dependencies>
         <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>thymeleaf</artifactId>
+            <version>${project.version}</version>
+        </dependency>                
+        <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
         </dependency>

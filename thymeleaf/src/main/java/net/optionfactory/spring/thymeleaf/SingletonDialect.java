@@ -15,6 +15,10 @@ public class SingletonDialect implements IExpressionObjectDialect {
         this.functions = functions;
     }
 
+    public static SingletonDialect of(String moduleName, Object functions) {
+        return new SingletonDialect(moduleName, functions);
+    }
+
     @Override
     public IExpressionObjectFactory getExpressionObjectFactory() {
         return new IExpressionObjectFactory() {
