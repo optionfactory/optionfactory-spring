@@ -1,11 +1,12 @@
 package net.optionfactory.spring.email.marshaller;
 
+import net.optionfactory.spring.email.AttachmentSource;
+import net.optionfactory.spring.email.CidSource;
 import jakarta.activation.DataHandler;
 import jakarta.activation.DataSource;
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
 import jakarta.mail.Session;
-import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeBodyPart;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
@@ -18,20 +19,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.util.List;
-import java.util.stream.Collectors;
 import net.optionfactory.spring.email.EmailMessage;
 import net.optionfactory.spring.email.EmailPaths;
-import net.optionfactory.spring.email.EmailSenderAndCopyAddresses;
 import org.springframework.core.io.InputStreamSource;
 
 public class EmailMarshaller {
 
-    public Path marshalToSpool(EmailSenderAndCopyAddresses messageConfiguration, EmailMessage emailMessage, List<AttachmentSource> attachments, List<CidSource> cids, EmailPaths paths, String prefix) {
+    public Path marshalToSpool(EmailMessage emailMessage, EmailPaths paths, String prefix) {
         try {
-            final Path tempPath = Files.createTempFile(paths.spool, prefix, ".tmp");
-            marshal(messageConfiguration, emailMessage, attachments, cids, tempPath);
-            final Path targetPath = paths.spool.resolve(tempPath.getFileName().toString().replace(".tmp", ".eml"));
+            final Path tempPath = Files.createTempFile(paths.spool(), prefix, ".tmp");
+            marshal(emailMessage, tempPath);
+            final Path targetPath = paths.spool().resolve(tempPath.getFileName().toString().replace(".tmp", ".eml"));
             Files.move(tempPath, targetPath, StandardCopyOption.ATOMIC_MOVE);
             return targetPath;
         } catch (IOException ex) {
@@ -39,18 +37,18 @@ public class EmailMarshaller {
         }
     }
 
-    public Path marshal(EmailSenderAndCopyAddresses messageConfiguration, EmailMessage emailMessage, List<AttachmentSource> attachments, List<CidSource> cids, Path path) {
+    public Path marshal(EmailMessage emailMessage, Path path) {
         try (final var os = Files.newOutputStream(path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
-            marshal(messageConfiguration, emailMessage, attachments, cids, os);
+            marshal(emailMessage, os);
             return path;
         } catch (IOException ex) {
             throw new EmailMarshallingException(ex.getMessage(), ex);
         }
     }
 
-    public byte[] marshal(EmailSenderAndCopyAddresses addresses, EmailMessage emailMessage, List<AttachmentSource> attachments, List<CidSource> cids) {
+    public byte[] marshal(EmailMessage emailMessage) {
         try (final var baos = new ByteArrayOutputStream()) {
-            marshal(addresses, emailMessage, attachments, cids, baos);
+            marshal(emailMessage, baos);
             return baos.toByteArray();
         } catch (IOException ex) {
             throw new EmailMarshallingException(ex.getMessage(), ex);
@@ -70,41 +68,37 @@ public class EmailMarshaller {
      *     * attachment
      * </code>
      *
-     * @param addresses recipient, ccs, bccs
-     * @param emailMessage the email message to be marshalled
-     * @param attachments resources to be attached
-     * @param cids resources inlined in the html part
+     * @param email the email message to be marshalled
      * @param os the outputStream
      */
-    public void marshal(EmailSenderAndCopyAddresses addresses, EmailMessage emailMessage, List<AttachmentSource> attachments, List<CidSource> cids, OutputStream os) {
+    public void marshal(EmailMessage email, OutputStream os) {
         try {
-            final var message = new PresetMessageIdMimeMessage(emailMessage.messageId);
-            message.setSubject(emailMessage.subject, "UTF-8");
-            final InternetAddress senderInternetAddress = new InternetAddress(addresses.sender, addresses.senderDescription, "UTF-8");
-            message.setFrom(senderInternetAddress);
-            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(emailMessage.recipient, false));
-            message.setRecipients(Message.RecipientType.CC, InternetAddress.parse(addresses.ccAddresses.stream().collect(Collectors.joining(",")), false));
-            message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(addresses.bccAddresses.stream().collect(Collectors.joining(",")), false));
-            message.setReplyTo(new InternetAddress[]{senderInternetAddress});
+            final var message = new PresetMessageIdMimeMessage(email.messageId());
+            message.setSubject(email.subject(), "UTF-8");
+            message.setFrom(email.sender());
+            message.setRecipients(Message.RecipientType.TO, email.recipients());
+            message.setRecipients(Message.RecipientType.CC, email.ccAddresses());
+            message.setRecipients(Message.RecipientType.BCC, email.bccAddresses());
+            message.setReplyTo(email.replyTo());
             final var alternatives = new MimeMultipart("alternative");
 
-            if (emailMessage.textBody != null) {
+            if (email.textBody() != null) {
                 final var textContent = new MimeBodyPart();
-                textContent.setText(emailMessage.textBody, "UTF-8");
+                textContent.setText(email.textBody(), "UTF-8");
                 alternatives.addBodyPart(textContent);
             }
-            if (emailMessage.htmlBody != null) {
+            if (email.htmlBody() != null) {
                 final var related = new MimeMultipart("related");
 
                 final var htmlContent = new MimeBodyPart();
-                htmlContent.setContent(emailMessage.htmlBody, "text/html; charset=utf-8");
+                htmlContent.setContent(email.htmlBody(), "text/html; charset=utf-8");
 
                 related.addBodyPart(htmlContent);
-                for (CidSource cs : cids) {
-                    final var source = new InputStreamSourceDataSource(cs.source, cs.mimeType);
+                for (CidSource cs : email.cids()) {
+                    final var source = new InputStreamSourceDataSource(cs.source(), cs.mimeType());
                     final var mbp = new MimeBodyPart();
                     mbp.setDataHandler(new DataHandler(source));
-                    mbp.setContentID(cs.id);
+                    mbp.setContentID(cs.id());
                     related.addBodyPart(mbp);
                 }
 
@@ -117,11 +111,11 @@ public class EmailMarshaller {
             alternativesAsPart.setContent(alternatives);
             final var textsAndAttachments = new MimeMultipart("mixed");
             textsAndAttachments.addBodyPart(alternativesAsPart);
-            for (AttachmentSource as : attachments) {
-                final var source = new InputStreamSourceDataSource(as.source, as.mimeType);
+            for (AttachmentSource as : email.attachments()) {
+                final var source = new InputStreamSourceDataSource(as.source(), as.mimeType());
                 final var mbp = new MimeBodyPart();
                 mbp.setDataHandler(new DataHandler(source));
-                mbp.setFileName(as.fileName);
+                mbp.setFileName(as.fileName());
                 textsAndAttachments.addBodyPart(mbp);
             }
             message.setContent(textsAndAttachments);
@@ -139,36 +133,7 @@ public class EmailMarshaller {
 
     }
 
-    public static class AttachmentSource {
 
-        public InputStreamSource source;
-        public String fileName;
-        public String mimeType;
-
-        public static AttachmentSource of(InputStreamSource source, String fileName, String mimeType) {
-            final var as = new AttachmentSource();
-            as.source = source;
-            as.fileName = fileName;
-            as.mimeType = mimeType;
-            return as;
-        }
-
-    }
-
-    public static class CidSource {
-
-        public InputStreamSource source;
-        public String id;
-        public String mimeType;
-
-        public static CidSource of(InputStreamSource source, String id, String mimeType) {
-            final var cs = new CidSource();
-            cs.source = source;
-            cs.id = id;
-            cs.mimeType = mimeType;
-            return cs;
-        }
-    }
 
     public static class InputStreamSourceDataSource implements DataSource {
 
@@ -187,7 +152,7 @@ public class EmailMarshaller {
 
         @Override
         public OutputStream getOutputStream() throws IOException {
-            throw new UnsupportedOperationException("cannot get an OutputStrewam from an InputStreamSourceDataSource");
+            throw new UnsupportedOperationException("cannot get an OutputStream from an InputStreamSourceDataSource");
         }
 
         @Override

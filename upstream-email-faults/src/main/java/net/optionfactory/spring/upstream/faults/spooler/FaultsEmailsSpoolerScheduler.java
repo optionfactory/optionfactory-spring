@@ -5,7 +5,7 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
-import net.optionfactory.spring.email.scheduling.EmailSenderScheduler.EmailSpooled;
+import net.optionfactory.spring.email.EmailSenderScheduler.EmailSpooled;
 import net.optionfactory.spring.upstream.faults.UpstreamFaults.UpstreamFaultEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;

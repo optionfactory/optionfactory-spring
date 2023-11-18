@@ -1,14 +1,12 @@
 package net.optionfactory.spring.upstream.faults.spooler;
 
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import net.optionfactory.spring.email.EmailMessage;
 import net.optionfactory.spring.email.EmailPaths;
-import net.optionfactory.spring.email.EmailSenderAndCopyAddresses;
 import net.optionfactory.spring.email.marshaller.EmailMarshaller;
 import net.optionfactory.spring.thymeleaf.SingletonDialect;
 import net.optionfactory.spring.upstream.rendering.BodyRendering;
@@ -27,9 +25,8 @@ public class FaultsEmailsSpooler {
     private final Logger logger = LoggerFactory.getLogger(FaultsEmailsSpooler.class);
 
     private final EmailPaths paths;
-    private final EmailSenderAndCopyAddresses senderAndCopyAddresses;
+    private final EmailMessage.Prototype emailMessagePrototype;
     private final SubjectTemplate subjectTemplate;
-    private final String recipient;
     private final String emailTemplateName;
 
     private final TemplateEngine emailTemplates;
@@ -41,14 +38,17 @@ public class FaultsEmailsSpooler {
 
     }
 
-    public FaultsEmailsSpooler(EmailPaths paths,
-            EmailSenderAndCopyAddresses senderAndCopyAddresses,
+    public FaultsEmailsSpooler(
+            EmailPaths paths,
+            EmailMessage.Prototype emailMessagePrototype,
             SubjectTemplate subjectTemplate,
-            String recipient, String emailTemplateName, TemplateEngine emailTemplates, TemplateEngine stringTemplates) {
+            String emailTemplateName, 
+            TemplateEngine emailTemplates, 
+            TemplateEngine stringTemplates
+    ) {
         this.paths = paths;
-        this.senderAndCopyAddresses = senderAndCopyAddresses;
+        this.emailMessagePrototype = emailMessagePrototype;
         this.subjectTemplate = subjectTemplate;
-        this.recipient = recipient;
         this.emailTemplateName = emailTemplateName;
         this.emailTemplates = emailTemplates;
         this.stringTemplates = stringTemplates;
@@ -62,15 +62,14 @@ public class FaultsEmailsSpooler {
     }
 
     public static FaultsEmailsSpooler withDefaultTemplateEngines(
-            EmailPaths paths, EmailSenderAndCopyAddresses emailSenderConfiguration,
+            EmailPaths paths, EmailMessage.Prototype emailMessagePrototype,
             SubjectTemplate subjectTemplate,
-            String recipient,
             String emailTemplatePrefix,
             String emailTemplateName) {
 
         final var htmlResolver = new ClassLoaderTemplateResolver();
         htmlResolver.setOrder(1);
-        htmlResolver.setResolvablePatterns(Collections.singleton("*.html"));
+        htmlResolver.setResolvablePatterns(Set.of("*.html"));
         htmlResolver.setPrefix(emailTemplatePrefix);
         htmlResolver.setTemplateMode(TemplateMode.HTML);
         htmlResolver.setCharacterEncoding("utf-8");
@@ -88,8 +87,10 @@ public class FaultsEmailsSpooler {
         stringTemplateEngine.addTemplateResolver(stringResolver);
 
         return new FaultsEmailsSpooler(
-                paths, emailSenderConfiguration,
-                subjectTemplate, recipient, emailTemplateName,
+                paths, 
+                emailMessagePrototype,
+                subjectTemplate, 
+                emailTemplateName,
                 emailTemplateEngine,
                 stringTemplateEngine);
     }
@@ -104,16 +105,14 @@ public class FaultsEmailsSpooler {
             if (batch.isEmpty()) {
                 return 0;
             }
-            final var message = new EmailMessage();
             final var context = new Context();
             context.setVariable("faults", batch);
             context.setVariable("tag", subjectTemplate.tag());
-            message.subject = stringTemplates.process(subjectTemplate.template().replace("{", "${"), context);
-            message.htmlBody = emailTemplates.process(emailTemplateName, context);
-            message.textBody = null;
-            message.messageId = Long.toString(Instant.now().toEpochMilli());
-            message.recipient = recipient;
-            final Path p = emailMarshaller.marshalToSpool(senderAndCopyAddresses, message, List.of(), List.of(), paths, "faults.");
+            final var message = emailMessagePrototype.builder()
+                    .subject(stringTemplates.process(subjectTemplate.template().replace("{", "${"), context))
+                    .htmlBody(emailTemplates.process(emailTemplateName, context))
+                    .build();
+            final Path p = emailMarshaller.marshalToSpool(message, paths, "faults.");
             faults.clear();
             logger.info("[spool-emails][faults] spooled {}", p.getFileName());
             return batch.size();

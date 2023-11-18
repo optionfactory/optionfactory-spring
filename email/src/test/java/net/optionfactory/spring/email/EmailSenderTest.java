@@ -1,11 +1,10 @@
-package net.optionfactory.spring.email.connector;
+package net.optionfactory.spring.email;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.UUID;
-import net.optionfactory.spring.email.EmailPaths;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -16,10 +15,17 @@ public class EmailSenderTest {
         final Path sent = Path.of("target/test-sent/sent/");
         final Path spool = Path.of("target/test-sent/spool/");
         final var paths = EmailPaths.provide(spool, sent, null);
-        final EmailConnector connector = null;
-        final var sender = new EmailSender(true, paths, connector, Duration.ofHours(1));
+        final var configuration = EmailSenderConfiguration
+                .builder()
+                .placebo(true)
+                .host("example.com")
+                .port(25)
+                .protocol(EmailSenderConfiguration.Protocol.PLAIN)
+                .deadAfter(Duration.ofHours(1))
+                .build();
+        final var sender = new EmailSender(paths, configuration);
 
-        String filename = String.format("%s.eml", UUID.randomUUID().toString());
+        final var filename = String.format("%s.eml", UUID.randomUUID().toString());
 
         spool.resolve(filename).toFile().createNewFile();
         sender.processSpool();
@@ -32,8 +38,16 @@ public class EmailSenderTest {
         final Path spool = Path.of("target/test-dead/spool/");
         final Path dead = Path.of("target/test-dead/dead/");
         final var paths = EmailPaths.provide(spool, null, dead);
-        final EmailConnector connector = null;
-        final var sender = new EmailSender(true, paths, connector, Duration.ofMillis(100));
+        final var configuration = EmailSenderConfiguration
+                .builder()
+                .placebo(true)
+                .host("example.com")
+                .port(25)
+                .protocol(EmailSenderConfiguration.Protocol.PLAIN)
+                .deadAfter(Duration.ofMillis(100))
+                .build();
+        
+        final var sender = new EmailSender(paths, configuration);
 
         String filename = String.format("%s.eml", UUID.randomUUID().toString());
 

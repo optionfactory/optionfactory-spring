@@ -1,8 +1,7 @@
-package net.optionfactory.spring.email.scheduling;
+package net.optionfactory.spring.email;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
-import net.optionfactory.spring.email.connector.EmailSender;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;

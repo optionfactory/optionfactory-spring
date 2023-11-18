@@ -8,13 +8,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.stream.Stream;
+import net.optionfactory.spring.email.EmailMessage;
 import net.optionfactory.spring.email.EmailPaths;
-import net.optionfactory.spring.email.EmailSenderAndCopyAddresses;
-import net.optionfactory.spring.email.connector.EmailConnector;
-import net.optionfactory.spring.email.connector.EmailSender;
-import net.optionfactory.spring.email.scheduling.EmailSenderScheduler;
+import net.optionfactory.spring.email.EmailSender;
+import net.optionfactory.spring.email.EmailSenderConfiguration;
+import net.optionfactory.spring.email.EmailSenderScheduler;
 import net.optionfactory.spring.upstream.faults.UpstreamFaults.UpstreamFaultEvent;
 import net.optionfactory.spring.upstream.faults.spooler.FaultsEmailsSpoolerTest.Conf;
 import org.junit.Assert;
@@ -56,30 +55,28 @@ public class FaultsEmailsSpoolerTest {
 
         @Bean
         public EmailSenderScheduler sender(EmailPaths paths) {
-            final EmailConnector connector = null;
-            final Duration deadAfter = null;
-            return new EmailSenderScheduler(new EmailSender(true, paths, connector, deadAfter));
+            final var conf = EmailSenderConfiguration.builder()
+                    .placebo(true)
+                    .host("example.com")
+                    .port(25)
+                    .protocol(EmailSenderConfiguration.Protocol.PLAIN)
+                    .build();
+            return new EmailSenderScheduler(new EmailSender(paths, conf));
         }
 
         @Bean
         public FaultsEmailsSpoolerScheduler faultsSpooler(EmailPaths paths, ApplicationEventPublisher publisher) throws IOException {
-            final var sender = new EmailSenderAndCopyAddresses();
-            sender.sender = "test@example.com";
-            sender.senderDescription = null;
-            sender.ccAddresses = List.of();
-            sender.bccAddresses = List.of();
-
-            final var subject = new FaultsEmailsSpooler.SubjectTemplate("subject", "");
-            final var templateName = "example-email.faults.inlined.html";
-            final var recipient = "recipient@example.com";
+            final var messagePrototype = EmailMessage.builder()
+                    .sender("test@example.com", null)
+                    .recipient("recipient@example.com")
+                    .prototype();
 
             final var spooler = FaultsEmailsSpooler.withDefaultTemplateEngines(
                     paths,
-                    sender,
-                    subject,
-                    recipient,
+                    messagePrototype,
+                    new FaultsEmailsSpooler.SubjectTemplate("subject", ""),
                     "/email/",
-                    templateName
+                    "example-email.faults.inlined.html"
             );
 
             return new FaultsEmailsSpoolerScheduler(spooler, publisher);
@@ -94,8 +91,8 @@ public class FaultsEmailsSpoolerTest {
 
     @Test
     public void exampleUsage() throws IOException, ReflectiveOperationException, InterruptedException {
-        emlsIn(paths.spool).forEach(this::delete);
-        emlsIn(paths.sent).forEach(this::delete);
+        emlsIn(paths.spool()).forEach(this::delete);
+        emlsIn(paths.sent()).forEach(this::delete);
 
         final Object principal = null;
 
@@ -118,8 +115,8 @@ public class FaultsEmailsSpoolerTest {
                 "response_body".repeat(1000).getBytes(StandardCharsets.UTF_8),
                 null));
 
-        Thread.sleep(Duration.ofMillis(2000));
-        Assert.assertEquals(1, emlsIn(paths.sent).count());
+        Thread.sleep(Duration.ofMillis(500));
+        Assert.assertEquals(1, emlsIn(paths.sent()).count());
     }
 
     private Stream<Path> emlsIn(Path path) throws IOException {
