@@ -1,55 +1,59 @@
 package net.optionfactory.spring.upstream.faults.spooler;
 
-import java.util.ArrayList;
+import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import net.optionfactory.spring.email.EmailMessage;
 import net.optionfactory.spring.email.EmailPaths;
+import net.optionfactory.spring.email.spooling.BufferedScheduledSpooler;
+import net.optionfactory.spring.email.spooling.Spooler;
 import net.optionfactory.spring.upstream.faults.UpstreamFaults.UpstreamFaultEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.scheduling.TaskScheduler;
 
-public class FaultsEmailsSpooler {
+public class FaultsEmailsSpooler implements Spooler<List<UpstreamFaultEvent>> {
 
     private final Logger logger = LoggerFactory.getLogger(FaultsEmailsSpooler.class);
     private final EmailPaths paths;
     private final EmailMessage.Prototype emailMessagePrototype;
-    private final ConcurrentLinkedQueue<UpstreamFaultEvent> faults = new ConcurrentLinkedQueue<>();
+    private final ApplicationEventPublisher publisher;
 
-    public FaultsEmailsSpooler(EmailPaths paths, EmailMessage.Prototype emailMessagePrototype) {
+    public FaultsEmailsSpooler(EmailPaths paths, EmailMessage.Prototype emailMessagePrototype, ApplicationEventPublisher publisher) {
         this.paths = paths;
         this.emailMessagePrototype = emailMessagePrototype;
+        this.publisher = publisher;
     }
 
-    public void add(UpstreamFaultEvent event) {
-        faults.add(event);
-    }
-
-    public int spool() {
+    @Override
+    public List<Path> spool(List<UpstreamFaultEvent> faults) {
         try {
-            final List<UpstreamFaultEvent> batch = drain();
-            if (batch.isEmpty()) {
-                return 0;
-            }
             final var p = emailMessagePrototype.builder()
-                    .variable("faults", batch)
-                    .marshalToSpool(paths, "faults.");
-            faults.clear();
-            logger.info("[spool-emails][faults] spooled {}", p.getFileName());
-            return batch.size();
-        } catch (Exception ex) {
+                    .variable("faults", faults)
+                    .marshalToSpool(paths, "faults.", publisher);
+            logger.info("[spool-emails][faults] spooled {} with {} faults", p.getFileName(), faults.size());
+            return List.of(p);
+        } catch (RuntimeException ex) {
             logger.warn("[spool-emails][faults] failed to dump email", ex);
-            return 0;
+            return List.of();
         }
     }
 
-    private List<UpstreamFaultEvent> drain() {
-        final List<UpstreamFaultEvent> batch = new ArrayList<>();
-        UpstreamFaultEvent fault;
-        while ((fault = faults.poll()) != null) {
-            batch.add(fault);
-        }
-        return batch;
+    public static BufferedScheduledSpooler<UpstreamFaultEvent> bufferedScheduled(EmailPaths paths, EmailMessage.Prototype emailMessagePrototype, ConfigurableApplicationContext ac, TaskScheduler ts, Duration initialDelay,
+            Duration rate,
+            Duration gracePeriod) {
+        final var spooler = new FaultsEmailsSpooler(paths, emailMessagePrototype, ac);
+        return new BufferedScheduledSpooler<>(
+                UpstreamFaultEvent.class,
+                ac,
+                ts,
+                initialDelay,
+                rate,
+                gracePeriod,
+                spooler
+        );
     }
 
 }

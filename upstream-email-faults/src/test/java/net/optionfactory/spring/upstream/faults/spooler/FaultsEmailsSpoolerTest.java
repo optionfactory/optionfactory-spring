@@ -13,7 +13,8 @@ import net.optionfactory.spring.email.EmailMessage;
 import net.optionfactory.spring.email.EmailPaths;
 import net.optionfactory.spring.email.EmailSender;
 import net.optionfactory.spring.email.EmailSenderConfiguration;
-import net.optionfactory.spring.email.EmailSenderScheduler;
+import net.optionfactory.spring.email.ScheduledEmailSender;
+import net.optionfactory.spring.email.spooling.BufferedScheduledSpooler;
 import net.optionfactory.spring.thymeleaf.SingletonDialect;
 import net.optionfactory.spring.upstream.faults.UpstreamFaults.UpstreamFaultEvent;
 import net.optionfactory.spring.upstream.faults.spooler.FaultsEmailsSpoolerTest.Conf;
@@ -22,6 +23,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -55,29 +57,36 @@ public class FaultsEmailsSpoolerTest {
         }
 
         @Bean
-        public EmailSenderScheduler sender(EmailPaths paths) {
+        public ScheduledEmailSender sender(EmailPaths paths, ConfigurableApplicationContext ac, TaskScheduler ts) {
             final var conf = EmailSenderConfiguration.builder()
                     .placebo(true)
                     .host("example.com")
                     .port(25)
                     .protocol(EmailSenderConfiguration.Protocol.PLAIN)
                     .build();
-            return new EmailSenderScheduler(new EmailSender(paths, conf));
+            return new ScheduledEmailSender(new EmailSender(paths, conf), ac, ts, Duration.ofSeconds(0), Duration.ofSeconds(5));
         }
 
         @Bean
-        public FaultsEmailsSpoolerScheduler faultsSpooler(EmailPaths paths, ApplicationEventPublisher publisher) throws IOException {
+        public BufferedScheduledSpooler<UpstreamFaultEvent> faultsSpooler(EmailPaths paths, ConfigurableApplicationContext ac, TaskScheduler ts) throws IOException {
             final var messagePrototype = EmailMessage.builder()
                     .sender("test@example.com", null)
                     .recipient("recipient@example.com")
-                    .subjectTemplateEngine()
-                    .subjectTemplate("[{{tag}}] Subject")
-                    .htmlBodyTemplateEngine("/email/", new SingletonDialect("bodies", new FaultBodiesFunctions()))
+                    .subject("Subject")
+                    .htmlBodyEngine("/email/", new SingletonDialect("bodies", new FaultBodiesFunctions()))
                     .htmlBodyTemplate("example-email.faults.inlined.html")
                     .prototype();
 
-            final var spooler = new FaultsEmailsSpooler(paths, messagePrototype);
-            return new FaultsEmailsSpoolerScheduler(spooler, publisher);
+            return FaultsEmailsSpooler.bufferedScheduled(
+                    paths,
+                    messagePrototype,
+                    ac,
+                    ts,
+                    Duration.ofSeconds(0),
+                    Duration.ofSeconds(10),
+                    Duration.ofSeconds(10)
+            );
+
         }
 
     }

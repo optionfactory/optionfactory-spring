@@ -11,8 +11,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import net.optionfactory.spring.email.EmailSpooled;
 import net.optionfactory.spring.email.marshaller.EmailMarshaller;
 import net.optionfactory.spring.email.marshaller.EmailMarshaller.EmailMarshallingException;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -22,7 +24,6 @@ import org.thymeleaf.dialect.IDialect;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
-import org.thymeleaf.templateresolver.StringTemplateResolver;
 
 public record EmailMessage(
         @NonNull
@@ -66,18 +67,16 @@ public record EmailMessage(
         private InternetAddress[] ccAddresses;
         private InternetAddress[] bccAddresses;
 
-        private ITemplateEngine subjectTemplateEngine;
-        private String subjectTemplate;
-        private String subjectLiteral;
-        private ITemplateEngine textBodyTemplateEngine;
+        private String subject;
+        private ITemplateEngine textBodyEngine;
         private String textBodyTemplate;
         private String textBodyLiteral;
-        private ITemplateEngine htmlBodyTemplateEngine;
+        private ITemplateEngine htmlBodyEngine;
         private String htmlBodyTemplate;
         private String htmlBodyLiteral;
+
         private List<AttachmentSource> attachments = new ArrayList<>();
         private List<CidSource> cids = new ArrayList<>();
-
         private Map<String, Object> variables = new ConcurrentHashMap<>();
 
         public Builder messageId(String messageId) {
@@ -134,58 +133,18 @@ public record EmailMessage(
             return this;
         }
 
-        public Builder subjectTemplateEngine(IDialect... dialects) {
-            final var resolver = new StringTemplateResolver();
-            resolver.setOrder(1);
-            resolver.setTemplateMode(TemplateMode.TEXT);
-            resolver.setCacheable(true);
-
-            final var engine = new SpringTemplateEngine();
-            engine.addTemplateResolver(resolver);
-            for (IDialect dialect : dialects) {
-                engine.addDialect(dialect);
-            }
-
-            this.subjectTemplateEngine = engine;
-            return this;
-        }
-
-        public Builder subjectTemplateEngine(ITemplateEngine subjectTemplateEngine) {
-            this.subjectTemplateEngine = subjectTemplateEngine;
-            return this;
-        }
-
-        public Builder subjectTemplate(String subjectTemplate) {
-            this.subjectTemplate = subjectTemplate;
-            return this;
-        }
-
         public Builder subject(String subject) {
-            this.subjectLiteral = subject;
+            this.subject = subject;
             return this;
         }
 
-        public Builder textBodyTemplateEngine(String prefix, IDialect... dialects) {
-            final var resolver = new ClassLoaderTemplateResolver();
-            resolver.setOrder(1);
-            resolver.setResolvablePatterns(Set.of("*.txt"));
-            resolver.setPrefix(prefix);
-            resolver.setTemplateMode(TemplateMode.TEXT);
-            resolver.setCharacterEncoding("utf-8");
-            resolver.setCacheable(true);
-
-            final var engine = new SpringTemplateEngine();
-            engine.addTemplateResolver(resolver);
-            for (IDialect dialect : dialects) {
-                engine.addDialect(dialect);
-            }
-
-            this.textBodyTemplateEngine = engine;
+        public Builder textBodyEngine(String prefix, IDialect... dialects) {
+            this.textBodyEngine = createTextEngine(prefix, dialects);
             return this;
         }
 
-        public Builder textBodyTemplateEngine(ITemplateEngine textBodyTemplateEngine) {
-            this.textBodyTemplateEngine = textBodyTemplateEngine;
+        public Builder textBodyEngine(ITemplateEngine textBodyTemplateEngine) {
+            this.textBodyEngine = textBodyTemplateEngine;
             return this;
         }
 
@@ -199,27 +158,13 @@ public record EmailMessage(
             return this;
         }
 
-        public Builder htmlBodyTemplateEngine(String prefix, IDialect... dialects) {
-            final var resolver = new ClassLoaderTemplateResolver();
-            resolver.setOrder(1);
-            resolver.setResolvablePatterns(Set.of("*.html"));
-            resolver.setPrefix(prefix);
-            resolver.setTemplateMode(TemplateMode.HTML);
-            resolver.setCharacterEncoding("utf-8");
-            resolver.setCacheable(true);
-
-            final var engine = new SpringTemplateEngine();
-            engine.addTemplateResolver(resolver);
-            for (IDialect dialect : dialects) {
-                engine.addDialect(dialect);
-            }
-
-            this.htmlBodyTemplateEngine = engine;
+        public Builder htmlBodyEngine(String prefix, IDialect... dialects) {
+            this.htmlBodyEngine = createHtmlEngine(prefix, dialects);
             return this;
         }
 
-        public Builder htmlBodyTemplateEngine(ITemplateEngine htmlBodyTemplateEngine) {
-            this.htmlBodyTemplateEngine = htmlBodyTemplateEngine;
+        public Builder htmlBodyEngine(ITemplateEngine htmlBodyTemplateEngine) {
+            this.htmlBodyEngine = htmlBodyTemplateEngine;
             return this;
         }
 
@@ -277,15 +222,13 @@ public record EmailMessage(
             builder.ccAddresses = ccAddresses;
             builder.bccAddresses = bccAddresses;
 
-            builder.subjectTemplateEngine = subjectTemplateEngine;
-            builder.subjectTemplate = subjectTemplate;
-            builder.subjectLiteral = subjectLiteral;
+            builder.subject = subject;
 
-            builder.textBodyTemplateEngine = textBodyTemplateEngine;
+            builder.textBodyEngine = textBodyEngine;
             builder.textBodyTemplate = textBodyTemplate;
             builder.textBodyLiteral = textBodyLiteral;
 
-            builder.htmlBodyTemplateEngine = htmlBodyTemplateEngine;
+            builder.htmlBodyEngine = htmlBodyEngine;
             builder.htmlBodyTemplate = htmlBodyTemplate;
             builder.htmlBodyLiteral = htmlBodyLiteral;
 
@@ -301,24 +244,55 @@ public record EmailMessage(
             return ctx;
         }
 
+        public static SpringTemplateEngine createTextEngine(String prefix, IDialect... dialects) {
+            final var resolver = new ClassLoaderTemplateResolver();
+            resolver.setOrder(1);
+            resolver.setResolvablePatterns(Set.of("*.txt"));
+            resolver.setPrefix(prefix);
+            resolver.setTemplateMode(TemplateMode.TEXT);
+            resolver.setCharacterEncoding("utf-8");
+            resolver.setCacheable(true);
+
+            final var engine = new SpringTemplateEngine();
+            engine.addTemplateResolver(resolver);
+            for (IDialect dialect : dialects) {
+                engine.addDialect(dialect);
+            }
+            return engine;
+        }
+
+        public static SpringTemplateEngine createHtmlEngine(String prefix, IDialect... dialects) {
+            final var resolver = new ClassLoaderTemplateResolver();
+            resolver.setOrder(1);
+            resolver.setResolvablePatterns(Set.of("*.html"));
+            resolver.setPrefix(prefix);
+            resolver.setTemplateMode(TemplateMode.HTML);
+            resolver.setCharacterEncoding("utf-8");
+            resolver.setCacheable(true);
+
+            final var engine = new SpringTemplateEngine();
+            engine.addTemplateResolver(resolver);
+            for (IDialect dialect : dialects) {
+                engine.addDialect(dialect);
+            }
+            return engine;
+        }
+
         public EmailMessage build() {
             Assert.notNull(sender, "sender must be configured");
             Assert.notNull(recipients, "recipients must be configured");
+            Assert.notNull(subject, "subject must be configured");
 
-            //both template and engine must be configured, otherwise we fallback to literal, which can be null for bodies
-            final var subjectTemplateConfigued = subjectTemplate != null && subjectTemplateEngine != null;
-            final var htmlBodyTemplateConfigured = htmlBodyTemplate != null && htmlBodyTemplateEngine != null;
-            final var textBodyTemplateConfigured = textBodyTemplate != null && textBodyTemplateEngine != null;
+            final var htmlBodyTemplateConfigured = htmlBodyTemplate != null && htmlBodyEngine != null;
+            final var textBodyTemplateConfigured = textBodyTemplate != null && textBodyEngine != null;
 
-            Assert.isTrue(subjectLiteral != null || subjectTemplateConfigued, "at least one of subject,(subjectTemplate,subjectTemplateEngine) must be configured");
             Assert.isTrue(textBodyLiteral != null || htmlBodyLiteral != null || textBodyTemplateConfigured || htmlBodyTemplateConfigured, "at least one of textBody,htmlBody,(textBodyTemplate,textBodyTemplateEngine),(htmlBodyTemplate,htmlBodyTemplateEngine) must be configured");
 
-            final var templated = subjectTemplateConfigued || htmlBodyTemplateConfigured || textBodyTemplateConfigured;
+            final var templated = htmlBodyTemplateConfigured || textBodyTemplateConfigured;
 
             final var context = templated ? makeContext(variables) : null;
-            final var subject = subjectTemplateConfigued ? subjectTemplateEngine.process(subjectTemplate, context) : subjectLiteral;
-            final var htmlBody = htmlBodyTemplateConfigured ? htmlBodyTemplateEngine.process(htmlBodyTemplate, context) : htmlBodyLiteral;
-            final var textBody = textBodyTemplateConfigured ? textBodyTemplateEngine.process(textBodyTemplate, context) : textBodyLiteral;
+            final var htmlBody = htmlBodyTemplateConfigured ? htmlBodyEngine.process(htmlBodyTemplate, context) : htmlBodyLiteral;
+            final var textBody = textBodyTemplateConfigured ? textBodyEngine.process(textBodyTemplate, context) : textBodyLiteral;
 
             return new EmailMessage(
                     messageId != null ? messageId : UUID.randomUUID().toString(),
@@ -335,20 +309,27 @@ public record EmailMessage(
             );
         }
 
-        public Path marshal(Path path){
+        public Path marshal(Path path) {
             return new EmailMarshaller().marshal(build(), path);
         }
-        
-        public byte[] marshal(){
+
+        public byte[] marshal() {
             return new EmailMarshaller().marshal(build());
         }
-        
-        public void marshal(OutputStream os){
+
+        public void marshal(OutputStream os) {
             new EmailMarshaller().marshal(build(), os);
         }
-        
+
         public Path marshalToSpool(EmailPaths paths, String prefix) {
-            return new EmailMarshaller().marshalToSpool(build(), paths, prefix);
+            Path p = new EmailMarshaller().marshalToSpool(build(), paths, prefix);
+            return p;
+        }
+
+        public Path marshalToSpool(EmailPaths paths, String prefix, ApplicationEventPublisher publisher) {
+            Path p = new EmailMarshaller().marshalToSpool(build(), paths, prefix);
+            publisher.publishEvent(new EmailSpooled());
+            return p;
         }
 
     }
