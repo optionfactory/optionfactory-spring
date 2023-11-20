@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Method;
 import java.time.Instant;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import net.optionfactory.spring.upstream.faults.UpstreamFaults.UpstreamFaultEvent;
 import net.optionfactory.spring.upstreamlegacy.UpstreamPort.Hints;
 import net.optionfactory.spring.upstreamlegacy.UpstreamPort.UpstreamFaultPredicate;
@@ -26,6 +24,29 @@ public class UpstreamFaultsInterceptor<CTX> implements UpstreamInterceptor<CTX> 
         }
     }
 
+    public record BootAndRequestId(String boot, long requestId) {
+
+    }
+
+    public static BootAndRequestId adaptToBootAndRequestId(PrepareContext<?> ctx) {
+        if (ctx.requestId == null) {
+            return new BootAndRequestId("0", 0);
+        }
+        final var split = ctx.requestId.split("\\.");
+        if (split.length == 2) {
+            try {
+                return new BootAndRequestId(split[0], Long.parseLong(split[1]));
+            } catch (RuntimeException ex) {
+                return new BootAndRequestId(ctx.requestId, 0);
+            }
+        }
+        try {
+            return new BootAndRequestId("0", Long.parseLong(split[0]));
+        } catch (RuntimeException ex) {
+            return new BootAndRequestId(split[0], 0);
+        }
+    }
+
     @Override
     public void remotingSuccess(Hints<CTX> hints, PrepareContext<CTX> prepare, RequestContext request, ResponseContext response) {
         final UpstreamFaultPredicate<CTX> isFault = hints.isFault != null ? hints.isFault : UpstreamOps::defaultFaultStrategy;
@@ -33,14 +54,16 @@ public class UpstreamFaultsInterceptor<CTX> implements UpstreamInterceptor<CTX> 
             return;
         }
 
+        final var bootAndRequestId = adaptToBootAndRequestId(prepare);
+
         final var evt = new UpstreamFaultEvent(
-                "0",
+                bootAndRequestId.boot(),
                 prepare.upstreamId,
                 prepare.ctx,
                 prepare.endpointId,
                 fakeInvokedMethod, // method
                 new Object[0],
-                0, //prepare.requestId,
+                bootAndRequestId.requestId(),
                 request.at,
                 prepare.entity.getUrl(),
                 prepare.entity.getMethod(),
@@ -65,14 +88,16 @@ public class UpstreamFaultsInterceptor<CTX> implements UpstreamInterceptor<CTX> 
 
     @Override
     public void remotingError(Hints<CTX> hints, PrepareContext<CTX> prepare, RequestContext request, ErrorContext error) {
+        final var bootAndRequestId = adaptToBootAndRequestId(prepare);
+        
         final var evt = new UpstreamFaultEvent(
-                "0",
+                bootAndRequestId.boot(),
                 prepare.upstreamId,
                 prepare.ctx,
                 prepare.endpointId,
                 fakeInvokedMethod, // method
                 new Object[0],
-                0, //prepare.requestId,
+                bootAndRequestId.requestId(),
                 request.at,
                 prepare.entity.getUrl(),
                 prepare.entity.getMethod(),

@@ -52,8 +52,8 @@
         <table data-th-each="fault: ${faults}" class="alert">
             <tr>
                 <td colspan="2">
-                    <h1>REQUEST [[${fault.bootId()}]].[[${fault.requestId()}]]</h1>            
-                    <h1>Upstream [[${fault.upstreamId()}]]</h1>            
+                    <h1>REQUEST [[${fault.boot()}]].[[${fault.requestId()}]]</h1>            
+                    <h1>Upstream [[${fault.upstream()}]]</h1>            
                 </td>
             </tr>
             <tbody data-th-remove="tag" data-th-if="${fault.principal() != null}" data-th-with="u=${fault.principal}">

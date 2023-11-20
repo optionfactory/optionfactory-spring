@@ -39,8 +39,8 @@ public @interface UpstreamFaults {
     Class<? extends OnRemotingError> onRemotingError() default FaultOnRemotingErrorPredicate.class;
 
     public record UpstreamFaultEvent(
-            String bootId,
-            String upstreamId,
+            String boot,
+            String upstream,
             Object principal,
             String endpoint,
             Method method,
