@@ -18,23 +18,9 @@ public class ScheduledEmailSender {
 
     public ScheduledEmailSender(EmailSender sender, ConfigurableApplicationContext applicationContext, TaskScheduler ts, Duration initialDelay, Duration rate) {
         this.sender = sender;
-        final var applicationEventType = ResolvableType.forClassWithGenerics(PayloadApplicationEvent.class, EmailSpooled.class);
-        
-        final var listener = new GenericApplicationListener() {
-            @Override
-            public boolean supportsEventType(ResolvableType eventType) {
-                return applicationEventType.isAssignableFrom(eventType);
-            }
-
-            @Override
-            public void onApplicationEvent(ApplicationEvent event) {
-                ts.schedule(ScheduledEmailSender.this::tryProcessSpool, Instant.now());
-            }
-        };
-        applicationContext.addApplicationListener(listener);
-        ts.scheduleAtFixedRate(this::tryProcessSpool, Instant.now().plus(initialDelay), rate);        
+        applicationContext.addApplicationListener(new ScheduleNowEventListener(EmailSpooled.class, ts, this::tryProcessSpool));
+        ts.scheduleAtFixedRate(this::tryProcessSpool, Instant.now().plus(initialDelay), rate);
     }
-
 
     private void tryProcessSpool() {
         try {
@@ -48,6 +34,29 @@ public class ScheduledEmailSender {
             sender.processSpool();
         } finally {
             lock.unlock();
+        }
+    }
+
+    private static class ScheduleNowEventListener implements GenericApplicationListener {
+
+        private final ResolvableType applicationEventType;
+        private final TaskScheduler ts;
+        private final Runnable runnable;
+
+        public ScheduleNowEventListener(Class<?> eventType, TaskScheduler ts, Runnable runnable) {
+            this.applicationEventType = ResolvableType.forClassWithGenerics(PayloadApplicationEvent.class, eventType);
+            this.ts = ts;
+            this.runnable = runnable;
+        }
+
+        @Override
+        public boolean supportsEventType(ResolvableType eventType) {
+            return applicationEventType.isAssignableFrom(eventType);
+        }
+
+        @Override
+        public void onApplicationEvent(ApplicationEvent event) {
+            ts.schedule(runnable, Instant.now());
         }
     }
 }

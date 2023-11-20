@@ -33,28 +33,7 @@ public class BufferedScheduledSpooler<T> {
             Spooler<List<T>> spooler) {
         this.gracePeriod = gracePeriod;
         this.spooler = spooler;
-        final var applicationEventType = ResolvableType.forClassWithGenerics(PayloadApplicationEvent.class, eventType);
-
-        final var listener = new GenericApplicationListener() {
-            @Override
-            public boolean supportsEventType(ResolvableType eventType) {
-                return applicationEventType.isAssignableFrom(eventType);
-            }
-
-            @Override
-            public void onApplicationEvent(ApplicationEvent event) {
-                final var payload = (T) ((PayloadApplicationEvent) event).getPayload();
-                bufferLock.lock();
-                try {
-                    buffer.add(payload);
-                } finally {
-                    bufferLock.unlock();
-                }
-                ts.schedule(BufferedScheduledSpooler.this::trySpool, Instant.now());
-            }
-        };
-
-        applicationContext.addApplicationListener(listener);
+        applicationContext.addApplicationListener(new AddToBufferAndScheduleNowListener(PayloadApplicationEvent.class, ts));
         ts.scheduleAtFixedRate(this::trySpool, Instant.now().plus(initialDelay), rate);
     }
 
@@ -91,6 +70,34 @@ public class BufferedScheduledSpooler<T> {
             return copy;
         } finally {
             bufferLock.unlock();
+        }
+    }
+
+    private class AddToBufferAndScheduleNowListener implements GenericApplicationListener {
+
+        private final ResolvableType applicationEventType;
+        private final TaskScheduler ts;
+
+        public AddToBufferAndScheduleNowListener(Class<?> eventType, TaskScheduler ts) {
+            this.applicationEventType = ResolvableType.forClassWithGenerics(eventType, eventType);
+            this.ts = ts;
+        }
+
+        @Override
+        public boolean supportsEventType(ResolvableType eventType) {
+            return applicationEventType.isAssignableFrom(eventType);
+        }
+
+        @Override
+        public void onApplicationEvent(ApplicationEvent event) {
+            final var payload = (T) ((PayloadApplicationEvent) event).getPayload();
+            bufferLock.lock();
+            try {
+                buffer.add(payload);
+            } finally {
+                bufferLock.unlock();
+            }
+            ts.schedule(BufferedScheduledSpooler.this::trySpool, Instant.now());
         }
     }
 }
