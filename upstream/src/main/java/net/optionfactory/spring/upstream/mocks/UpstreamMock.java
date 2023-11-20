@@ -7,15 +7,15 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Target(value = ElementType.METHOD)
+@Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(value = RetentionPolicy.RUNTIME)
 @Repeatable(UpstreamMock.List.class)
 @Documented
 public @interface UpstreamMock {
 
     String value();
-//
-    @Target(ElementType.METHOD)
+
+    @Target({ElementType.METHOD, ElementType.TYPE})
     @Retention(RetentionPolicy.RUNTIME)
     @Documented
     public @interface List {

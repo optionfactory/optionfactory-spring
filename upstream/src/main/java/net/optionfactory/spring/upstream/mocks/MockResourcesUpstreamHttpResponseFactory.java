@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import org.springframework.context.expression.MapAccessor;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -42,17 +43,20 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
 
     @Override
     public void prepare(Class<?> klass) {
-        
+
+        final var interfaceConf = klass.getAnnotationsByType(UpstreamMock.class);
+                
         final var defaultContentType = AnnotationUtils.synthesizeAnnotation(UpstreamMockContentType.class);
         final var defaultStatus = AnnotationUtils.synthesizeAnnotation(UpstreamMockStatus.class);
 
         for (Method m : klass.getDeclaredMethods()) {
-            final var annotations = m.getAnnotationsByType(UpstreamMock.class);
-            if (annotations.length == 0) {
+            final var methodConf = m.getAnnotationsByType(UpstreamMock.class);
+            final var conf = Stream.concat(Stream.of(methodConf), Stream.of(interfaceConf)).toArray(i -> new UpstreamMock[i]);
+            if (conf.length == 0) {
                 continue;
             }
             final var expressions = new ArrayList<Expression>();            
-            for (UpstreamMock annotation : annotations) {
+            for (UpstreamMock annotation : conf) {
                 expressions.add(parser.parseExpression(annotation.value(), templateParserContext));
             }
             methodToExpression.put(m, expressions);
