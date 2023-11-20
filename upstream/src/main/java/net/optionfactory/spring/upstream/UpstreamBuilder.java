@@ -231,6 +231,7 @@ public class UpstreamBuilder<T> {
         });
 
         final var serviceProxyFactoryBuilder = HttpServiceProxyFactory.builderFor(RestClientAdapter.create(rcb.build()));
+        serviceProxyFactoryBuilder.customArgumentResolver(new UpstreamPrincipal.ArgumentResolver());
         serviceProxyFactoryBuilder.customArgumentResolver(new FetchMode.ArgumentResolver());
         serviceProxyCustomizers.forEach(c -> c.accept(serviceProxyFactoryBuilder));
 

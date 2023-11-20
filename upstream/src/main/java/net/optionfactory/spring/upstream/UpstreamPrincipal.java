@@ -16,7 +16,7 @@ public @interface UpstreamPrincipal {
 
         @Override
         public boolean resolve(Object argument, MethodParameter parameter, HttpRequestValues.Builder requestValues) {
-            return parameter.getParameterType() == UpstreamPrincipal.class;
+            return parameter.hasParameterAnnotation(UpstreamPrincipal.class);
         }
 
     }
