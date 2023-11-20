@@ -43,22 +43,17 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
     @Override
     public void prepare(Class<?> klass) {
         
-        final var interfaceConf = Optional.ofNullable(klass.getAnnotation(UpstreamMock.class));
-        
         final var defaultContentType = AnnotationUtils.synthesizeAnnotation(UpstreamMockContentType.class);
         final var defaultStatus = AnnotationUtils.synthesizeAnnotation(UpstreamMockStatus.class);
 
         for (Method m : klass.getDeclaredMethods()) {
-            final var conf = Optional.ofNullable(m.getAnnotation(UpstreamMock.class))
-                    .or(() -> interfaceConf)
-                    .orElse(null);
-            if (conf == null) {
+            final var annotations = m.getAnnotationsByType(UpstreamMock.class);
+            if (annotations.length == 0) {
                 continue;
             }
-            final var expressions = new ArrayList<Expression>();
-            expressions.add(parser.parseExpression(conf.value(), templateParserContext));
-            for (String fallback : conf.fallbacks()) {
-                expressions.add(parser.parseExpression(fallback, templateParserContext));
+            final var expressions = new ArrayList<Expression>();            
+            for (UpstreamMock annotation : annotations) {
+                expressions.add(parser.parseExpression(annotation.value(), templateParserContext));
             }
             methodToExpression.put(m, expressions);
 

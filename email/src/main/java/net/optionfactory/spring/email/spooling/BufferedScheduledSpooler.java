@@ -33,7 +33,7 @@ public class BufferedScheduledSpooler<T> {
             Spooler<List<T>> spooler) {
         this.gracePeriod = gracePeriod;
         this.spooler = spooler;
-        applicationContext.addApplicationListener(new AddToBufferAndScheduleNowListener(PayloadApplicationEvent.class, ts));
+        applicationContext.addApplicationListener(new AddToBufferAndScheduleNowListener(eventType, ts));
         ts.scheduleAtFixedRate(this::trySpool, Instant.now().plus(initialDelay), rate);
     }
 
@@ -79,7 +79,7 @@ public class BufferedScheduledSpooler<T> {
         private final TaskScheduler ts;
 
         public AddToBufferAndScheduleNowListener(Class<?> eventType, TaskScheduler ts) {
-            this.applicationEventType = ResolvableType.forClassWithGenerics(eventType, eventType);
+            this.applicationEventType = ResolvableType.forClassWithGenerics(PayloadApplicationEvent.class, eventType);
             this.ts = ts;
         }
 
