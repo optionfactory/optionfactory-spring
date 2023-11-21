@@ -2,6 +2,7 @@ package net.optionfactory.spring.upstream.soap;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
@@ -28,7 +29,7 @@ public class UpstreamSoapActionInterceptor implements UpstreamHttpInterceptor {
     public ClientHttpResponse intercept(InvocationContext ctx, HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
         final var soapAction = soapActions.get(ctx.method());
         if (soapAction != null) {
-            request.getHeaders().set("SOAPAction", soapAction);
+            request.getHeaders().set("SOAPAction", String.format("\"%s\"", soapAction));
         }
         return execution.execute(request, body);
     }
