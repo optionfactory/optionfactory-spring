@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Method;
 import java.time.Instant;
-import net.optionfactory.spring.upstream.faults.UpstreamFaults.UpstreamFaultEvent;
+import net.optionfactory.spring.upstream.faults.UpstreamFaultEvent;
 import net.optionfactory.spring.upstreamlegacy.UpstreamPort.Hints;
 import net.optionfactory.spring.upstreamlegacy.UpstreamPort.UpstreamFaultPredicate;
 import org.springframework.context.ApplicationEventPublisher;
