@@ -1,5 +1,6 @@
 package net.optionfactory.spring.upstream.scopes;
 
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.time.InstantSource;
@@ -15,6 +16,8 @@ import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
+import org.springframework.aop.framework.ReflectiveMethodInvocation;
+import static org.springframework.http.RequestEntity.method;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -53,12 +56,20 @@ public class ThreadLocalScopeHandler implements ScopeHandler {
                 }));
 
         return (MethodInvocation invocation) -> {
+            final var method = invocation.getMethod();
+            if (method.isDefault()) {
+                if (invocation instanceof ReflectiveMethodInvocation rmi) {
+                    return InvocationHandler.invokeDefault(rmi.getProxy(), method, invocation.getArguments());
+                }
+                throw new IllegalStateException("Unexpected method invocation: " + method);
+            }
+
             //return ScopedValue.where(ctx, new UpstreamHttpInterceptor.InvocationContext(...).call(() -> {...});
-            final var eprincipal = Optional.ofNullable(methodToPrincipalParamIndex.get(invocation.getMethod()))
+            final var eprincipal = Optional.ofNullable(methodToPrincipalParamIndex.get(method))
                     .map(i -> invocation.getArguments()[i])
                     .or(() -> Optional.ofNullable(principal.get()))
                     .orElse(null);
-            ctx.set(new UpstreamHttpInterceptor.InvocationContext(upstreamId, converters, clock, clock.instant(), endpointNames.get(invocation.getMethod()), invocation.getMethod(), invocation.getArguments(), BOOT_ID, eprincipal, requestCounter.incrementAndGet()));
+            ctx.set(new UpstreamHttpInterceptor.InvocationContext(upstreamId, converters, clock, clock.instant(), endpointNames.get(method), method, invocation.getArguments(), BOOT_ID, eprincipal, requestCounter.incrementAndGet()));
             try {
                 return invocation.proceed();
             } finally {

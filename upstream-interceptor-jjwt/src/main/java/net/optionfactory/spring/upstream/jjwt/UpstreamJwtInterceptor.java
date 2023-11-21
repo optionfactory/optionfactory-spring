@@ -11,7 +11,7 @@ import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpResponse;
 
-public class UpstreamJwtInterceptor<CTX> implements UpstreamHttpInterceptor {
+public class UpstreamJwtInterceptor implements UpstreamHttpInterceptor {
 
     private final String jwtIssuer;
     private final String jwtSecret;
