@@ -7,7 +7,7 @@ import net.optionfactory.spring.email.EmailMessage;
 import net.optionfactory.spring.email.EmailPaths;
 import net.optionfactory.spring.email.spooling.BufferedScheduledSpooler;
 import net.optionfactory.spring.email.spooling.Spooler;
-import net.optionfactory.spring.upstream.faults.UpstreamFaults.UpstreamFaultEvent;
+import net.optionfactory.spring.upstream.faults.Faults.UpstreamFaultEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;

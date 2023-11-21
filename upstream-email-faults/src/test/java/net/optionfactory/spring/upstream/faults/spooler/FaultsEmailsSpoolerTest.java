@@ -16,7 +16,7 @@ import net.optionfactory.spring.email.EmailSenderConfiguration;
 import net.optionfactory.spring.email.ScheduledEmailSender;
 import net.optionfactory.spring.email.spooling.BufferedScheduledSpooler;
 import net.optionfactory.spring.thymeleaf.SingletonDialect;
-import net.optionfactory.spring.upstream.faults.UpstreamFaults.UpstreamFaultEvent;
+import net.optionfactory.spring.upstream.faults.Faults.UpstreamFaultEvent;
 import net.optionfactory.spring.upstream.faults.spooler.FaultsEmailsSpoolerTest.Conf;
 import org.junit.Assert;
 import org.junit.Test;

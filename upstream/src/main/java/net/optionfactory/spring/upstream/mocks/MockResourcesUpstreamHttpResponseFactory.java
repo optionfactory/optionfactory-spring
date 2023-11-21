@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import org.springframework.context.expression.MapAccessor;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -44,32 +45,32 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
     @Override
     public void prepare(Class<?> klass) {
 
-        final var interfaceConf = klass.getAnnotationsByType(UpstreamMock.class);
+        final var interfaceConf = klass.getAnnotationsByType(Upstream.Mock.class);
                 
-        final var defaultContentType = AnnotationUtils.synthesizeAnnotation(UpstreamMockContentType.class);
-        final var defaultStatus = AnnotationUtils.synthesizeAnnotation(UpstreamMockStatus.class);
+        final var defaultContentType = AnnotationUtils.synthesizeAnnotation(Upstream.MockContentType.class);
+        final var defaultStatus = AnnotationUtils.synthesizeAnnotation(Upstream.MockStatus.class);
 
         for (Method m : klass.getDeclaredMethods()) {
-            final var methodConf = m.getAnnotationsByType(UpstreamMock.class);
-            final var conf = Stream.concat(Stream.of(methodConf), Stream.of(interfaceConf)).toArray(i -> new UpstreamMock[i]);
+            final var methodConf = m.getAnnotationsByType(Upstream.Mock.class);
+            final var conf = Stream.concat(Stream.of(methodConf), Stream.of(interfaceConf)).toArray(i -> new Upstream.Mock[i]);
             if (conf.length == 0) {
                 continue;
             }
             final var expressions = new ArrayList<Expression>();            
-            for (UpstreamMock annotation : conf) {
+            for (Upstream.Mock annotation : conf) {
                 expressions.add(parser.parseExpression(annotation.value(), templateParserContext));
             }
             methodToExpression.put(m, expressions);
 
             final var contentType = Optional
-                    .ofNullable(m.getAnnotation(UpstreamMockContentType.class))
-                    .or(() -> Optional.ofNullable(m.getDeclaringClass().getAnnotation(UpstreamMockContentType.class)))
+                    .ofNullable(m.getAnnotation(Upstream.MockContentType.class))
+                    .or(() -> Optional.ofNullable(m.getDeclaringClass().getAnnotation(Upstream.MockContentType.class)))
                     .orElse(defaultContentType);
 
             methodToContentType.put(m, MediaType.parseMediaType(contentType.value()));
 
-            final var status = Optional.ofNullable(m.getAnnotation(UpstreamMockStatus.class))
-                    .or(() -> Optional.ofNullable(m.getDeclaringClass().getAnnotation(UpstreamMockStatus.class)))
+            final var status = Optional.ofNullable(m.getAnnotation(Upstream.MockStatus.class))
+                    .or(() -> Optional.ofNullable(m.getDeclaringClass().getAnnotation(Upstream.MockStatus.class)))
                     .orElse(defaultStatus);
             methodToStatus.put(m, status.value());
 

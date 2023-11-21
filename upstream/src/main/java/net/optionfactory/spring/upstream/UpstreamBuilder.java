@@ -206,7 +206,7 @@ public class UpstreamBuilder<T> {
         final var endpointNames = Stream.of(klass.getDeclaredMethods())
                 .collect(Collectors.toMap(
                         m -> m,
-                        m -> m.getAnnotation(UpstreamEndpoint.class) != null ? m.getAnnotation(UpstreamEndpoint.class).value() : m.getName()
+                        m -> m.getAnnotation(Upstream.Endpoint.class) != null ? m.getAnnotation(Upstream.Endpoint.class).value() : m.getName()
                 ));
 
         final var scopeHandler = new ThreadLocalScopeHandler(klass, upstreamId, principalOrDefault, clockOrDefault, endpointNames);
@@ -231,8 +231,7 @@ public class UpstreamBuilder<T> {
         });
 
         final var serviceProxyFactoryBuilder = HttpServiceProxyFactory.builderFor(RestClientAdapter.create(rcb.build()));
-        serviceProxyFactoryBuilder.customArgumentResolver(new UpstreamPrincipal.ArgumentResolver());
-        serviceProxyFactoryBuilder.customArgumentResolver(new FetchMode.ArgumentResolver());
+        serviceProxyFactoryBuilder.customArgumentResolver(new Upstream.ArgumentResolver());
         serviceProxyCustomizers.forEach(c -> c.accept(serviceProxyFactoryBuilder));
 
         final var client = serviceProxyFactoryBuilder.build().createClient(klass);

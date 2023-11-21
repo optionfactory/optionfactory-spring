@@ -16,6 +16,7 @@ public class MockClientTest {
             .intercept(new UpstreamLogging.Interceptor())
             .build();
 
+    
     @Test
     public void canUseMockResources() {
         final var got = client.add("a", "b");
