@@ -1,4 +1,4 @@
-package net.optionfactory.spring.email.marshaller;
+package net.optionfactory.spring.email;
 
 import net.optionfactory.spring.email.AttachmentSource;
 import net.optionfactory.spring.email.CidSource;

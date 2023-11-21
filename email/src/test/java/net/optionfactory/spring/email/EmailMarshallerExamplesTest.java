@@ -1,7 +1,6 @@
 package net.optionfactory.spring.email;
 
 import java.nio.file.Path;
-import net.optionfactory.spring.email.marshaller.EmailMarshaller;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
