@@ -30,16 +30,16 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-public class UpstreamOauthInterceptor<T> implements UpstreamInterceptor<T> {
+public class UpstreamLegacyOauthInterceptor<T> implements UpstreamInterceptor<T> {
 
-    private final Logger logger = LoggerFactory.getLogger(UpstreamOauthInterceptor.class);
+    private final Logger logger = LoggerFactory.getLogger(UpstreamLegacyOauthInterceptor.class);
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final AtomicReference<Future<KnownToken>> ft = new AtomicReference<>();
     private final RestTemplate restOauth;
     private final Supplier<Instant> clock;
     private final Function<PrepareContext<T>, RequestEntity<?>> requestFactory;
 
-    public UpstreamOauthInterceptor(SSLConnectionSocketFactory socketFactory, Supplier<Instant> clock, Function<PrepareContext<T>, RequestEntity<?>> requestFactory) {
+    public UpstreamLegacyOauthInterceptor(SSLConnectionSocketFactory socketFactory, Supplier<Instant> clock, Function<PrepareContext<T>, RequestEntity<?>> requestFactory) {
         final var client = HttpClientBuilder.create()
                 .setConnectionManager(PoolingHttpClientConnectionManagerBuilder.create()
                         .setSSLSocketFactory(socketFactory)
@@ -94,7 +94,7 @@ public class UpstreamOauthInterceptor<T> implements UpstreamInterceptor<T> {
         );
     }
 
-    public static UpstreamOauthInterceptor clientCredentials(
+    public static UpstreamLegacyOauthInterceptor clientCredentials(
             String clientId,
             String clientSecret,
             SSLConnectionSocketFactory socketFactory,
@@ -107,10 +107,10 @@ public class UpstreamOauthInterceptor<T> implements UpstreamInterceptor<T> {
         final var formParameters = new LinkedMultiValueMap<String, String>();
         formParameters.add("grant_type", "client_credentials");
         final var re = new RequestEntity<>(formParameters, headers, HttpMethod.POST, tokenUri);
-        return new UpstreamOauthInterceptor(socketFactory, clock, prepareCtx -> re);
+        return new UpstreamLegacyOauthInterceptor(socketFactory, clock, prepareCtx -> re);
     }
 
-    public static UpstreamOauthInterceptor password(
+    public static UpstreamLegacyOauthInterceptor password(
             String clientId,
             String clientSecret,
             SSLConnectionSocketFactory socketFactory,
@@ -124,7 +124,7 @@ public class UpstreamOauthInterceptor<T> implements UpstreamInterceptor<T> {
         oBody.add("grant_type", "password");
         oBody.add("client_id", clientId);
         final var re = new RequestEntity<>(oBody, oHeaders, HttpMethod.POST, tokenUri);
-        return new UpstreamOauthInterceptor(socketFactory, clock, prepareCtx -> re);
+        return new UpstreamLegacyOauthInterceptor(socketFactory, clock, prepareCtx -> re);
     }
 
     public static class KnownToken {

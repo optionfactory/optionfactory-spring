@@ -1,7 +1,7 @@
 package net.optionfactory.spring.upstream.caching;
 
 import net.optionfactory.spring.upstream.UpstreamBuilder;
-import net.optionfactory.spring.upstream.log.UpstreamLogging;
+import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
 import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
 import org.junit.Test;
 import org.springframework.http.MediaType;
@@ -16,7 +16,7 @@ public class FetchModeArgumentResolverTest {
                     return MockClientHttpResponse.okUtf8(MediaType.APPLICATION_JSON, "{}");
                 })
                 .restClient(r -> r.baseUrl("http://example.com"))
-                .intercept(new UpstreamLogging.Interceptor())
+                .intercept(new UpstreamLoggingInterceptor())
                 .build();
 
         client.get("a", FetchMode.ANY);

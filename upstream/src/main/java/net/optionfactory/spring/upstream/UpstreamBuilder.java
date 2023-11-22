@@ -13,6 +13,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.xml.validation.Schema;
+import net.optionfactory.spring.upstream.auth.UpstreamOAuthClientCredentialsInterceptor;
 import net.optionfactory.spring.upstream.caching.FetchMode;
 import net.optionfactory.spring.upstream.mocks.MockResourcesUpstreamHttpResponseFactory;
 import net.optionfactory.spring.upstream.mocks.MockUpstreamRequestFactory;
@@ -172,6 +173,13 @@ public class UpstreamBuilder<T> {
     public UpstreamBuilder<T> restClient(Consumer<RestClient.Builder> c) {
         restClientCustomizers.add(c);
         return this;
+    }
+
+    public UpstreamBuilder<T> interceptIf(boolean test, UpstreamHttpInterceptor interceptor) {
+        if (!test) {
+            return this;
+        }
+        return intercept(interceptor);
     }
 
     public UpstreamBuilder<T> intercept(UpstreamHttpInterceptor interceptor) {

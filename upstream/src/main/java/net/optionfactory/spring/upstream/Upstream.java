@@ -11,6 +11,7 @@ import net.optionfactory.spring.upstream.faults.UpstreamFaultStrategies.FaultOn4
 import net.optionfactory.spring.upstream.faults.UpstreamFaultStrategies.FaultOnRemotingErrorPredicate;
 import net.optionfactory.spring.upstream.faults.UpstreamFaultStrategies.OnRemotingError;
 import net.optionfactory.spring.upstream.faults.UpstreamFaultStrategies.OnRemotingSuccess;
+import net.optionfactory.spring.upstream.rendering.BodyRendering.Strategy;
 import org.springframework.core.MethodParameter;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
@@ -39,6 +40,21 @@ public @interface Upstream {
     public @interface Endpoint {
 
         String value();
+
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.TYPE, ElementType.METHOD})
+    @Documented
+    public @interface Logging {
+
+        Strategy value() default Strategy.ABBREVIATED_COMPACT;
+
+        int maxSize() default 8 * 1024;
+
+        String infix() default "✂️";
+
+        boolean headers() default false;
 
     }
 

@@ -2,7 +2,7 @@ package net.optionfactory.spring.upstream.mocks;
 
 import java.util.Map;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
-import net.optionfactory.spring.upstream.log.UpstreamLogging;
+import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.http.HttpStatus;
@@ -13,7 +13,7 @@ public class MockClientTest {
     private final MockClient client = UpstreamBuilder.create(MockClient.class)
             .requestFactoryMockResources()
             .restClient(r -> r.baseUrl("http://example.com"))
-            .intercept(new UpstreamLogging.Interceptor())
+            .intercept(new UpstreamLoggingInterceptor())
             .build();
 
     

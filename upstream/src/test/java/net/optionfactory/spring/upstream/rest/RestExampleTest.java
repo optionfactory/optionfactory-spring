@@ -4,7 +4,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
-import net.optionfactory.spring.upstream.log.UpstreamLogging;
+import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
 import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
 import org.junit.Assert;
 import org.junit.Test;
@@ -29,7 +29,7 @@ public class RestExampleTest {
                     """;
                     return new MockClientHttpResponse(HttpStatus.OK, HttpStatus.OK.getReasonPhrase(), h, new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8)));
                 })
-                .intercept(new UpstreamLogging.Interceptor())
+                .intercept(new UpstreamLoggingInterceptor())
                 .restClient(r -> r.baseUrl("https://hub.dummyapis.com/statuscode/"))
                 .build();
         final var response = client.ok("asd");
@@ -46,7 +46,7 @@ public class RestExampleTest {
                     final var content = "";
                     return new MockClientHttpResponse(HttpStatus.BAD_REQUEST, HttpStatus.BAD_REQUEST.getReasonPhrase(), h, new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8)));
                 })
-                .intercept(new UpstreamLogging.Interceptor())
+                .intercept(new UpstreamLoggingInterceptor())
                 .restClient(r -> r.baseUrl("https://hub.dummyapis.com/statuscode/"))
                 .build();
         client.error("asd");

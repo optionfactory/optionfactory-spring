@@ -1,7 +1,7 @@
 package net.optionfactory.spring.upstream;
 
 import java.net.URI;
-import net.optionfactory.spring.upstream.log.UpstreamLogging;
+import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
 import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
 import org.junit.Assert;
 import org.junit.Test;
@@ -20,7 +20,7 @@ public class UpstreamParamTest {
                     return MockClientHttpResponse.okUtf8(MediaType.APPLICATION_JSON, "{}");
                 })
                 .restClient(r -> r.baseUrl("http://example.com"))
-                .intercept(new UpstreamLogging.Interceptor())
+                .intercept(new UpstreamLoggingInterceptor())
                 .build()
                 .test("value");
 

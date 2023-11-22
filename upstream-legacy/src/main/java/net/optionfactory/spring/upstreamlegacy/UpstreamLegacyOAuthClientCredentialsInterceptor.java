@@ -20,14 +20,14 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-public class UpstreamOAuthClientCredentialsInterceptor<T> implements UpstreamInterceptor<T> {
+public class UpstreamLegacyOAuthClientCredentialsInterceptor<T> implements UpstreamInterceptor<T> {
 
     private final String clientId;
     private final String clientSecret;
     private final URI tokenUri;
     private final RestTemplate restOauth;
 
-    public UpstreamOAuthClientCredentialsInterceptor(String clientId, String clientSecret, SSLConnectionSocketFactory socketFactory, URI tokenUri) {
+    public UpstreamLegacyOAuthClientCredentialsInterceptor(String clientId, String clientSecret, SSLConnectionSocketFactory socketFactory, URI tokenUri) {
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.tokenUri = tokenUri;

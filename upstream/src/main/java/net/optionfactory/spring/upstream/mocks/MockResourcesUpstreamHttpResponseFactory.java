@@ -46,7 +46,7 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
     public void prepare(Class<?> klass) {
 
         final var interfaceConf = klass.getAnnotationsByType(Upstream.Mock.class);
-                
+
         final var defaultContentType = AnnotationUtils.synthesizeAnnotation(Upstream.MockContentType.class);
         final var defaultStatus = AnnotationUtils.synthesizeAnnotation(Upstream.MockStatus.class);
 
@@ -56,7 +56,7 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
             if (conf.length == 0) {
                 continue;
             }
-            final var expressions = new ArrayList<Expression>();            
+            final var expressions = new ArrayList<Expression>();
             for (Upstream.Mock annotation : conf) {
                 expressions.add(parser.parseExpression(annotation.value(), templateParserContext));
             }
@@ -81,7 +81,7 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
     public ClientHttpResponse create(UpstreamHttpInterceptor.InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) {
         final var expressions = methodToExpression.get(ctx.method());
         if (expressions == null) {
-            throw new RestClientException("mock resource not configured");
+            throw new RestClientException(String.format("mock resource not configured for %s:%s", ctx.upstream(), ctx.endpoint()));
         }
         final var contentType = methodToContentType.get(ctx.method());
         final var status = methodToStatus.get(ctx.method());
@@ -99,7 +99,7 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
             responseHeaders.setContentType(contentType);
             return new MockClientHttpResponse(status, status.getReasonPhrase(), responseHeaders, resource);
         }
-        throw new RestClientException("mock resource not found");
+        throw new RestClientException(String.format("mock resource not found for %s:%s", ctx.upstream(), ctx.endpoint()));
     }
 
 }

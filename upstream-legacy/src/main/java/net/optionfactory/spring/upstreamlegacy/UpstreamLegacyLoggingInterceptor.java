@@ -7,13 +7,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 
-public class UpstreamLoggingInterceptor<CTX> implements UpstreamInterceptor<CTX> {
+public class UpstreamLegacyLoggingInterceptor<CTX> implements UpstreamInterceptor<CTX> {
 
-    private final Logger logger = LoggerFactory.getLogger(UpstreamLoggingInterceptor.class);
+    private final Logger logger = LoggerFactory.getLogger(UpstreamLegacyLoggingInterceptor.class);
     private final ContextLogEncoder<CTX> contextLogEncoder;
     private final boolean logHeaders;
 
-    public UpstreamLoggingInterceptor(ContextLogEncoder<CTX> contextLogEncoder, boolean logHeaders) {
+    public UpstreamLegacyLoggingInterceptor(ContextLogEncoder<CTX> contextLogEncoder, boolean logHeaders) {
         this.contextLogEncoder = contextLogEncoder;
         this.logHeaders = logHeaders;
     }

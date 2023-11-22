@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.xml.validation.Schema;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
-import net.optionfactory.spring.upstream.log.UpstreamLogging;
+import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
 import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
 import net.optionfactory.spring.upstream.soap.calc.Add;
@@ -17,7 +17,6 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.web.service.annotation.PostExchange;
 
 public class UpstreamSoapActionInterceptorTest {
 
@@ -43,7 +42,7 @@ public class UpstreamSoapActionInterceptorTest {
                 })
                 .soap(Protocol.SOAP_1_1, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
-                .intercept(new UpstreamLogging.Interceptor())
+                .intercept(new UpstreamLoggingInterceptor())
                 .build()
                 .add(new Add());
 

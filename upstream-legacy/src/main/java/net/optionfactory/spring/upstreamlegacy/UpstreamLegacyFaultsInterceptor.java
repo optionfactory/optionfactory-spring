@@ -10,12 +10,12 @@ import net.optionfactory.spring.upstreamlegacy.UpstreamPort.UpstreamFaultPredica
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.Resource;
 
-public class UpstreamFaultsInterceptor<CTX> implements UpstreamInterceptor<CTX> {
+public class UpstreamLegacyFaultsInterceptor<CTX> implements UpstreamInterceptor<CTX> {
 
     private final ApplicationEventPublisher publisher;
     private final Method fakeInvokedMethod;
 
-    public UpstreamFaultsInterceptor(ApplicationEventPublisher publisher) {
+    public UpstreamLegacyFaultsInterceptor(ApplicationEventPublisher publisher) {
         try {
             this.publisher = publisher;
             this.fakeInvokedMethod = Object.class.getMethod("toString");

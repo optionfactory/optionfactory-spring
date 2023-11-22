@@ -10,12 +10,12 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 
-public class UpstreamDigestAuthenticationInterceptor<T> implements UpstreamInterceptor<T> {
+public class UpstreamLegacyDigestAuthenticationInterceptor<T> implements UpstreamInterceptor<T> {
 
     private final DigestAuth digestAuth;
     private final CloseableHttpClient authClient;
 
-    public UpstreamDigestAuthenticationInterceptor(String clientId, String clientSecret, CloseableHttpClient authClient) {
+    public UpstreamLegacyDigestAuthenticationInterceptor(String clientId, String clientSecret, CloseableHttpClient authClient) {
         this.digestAuth = DigestAuth.fromCredentials(clientId, clientSecret);
         this.authClient = authClient;
     }

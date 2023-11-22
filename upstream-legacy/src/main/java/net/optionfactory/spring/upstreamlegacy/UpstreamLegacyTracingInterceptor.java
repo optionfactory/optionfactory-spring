@@ -4,12 +4,12 @@ import java.util.Map;
 import net.optionfactory.spring.upstreamlegacy.UpstreamPort.Hints;
 import org.springframework.http.HttpHeaders;
 
-public class UpstreamTracingInterceptor<CTX> implements UpstreamInterceptor<CTX> {
+public class UpstreamLegacyTracingInterceptor<CTX> implements UpstreamInterceptor<CTX> {
 
     private final ContextHeadersEncoder<CTX> contextHeadersEncoder;
     private final String prefix;
 
-    public UpstreamTracingInterceptor(ContextHeadersEncoder<CTX> contextHeadersEncoder, String prefix) {
+    public UpstreamLegacyTracingInterceptor(ContextHeadersEncoder<CTX> contextHeadersEncoder, String prefix) {
         this.contextHeadersEncoder = contextHeadersEncoder;
         this.prefix = prefix;
     }
