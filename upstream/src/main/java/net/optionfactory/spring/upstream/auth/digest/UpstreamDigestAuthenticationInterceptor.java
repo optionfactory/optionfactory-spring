@@ -2,6 +2,7 @@ package net.optionfactory.spring.upstream.auth.digest;
 
 import java.io.IOException;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
+import net.optionfactory.spring.upstream.auth.RestClientAuthenticationException;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpRequestExecution;
@@ -27,14 +28,18 @@ public class UpstreamDigestAuthenticationInterceptor implements UpstreamHttpInte
 
     @Override
     public ClientHttpResponse intercept(InvocationContext ctx, HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
-        final var challenge = restClient.method(HttpMethod.POST)
-                .uri(request.getURI())
-                .retrieve()
-                .toBodilessEntity()
-                .getHeaders()
-                .getFirst("WWW-Authenticate");
+        try {
+            final var challenge = restClient.method(HttpMethod.POST)
+                    .uri(request.getURI())
+                    .retrieve()
+                    .toBodilessEntity()
+                    .getHeaders()
+                    .getFirst("WWW-Authenticate");
 
-        request.getHeaders().set("Authorization", digestAuth.authHeader(request.getMethod().name(), request.getURI().getPath(), challenge));
+            request.getHeaders().set("Authorization", digestAuth.authHeader(request.getMethod().name(), request.getURI().getPath(), challenge));
+        } catch (RuntimeException ex) {
+            throw new RestClientAuthenticationException("Authentication failed", ex);
+        }
         return execution.execute(request, body);
     }
 
