@@ -13,8 +13,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.xml.validation.Schema;
-import net.optionfactory.spring.upstream.auth.UpstreamOAuthClientCredentialsInterceptor;
-import net.optionfactory.spring.upstream.caching.FetchMode;
 import net.optionfactory.spring.upstream.mocks.MockResourcesUpstreamHttpResponseFactory;
 import net.optionfactory.spring.upstream.mocks.MockUpstreamRequestFactory;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
@@ -41,12 +39,14 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.http.converter.support.AllEncompassingFormHttpMessageConverter;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+import org.springframework.web.service.invoker.HttpServiceArgumentResolver;
 
 public class UpstreamBuilder<T> {
 
     protected final List<Consumer<RestClient.Builder>> restClientCustomizers = new ArrayList<>();
     protected final List<UpstreamHttpInterceptor> interceptors = new ArrayList<>();
     protected final List<Consumer<HttpServiceProxyFactory.Builder>> serviceProxyCustomizers = new ArrayList<>();
+    protected final List<HttpServiceArgumentResolver> argumentResolvers = new ArrayList<>();
     protected UpstreamHttpRequestFactory upstreamRequestFactory;
     protected ClientHttpRequestFactory requestFactory;
     protected final Class<?> klass;
@@ -192,6 +192,11 @@ public class UpstreamBuilder<T> {
         return this;
     }
 
+    public UpstreamBuilder<T> argumentResolver(HttpServiceArgumentResolver argResolver) {
+        this.argumentResolvers.add(argResolver);
+        return this;
+    }
+
     public UpstreamBuilder<T> clock(InstantSource clock) {
         this.clock = clock;
         return this;
@@ -241,7 +246,9 @@ public class UpstreamBuilder<T> {
         final var serviceProxyFactoryBuilder = HttpServiceProxyFactory.builderFor(RestClientAdapter.create(rcb.build()));
         serviceProxyFactoryBuilder.customArgumentResolver(new Upstream.ArgumentResolver());
         serviceProxyCustomizers.forEach(c -> c.accept(serviceProxyFactoryBuilder));
-
+        for (HttpServiceArgumentResolver argumentResolver : argumentResolvers) {
+            serviceProxyFactoryBuilder.customArgumentResolver(argumentResolver);
+        }
         final var client = serviceProxyFactoryBuilder.build().createClient(klass);
         final var p = new ProxyFactory();
         p.setTarget(client);
