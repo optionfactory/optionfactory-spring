@@ -4,7 +4,6 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.time.InstantSource;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
@@ -13,14 +12,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
+import net.optionfactory.spring.upstream.UpstreamHttpInterceptor.HttpMessageConverters;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.aop.framework.ReflectiveMethodInvocation;
-import static org.springframework.http.RequestEntity.method;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
-import org.springframework.http.converter.HttpMessageConverter;
 
 public class ThreadLocalScopeHandler implements ScopeHandler {
 
@@ -41,7 +39,7 @@ public class ThreadLocalScopeHandler implements ScopeHandler {
     }
 
     @Override
-    public MethodInterceptor interceptor(List<HttpMessageConverter<?>> converters) {
+    public MethodInterceptor interceptor(HttpMessageConverters converters) {
         final var methodToPrincipalParamIndex = Stream.of(klass.getDeclaredMethods())
                 .filter(m -> Stream.of(m.getParameters()).anyMatch(p -> p.isAnnotationPresent(Upstream.Principal.class)))
                 .collect(Collectors.toConcurrentMap(m -> m, m -> {

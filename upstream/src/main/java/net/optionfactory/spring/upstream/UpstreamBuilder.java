@@ -13,6 +13,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.xml.validation.Schema;
+import net.optionfactory.spring.upstream.UpstreamHttpInterceptor.HttpMessageConverters;
 import net.optionfactory.spring.upstream.mocks.MockResourcesUpstreamHttpResponseFactory;
 import net.optionfactory.spring.upstream.mocks.MockUpstreamRequestFactory;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
@@ -253,7 +254,7 @@ public class UpstreamBuilder<T> {
         final var p = new ProxyFactory();
         p.setTarget(client);
         p.setInterfaces(klass);
-        p.addAdvice(scopeHandler.interceptor(messageConverters));
+        p.addAdvice(scopeHandler.interceptor(new HttpMessageConverters(messageConverters)));
         return (T) p.getProxy();
     }
 
