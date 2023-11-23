@@ -9,6 +9,8 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import javax.xml.transform.Templates;
+import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
@@ -25,7 +27,7 @@ public class BodyRendering {
         ABBREVIATED_COMPACT;
     }
 
-    private static final String REMOVE_SPACES_STYLESHEET = """
+    private static final String COMPACTING_XML_STYLESHEET = """
         <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
             <xsl:output indent="no"/>
@@ -35,7 +37,20 @@ public class BodyRendering {
                     <xsl:apply-templates select="@*|node()"/>
                 </xsl:copy>
             </xsl:template>
+            <xsl:template match="text()">
+              <xsl:value-of select="normalize-space(.)"/>
+            </xsl:template>
         </xsl:stylesheet>""";
+
+    private static final Templates COMPACTING_XML_TEMPLATE = createTemplate();
+
+    private static Templates createTemplate() {
+        try (final var xsltReader = new StringReader(COMPACTING_XML_STYLESHEET)) {
+            return TransformerFactory.newInstance().newTemplates(new StreamSource(xsltReader));
+        } catch (TransformerConfigurationException ex) {
+            throw new IllegalStateException(ex);
+        }
+    }
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -87,8 +102,8 @@ public class BodyRendering {
     }
 
     public static String xsltCompact(byte[] bytes) {
-        try (final var xsltReader = new StringReader(REMOVE_SPACES_STYLESHEET); final var is = new ByteArrayInputStream(bytes); final var writer = new StringWriter()) {
-            final var transformer = TransformerFactory.newInstance().newTransformer(new StreamSource(xsltReader));
+        try (final var is = new ByteArrayInputStream(bytes); final var writer = new StringWriter()) {
+            final var transformer = COMPACTING_XML_TEMPLATE.newTransformer();
             transformer.setOutputProperty("omit-xml-declaration", "yes");
             transformer.transform(new StreamSource(is), new StreamResult(writer));
             return writer.toString();

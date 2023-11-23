@@ -19,6 +19,15 @@ public class BodyRenderingTest {
     }
 
     @Test
+    public void xmlPreambleIsRemoved() {
+        final var source = """
+                           <?xml version="1.0" encoding="utf-8"?>
+                           <a/>
+                           """;
+        final var got = BodyRendering.xsltCompact(source.getBytes(StandardCharsets.UTF_8));
+        Assert.assertEquals("<a/>", got);
+    }
+    @Test
     public void canCompactXml() {
         final var source = """
                            <?xml version="1.0" encoding="iso-8859-1"?>
@@ -28,6 +37,27 @@ public class BodyRenderingTest {
                            """;
         final var got = BodyRendering.xsltCompact(source.getBytes(StandardCharsets.ISO_8859_1));
         Assert.assertEquals("<a><b>c</b></a>", got);
+
+    }
+    @Test
+    public void textNodesSpacesAreNormalized() {
+        final var source = """
+                           <a> a 
+                                b    
+                                    c 
+                           </a>
+                           """;
+        final var got = BodyRendering.xsltCompact(source.getBytes(StandardCharsets.UTF_8));
+        Assert.assertEquals("<a>a b c</a>", got);
+
+    }
+    @Test
+    public void emptyElementsAreCollapsed() {
+        final var source = """
+                           <a></a>
+                           """;
+        final var got = BodyRendering.xsltCompact(source.getBytes(StandardCharsets.UTF_8));
+        Assert.assertEquals("<a/>", got);
 
     }
 
