@@ -29,7 +29,7 @@ public class RestExampleTest {
                     """;
                     return new MockClientHttpResponse(HttpStatus.OK, HttpStatus.OK.getReasonPhrase(), h, new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8)));
                 })
-                .intercept(new UpstreamLoggingInterceptor())
+                .interceptor(new UpstreamLoggingInterceptor())
                 .restClient(r -> r.baseUrl("https://hub.dummyapis.com/statuscode/"))
                 .build();
         final var response = client.ok("asd");
@@ -46,7 +46,7 @@ public class RestExampleTest {
                     final var content = "";
                     return new MockClientHttpResponse(HttpStatus.BAD_REQUEST, HttpStatus.BAD_REQUEST.getReasonPhrase(), h, new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8)));
                 })
-                .intercept(new UpstreamLoggingInterceptor())
+                .interceptor(new UpstreamLoggingInterceptor())
                 .restClient(r -> r.baseUrl("https://hub.dummyapis.com/statuscode/"))
                 .build();
         client.error("asd");

@@ -1,26 +1,24 @@
 package net.optionfactory.spring.upstream.auth;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
+import net.optionfactory.spring.upstream.UpstreamHttpInterceptor.InvocationContext;
+import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpRequest;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.ClientHttpRequestExecution;
+import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpRequestFactory;
-import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestClient;
 
-public class UpstreamOAuthClientCredentialsInterceptor implements UpstreamHttpInterceptor {
+public class UpstreamOAuthClientCredentiaAuthenticator implements UpstreamHttpRequestInitializer {
 
     private final String basicHeader;
     private final URI tokenUri;
     private RestClient restClient;
 
-    public UpstreamOAuthClientCredentialsInterceptor(String clientId, String clientSecret, URI tokenUri) {
+    public UpstreamOAuthClientCredentiaAuthenticator(String clientId, String clientSecret, URI tokenUri) {
         this.basicHeader = String.format("Basic %s", HttpHeaders.encodeBasicAuth(clientId, clientSecret, StandardCharsets.UTF_8));
         this.tokenUri = tokenUri;
     }
@@ -33,7 +31,7 @@ public class UpstreamOAuthClientCredentialsInterceptor implements UpstreamHttpIn
     }
 
     @Override
-    public ClientHttpResponse intercept(InvocationContext ctx, HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
+    public void initialize(InvocationContext ctx, ClientHttpRequest request) {
         try {
             final var oBody = new LinkedMultiValueMap<String, String>();
             oBody.add("grant_type", "client_credentials");
@@ -52,7 +50,5 @@ public class UpstreamOAuthClientCredentialsInterceptor implements UpstreamHttpIn
         } catch (RuntimeException ex) {
             throw new RestClientAuthenticationException(String.format("Authentication failed for %s:%s", ctx.upstream(), ctx.endpoint()), ex);
         }
-
-        return execution.execute(request, body);
     }
 }

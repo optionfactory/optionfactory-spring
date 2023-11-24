@@ -13,11 +13,13 @@ import java.util.stream.Stream;
 import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor.HttpMessageConverters;
+import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.aop.framework.ReflectiveMethodInvocation;
 import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.ClientHttpRequestInitializer;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 
 public class ThreadLocalScopeHandler implements ScopeHandler {
@@ -74,6 +76,11 @@ public class ThreadLocalScopeHandler implements ScopeHandler {
                 ctx.remove();
             }
         };
+    }
+
+    @Override
+    public ClientHttpRequestInitializer adapt(UpstreamHttpRequestInitializer initializer) {
+        return (request) -> initializer.initialize(ctx.get(), request);
     }
 
     @Override

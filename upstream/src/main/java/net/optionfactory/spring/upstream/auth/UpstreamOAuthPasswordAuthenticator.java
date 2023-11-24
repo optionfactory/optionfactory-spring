@@ -1,25 +1,23 @@
 package net.optionfactory.spring.upstream.auth;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import java.io.IOException;
 import java.net.URI;
-import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
-import org.springframework.http.HttpRequest;
+import net.optionfactory.spring.upstream.UpstreamHttpInterceptor.InvocationContext;
+import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.ClientHttpRequestExecution;
+import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpRequestFactory;
-import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestClient;
 
-public class UpstreamOAuthPasswordInterceptor implements UpstreamHttpInterceptor {
+public class UpstreamOAuthPasswordAuthenticator implements UpstreamHttpRequestInitializer {
 
     private final String clientId;
     private final String clientSecret;
     private final URI tokenUri;
     private RestClient restClient;
 
-    public UpstreamOAuthPasswordInterceptor(String clientId, String clientSecret, URI tokenUri) {
+    public UpstreamOAuthPasswordAuthenticator(String clientId, String clientSecret, URI tokenUri) {
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.tokenUri = tokenUri;
@@ -33,7 +31,7 @@ public class UpstreamOAuthPasswordInterceptor implements UpstreamHttpInterceptor
     }
 
     @Override
-    public ClientHttpResponse intercept(InvocationContext ctx, HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
+    public void initialize(InvocationContext ctx, ClientHttpRequest request) {
         try {
             final var oBody = new LinkedMultiValueMap<String, String>();
             oBody.add("username", "admin");
@@ -55,7 +53,6 @@ public class UpstreamOAuthPasswordInterceptor implements UpstreamHttpInterceptor
         } catch (RuntimeException ex) {
             throw new RestClientAuthenticationException(String.format("Authentication failed for %s:%s", ctx.upstream(), ctx.endpoint()), ex);
         }
-        return execution.execute(request, body);
     }
 
 }

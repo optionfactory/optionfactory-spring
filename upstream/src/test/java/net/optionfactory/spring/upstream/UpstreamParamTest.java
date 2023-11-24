@@ -20,7 +20,7 @@ public class UpstreamParamTest {
                     return MockClientHttpResponse.okUtf8(MediaType.APPLICATION_JSON, "{}");
                 })
                 .restClient(r -> r.baseUrl("http://example.com"))
-                .intercept(new UpstreamLoggingInterceptor())
+                .interceptor(new UpstreamLoggingInterceptor())
                 .build()
                 .test("value");
 

@@ -4,10 +4,12 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor.HttpMessageConverters;
+import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.apache.hc.client5.http.utils.Hex;
 import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.ClientHttpRequestInitializer;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 
 public interface ScopeHandler {
@@ -17,6 +19,8 @@ public interface ScopeHandler {
     MethodInterceptor interceptor(HttpMessageConverters cs);
 
     ClientHttpRequestInterceptor adapt(UpstreamHttpInterceptor interceptor);
+
+    ClientHttpRequestInitializer adapt(UpstreamHttpRequestInitializer initializer);
 
     ClientHttpRequestFactory adapt(UpstreamHttpRequestFactory factory);
 }

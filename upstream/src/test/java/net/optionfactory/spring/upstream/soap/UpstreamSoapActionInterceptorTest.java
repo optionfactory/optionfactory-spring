@@ -42,7 +42,7 @@ public class UpstreamSoapActionInterceptorTest {
                 })
                 .soap(Protocol.SOAP_1_1, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
-                .intercept(new UpstreamLoggingInterceptor())
+                .interceptor(new UpstreamLoggingInterceptor())
                 .build()
                 .add(new Add());
 

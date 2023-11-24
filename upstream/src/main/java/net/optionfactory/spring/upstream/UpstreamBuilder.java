@@ -33,6 +33,8 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpResponseFactory;
+import org.springframework.http.client.ClientHttpRequest;
+import org.springframework.http.client.ClientHttpRequestInitializer;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
 import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
@@ -45,6 +47,7 @@ import org.springframework.web.service.invoker.HttpServiceArgumentResolver;
 public class UpstreamBuilder<T> {
 
     protected final List<Consumer<RestClient.Builder>> restClientCustomizers = new ArrayList<>();
+    protected final List<UpstreamHttpRequestInitializer> initializers = new ArrayList<>();
     protected final List<UpstreamHttpInterceptor> interceptors = new ArrayList<>();
     protected final List<Consumer<HttpServiceProxyFactory.Builder>> serviceProxyCustomizers = new ArrayList<>();
     protected final List<HttpServiceArgumentResolver> argumentResolvers = new ArrayList<>();
@@ -176,14 +179,26 @@ public class UpstreamBuilder<T> {
         return this;
     }
 
-    public UpstreamBuilder<T> interceptIf(boolean test, UpstreamHttpInterceptor interceptor) {
+    public UpstreamBuilder<T> initializerIf(boolean test, UpstreamHttpRequestInitializer initializer) {
         if (!test) {
             return this;
         }
-        return intercept(interceptor);
+        return initializer(initializer);
     }
 
-    public UpstreamBuilder<T> intercept(UpstreamHttpInterceptor interceptor) {
+    public UpstreamBuilder<T> initializer(UpstreamHttpRequestInitializer initializer) {
+        this.initializers.add(initializer);
+        return this;
+    }
+
+    public UpstreamBuilder<T> interceptorIf(boolean test, UpstreamHttpInterceptor interceptor) {
+        if (!test) {
+            return this;
+        }
+        return interceptor(interceptor);
+    }
+
+    public UpstreamBuilder<T> interceptor(UpstreamHttpInterceptor interceptor) {
         interceptors.add(interceptor);
         return this;
     }
@@ -236,8 +251,12 @@ public class UpstreamBuilder<T> {
 
         final var rcb = RestClient.builder().requestFactory(bufferedRequestFactory);
         restClientCustomizers.forEach(c -> c.accept(rcb));
-        final var is = interceptors.stream().peek(i -> i.preprocess(klass, bufferedRequestFactory)).map(scopeHandler::adapt).toList();
-        rcb.requestInterceptors(ris -> ris.addAll(is));
+
+        final var inis = initializers.stream().peek(i -> i.preprocess(klass, bufferedRequestFactory)).map(scopeHandler::adapt).toList();
+        rcb.requestInitializers(ris -> ris.addAll(inis));
+
+        final var ints = interceptors.stream().peek(i -> i.preprocess(klass, bufferedRequestFactory)).map(scopeHandler::adapt).toList();
+        rcb.requestInterceptors(ris -> ris.addAll(ints));
 
         final List<HttpMessageConverter<?>> messageConverters = new ArrayList<>();
         rcb.messageConverters(mcs -> {

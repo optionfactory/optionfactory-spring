@@ -2,17 +2,15 @@ package net.optionfactory.spring.upstream.jjwt;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.MacAlgorithm;
-import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.function.Function;
 import javax.crypto.SecretKey;
-import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
-import org.springframework.http.HttpRequest;
-import org.springframework.http.client.ClientHttpRequestExecution;
-import org.springframework.http.client.ClientHttpResponse;
+import net.optionfactory.spring.upstream.UpstreamHttpInterceptor.InvocationContext;
+import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
+import org.springframework.http.client.ClientHttpRequest;
 
-public class UpstreamJwtInterceptor implements UpstreamHttpInterceptor {
+public class UpstreamJwtAuthenticator implements UpstreamHttpRequestInitializer {
 
     private final String jwtIssuer;
     private final SecretKey jwtSecret;
@@ -20,7 +18,7 @@ public class UpstreamJwtInterceptor implements UpstreamHttpInterceptor {
     private final Function<InvocationContext, String> subjectFactory;
     private final MacAlgorithm algorithm;
 
-    public UpstreamJwtInterceptor(String jwtIssuer, SecretKey jwtSecret, String audience, Function<InvocationContext, String> subjectFactory, MacAlgorithm algorithm) {
+    public UpstreamJwtAuthenticator(String jwtIssuer, SecretKey jwtSecret, String audience, Function<InvocationContext, String> subjectFactory, MacAlgorithm algorithm) {
         this.jwtIssuer = jwtIssuer;
         this.jwtSecret = jwtSecret;
         this.audience = audience;
@@ -29,7 +27,7 @@ public class UpstreamJwtInterceptor implements UpstreamHttpInterceptor {
     }
 
     @Override
-    public ClientHttpResponse intercept(InvocationContext ctx, HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
+    public void initialize(InvocationContext ctx, ClientHttpRequest request) {
         final var claims = new HashMap<String, Object>();
         final var jwtIssuedAt = new Date();
         final var jwtExpiration = new Date(30 * 60 * 1000 + jwtIssuedAt.getTime());
@@ -44,7 +42,6 @@ public class UpstreamJwtInterceptor implements UpstreamHttpInterceptor {
                 .compact();
 
         request.getHeaders().set("Authorization", String.format("Bearer %s", jwt));
-        return execution.execute(request, body);
     }
 
 }

@@ -16,7 +16,7 @@ public class FetchModeArgumentResolverTest {
                     return MockClientHttpResponse.okUtf8(MediaType.APPLICATION_JSON, "{}");
                 })
                 .restClient(r -> r.baseUrl("http://example.com"))
-                .intercept(new UpstreamLoggingInterceptor())
+                .interceptor(new UpstreamLoggingInterceptor())
                 .build();
 
         client.get("a", FetchMode.ANY);

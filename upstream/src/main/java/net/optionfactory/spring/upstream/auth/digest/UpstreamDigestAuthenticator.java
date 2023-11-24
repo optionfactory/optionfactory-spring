@@ -1,21 +1,19 @@
 package net.optionfactory.spring.upstream.auth.digest;
 
-import java.io.IOException;
-import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
+import net.optionfactory.spring.upstream.UpstreamHttpInterceptor.InvocationContext;
+import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
 import net.optionfactory.spring.upstream.auth.RestClientAuthenticationException;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpRequest;
-import org.springframework.http.client.ClientHttpRequestExecution;
+import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpRequestFactory;
-import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.RestClient;
 
-public class UpstreamDigestAuthenticationInterceptor implements UpstreamHttpInterceptor {
+public class UpstreamDigestAuthenticator implements UpstreamHttpRequestInitializer {
 
     private final DigestAuth digestAuth;
     private RestClient restClient;
 
-    public UpstreamDigestAuthenticationInterceptor(String clientId, String clientSecret) {
+    public UpstreamDigestAuthenticator(String clientId, String clientSecret) {
         this.digestAuth = DigestAuth.fromCredentials(clientId, clientSecret);
     }
 
@@ -27,7 +25,7 @@ public class UpstreamDigestAuthenticationInterceptor implements UpstreamHttpInte
     }
 
     @Override
-    public ClientHttpResponse intercept(InvocationContext ctx, HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
+    public void initialize(InvocationContext ctx, ClientHttpRequest request) {
         try {
             final var challenge = restClient.method(HttpMethod.POST)
                     .uri(request.getURI())
@@ -36,7 +34,6 @@ public class UpstreamDigestAuthenticationInterceptor implements UpstreamHttpInte
         } catch (RuntimeException ex) {
             throw new RestClientAuthenticationException(String.format("Authentication failed for %s:%s", ctx.upstream(), ctx.endpoint()), ex);
         }
-        return execution.execute(request, body);
     }
 
 }
