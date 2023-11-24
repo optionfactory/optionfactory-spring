@@ -2,9 +2,9 @@ package net.optionfactory.spring.upstream.soap;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpRequestExecution;
@@ -18,7 +18,7 @@ public class UpstreamSoapActionInterceptor implements UpstreamHttpInterceptor {
     @Override
     public void preprocess(Class<?> k, ClientHttpRequestFactory rf) {
         for (Method m : k.getDeclaredMethods()) {
-            final UpstreamSoapAction ann = m.getAnnotation(UpstreamSoapAction.class);
+            final Upstream.SoapAction ann = m.getAnnotation(Upstream.SoapAction.class);
             if (ann != null) {
                 soapActions.put(m, ann.value());
             }

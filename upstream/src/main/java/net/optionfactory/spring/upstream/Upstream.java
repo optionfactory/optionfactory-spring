@@ -120,6 +120,14 @@ public @interface Upstream {
     }
 
     @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.METHOD)
+    public @interface SoapAction {
+
+        String value();
+
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.TYPE, ElementType.METHOD})
     @Documented
     public @interface Faults {

@@ -53,7 +53,7 @@ public class UpstreamOAuthPasswordInterceptor implements UpstreamHttpInterceptor
 
             request.getHeaders().set("Authorization", String.format("Bearer %s", token));
         } catch (RuntimeException ex) {
-            throw new RestClientAuthenticationException("Authentication failed", ex);
+            throw new RestClientAuthenticationException(String.format("Authentication failed for %s:%s", ctx.upstream(), ctx.endpoint()), ex);
         }
         return execution.execute(request, body);
     }

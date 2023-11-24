@@ -31,14 +31,10 @@ public class UpstreamDigestAuthenticationInterceptor implements UpstreamHttpInte
         try {
             final var challenge = restClient.method(HttpMethod.POST)
                     .uri(request.getURI())
-                    .retrieve()
-                    .toBodilessEntity()
-                    .getHeaders()
-                    .getFirst("WWW-Authenticate");
-
+                    .exchange((ereq, eres) -> eres.getHeaders().getFirst("WWW-Authenticate"));
             request.getHeaders().set("Authorization", digestAuth.authHeader(request.getMethod().name(), request.getURI().getPath(), challenge));
         } catch (RuntimeException ex) {
-            throw new RestClientAuthenticationException("Authentication failed", ex);
+            throw new RestClientAuthenticationException(String.format("Authentication failed for %s:%s", ctx.upstream(), ctx.endpoint()), ex);
         }
         return execution.execute(request, body);
     }

@@ -57,7 +57,7 @@ public interface UpstreamHttpInterceptor {
 
                 @Override
                 public HttpHeaders getHeaders() {
-                    return HttpHeaders.EMPTY;
+                    return new HttpHeaders();
                 }
             }, type, mediaType);
         }
@@ -80,7 +80,7 @@ public interface UpstreamHttpInterceptor {
 
                 @Override
                 public HttpHeaders getHeaders() {
-                    return HttpHeaders.EMPTY;
+                    return new HttpHeaders();
                 }
 
             }, type, mediaType);

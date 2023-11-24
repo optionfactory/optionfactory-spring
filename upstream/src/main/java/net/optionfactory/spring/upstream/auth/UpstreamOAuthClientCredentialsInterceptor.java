@@ -45,13 +45,12 @@ public class UpstreamOAuthClientCredentialsInterceptor implements UpstreamHttpIn
                     .header(HttpHeaders.AUTHORIZATION, basicHeader)
                     .body(oBody)
                     .retrieve()
-                    .body(JsonNode.class)
-                    .get("access_token")
-                    .asText();
+                    .body(JsonNode.class);
+            final var accesstoken = token.get("access_token").asText();
 
-            request.getHeaders().set(HttpHeaders.AUTHORIZATION, String.format("Bearer %s", token));
+            request.getHeaders().set(HttpHeaders.AUTHORIZATION, String.format("Bearer %s", accesstoken));
         } catch (RuntimeException ex) {
-            throw new RestClientAuthenticationException("Authentication failed", ex);
+            throw new RestClientAuthenticationException(String.format("Authentication failed for %s:%s", ctx.upstream(), ctx.endpoint()), ex);
         }
 
         return execution.execute(request, body);
