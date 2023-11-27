@@ -32,7 +32,7 @@ public class UpstreamDigestAuthenticator implements UpstreamHttpRequestInitializ
                     .exchange((ereq, eres) -> eres.getHeaders().getFirst("WWW-Authenticate"));
             request.getHeaders().set("Authorization", digestAuth.authHeader(request.getMethod().name(), request.getURI().getPath(), challenge));
         } catch (RuntimeException ex) {
-            throw new RestClientAuthenticationException(String.format("Authentication failed for %s:%s", ctx.upstream(), ctx.endpoint()), ex);
+            throw new RestClientAuthenticationException(ctx.upstream(), ctx.endpoint(), ex);
         }
     }
 

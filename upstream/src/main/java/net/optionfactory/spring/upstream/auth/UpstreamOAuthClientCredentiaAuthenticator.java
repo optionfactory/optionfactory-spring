@@ -48,7 +48,7 @@ public class UpstreamOAuthClientCredentiaAuthenticator implements UpstreamHttpRe
 
             request.getHeaders().set(HttpHeaders.AUTHORIZATION, String.format("Bearer %s", accesstoken));
         } catch (RuntimeException ex) {
-            throw new RestClientAuthenticationException(String.format("Authentication failed for %s:%s", ctx.upstream(), ctx.endpoint()), ex);
+            throw new RestClientAuthenticationException(ctx.upstream(), ctx.endpoint(), ex);
         }
     }
 }

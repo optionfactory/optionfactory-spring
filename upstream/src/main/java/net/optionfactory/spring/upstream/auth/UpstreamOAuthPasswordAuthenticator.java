@@ -51,7 +51,7 @@ public class UpstreamOAuthPasswordAuthenticator implements UpstreamHttpRequestIn
 
             request.getHeaders().set("Authorization", String.format("Bearer %s", token));
         } catch (RuntimeException ex) {
-            throw new RestClientAuthenticationException(String.format("Authentication failed for %s:%s", ctx.upstream(), ctx.endpoint()), ex);
+            throw new RestClientAuthenticationException(ctx.upstream(), ctx.endpoint(), ex);
         }
     }
 

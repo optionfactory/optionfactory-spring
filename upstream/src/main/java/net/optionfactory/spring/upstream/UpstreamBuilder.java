@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.xml.validation.Schema;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor.HttpMessageConverters;
+import net.optionfactory.spring.upstream.errors.UpstreamErrorsHandler;
 import net.optionfactory.spring.upstream.mocks.MockResourcesUpstreamHttpResponseFactory;
 import net.optionfactory.spring.upstream.mocks.MockUpstreamRequestFactory;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
@@ -205,6 +206,11 @@ public class UpstreamBuilder<T> {
 
     public UpstreamBuilder<T> responseErrorHandler(UpstreamResponseErrorHandler eh) {
         responseErrorHandlers.add(eh);
+        return this;
+    }
+    
+    public UpstreamBuilder<T> responseErrorHandlerFromAnnotations() {
+        responseErrorHandlers.add(new UpstreamErrorsHandler());
         return this;
     }
 

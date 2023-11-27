@@ -7,10 +7,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import net.optionfactory.spring.upstream.caching.FetchMode;
-import net.optionfactory.spring.upstream.faults.UpstreamFaultStrategies.FaultOn4xxOr5xxPredicate;
-import net.optionfactory.spring.upstream.faults.UpstreamFaultStrategies.FaultOnRemotingErrorPredicate;
-import net.optionfactory.spring.upstream.faults.UpstreamFaultStrategies.OnRemotingError;
-import net.optionfactory.spring.upstream.faults.UpstreamFaultStrategies.OnRemotingSuccess;
 import net.optionfactory.spring.upstream.rendering.BodyRendering.Strategy;
 import org.springframework.core.MethodParameter;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
@@ -130,11 +126,47 @@ public @interface Upstream {
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.TYPE, ElementType.METHOD})
     @Documented
-    public @interface Faults {
+    public @interface FaultOnResponse {
 
-        Class<? extends OnRemotingSuccess> onRemotingSuccess() default FaultOn4xxOr5xxPredicate.class;
+        public static final String STATUS_IS_ERROR = "#status.isError()";
+        public static final String ALWAYS = "true";
+        public static final String NEVER = "false";
 
-        Class<? extends OnRemotingError> onRemotingError() default FaultOnRemotingErrorPredicate.class;
+        String value() default STATUS_IS_ERROR;
+
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.TYPE, ElementType.METHOD})
+    @Documented
+    public @interface FaultOnRemotingError {
+
+        public static final String ALWAYS = "true";
+        public static final String NEVER = "false";
+
+        String value() default ALWAYS;
+
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.METHOD)
+    @Documented
+    @Repeatable(Error.List.class)
+    public @interface Error {
+
+        String value() default "false";
+
+        String reason() default "upstream error";
+
+        HttpStatus.Series[] series() default HttpStatus.Series.SUCCESSFUL;
+
+        @Target(ElementType.METHOD)
+        @Retention(RetentionPolicy.RUNTIME)
+        @Documented
+        public @interface List {
+
+            Error[] value();
+        }
     }
 
     public static class ArgumentResolver implements HttpServiceArgumentResolver {

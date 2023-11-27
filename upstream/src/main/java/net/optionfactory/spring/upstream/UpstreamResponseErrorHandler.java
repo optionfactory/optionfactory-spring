@@ -10,7 +10,7 @@ public interface UpstreamResponseErrorHandler {
     default void preprocess(Class<?> k, ClientHttpRequestFactory rf) {
     }
 
-    boolean hasError(InvocationContext ctx, ClientHttpResponse response);
+    boolean hasError(InvocationContext ctx, ClientHttpResponse response) throws IOException ;
 
     void handleError(InvocationContext ctx, ClientHttpResponse response) throws IOException;
 
