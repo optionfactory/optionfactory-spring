@@ -1,5 +1,6 @@
 package net.optionfactory.spring.upstream.scopes;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -21,6 +22,9 @@ import org.springframework.aop.framework.ReflectiveMethodInvocation;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestInitializer;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
+import net.optionfactory.spring.upstream.UpstreamResponseErrorHandler;
+import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.web.client.ResponseErrorHandler;
 
 public class ThreadLocalScopeHandler implements ScopeHandler {
 
@@ -92,6 +96,21 @@ public class ThreadLocalScopeHandler implements ScopeHandler {
     public ClientHttpRequestFactory adapt(UpstreamHttpRequestFactory factory) {
         return (uri, httpMethod) -> factory.createRequest(ctx.get(), uri, httpMethod);
 
+    }
+
+    @Override
+    public ResponseErrorHandler adapt(UpstreamResponseErrorHandler eh) {
+        return new ResponseErrorHandler() {
+            @Override
+            public boolean hasError(ClientHttpResponse response) throws IOException {
+                return eh.hasError(ctx.get(), response);
+            }
+
+            @Override
+            public void handleError(ClientHttpResponse response) throws IOException {
+                eh.handleError(ctx.get(), response);
+            }
+        };
     }
 
 }

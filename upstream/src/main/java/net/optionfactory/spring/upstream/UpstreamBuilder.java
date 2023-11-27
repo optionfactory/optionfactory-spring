@@ -33,8 +33,6 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpResponseFactory;
-import org.springframework.http.client.ClientHttpRequest;
-import org.springframework.http.client.ClientHttpRequestInitializer;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
 import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
@@ -42,6 +40,7 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.http.converter.support.AllEncompassingFormHttpMessageConverter;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.service.invoker.HttpServiceArgumentResolver;
 
 public class UpstreamBuilder<T> {
@@ -49,6 +48,7 @@ public class UpstreamBuilder<T> {
     protected final List<Consumer<RestClient.Builder>> restClientCustomizers = new ArrayList<>();
     protected final List<UpstreamHttpRequestInitializer> initializers = new ArrayList<>();
     protected final List<UpstreamHttpInterceptor> interceptors = new ArrayList<>();
+    protected final List<UpstreamResponseErrorHandler> responseErrorHandlers = new ArrayList<>();
     protected final List<Consumer<HttpServiceProxyFactory.Builder>> serviceProxyCustomizers = new ArrayList<>();
     protected final List<HttpServiceArgumentResolver> argumentResolvers = new ArrayList<>();
     protected UpstreamHttpRequestFactory upstreamRequestFactory;
@@ -203,6 +203,11 @@ public class UpstreamBuilder<T> {
         return this;
     }
 
+    public UpstreamBuilder<T> responseErrorHandler(UpstreamResponseErrorHandler eh) {
+        responseErrorHandlers.add(eh);
+        return this;
+    }
+
     public UpstreamBuilder<T> serviceProxy(Consumer<HttpServiceProxyFactory.Builder> c) {
         serviceProxyCustomizers.add(c);
         return this;
@@ -252,11 +257,19 @@ public class UpstreamBuilder<T> {
         final var rcb = RestClient.builder().requestFactory(bufferedRequestFactory);
         restClientCustomizers.forEach(c -> c.accept(rcb));
 
-        final var inis = initializers.stream().peek(i -> i.preprocess(klass, bufferedRequestFactory)).map(scopeHandler::adapt).toList();
-        rcb.requestInitializers(ris -> ris.addAll(inis));
+        initializers.stream()
+                .peek(i -> i.preprocess(klass, bufferedRequestFactory))
+                .map(scopeHandler::adapt)
+                .forEach(rcb::requestInitializer);
 
-        final var ints = interceptors.stream().peek(i -> i.preprocess(klass, bufferedRequestFactory)).map(scopeHandler::adapt).toList();
-        rcb.requestInterceptors(ris -> ris.addAll(ints));
+        interceptors.stream()
+                .peek(i -> i.preprocess(klass, bufferedRequestFactory))
+                .map(scopeHandler::adapt)
+                .forEach(rcb::requestInterceptor);
+
+        responseErrorHandlers.stream().peek(i -> i.preprocess(klass, bufferedRequestFactory))
+                .map(scopeHandler::adapt)
+                .forEach(rcb::defaultStatusHandler);
 
         final List<HttpMessageConverter<?>> messageConverters = new ArrayList<>();
         rcb.messageConverters(mcs -> {

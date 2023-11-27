@@ -11,6 +11,8 @@ import org.apache.hc.client5.http.utils.Hex;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestInitializer;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
+import net.optionfactory.spring.upstream.UpstreamResponseErrorHandler;
+import org.springframework.web.client.ResponseErrorHandler;
 
 public interface ScopeHandler {
 
@@ -23,4 +25,7 @@ public interface ScopeHandler {
     ClientHttpRequestInitializer adapt(UpstreamHttpRequestInitializer initializer);
 
     ClientHttpRequestFactory adapt(UpstreamHttpRequestFactory factory);
+
+    ResponseErrorHandler adapt(UpstreamResponseErrorHandler factory);
+
 }
