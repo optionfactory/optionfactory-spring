@@ -3,8 +3,8 @@ package net.optionfactory.spring.upstream.auth;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import net.optionfactory.spring.upstream.UpstreamHttpInterceptor.InvocationContext;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
+import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequest;
@@ -31,7 +31,7 @@ public class UpstreamOAuthClientCredentiaAuthenticator implements UpstreamHttpRe
     }
 
     @Override
-    public void initialize(InvocationContext ctx, ClientHttpRequest request) {
+    public void initialize(InvocationContext invocation, ClientHttpRequest request) {
         try {
             final var oBody = new LinkedMultiValueMap<String, String>();
             oBody.add("grant_type", "client_credentials");
@@ -48,7 +48,7 @@ public class UpstreamOAuthClientCredentiaAuthenticator implements UpstreamHttpRe
 
             request.getHeaders().set(HttpHeaders.AUTHORIZATION, String.format("Bearer %s", accesstoken));
         } catch (RuntimeException ex) {
-            throw new RestClientAuthenticationException(ctx.upstream(), ctx.endpoint(), ex);
+            throw new RestClientAuthenticationException(invocation.upstream(), invocation.endpoint(), ex);
         }
     }
 }

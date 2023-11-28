@@ -1,8 +1,8 @@
 package net.optionfactory.spring.upstream.auth.digest;
 
-import net.optionfactory.spring.upstream.UpstreamHttpInterceptor.InvocationContext;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
 import net.optionfactory.spring.upstream.auth.RestClientAuthenticationException;
+import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpRequestFactory;
@@ -25,14 +25,14 @@ public class UpstreamDigestAuthenticator implements UpstreamHttpRequestInitializ
     }
 
     @Override
-    public void initialize(InvocationContext ctx, ClientHttpRequest request) {
+    public void initialize(InvocationContext invocation, ClientHttpRequest request) {
         try {
             final var challenge = restClient.method(HttpMethod.POST)
                     .uri(request.getURI())
                     .exchange((ereq, eres) -> eres.getHeaders().getFirst("WWW-Authenticate"));
             request.getHeaders().set("Authorization", digestAuth.authHeader(request.getMethod().name(), request.getURI().getPath(), challenge));
         } catch (RuntimeException ex) {
-            throw new RestClientAuthenticationException(ctx.upstream(), ctx.endpoint(), ex);
+            throw new RestClientAuthenticationException(invocation.upstream(), invocation.endpoint(), ex);
         }
     }
 

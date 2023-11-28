@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import net.optionfactory.spring.upstream.Upstream;
-import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
+import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import org.springframework.context.expression.MapAccessor;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.io.ClassPathResource;
@@ -78,20 +78,20 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
     }
 
     @Override
-    public ClientHttpResponse create(UpstreamHttpInterceptor.InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) {
-        final var expressions = methodToExpression.get(ctx.method());
+    public ClientHttpResponse create(InvocationContext invocation, URI uri, HttpMethod method, HttpHeaders headers) {
+        final var expressions = methodToExpression.get(invocation.method());
         if (expressions == null) {
-            throw new RestClientException(String.format("mock resource not configured for %s:%s", ctx.upstream(), ctx.endpoint()));
+            throw new RestClientException(String.format("mock resource not configured for %s:%s", invocation.upstream(), invocation.endpoint()));
         }
-        final var contentType = methodToContentType.get(ctx.method());
-        final var status = methodToStatus.get(ctx.method());
+        final var contentType = methodToContentType.get(invocation.method());
+        final var status = methodToStatus.get(invocation.method());
 
-        final var args = IntStream.range(0, ctx.method().getParameters().length).mapToObj(i -> i).collect(Collectors.toMap(i -> ctx.method().getParameters()[i].getName(), i -> ctx.arguments()[i]));
-        final var context = new StandardEvaluationContext(new MockEvaluationContext(ctx.upstream(), ctx.endpoint(), args));
+        final var args = IntStream.range(0, invocation.method().getParameters().length).mapToObj(i -> i).collect(Collectors.toMap(i -> invocation.method().getParameters()[i].getName(), i -> invocation.arguments()[i]));
+        final var context = new StandardEvaluationContext(new MockEvaluationContext(invocation.upstream(), invocation.endpoint(), args));
         context.addPropertyAccessor(new MapAccessor());
         for (Expression expression : expressions) {
             final var path = expression.getValue(context, String.class);
-            final var resource = new ClassPathResource(path, ctx.method().getDeclaringClass());
+            final var resource = new ClassPathResource(path, invocation.method().getDeclaringClass());
             if (!resource.exists()) {
                 continue;
             }
@@ -99,7 +99,7 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
             responseHeaders.setContentType(contentType);
             return new MockClientHttpResponse(status, status.getReasonPhrase(), responseHeaders, resource);
         }
-        throw new RestClientException(String.format("mock resource not found for %s:%s", ctx.upstream(), ctx.endpoint()));
+        throw new RestClientException(String.format("mock resource not found for %s:%s", invocation.upstream(), invocation.endpoint()));
     }
 
 }

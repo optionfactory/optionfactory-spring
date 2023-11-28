@@ -13,10 +13,8 @@ public class MockClientTest {
     private final MockClient client = UpstreamBuilder.create(MockClient.class)
             .requestFactoryMockResources()
             .restClient(r -> r.baseUrl("http://example.com"))
-            .interceptor(new UpstreamLoggingInterceptor())
-            .build();
+            .build(e -> {});
 
-    
     @Test
     public void canUseMockResources() {
         final var got = client.add("a", "b");

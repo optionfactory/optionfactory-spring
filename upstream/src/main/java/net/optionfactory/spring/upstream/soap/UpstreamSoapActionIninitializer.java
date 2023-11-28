@@ -6,12 +6,15 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
+import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
+import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import org.springframework.http.HttpRequest;
+import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpResponse;
 
-public class UpstreamSoapActionInterceptor implements UpstreamHttpInterceptor {
+public class UpstreamSoapActionIninitializer implements UpstreamHttpRequestInitializer {
 
     private final Map<Method, String> soapActions = new ConcurrentHashMap<>();
 
@@ -26,12 +29,11 @@ public class UpstreamSoapActionInterceptor implements UpstreamHttpInterceptor {
     }
 
     @Override
-    public ClientHttpResponse intercept(InvocationContext ctx, HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
-        final var soapAction = soapActions.get(ctx.method());
+    public void initialize(InvocationContext invocation, ClientHttpRequest request) {
+        final var soapAction = soapActions.get(invocation.method());
         if (soapAction != null) {
             request.getHeaders().set("SOAPAction", String.format("\"%s\"", soapAction));
         }
-        return execution.execute(request, body);
     }
 
 }

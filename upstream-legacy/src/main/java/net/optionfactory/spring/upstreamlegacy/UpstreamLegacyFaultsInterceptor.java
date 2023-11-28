@@ -4,6 +4,10 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Method;
 import java.time.Instant;
+import java.util.List;
+import net.optionfactory.spring.upstream.UpstreamHttpInterceptor.HttpMessageConverters;
+import net.optionfactory.spring.upstream.contexts.ExceptionContext;
+import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.faults.UpstreamFaultEvent;
 import net.optionfactory.spring.upstreamlegacy.UpstreamPort.Hints;
 import net.optionfactory.spring.upstreamlegacy.UpstreamPort.UpstreamFaultPredicate;
@@ -57,24 +61,30 @@ public class UpstreamLegacyFaultsInterceptor<CTX> implements UpstreamInterceptor
         final var bootAndRequestId = adaptToBootAndRequestId(prepare);
 
         final var evt = new UpstreamFaultEvent(
-                bootAndRequestId.boot(),
-                prepare.upstreamId,
-                prepare.ctx,
-                prepare.endpointId,
-                fakeInvokedMethod, // method
-                new Object[0],
-                bootAndRequestId.requestId(),
-                request.at,
-                prepare.entity.getUrl(),
-                prepare.entity.getMethod(),
-                request.headers,
-                toByteArray(request.body),
-                response.at,
-                response.headers,
-                response.status,
-                toByteArray(response.body),
+                new InvocationContext(
+                        new HttpMessageConverters(List.of()),
+                        prepare.upstreamId,
+                        prepare.endpointId,
+                        fakeInvokedMethod,
+                        new Object[0],
+                        bootAndRequestId.boot,
+                        prepare.ctx
+                ),
+                new net.optionfactory.spring.upstream.contexts.RequestContext(
+                        bootAndRequestId.requestId,
+                        request.at,
+                        prepare.entity.getMethod(),
+                        prepare.entity.getUrl(),
+                        request.headers, toByteArray(request.body)
+                ),
+                new net.optionfactory.spring.upstream.contexts.ResponseContext(
+                        response.at,
+                        response.status,
+                        response.status.getReasonPhrase(),
+                        response.headers,
+                        toByteArray(response.body)
+                ),
                 null);
-
         publisher.publishEvent(evt);
     }
 
@@ -89,25 +99,27 @@ public class UpstreamLegacyFaultsInterceptor<CTX> implements UpstreamInterceptor
     @Override
     public void remotingError(Hints<CTX> hints, PrepareContext<CTX> prepare, RequestContext request, ErrorContext error) {
         final var bootAndRequestId = adaptToBootAndRequestId(prepare);
-        
+
         final var evt = new UpstreamFaultEvent(
-                bootAndRequestId.boot(),
-                prepare.upstreamId,
-                prepare.ctx,
-                prepare.endpointId,
-                fakeInvokedMethod, // method
-                new Object[0],
-                bootAndRequestId.requestId(),
-                request.at,
-                prepare.entity.getUrl(),
-                prepare.entity.getMethod(),
-                request.headers,
-                toByteArray(request.body),
-                Instant.now(),
+                new InvocationContext(
+                        new HttpMessageConverters(List.of()),
+                        prepare.upstreamId,
+                        prepare.endpointId,
+                        fakeInvokedMethod,
+                        new Object[0],
+                        bootAndRequestId.boot,
+                        prepare.ctx
+                ),
+                new net.optionfactory.spring.upstream.contexts.RequestContext(
+                        bootAndRequestId.requestId,
+                        request.at,
+                        prepare.entity.getMethod(),
+                        prepare.entity.getUrl(),
+                        request.headers, toByteArray(request.body)
+                ),
                 null,
-                null,
-                new byte[0],
-                null);
+                new ExceptionContext(error.at, error.ex.getMessage()));
+
         publisher.publishEvent(evt);
     }
 

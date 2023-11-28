@@ -2,8 +2,8 @@ package net.optionfactory.spring.upstream.auth;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
-import net.optionfactory.spring.upstream.UpstreamHttpInterceptor.InvocationContext;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
+import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpRequestFactory;
@@ -31,7 +31,7 @@ public class UpstreamOAuthPasswordAuthenticator implements UpstreamHttpRequestIn
     }
 
     @Override
-    public void initialize(InvocationContext ctx, ClientHttpRequest request) {
+    public void initialize(InvocationContext invocation, ClientHttpRequest request) {
         try {
             final var oBody = new LinkedMultiValueMap<String, String>();
             oBody.add("username", "admin");
@@ -51,7 +51,7 @@ public class UpstreamOAuthPasswordAuthenticator implements UpstreamHttpRequestIn
 
             request.getHeaders().set("Authorization", String.format("Bearer %s", token));
         } catch (RuntimeException ex) {
-            throw new RestClientAuthenticationException(ctx.upstream(), ctx.endpoint(), ex);
+            throw new RestClientAuthenticationException(invocation.upstream(), invocation.endpoint(), ex);
         }
     }
 

@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.stream.Stream;
 import net.optionfactory.spring.email.EmailMessage;
 import net.optionfactory.spring.email.EmailPaths;
@@ -16,6 +17,10 @@ import net.optionfactory.spring.email.EmailSenderConfiguration;
 import net.optionfactory.spring.email.ScheduledEmailSender;
 import net.optionfactory.spring.email.spooling.BufferedScheduledSpooler;
 import net.optionfactory.spring.thymeleaf.SingletonDialect;
+import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
+import net.optionfactory.spring.upstream.contexts.InvocationContext;
+import net.optionfactory.spring.upstream.contexts.RequestContext;
+import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.faults.UpstreamFaultEvent;
 import net.optionfactory.spring.upstream.faults.spooler.FaultsEmailsSpoolerTest.Conf;
 import org.junit.Assert;
@@ -27,6 +32,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -103,24 +109,34 @@ public class FaultsEmailsSpoolerTest {
 
         final Object principal = null;
 
-        publisher.publishEvent(new UpstreamFaultEvent(
-                "boot-id",
-                "upstream-id",
-                principal,
-                "endpoint",
-                Object.class.getMethod("toString"),
-                new Object[0],
-                100,
-                Instant.now(),
-                URI.create("https://example.com"),
-                HttpMethod.PATCH,
-                new HttpHeaders(),
-                "request_body".repeat(1000).getBytes(StandardCharsets.UTF_8),
-                Instant.now(),
-                new HttpHeaders(),
-                HttpStatusCode.valueOf(400),
-                "response_body".repeat(1000).getBytes(StandardCharsets.UTF_8),
-                null));
+        final var event = new UpstreamFaultEvent(
+                new InvocationContext(
+                        new UpstreamHttpInterceptor.HttpMessageConverters(List.of()),
+                        "upstream",
+                        "endpoint",
+                        Object.class.getMethod("toString"),
+                        new Object[0],
+                        "boot-id",
+                        principal
+                ),
+                new RequestContext(
+                        1,
+                        Instant.now(),
+                        HttpMethod.PATCH,
+                        URI.create("https://example.com"),
+                        new HttpHeaders(),
+                        "request_body".repeat(1000).getBytes(StandardCharsets.UTF_8)
+                ),
+                new ResponseContext(
+                        Instant.now(),
+                        HttpStatus.OK,
+                        HttpStatus.OK.getReasonPhrase(),
+                        new HttpHeaders(),
+                        "response_body".repeat(1000).getBytes(StandardCharsets.UTF_8)
+                ),
+                null);
+
+        publisher.publishEvent(event);
 
         Thread.sleep(Duration.ofMillis(500));
         Assert.assertEquals(1, emlsIn(paths.sent()).count());

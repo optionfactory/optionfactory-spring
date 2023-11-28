@@ -3,6 +3,7 @@ package net.optionfactory.spring.upstream;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
+import java.lang.annotation.Annotation;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.time.temporal.ChronoUnit;
@@ -14,7 +15,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.xml.validation.Schema;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor.HttpMessageConverters;
-import net.optionfactory.spring.upstream.errors.UpstreamErrorsHandler;
+import net.optionfactory.spring.upstream.errors.UpstreamErrorOnReponseHandler;
+import net.optionfactory.spring.upstream.faults.UpstreamFaultOnRemotingErrorInterceptor;
+import net.optionfactory.spring.upstream.faults.UpstreamFaultOnResponseInterceptor;
+import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
 import net.optionfactory.spring.upstream.mocks.MockResourcesUpstreamHttpResponseFactory;
 import net.optionfactory.spring.upstream.mocks.MockUpstreamRequestFactory;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
@@ -23,7 +27,7 @@ import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
 import net.optionfactory.spring.upstream.soap.SoapHeaderWriter;
 import net.optionfactory.spring.upstream.soap.SoapMessageHttpMessageConverter;
-import net.optionfactory.spring.upstream.soap.UpstreamSoapActionInterceptor;
+import net.optionfactory.spring.upstream.soap.UpstreamSoapActionIninitializer;
 import org.apache.hc.client5.http.socket.LayeredConnectionSocketFactory;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -41,7 +45,6 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.http.converter.support.AllEncompassingFormHttpMessageConverter;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.service.invoker.HttpServiceArgumentResolver;
 
 public class UpstreamBuilder<T> {
@@ -51,6 +54,7 @@ public class UpstreamBuilder<T> {
     protected final List<UpstreamHttpInterceptor> interceptors = new ArrayList<>();
     protected final List<UpstreamResponseErrorHandler> responseErrorHandlers = new ArrayList<>();
     protected final List<Consumer<HttpServiceProxyFactory.Builder>> serviceProxyCustomizers = new ArrayList<>();
+    protected final List<UpstreamAfterMappingHandler> afterMappings = new ArrayList<>();
     protected final List<HttpServiceArgumentResolver> argumentResolvers = new ArrayList<>();
     protected UpstreamHttpRequestFactory upstreamRequestFactory;
     protected ClientHttpRequestFactory requestFactory;
@@ -149,7 +153,7 @@ public class UpstreamBuilder<T> {
 
     public UpstreamBuilder<T> soap(Protocol protocol, @Nullable Schema schema, @Nullable SoapHeaderWriter headerWriter, JAXBContext context) {
         if (protocol == Protocol.SOAP_1_1) {
-            this.interceptors.add(new UpstreamSoapActionInterceptor());
+            this.initializer(new UpstreamSoapActionIninitializer());
         }
         restClientCustomizers.add(b -> {
             b.messageConverters(c -> {
@@ -208,11 +212,6 @@ public class UpstreamBuilder<T> {
         responseErrorHandlers.add(eh);
         return this;
     }
-    
-    public UpstreamBuilder<T> responseErrorHandlerFromAnnotations() {
-        responseErrorHandlers.add(new UpstreamErrorsHandler());
-        return this;
-    }
 
     public UpstreamBuilder<T> serviceProxy(Consumer<HttpServiceProxyFactory.Builder> c) {
         serviceProxyCustomizers.add(c);
@@ -234,7 +233,8 @@ public class UpstreamBuilder<T> {
         return this;
     }
 
-    public T build() {
+    public T build(Consumer<Object> publisher) {
+        Assert.notNull(publisher, "publisher must be configured");
         final var clockOrDefault = this.clock != null ? this.clock : InstantSource.system();
         final var upstreamId = !conf.value().isBlank() ? conf.value() : klass.getSimpleName();
         final var principalOrDefault = this.principal != null ? this.principal : new Supplier<Object>() {
@@ -268,12 +268,38 @@ public class UpstreamBuilder<T> {
                 .map(scopeHandler::adapt)
                 .forEach(rcb::requestInitializer);
 
+        rcb.requestInterceptor(scopeHandler.requestContextInterceptor());
+
         interceptors.stream()
                 .peek(i -> i.preprocess(klass, bufferedRequestFactory))
                 .map(scopeHandler::adapt)
                 .forEach(rcb::requestInterceptor);
 
-        responseErrorHandlers.stream().peek(i -> i.preprocess(klass, bufferedRequestFactory))
+        if (annotationAnywhereIn(klass, Upstream.Logging.class)) {
+            final UpstreamLoggingInterceptor i = new UpstreamLoggingInterceptor();
+            i.preprocess(klass, bufferedRequestFactory);
+            rcb.requestInterceptor(scopeHandler.adapt(i));
+        }
+        if (annotationAnywhereIn(klass, Upstream.FaultOnRemotingError.class)) {
+            final UpstreamFaultOnRemotingErrorInterceptor i = new UpstreamFaultOnRemotingErrorInterceptor(publisher);
+            i.preprocess(klass, bufferedRequestFactory);
+            rcb.requestInterceptor(scopeHandler.adapt(i));
+        }
+        if (annotationAnywhereIn(klass, Upstream.FaultOnResponse.class)) {
+            final UpstreamFaultOnResponseInterceptor i = new UpstreamFaultOnResponseInterceptor(publisher);
+            i.preprocess(klass, bufferedRequestFactory);
+            rcb.requestInterceptor(scopeHandler.adapt(i));
+        }
+
+        rcb.requestInterceptor(scopeHandler.responseContextInterceptor(clockOrDefault));
+
+        if (annotationAnywhereIn(klass, Upstream.ErrorOnResponse.class)) {
+            final UpstreamErrorOnReponseHandler eh = new UpstreamErrorOnReponseHandler();
+            eh.preprocess(klass, bufferedRequestFactory);
+            rcb.defaultStatusHandler(scopeHandler.adapt(eh));
+        }
+        responseErrorHandlers.stream()
+                .peek(i -> i.preprocess(klass, bufferedRequestFactory))
                 .map(scopeHandler::adapt)
                 .forEach(rcb::defaultStatusHandler);
 
@@ -292,8 +318,16 @@ public class UpstreamBuilder<T> {
         final var p = new ProxyFactory();
         p.setTarget(client);
         p.setInterfaces(klass);
-        p.addAdvice(scopeHandler.interceptor(new HttpMessageConverters(messageConverters)));
+        p.addAdvice(scopeHandler.interceptor(new HttpMessageConverters(messageConverters), afterMappings));
         return (T) p.getProxy();
     }
 
+    private static <A extends Annotation> boolean annotationAnywhereIn(Class<?> k, Class<A> annotation) {
+        if (k.getAnnotationsByType(annotation).length > 0) {
+            return true;
+        }
+        return Stream.of(k.getDeclaredMethods())
+                .map(m -> m.getAnnotationsByType(annotation))
+                .anyMatch(as -> as.length > 0);
+    }
 }

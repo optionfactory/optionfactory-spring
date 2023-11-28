@@ -1,5 +1,6 @@
 package net.optionfactory.spring.upstream.paths;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -9,16 +10,16 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import org.springframework.http.client.ClientHttpResponse;
+import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import org.xml.sax.SAXException;
 
 public class XmlPath {
 
     public static final MethodHandle XPATH_BOOLEAN_METHOD_HANDLE = xpathBooleanMethodHandle();
     private final DocumentBuilderFactory builderFactory;
-    private final ClientHttpResponse response;
+    private final ResponseContext response;
 
-    public XmlPath(ClientHttpResponse response) {
+    public XmlPath(ResponseContext response) {
         this.builderFactory = DocumentBuilderFactory.newInstance();
         this.response = response;
     }
@@ -27,7 +28,7 @@ public class XmlPath {
         try {
             final var expression = XPathFactory.newInstance().newXPath().compile(path);
             final var builder = builderFactory.newDocumentBuilder();
-            try (final var is = response.getBody()) {
+            try (final var is = new ByteArrayInputStream(response.body())) {
                 final var document = builder.parse(is);
                 final var result = expression.evaluate(document, XPathConstants.BOOLEAN);
                 return (Boolean) result;
@@ -45,7 +46,7 @@ public class XmlPath {
         }
     }
 
-    public static MethodHandle xpathBooleanBoundMethodHandle(ClientHttpResponse response) {
+    public static MethodHandle xpathBooleanBoundMethodHandle(ResponseContext response) {
         return XPATH_BOOLEAN_METHOD_HANDLE.bindTo(new XmlPath(response));
     }
 

@@ -7,8 +7,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import javax.xml.validation.Schema;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
-import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
-import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
+import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
 import net.optionfactory.spring.upstream.soap.calc.Add;
@@ -29,7 +28,7 @@ public class SoapClientTest {
         final Schema schema = Schemas.load(new ClassPathResource("/calculator/schema.xsd"));
 
         final var client = UpstreamBuilder.create(CalculatorClient.class)
-                .requestFactory((UpstreamHttpInterceptor.InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
+                .requestFactory((InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
                     return MockClientHttpResponse.okUtf8(MediaType.TEXT_XML, """
                                         <?xml version="1.0" encoding="utf-8"?>
                                         <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
@@ -43,8 +42,8 @@ public class SoapClientTest {
                 })
                 .soap(Protocol.SOAP_1_1, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
-                .interceptor(new UpstreamLoggingInterceptor())
-                .build();
+                .build(e -> {
+                });
 
         Add req = new Add();
         req.intA = 3;
@@ -58,7 +57,7 @@ public class SoapClientTest {
         final Schema schema = null;
         final var client = UpstreamBuilder
                 .create(CalculatorClient.class)
-                .requestFactory((UpstreamHttpInterceptor.InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
+                .requestFactory((InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
                     final var h = new HttpHeaders();
                     h.setContentType(MediaType.valueOf("application/soap+xml; charset=utf-8"));
                     final var content = """
@@ -75,8 +74,8 @@ public class SoapClientTest {
                 })
                 .soap(Protocol.SOAP_1_2, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
-                .interceptor(new UpstreamLoggingInterceptor())
-                .build();
+                .build(e -> {
+                });
 
         Add req = new Add();
         req.intA = 3;
@@ -90,7 +89,7 @@ public class SoapClientTest {
         final Schema schema = null;
         final var client = UpstreamBuilder
                 .create(CalculatorClient.class)
-                .requestFactory((UpstreamHttpInterceptor.InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
+                .requestFactory((InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
                     final var h = new HttpHeaders();
                     h.setContentType(MediaType.valueOf("text/xml;charset=utf-8"));
                     final var content = """
@@ -109,8 +108,8 @@ public class SoapClientTest {
                 })
                 .soap(Protocol.SOAP_1_1, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
-                .interceptor(new UpstreamLoggingInterceptor())
-                .build();
+                .build(e -> {
+                });
 
         Add req = new Add();
         req.intA = 3;

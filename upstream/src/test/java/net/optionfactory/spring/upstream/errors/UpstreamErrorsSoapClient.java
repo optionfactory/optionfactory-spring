@@ -7,7 +7,7 @@ import org.springframework.web.service.annotation.GetExchange;
 public interface UpstreamErrorsSoapClient {
 
     @GetExchange
-    @Upstream.Error("""
+    @Upstream.ErrorOnResponse("""
                     #xpath_bool('//AddResult/text() != "8"')
                     """)
     AddResponse callWithXpath();

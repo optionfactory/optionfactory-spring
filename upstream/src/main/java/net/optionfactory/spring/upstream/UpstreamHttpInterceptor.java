@@ -4,18 +4,15 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Method;
-import java.time.Instant;
-import java.time.InstantSource;
 import java.util.List;
+import net.optionfactory.spring.upstream.contexts.InvocationContext;
+import net.optionfactory.spring.upstream.contexts.RequestContext;
+import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpOutputMessage;
-import org.springframework.http.HttpRequest;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestFactory;
-import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.util.FastByteArrayOutputStream;
 
@@ -24,23 +21,7 @@ public interface UpstreamHttpInterceptor {
     default void preprocess(Class<?> k, ClientHttpRequestFactory rf) {
     }
 
-    default ClientHttpResponse intercept(InvocationContext ctx, HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
-        return execution.execute(request, body);
-    }
-
-    public static record InvocationContext(
-            String upstream,
-            HttpMessageConverters converters,
-            InstantSource clock,
-            Instant requestedAt,
-            String endpoint,
-            Method method,
-            Object[] arguments,
-            String boot,
-            Object principal,
-            long request) {
-
-    }
+    ResponseContext intercept(InvocationContext invocation, RequestContext request, UpstreamHttpRequestExecution execution) throws IOException;
 
     public record HttpMessageConverters(List<HttpMessageConverter<?>> all) {
 

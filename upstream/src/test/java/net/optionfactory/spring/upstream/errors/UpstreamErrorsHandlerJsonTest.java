@@ -2,13 +2,8 @@ package net.optionfactory.spring.upstream.errors;
 
 import java.net.URI;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
-import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
-import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
+import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
-import net.optionfactory.spring.upstream.soap.Schemas;
-import net.optionfactory.spring.upstream.soap.SoapHeaderWriter;
-import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter;
-import net.optionfactory.spring.upstream.soap.calc.AddResponse;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.http.HttpHeaders;
@@ -20,7 +15,7 @@ public class UpstreamErrorsHandlerJsonTest {
     @Test(expected = RestClientUpstreamException.class)
     public void matchinErrorAnnotationYieldsRestClientUpstreamException() {
         UpstreamBuilder.create(UpstreamErrorsJsonClient.class)
-                .requestFactory((UpstreamHttpInterceptor.InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
+                .requestFactory((InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
                     return MockClientHttpResponse.okUtf8(
                             MediaType.APPLICATION_JSON,
                             """
@@ -32,16 +27,15 @@ public class UpstreamErrorsHandlerJsonTest {
                     );
                 })
                 .restClient(r -> r.baseUrl("http://example.com"))
-                .interceptor(new UpstreamLoggingInterceptor())
-                .responseErrorHandlerFromAnnotations()
-                .build()
+                .build(e -> {
+                })
                 .callWithJsonPath();
     }
 
     @Test
     public void nonMatchinErrorAnnotationYieldsResult() {
         final var response = UpstreamBuilder.create(UpstreamErrorsJsonClient.class)
-                .requestFactory((UpstreamHttpInterceptor.InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
+                .requestFactory((InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
                     return MockClientHttpResponse.okUtf8(
                             MediaType.APPLICATION_JSON,
                             """
@@ -53,9 +47,8 @@ public class UpstreamErrorsHandlerJsonTest {
                     );
                 })
                 .restClient(r -> r.baseUrl("http://example.com"))
-                .interceptor(new UpstreamLoggingInterceptor())
-                .responseErrorHandlerFromAnnotations()
-                .build()
+                .build(e -> {
+                })
                 .callWithJsonPath();
 
         Assert.assertEquals(true, response.metadata.success);

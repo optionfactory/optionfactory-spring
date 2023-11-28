@@ -6,8 +6,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.function.Function;
 import javax.crypto.SecretKey;
-import net.optionfactory.spring.upstream.UpstreamHttpInterceptor.InvocationContext;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
+import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import org.springframework.http.client.ClientHttpRequest;
 
 public class UpstreamJwtAuthenticator implements UpstreamHttpRequestInitializer {

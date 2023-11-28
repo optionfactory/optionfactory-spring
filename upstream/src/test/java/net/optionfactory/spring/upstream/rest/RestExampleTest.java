@@ -3,8 +3,7 @@ package net.optionfactory.spring.upstream.rest;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
-import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
-import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
+import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
 import org.junit.Assert;
 import org.junit.Test;
@@ -21,7 +20,7 @@ public class RestExampleTest {
     public void canCallDummyApi() {
         final var client = UpstreamBuilder
                 .create(RestTestClient.class)
-                .requestFactory((UpstreamHttpInterceptor.InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
+                .requestFactory((InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
                     HttpHeaders h = new HttpHeaders();
                     h.setContentType(MediaType.APPLICATION_JSON);
                     final var content = """
@@ -29,9 +28,8 @@ public class RestExampleTest {
                     """;
                     return new MockClientHttpResponse(HttpStatus.OK, HttpStatus.OK.getReasonPhrase(), h, new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8)));
                 })
-                .interceptor(new UpstreamLoggingInterceptor())
                 .restClient(r -> r.baseUrl("https://hub.dummyapis.com/statuscode/"))
-                .build();
+                .build(e -> {});
         final var response = client.ok("asd");
         Assert.assertEquals("b", response.get("a"));
     }
@@ -40,15 +38,14 @@ public class RestExampleTest {
     public void badRequestYieldsException() {
         final var client = UpstreamBuilder
                 .create(RestTestClient.class)
-                .requestFactory((UpstreamHttpInterceptor.InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
+                .requestFactory((InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
                     HttpHeaders h = new HttpHeaders();
                     h.setContentType(MediaType.APPLICATION_JSON);
                     final var content = "";
                     return new MockClientHttpResponse(HttpStatus.BAD_REQUEST, HttpStatus.BAD_REQUEST.getReasonPhrase(), h, new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8)));
                 })
-                .interceptor(new UpstreamLoggingInterceptor())
                 .restClient(r -> r.baseUrl("https://hub.dummyapis.com/statuscode/"))
-                .build();
+                .build(e -> {});
         client.error("asd");
     }
 

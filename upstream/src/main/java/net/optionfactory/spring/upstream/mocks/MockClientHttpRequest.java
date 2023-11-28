@@ -3,7 +3,7 @@ package net.optionfactory.spring.upstream.mocks;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
-import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
+import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpRequest;
@@ -15,18 +15,18 @@ public class MockClientHttpRequest implements ClientHttpRequest {
     private final HttpMethod method;
     private final HttpHeaders headers = new HttpHeaders();
     private final UpstreamHttpResponseFactory strategy;
-    private final UpstreamHttpInterceptor.InvocationContext ctx;
+    private final InvocationContext invocation;
 
-    public MockClientHttpRequest(URI uri, HttpMethod method, UpstreamHttpResponseFactory strategy, UpstreamHttpInterceptor.InvocationContext ctx) {
+    public MockClientHttpRequest(URI uri, HttpMethod method, UpstreamHttpResponseFactory strategy, InvocationContext invocation) {
         this.uri = uri;
         this.method = method;
         this.strategy = strategy;
-        this.ctx = ctx;
+        this.invocation = invocation;
     }
 
     @Override
     public ClientHttpResponse execute() throws IOException {
-        return strategy.create(ctx, uri, method, headers);
+        return strategy.create(invocation, uri, method, headers);
     }
 
     @Override

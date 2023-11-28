@@ -54,14 +54,6 @@ public class BodyRendering {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    public static String render(Strategy strategy, MediaType type, InputStream body, String infix, int maxSize) {
-        try (body) {
-            return render(strategy, type, StreamUtils.copyToByteArray(body), infix, maxSize);
-        } catch (Exception ex) {
-            return "(unreadable)";
-        }
-    }
-
     public static String render(Strategy strategy, MediaType type, byte[] bodyBytes, String infix, int maxSize) {
         return switch (strategy) {
             case SIZE ->

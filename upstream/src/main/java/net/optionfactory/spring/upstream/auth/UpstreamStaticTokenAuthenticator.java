@@ -1,7 +1,7 @@
 package net.optionfactory.spring.upstream.auth;
 
-import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
+import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import org.springframework.http.client.ClientHttpRequest;
 
 public class UpstreamStaticTokenAuthenticator implements UpstreamHttpRequestInitializer {
@@ -15,7 +15,7 @@ public class UpstreamStaticTokenAuthenticator implements UpstreamHttpRequestInit
     }
 
     @Override
-    public void initialize(UpstreamHttpInterceptor.InvocationContext ctx, ClientHttpRequest request) {
+    public void initialize(InvocationContext invocation, ClientHttpRequest request) {
         request.getHeaders().add("Authorization", String.format("%s %s", tokenType, token));
     }
 

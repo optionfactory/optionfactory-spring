@@ -5,8 +5,7 @@ import java.net.URI;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.xml.validation.Schema;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
-import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
-import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
+import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
 import net.optionfactory.spring.upstream.soap.calc.Add;
@@ -27,7 +26,7 @@ public class UpstreamSoapActionInterceptorTest {
         final var capturedHeaders = new AtomicReference<HttpHeaders>();
 
         UpstreamBuilder.create(CalculatorClient.class)
-                .requestFactory((UpstreamHttpInterceptor.InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
+                .requestFactory((InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
                     capturedHeaders.set(headers);
                     return MockClientHttpResponse.okUtf8(MediaType.TEXT_XML, """
                                         <?xml version="1.0" encoding="utf-8"?>
@@ -42,8 +41,7 @@ public class UpstreamSoapActionInterceptorTest {
                 })
                 .soap(Protocol.SOAP_1_1, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
-                .interceptor(new UpstreamLoggingInterceptor())
-                .build()
+                .build(e -> {})
                 .add(new Add());
 
         Assert.assertEquals("\"http://tempuri.org/Add\"", capturedHeaders.get().getFirst("SOAPAction"));

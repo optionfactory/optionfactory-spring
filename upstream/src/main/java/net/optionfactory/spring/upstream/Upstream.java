@@ -128,11 +128,9 @@ public @interface Upstream {
     @Documented
     public @interface FaultOnResponse {
 
-        public static final String STATUS_IS_ERROR = "#status.isError()";
-        public static final String ALWAYS = "true";
-        public static final String NEVER = "false";
+        public static final String STATUS_IS_ERROR = "#response.status().isError()";
 
-        String value() default STATUS_IS_ERROR;
+        String value();
 
     }
 
@@ -142,17 +140,25 @@ public @interface Upstream {
     public @interface FaultOnRemotingError {
 
         public static final String ALWAYS = "true";
-        public static final String NEVER = "false";
 
         String value() default ALWAYS;
 
     }
 
     @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.TYPE, ElementType.METHOD})
+    @Documented
+    public @interface FaultAfterMapping {
+
+        String value();
+
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.METHOD)
     @Documented
-    @Repeatable(Error.List.class)
-    public @interface Error {
+    @Repeatable(ErrorOnResponse.List.class)
+    public @interface ErrorOnResponse {
 
         String value() default "false";
 
@@ -165,7 +171,26 @@ public @interface Upstream {
         @Documented
         public @interface List {
 
-            Error[] value();
+            ErrorOnResponse[] value();
+        }
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.METHOD)
+    @Documented
+    @Repeatable(ErrorAfterMapping.List.class)
+    public @interface ErrorAfterMapping {
+
+        String value() default "false";
+
+        String reason() default "upstream error in response";
+
+        @Target(ElementType.METHOD)
+        @Retention(RetentionPolicy.RUNTIME)
+        @Documented
+        public @interface List {
+
+            ErrorAfterMapping[] value();
         }
     }
 

@@ -5,9 +5,11 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.time.InstantSource;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -25,10 +27,19 @@ import org.springframework.http.client.ClientHttpRequestInterceptor;
 import net.optionfactory.spring.upstream.UpstreamResponseErrorHandler;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.ResponseErrorHandler;
+import net.optionfactory.spring.upstream.UpstreamAfterMappingHandler;
+import net.optionfactory.spring.upstream.contexts.InvocationContext;
+import net.optionfactory.spring.upstream.contexts.RequestContext;
+import net.optionfactory.spring.upstream.contexts.ResponseContext;
+import org.springframework.http.HttpRequest;
+import org.springframework.http.client.ClientHttpRequestExecution;
+import org.springframework.util.FileCopyUtils;
 
 public class ThreadLocalScopeHandler implements ScopeHandler {
 
-    private final ThreadLocal<UpstreamHttpInterceptor.InvocationContext> ctx = new ThreadLocal<>();
+    private final ThreadLocal<InvocationContext> ictx = new ThreadLocal<>();
+    private final ThreadLocal<RequestContext> reqCtx = new ThreadLocal<>();
+    private final ThreadLocal<ResponseContext> resCtx = new ThreadLocal<>();
     private final Class<?> klass;
     private final String upstreamId;
     private final AtomicLong requestCounter = new AtomicLong(0);
@@ -45,7 +56,7 @@ public class ThreadLocalScopeHandler implements ScopeHandler {
     }
 
     @Override
-    public MethodInterceptor interceptor(HttpMessageConverters converters) {
+    public MethodInterceptor interceptor(HttpMessageConverters converters, List<UpstreamAfterMappingHandler> afterMappingHandlers) {
         final var methodToPrincipalParamIndex = Stream.of(klass.getDeclaredMethods())
                 .filter(m -> Stream.of(m.getParameters()).anyMatch(p -> p.isAnnotationPresent(Upstream.Principal.class)))
                 .collect(Collectors.toConcurrentMap(m -> m, m -> {
@@ -73,28 +84,58 @@ public class ThreadLocalScopeHandler implements ScopeHandler {
                     .map(i -> invocation.getArguments()[i])
                     .or(() -> Optional.ofNullable(principal.get()))
                     .orElse(null);
-            ctx.set(new UpstreamHttpInterceptor.InvocationContext(upstreamId, converters, clock, clock.instant(), endpointNames.get(method), method, invocation.getArguments(), BOOT_ID, eprincipal, requestCounter.incrementAndGet()));
+            ictx.set(new InvocationContext(converters, upstreamId, endpointNames.get(method), method, invocation.getArguments(), BOOT_ID, eprincipal));
             try {
-                return invocation.proceed();
+                final var result = invocation.proceed();
+                for (UpstreamAfterMappingHandler amh : afterMappingHandlers) {
+                    amh.handle(ictx.get(), reqCtx.get(), resCtx.get(), result);
+                }
+                return result;
             } finally {
-                ctx.remove();
+                ictx.remove();
+                reqCtx.remove();
+                resCtx.remove();
             }
+        };
+    }
+
+    public ClientHttpRequestInterceptor requestContextInterceptor() {
+        return (HttpRequest request, byte[] body, ClientHttpRequestExecution execution) -> {
+            reqCtx.set(new RequestContext(requestCounter.incrementAndGet(), clock.instant(), request.getMethod(), request.getURI(), request.getHeaders(), body));
+            return execution.execute(request, body);
+        };
+    }
+
+    public ClientHttpRequestInterceptor responseContextInterceptor(InstantSource clock) {
+        return (HttpRequest request, byte[] body, ClientHttpRequestExecution execution) -> {
+            final var response = execution.execute(request, body);
+            resCtx.set(new ResponseContext(clock.instant(), response.getStatusCode(), response.getStatusText(), response.getHeaders(), FileCopyUtils.copyToByteArray(response.getBody())));
+            return response;
         };
     }
 
     @Override
     public ClientHttpRequestInitializer adapt(UpstreamHttpRequestInitializer initializer) {
-        return (request) -> initializer.initialize(ctx.get(), request);
+        return (request) -> initializer.initialize(ictx.get(), request);
     }
 
     @Override
     public ClientHttpRequestInterceptor adapt(UpstreamHttpInterceptor interceptor) {
-        return (request, body, execution) -> interceptor.intercept(ctx.get(), request, body, execution);
+        return (HttpRequest request, byte[] body, ClientHttpRequestExecution execution) -> {
+            final var responseHolder = new AtomicReference<ClientHttpResponse>();
+            interceptor.intercept(ictx.get(), reqCtx.get(), (InvocationContext ctx, RequestContext rctx) -> {
+                reqCtx.set(rctx);
+                final ClientHttpResponse chr = execution.execute(request, rctx.body());
+                responseHolder.set(chr);
+                return resCtx.get();
+            });
+            return responseHolder.get();
+        };
     }
 
     @Override
     public ClientHttpRequestFactory adapt(UpstreamHttpRequestFactory factory) {
-        return (uri, httpMethod) -> factory.createRequest(ctx.get(), uri, httpMethod);
+        return (uri, httpMethod) -> factory.createRequest(ictx.get(), uri, httpMethod);
 
     }
 
@@ -103,12 +144,12 @@ public class ThreadLocalScopeHandler implements ScopeHandler {
         return new ResponseErrorHandler() {
             @Override
             public boolean hasError(ClientHttpResponse response) throws IOException {
-                return eh.hasError(ctx.get(), response);
+                return eh.hasError(ictx.get(), reqCtx.get(), resCtx.get());
             }
 
             @Override
             public void handleError(ClientHttpResponse response) throws IOException {
-                eh.handleError(ctx.get(), response);
+                eh.handleError(ictx.get(), reqCtx.get(), resCtx.get());
             }
         };
     }

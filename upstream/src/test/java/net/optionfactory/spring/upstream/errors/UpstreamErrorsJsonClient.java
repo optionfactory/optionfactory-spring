@@ -6,7 +6,7 @@ import org.springframework.web.service.annotation.GetExchange;
 public interface UpstreamErrorsJsonClient {
 
     @GetExchange
-    @Upstream.Error(value = "#json_path('success').asBoolean() == false")
+    @Upstream.ErrorOnResponse(value = "#json_path('success').asBoolean() == false")
     Response callWithJsonPath();
 
     public static class Response {
