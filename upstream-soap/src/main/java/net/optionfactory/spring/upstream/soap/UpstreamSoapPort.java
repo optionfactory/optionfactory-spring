@@ -45,6 +45,7 @@ import org.springframework.ws.soap.SoapMessage;
 import org.springframework.ws.soap.SoapVersion;
 import org.springframework.ws.soap.saaj.SaajSoapMessageFactory;
 import org.springframework.ws.transport.context.TransportContextHolder;
+import org.springframework.ws.transport.http.HttpComponents5Connection;
 import org.springframework.ws.transport.http.HttpComponents5MessageSender;
 import org.springframework.ws.transport.http.HttpComponentsConnection;
 
@@ -154,7 +155,7 @@ public class UpstreamSoapPort<CTX> implements UpstreamPort<CTX> {
                 if (soapAction != null) {
                     ((SoapMessage) message).setSoapAction(soapAction);
                 }
-                final HttpComponentsConnection connection = (HttpComponentsConnection) TransportContextHolder.getTransportContext().getConnection();
+                final HttpComponents5Connection connection = (HttpComponents5Connection) TransportContextHolder.getTransportContext().getConnection();
                 for (Entry<String, List<String>> header : ctx.prepare.entity.getHeaders().entrySet()) {
                     for (String value : header.getValue()) {
                         connection.addRequestHeader(header.getKey(), value);
