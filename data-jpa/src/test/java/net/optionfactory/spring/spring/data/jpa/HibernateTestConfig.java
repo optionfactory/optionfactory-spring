@@ -1,6 +1,7 @@
 package net.optionfactory.spring.spring.data.jpa;
 
-import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import java.beans.PropertyVetoException;
 import java.util.Properties;
 import javax.sql.DataSource;
@@ -46,21 +47,12 @@ public class HibernateTestConfig {
 
     @Bean
     public DataSource dataSource() throws PropertyVetoException {
-        final var dataSource = new ComboPooledDataSource();
-        dataSource.setProperties(new Properties());
-        dataSource.setUser("sa");
-        dataSource.setPassword("");
-        dataSource.setDriverClass(org.h2.Driver.class.getName());
-        dataSource.setJdbcUrl("jdbc:h2:mem:testdb");
-        dataSource.setInitialPoolSize(5);
-        dataSource.setMaxPoolSize(50);
-        dataSource.setMinPoolSize(5);
-        dataSource.setAcquireIncrement(1);
-        dataSource.setAcquireRetryAttempts(3);
-        dataSource.setMaxIdleTime(60);
-        dataSource.setPreferredTestQuery("select 1");
-        dataSource.setTestConnectionOnCheckout(true);
-        return dataSource;
+        final var config = new HikariConfig();
+        config.setJdbcUrl("jdbc:h2:mem:testdb");
+        config.setUsername("sa");
+        config.setPassword("");
+        return new HikariDataSource(config);        
+
     }
 
     @Bean
