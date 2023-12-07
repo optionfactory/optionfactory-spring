@@ -13,6 +13,7 @@ import net.optionfactory.spring.upstream.UpstreamHttpRequestExecution;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
+import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
 import net.optionfactory.spring.upstream.rendering.BodyRendering;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +45,7 @@ public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
         if (conf.requestHeaders()) {
             logger.info("{}[t:oh] headers: {}", prefix, request.headers());
         }
-        final var requestBody = request.body() == null || request.body().length == 0 ? "" : String.format(" body: %s", BodyRendering.render(conf.request(), request.headers().getContentType(), request.body(), conf.infix(), conf.requestMaxSize()));
+        final var requestBody = request.body() == null || request.body().length == 0 ? "" : String.format(" body: %s", BodyRendering.render(conf.request(), request.headers().getContentLength(), request.headers().getContentType(), BodySource.of(request.body()), conf.infix(), conf.requestMaxSize()));
         logger.info("{}[t:ob] method: {} url: {}{}", prefix, request.method(), request.uri(), requestBody);
         try {
             final ResponseContext response = execution.execute(invocation, request);
@@ -52,7 +53,7 @@ public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
             if (conf.responseHeaders()) {
                 logger.info("{}[t:ih][ms:{}] headers: {}", prefix, elapsed, response.headers());
             }
-            final var responseBody = response.body() == null || response.body().length == 0 ? "" : String.format(" type:%s body: %s", response.headers().getContentType(), BodyRendering.render(conf.response(), response.headers().getContentType(), response.body(), conf.infix(), conf.responseMaxSize()));
+            final var responseBody = response.headers().getContentLength() == 0 ? "" : String.format(" type:%s body: %s", response.headers().getContentType(), BodyRendering.render(conf.response(), response.headers().getContentLength(), response.headers().getContentType(), response.body(), conf.infix(), conf.responseMaxSize()));
             logger.info("{}[t:ib][ms:{}] status: {}{}", prefix, elapsed, response.status(), responseBody);
             return response;
         } catch (Exception ex) {

@@ -2,9 +2,7 @@ package net.optionfactory.spring.upstream.rendering;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
@@ -15,8 +13,8 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
+import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
 import org.springframework.http.MediaType;
-import org.springframework.util.StreamUtils;
 
 public class BodyRendering {
 
@@ -54,16 +52,16 @@ public class BodyRendering {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    public static String render(Strategy strategy, MediaType type, byte[] bodyBytes, String infix, int maxSize) {
+    public static String render(Strategy strategy, long contentLength, MediaType type, BodySource source, String infix, int maxSize) {
         return switch (strategy) {
             case SIZE ->
-                String.format("size: %sB", bodyBytes.length);
+                String.format("size: %sB", contentLength);
             case ABBREVIATED ->
-                abbreviated(bodyBytes, infix, maxSize);
+                abbreviated(source, infix, maxSize);
             case ABBREVIATED_COMPACT ->
-                abbreviated(compact(bodyBytes, type), infix, maxSize);
+                abbreviated(compact(source, type), infix, maxSize);
             case ABBREVIATED_ONELINE ->
-                oneline(abbreviated(bodyBytes, infix, maxSize));
+                oneline(abbreviated(source, infix, maxSize));
         };
     }
 
@@ -71,30 +69,30 @@ public class BodyRendering {
         return source.replaceAll("[\r\n]+", "");
     }
 
-    public static String compact(byte[] bytes, MediaType type) {
+    public static String compact(BodySource source, MediaType type) {
         try {
             if (MediaType.parseMediaType("application/*+json").isCompatibleWith(type)) {
-                return jsonCompact(bytes);
+                return jsonCompact(source);
             }
             if (MediaType.parseMediaType("application/*+xml").isCompatibleWith(type) || MediaType.parseMediaType("text/*+xml").isCompatibleWith(type)) {
-                return xsltCompact(bytes);
+                return xsltCompact(source);
             }
         } catch (RuntimeException ex) {
             //fallback to oneline
         }
-        return oneline(new String(bytes, StandardCharsets.UTF_8));
+        return oneline(new String(source.bytes(), StandardCharsets.UTF_8));
     }
 
-    public static String jsonCompact(byte[] bytes) {
-        try {
-            return OBJECT_MAPPER.readValue(bytes, JsonNode.class).toString();
+    public static String jsonCompact(BodySource source) {
+        try (final var is = source.inputStream()) {
+            return OBJECT_MAPPER.readValue(is, JsonNode.class).toString();
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
         }
     }
 
-    public static String xsltCompact(byte[] bytes) {
-        try (final var is = new ByteArrayInputStream(bytes); final var writer = new StringWriter()) {
+    public static String xsltCompact(BodySource source) {
+        try (final var is = source.inputStream(); final var writer = new StringWriter()) {
             final var transformer = COMPACTING_XML_TEMPLATE.newTransformer();
             transformer.setOutputProperty("omit-xml-declaration", "yes");
             transformer.transform(new StreamSource(is), new StreamResult(writer));
@@ -117,7 +115,8 @@ public class BodyRendering {
         return prefix + infix + suffix;
     }
 
-    public static String abbreviated(byte[] bytes, String infix, int maxSize) {
+    public static String abbreviated(BodySource source, String infix, int maxSize) {
+        final var bytes = source.bytes();
         if (bytes.length <= maxSize) {
             return new String(bytes, StandardCharsets.UTF_8);
         }

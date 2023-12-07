@@ -20,7 +20,7 @@ public class JsonPath {
     }
 
     public JsonNode path(String path) throws IOException {
-        return converters.convert(response.body(), JsonNode.class, response.headers().getContentType()).findPath(path);
+        return converters.convert(response.body().bytes(), JsonNode.class, response.headers().getContentType()).findPath(path);
     }
 
     private static MethodHandle jsonPathMethodHandle() {

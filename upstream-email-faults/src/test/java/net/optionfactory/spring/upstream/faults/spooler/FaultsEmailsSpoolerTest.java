@@ -21,6 +21,7 @@ import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
+import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
 import net.optionfactory.spring.upstream.faults.UpstreamFaultEvent;
 import net.optionfactory.spring.upstream.faults.spooler.FaultsEmailsSpoolerTest.Conf;
 import org.junit.Assert;
@@ -33,7 +34,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -132,7 +132,7 @@ public class FaultsEmailsSpoolerTest {
                         HttpStatus.OK,
                         HttpStatus.OK.getReasonPhrase(),
                         new HttpHeaders(),
-                        "response_body".repeat(1000).getBytes(StandardCharsets.UTF_8)
+                        BodySource.of("response_body".repeat(1000), StandardCharsets.UTF_8)
                 ),
                 null);
 

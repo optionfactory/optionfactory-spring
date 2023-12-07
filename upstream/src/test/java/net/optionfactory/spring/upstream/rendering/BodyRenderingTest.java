@@ -1,6 +1,7 @@
 package net.optionfactory.spring.upstream.rendering;
 
 import java.nio.charset.StandardCharsets;
+import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.http.MediaType;
@@ -24,9 +25,10 @@ public class BodyRenderingTest {
                            <?xml version="1.0" encoding="utf-8"?>
                            <a/>
                            """;
-        final var got = BodyRendering.xsltCompact(source.getBytes(StandardCharsets.UTF_8));
+        final var got = BodyRendering.xsltCompact(BodySource.of(source, StandardCharsets.UTF_8));
         Assert.assertEquals("<a/>", got);
     }
+
     @Test
     public void canCompactXml() {
         final var source = """
@@ -35,10 +37,11 @@ public class BodyRenderingTest {
                            <b>c</b>
                            </a>
                            """;
-        final var got = BodyRendering.xsltCompact(source.getBytes(StandardCharsets.ISO_8859_1));
+        final var got = BodyRendering.xsltCompact(BodySource.of(source, StandardCharsets.ISO_8859_1));
         Assert.assertEquals("<a><b>c</b></a>", got);
 
     }
+
     @Test
     public void textNodesSpacesAreNormalized() {
         final var source = """
@@ -47,16 +50,17 @@ public class BodyRenderingTest {
                                     c 
                            </a>
                            """;
-        final var got = BodyRendering.xsltCompact(source.getBytes(StandardCharsets.UTF_8));
+        final var got = BodyRendering.xsltCompact(BodySource.of(source, StandardCharsets.UTF_8));
         Assert.assertEquals("<a>a b c</a>", got);
 
     }
+
     @Test
     public void emptyElementsAreCollapsed() {
         final var source = """
                            <a></a>
                            """;
-        final var got = BodyRendering.xsltCompact(source.getBytes(StandardCharsets.UTF_8));
+        final var got = BodyRendering.xsltCompact(BodySource.of(source, StandardCharsets.UTF_8));
         Assert.assertEquals("<a/>", got);
 
     }
@@ -69,27 +73,28 @@ public class BodyRenderingTest {
                                 "c": 1
                            }
                            """;
-        final var got = BodyRendering.jsonCompact(source.getBytes(StandardCharsets.UTF_8));
+        final var got = BodyRendering.jsonCompact(BodySource.of(source, StandardCharsets.UTF_8));
         Assert.assertEquals("{\"a\":\"b\",\"c\":1}", got);
 
     }
 
     @Test
     public void canRenderAbbreviatedCompactJsonMediaTypes() {
-        final var source = "[1, 2]".getBytes(StandardCharsets.UTF_8);
+        final var source = BodySource.of("[1, 2]", StandardCharsets.UTF_8);
 
-        Assert.assertEquals("[1,2]", BodyRendering.render(BodyRendering.Strategy.ABBREVIATED_COMPACT, MediaType.APPLICATION_JSON, source, ".", 2048));
-        Assert.assertEquals("[1,2]", BodyRendering.render(BodyRendering.Strategy.ABBREVIATED_COMPACT, MediaType.APPLICATION_PROBLEM_JSON, source, ".", 2048));
-        Assert.assertEquals("[1, 2]", BodyRendering.render(BodyRendering.Strategy.ABBREVIATED_COMPACT, MediaType.parseMediaType("application/unsupported"), source, ".", 2048));
+        Assert.assertEquals("[1,2]", BodyRendering.render(BodyRendering.Strategy.ABBREVIATED_COMPACT, 6, MediaType.APPLICATION_JSON, source, ".", 2048));
+        Assert.assertEquals("[1,2]", BodyRendering.render(BodyRendering.Strategy.ABBREVIATED_COMPACT, 6, MediaType.APPLICATION_PROBLEM_JSON, source, ".", 2048));
+        Assert.assertEquals("[1, 2]", BodyRendering.render(BodyRendering.Strategy.ABBREVIATED_COMPACT, 6, MediaType.parseMediaType("application/unsupported"), source, ".", 2048));
 
     }
+
     @Test
     public void canRenderAbbreviatedCompactXMLMediaTypes() {
-        final var source = "<a> <b/> </a>".getBytes(StandardCharsets.UTF_8);
+        final var source = BodySource.of("<a> <b/> </a>", StandardCharsets.UTF_8);
 
-        Assert.assertEquals("<a><b/></a>", BodyRendering.render(BodyRendering.Strategy.ABBREVIATED_COMPACT, MediaType.APPLICATION_XML, source, ".", 2048));
-        Assert.assertEquals("<a><b/></a>", BodyRendering.render(BodyRendering.Strategy.ABBREVIATED_COMPACT, MediaType.parseMediaType("application/soap+xml"), source, ".", 2048));
-        Assert.assertEquals("<a> <b/> </a>", BodyRendering.render(BodyRendering.Strategy.ABBREVIATED_COMPACT, MediaType.parseMediaType("application/unsupported"), source, ".", 2048));
+        Assert.assertEquals("<a><b/></a>", BodyRendering.render(BodyRendering.Strategy.ABBREVIATED_COMPACT, 6, MediaType.APPLICATION_XML, source, ".", 2048));
+        Assert.assertEquals("<a><b/></a>", BodyRendering.render(BodyRendering.Strategy.ABBREVIATED_COMPACT, 6, MediaType.parseMediaType("application/soap+xml"), source, ".", 2048));
+        Assert.assertEquals("<a> <b/> </a>", BodyRendering.render(BodyRendering.Strategy.ABBREVIATED_COMPACT, 6, MediaType.parseMediaType("application/unsupported"), source, ".", 2048));
 
     }
 }

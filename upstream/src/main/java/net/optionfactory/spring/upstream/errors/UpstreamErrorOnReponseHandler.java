@@ -3,7 +3,6 @@ package net.optionfactory.spring.upstream.errors;
 import net.optionfactory.spring.upstream.paths.JsonPath;
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,6 +22,7 @@ import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatus.Series;
 import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.util.FileCopyUtils;
 
 public class UpstreamErrorOnReponseHandler implements UpstreamResponseErrorHandler {
 
@@ -72,7 +72,7 @@ public class UpstreamErrorOnReponseHandler implements UpstreamResponseErrorHandl
                 response.status(),
                 response.statusText(),
                 response.headers(),
-                response.body()
+                response.body().bytes()
         );
     }
 

@@ -31,9 +31,9 @@ import net.optionfactory.spring.upstream.UpstreamAfterMappingHandler;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
+import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpRequestExecution;
-import org.springframework.util.FileCopyUtils;
 
 public class ThreadLocalScopeHandler implements ScopeHandler {
 
@@ -109,7 +109,7 @@ public class ThreadLocalScopeHandler implements ScopeHandler {
     public ClientHttpRequestInterceptor responseContextInterceptor(InstantSource clock) {
         return (HttpRequest request, byte[] body, ClientHttpRequestExecution execution) -> {
             final var response = execution.execute(request, body);
-            resCtx.set(new ResponseContext(clock.instant(), response.getStatusCode(), response.getStatusText(), response.getHeaders(), FileCopyUtils.copyToByteArray(response.getBody())));
+            resCtx.set(new ResponseContext(clock.instant(), response.getStatusCode(), response.getStatusText(), response.getHeaders(), BodySource.of(response)));
             return response;
         };
     }

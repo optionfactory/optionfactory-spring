@@ -28,7 +28,7 @@ public class XmlPath {
         try {
             final var expression = XPathFactory.newInstance().newXPath().compile(path);
             final var builder = builderFactory.newDocumentBuilder();
-            try (final var is = new ByteArrayInputStream(response.body())) {
+            try (final var is = response.body().inputStream()) {
                 final var document = builder.parse(is);
                 final var result = expression.evaluate(document, XPathConstants.BOOLEAN);
                 return (Boolean) result;

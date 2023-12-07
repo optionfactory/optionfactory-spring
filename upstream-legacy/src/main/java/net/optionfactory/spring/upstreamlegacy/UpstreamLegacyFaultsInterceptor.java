@@ -3,11 +3,11 @@ package net.optionfactory.spring.upstreamlegacy;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Method;
-import java.time.Instant;
 import java.util.List;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor.HttpMessageConverters;
 import net.optionfactory.spring.upstream.contexts.ExceptionContext;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
+import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
 import net.optionfactory.spring.upstream.faults.UpstreamFaultEvent;
 import net.optionfactory.spring.upstreamlegacy.UpstreamPort.Hints;
 import net.optionfactory.spring.upstreamlegacy.UpstreamPort.UpstreamFaultPredicate;
@@ -75,14 +75,15 @@ public class UpstreamLegacyFaultsInterceptor<CTX> implements UpstreamInterceptor
                         request.at,
                         prepare.entity.getMethod(),
                         prepare.entity.getUrl(),
-                        request.headers, toByteArray(request.body)
+                        request.headers,
+                        toByteArray(request.body)
                 ),
                 new net.optionfactory.spring.upstream.contexts.ResponseContext(
                         response.at,
                         response.status,
                         response.status.getReasonPhrase(),
                         response.headers,
-                        toByteArray(response.body)
+                        BodySource.of(response.body)
                 ),
                 null);
         publisher.publishEvent(evt);
@@ -115,7 +116,8 @@ public class UpstreamLegacyFaultsInterceptor<CTX> implements UpstreamInterceptor
                         request.at,
                         prepare.entity.getMethod(),
                         prepare.entity.getUrl(),
-                        request.headers, toByteArray(request.body)
+                        request.headers, 
+                        toByteArray(request.body)
                 ),
                 null,
                 new ExceptionContext(error.at, error.ex.getMessage()));

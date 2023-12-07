@@ -3,9 +3,9 @@ package net.optionfactory.spring.upstream.soap;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.soap.MessageFactory;
 import jakarta.xml.soap.SOAPException;
-import jakarta.xml.soap.SOAPMessage;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
 import net.optionfactory.spring.upstream.rendering.BodyRendering;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
 import org.junit.Assert;
@@ -25,7 +25,7 @@ public class SoapHeaderWriterTest {
         soapMessage.saveChanges();
         soapMessage.writeTo(baos);
 
-        final var expected = BodyRendering.xsltCompact("""
+        final var expected = BodyRendering.xsltCompact(BodySource.of("""
                             <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
                                 <SOAP-ENV:Header>
                                     <wsse:Security 
@@ -40,7 +40,7 @@ public class SoapHeaderWriterTest {
                                     </wsse:Security>
                                 </SOAP-ENV:Header>
                                 <SOAP-ENV:Body/>
-                            </SOAP-ENV:Envelope>""".getBytes(StandardCharsets.UTF_8));
+                            </SOAP-ENV:Envelope>""", StandardCharsets.UTF_8));
 
         Assert.assertEquals(expected, new String(baos.toByteArrayUnsafe(), StandardCharsets.UTF_8));
     }
