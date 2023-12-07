@@ -44,13 +44,19 @@ public @interface Upstream {
     @Documented
     public @interface Logging {
 
-        Strategy value() default Strategy.ABBREVIATED_COMPACT;
+        Strategy request() default Strategy.ABBREVIATED_COMPACT;
 
-        int maxSize() default 8 * 1024;
+        int requestMaxSize() default 8 * 1024;
+
+        boolean requestHeaders() default false;
+
+        Strategy response() default Strategy.ABBREVIATED_COMPACT;
+
+        int responseMaxSize() default 8 * 1024;
+
+        boolean responseHeaders() default false;
 
         String infix() default "✂️";
-
-        boolean headers() default false;
 
     }
 

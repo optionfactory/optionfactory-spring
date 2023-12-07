@@ -41,17 +41,19 @@ public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
             return execution.execute(invocation, request);
         }
         final var prefix = "[boot:%s][upstream:%s][ep:%s][req:%s]%s".formatted(invocation.boot(), invocation.upstream(), invocation.endpoint(), request.id(), principal);
-        if (conf.headers()) {
+        if (conf.requestHeaders()) {
             logger.info("{}[t:oh] headers: {}", prefix, request.headers());
         }
-        logger.info("{}[t:ob] method: {} url: {} body: {}", prefix, request.method(), request.uri(), BodyRendering.render(conf.value(), request.headers().getContentType(), request.body(), conf.infix(), conf.maxSize()));
+        final var requestBody = request.body() == null || request.body().length == 0 ? "" : String.format(" body: %s", BodyRendering.render(conf.request(), request.headers().getContentType(), request.body(), conf.infix(), conf.requestMaxSize()));
+        logger.info("{}[t:ob] method: {} url: {}{}", prefix, request.method(), request.uri(), requestBody);
         try {
             final ResponseContext response = execution.execute(invocation, request);
             final long elapsed = Duration.between(request.at(), response.at()).toMillis();
-            if (conf.headers()) {
+            if (conf.responseHeaders()) {
                 logger.info("{}[t:ih][ms:{}] headers: {}", prefix, elapsed, response.headers());
             }
-            logger.info("{}[t:ib][ms:{}] status: {} type: {} body: {}", prefix, elapsed, response.status(), response.headers().getContentType(), BodyRendering.render(conf.value(), response.headers().getContentType(), response.body(), conf.infix(), conf.maxSize()));
+            final var responseBody = response.body() == null || response.body().length == 0 ? "" : String.format(" body: %s", BodyRendering.render(conf.response(), response.headers().getContentType(), response.body(), conf.infix(), conf.responseMaxSize()));
+            logger.info("{}[t:ib][ms:{}] status: {} type: {}{}", prefix, elapsed, response.status(), response.headers().getContentType(), responseBody);
             return response;
         } catch (Exception ex) {
             final long elapsed = Duration.between(request.at(), Instant.now()).toMillis();
