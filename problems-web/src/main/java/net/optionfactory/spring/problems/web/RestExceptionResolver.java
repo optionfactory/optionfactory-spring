@@ -31,6 +31,7 @@ import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
@@ -170,6 +171,11 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             logger.debug(String.format("Failure at %s", requestUri), failure);
             return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, failure.problems);
         }
+        if (ex instanceof RestClientException) {
+            final Problem problem = Problem.of("UPSTREAM_ERROR", null, "upstream failure", ex.getMessage());
+            logger.warn(String.format("Upstream error %s: %s", requestUri, ex.getMessage()), ex);
+            return new HttpStatusAndFailures(HttpStatus.BAD_GATEWAY, Collections.singletonList(problem));
+        }        
         if (ex instanceof AccessDeniedException) {
             final Problem problem = Problem.of("FORBIDDEN", null, null, ex.getMessage());
             logger.debug(String.format("Access denied at %s: %s", requestUri, problem));
