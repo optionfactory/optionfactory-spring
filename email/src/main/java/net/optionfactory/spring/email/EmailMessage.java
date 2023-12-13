@@ -6,11 +6,11 @@ import java.io.UnsupportedEncodingException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import net.optionfactory.spring.email.EmailMarshaller.EmailMarshallingException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.lang.NonNull;
@@ -75,7 +75,7 @@ public record EmailMessage(
 
         private List<AttachmentSource> attachments = new ArrayList<>();
         private List<CidSource> cids = new ArrayList<>();
-        private Map<String, Object> variables = new ConcurrentHashMap<>();
+        private Map<String, Object> variables = new HashMap<>();
 
         public Builder messageId(String messageId) {
             this.messageId = messageId;
@@ -232,7 +232,7 @@ public record EmailMessage(
 
             builder.attachments = new ArrayList<>(attachments);
             builder.cids = new ArrayList<>(cids);
-            builder.variables = new ConcurrentHashMap<>(variables);
+            builder.variables = new HashMap<>(variables);
             return builder;
         }
 
