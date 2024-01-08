@@ -22,13 +22,17 @@ public class OidcRelyingPartyInitiatedLogoutHandler implements LogoutSuccessHand
 
     @Override
     public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
-        final var idToken = ((OidcUser) authentication.getPrincipal()).getIdToken().getTokenValue();
-        String uri = UriComponentsBuilder
-                .fromUri(logoutUri)
-                .queryParam("id_token_hint", idToken)
-                .queryParam("post_logout_redirect_uri", postLogoutRedirectUri)
-                .toUriString();
-        response.sendRedirect(response.encodeRedirectURL(uri));
+        if (authentication != null && authentication.getPrincipal() instanceof OidcUser oidcUser) {
+            final var uri = UriComponentsBuilder
+                    .fromUri(logoutUri)
+                    .queryParam("id_token_hint", oidcUser.getIdToken().getTokenValue())
+                    .queryParam("post_logout_redirect_uri", postLogoutRedirectUri)
+                    .toUriString();
+            response.sendRedirect(response.encodeRedirectURL(uri));
+            return;
+        }
+        //session is expired, we redirect to the main page
+        response.sendRedirect(postLogoutRedirectUri.toString());
     }
 
 }
