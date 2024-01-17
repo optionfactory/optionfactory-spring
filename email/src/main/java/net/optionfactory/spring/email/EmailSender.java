@@ -84,7 +84,7 @@ public class EmailSender {
             return false;
         }
         try {
-            final var createdAt = Files.readAttributes(eml, BasicFileAttributes.class).creationTime().toInstant();
+            final var createdAt = Files.readAttributes(eml, BasicFileAttributes.class).lastModifiedTime().toInstant();
             final var deadAt = createdAt.plus(deadAfter.get());
             final var isDead = deadAt.isBefore(now);
             return isDead;
