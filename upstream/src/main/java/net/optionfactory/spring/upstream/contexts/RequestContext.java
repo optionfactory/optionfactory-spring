@@ -13,8 +13,4 @@ public record RequestContext(
         HttpHeaders headers,
         byte[] body) {
 
-    public RequestContext withBody(byte[] body) {
-        return new RequestContext(id(), at(), method(), uri(), headers(), body);
-
-    }
 }
