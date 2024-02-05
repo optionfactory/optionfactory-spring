@@ -81,10 +81,10 @@ public class FaultsEmailsSpoolerTest {
                     .subject("Subject")
                     .htmlBodyEngine("/email/", new SingletonDialect("bodies", new FaultBodiesFunctions()))
                     .htmlBodyTemplate("example-email.faults.inlined.html")
+                    .spooling(paths, "faults.", ac)
                     .prototype();
 
             return FaultsEmailsSpooler.bufferedScheduled(
-                    paths,
                     messagePrototype,
                     ac,
                     ts,

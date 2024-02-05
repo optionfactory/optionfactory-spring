@@ -4,27 +4,21 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import net.optionfactory.spring.email.EmailMessage;
-import net.optionfactory.spring.email.EmailPaths;
 import net.optionfactory.spring.email.spooling.BufferedScheduledSpooler;
 import net.optionfactory.spring.email.spooling.Spooler;
 import net.optionfactory.spring.upstream.faults.UpstreamFaultEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.scheduling.TaskScheduler;
 
 public class FaultsEmailsSpooler implements Spooler<List<UpstreamFaultEvent>> {
 
     private final Logger logger = LoggerFactory.getLogger(FaultsEmailsSpooler.class);
-    private final EmailPaths paths;
     private final EmailMessage.Prototype emailMessagePrototype;
-    private final ApplicationEventPublisher publisher;
 
-    public FaultsEmailsSpooler(EmailPaths paths, EmailMessage.Prototype emailMessagePrototype, ApplicationEventPublisher publisher) {
-        this.paths = paths;
+    public FaultsEmailsSpooler(EmailMessage.Prototype emailMessagePrototype) {
         this.emailMessagePrototype = emailMessagePrototype;
-        this.publisher = publisher;
     }
 
     @Override
@@ -32,7 +26,7 @@ public class FaultsEmailsSpooler implements Spooler<List<UpstreamFaultEvent>> {
         try {
             final var p = emailMessagePrototype.builder()
                     .variable("faults", faults)
-                    .marshalToSpool(paths, "faults.", publisher);
+                    .marshalToSpool();
             logger.info("[spool-emails][faults] spooled {} with {} faults", p.getFileName(), faults.size());
             return List.of(p);
         } catch (RuntimeException ex) {
@@ -41,10 +35,14 @@ public class FaultsEmailsSpooler implements Spooler<List<UpstreamFaultEvent>> {
         }
     }
 
-    public static BufferedScheduledSpooler<UpstreamFaultEvent> bufferedScheduled(EmailPaths paths, EmailMessage.Prototype emailMessagePrototype, ConfigurableApplicationContext ac, TaskScheduler ts, Duration initialDelay,
+    public static BufferedScheduledSpooler<UpstreamFaultEvent> bufferedScheduled(
+            EmailMessage.Prototype emp,
+            ConfigurableApplicationContext ac,
+            TaskScheduler ts,
+            Duration initialDelay,
             Duration rate,
             Duration gracePeriod) {
-        final var spooler = new FaultsEmailsSpooler(paths, emailMessagePrototype, ac);
+        final var spooler = new FaultsEmailsSpooler(emp);
         return new BufferedScheduledSpooler<>(
                 UpstreamFaultEvent.class,
                 ac,
