@@ -45,7 +45,18 @@ public record EmailMessage(
         @NonNull
         List<AttachmentSource> attachments,
         @NonNull
-        List<CidSource> cids) {
+        List<CidSource> cids,
+        @Nullable Spooling spoolConfig) {
+
+    public record Spooling(
+            @NonNull
+            EmailPaths paths,
+            @Nullable
+            String prefix,
+            @Nullable
+            ApplicationEventPublisher publisher) {
+
+    }
 
     public static Builder builder() {
         return new Builder();
@@ -76,6 +87,7 @@ public record EmailMessage(
         private List<AttachmentSource> attachments = new ArrayList<>();
         private List<CidSource> cids = new ArrayList<>();
         private Map<String, Object> variables = new HashMap<>();
+        private Spooling spooling;
 
         public Builder messageId(String messageId) {
             this.messageId = messageId;
@@ -206,6 +218,12 @@ public record EmailMessage(
             return this;
         }
 
+        public Builder spooling(EmailPaths paths, String prefix, ApplicationEventPublisher publisher) {
+            Assert.notNull(paths, "paths must be non null");
+            this.spooling = new Spooling(paths, prefix, publisher);
+            return this;
+        }
+
         public Prototype prototype() {
             return this;
         }
@@ -233,6 +251,7 @@ public record EmailMessage(
             builder.attachments = new ArrayList<>(attachments);
             builder.cids = new ArrayList<>(cids);
             builder.variables = new HashMap<>(variables);
+            builder.spooling = spooling;
             return builder;
         }
 
@@ -278,7 +297,7 @@ public record EmailMessage(
 
         public EmailMessage build() {
             Assert.notNull(sender, "sender must be configured");
-            Assert.notNull(recipients, "recipients must be configured");
+            Assert.isTrue(recipients != null && recipients.length > 0, "recipients must be configured and non empty");
             Assert.notNull(subject, "subject must be configured");
 
             final var htmlBodyTemplateConfigured = htmlBodyTemplate != null && htmlBodyEngine != null;
@@ -303,7 +322,8 @@ public record EmailMessage(
                     textBody,
                     htmlBody,
                     attachments != null ? attachments : List.of(),
-                    cids != null ? cids : List.of()
+                    cids != null ? cids : List.of(),
+                    spooling
             );
         }
 
@@ -319,14 +339,12 @@ public record EmailMessage(
             new EmailMarshaller().marshal(build(), os);
         }
 
-        public Path marshalToSpool(EmailPaths paths, String prefix) {
-            Path p = new EmailMarshaller().marshalToSpool(build(), paths, prefix);
-            return p;
-        }
-
-        public Path marshalToSpool(EmailPaths paths, String prefix, ApplicationEventPublisher publisher) {
-            Path p = new EmailMarshaller().marshalToSpool(build(), paths, prefix);
-            publisher.publishEvent(new EmailSpooled());
+        public Path marshalToSpool() {
+            Assert.notNull(spooling, "spooling must be configured to marshal to spool");
+            final var p = new EmailMarshaller().marshalToSpool(build(), spooling.paths(), spooling.prefix());
+            if (spooling.publisher() != null) {
+                spooling.publisher().publishEvent(new EmailSpooled());
+            }
             return p;
         }
 
