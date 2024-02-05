@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import net.optionfactory.spring.email.EmailMessage;
+import net.optionfactory.spring.email.EmailPaths;
 import net.optionfactory.spring.email.spooling.BufferedScheduledSpooler;
 import net.optionfactory.spring.email.spooling.Spooler;
 import net.optionfactory.spring.upstream.faults.UpstreamFaultEvent;
@@ -35,13 +36,10 @@ public class FaultsEmailsSpooler implements Spooler<List<UpstreamFaultEvent>> {
         }
     }
 
-    public static BufferedScheduledSpooler<UpstreamFaultEvent> bufferedScheduled(
-            EmailMessage.Prototype emp,
-            ConfigurableApplicationContext ac,
-            TaskScheduler ts,
-            Duration initialDelay,
+    public static BufferedScheduledSpooler<UpstreamFaultEvent> bufferedScheduled(EmailPaths paths, EmailMessage.Prototype emailMessagePrototype, ConfigurableApplicationContext ac, TaskScheduler ts, Duration initialDelay,
             Duration rate,
             Duration gracePeriod) {
+        final var emp  = emailMessagePrototype.builder().spooling(paths, "faults.", ac).prototype();
         final var spooler = new FaultsEmailsSpooler(emp);
         return new BufferedScheduledSpooler<>(
                 UpstreamFaultEvent.class,
