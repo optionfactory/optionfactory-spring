@@ -23,7 +23,7 @@ public class StrictContentSecurityPolicyHeaderWriter implements HeaderWriter {
         this.directives = Stream.of(
             "object-src 'none'",
             "script-src 'nonce-{cspnonce}' 'unsafe-inline' 'unsafe-eval' 'strict-dynamic' https: http:",
-            "base-uri 'none'",
+            "base-uri 'self'",
             "report-uri /csp-violations/"        
         ).collect(Collectors.joining(";"));
     }
