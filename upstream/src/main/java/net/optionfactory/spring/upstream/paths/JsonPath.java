@@ -1,6 +1,7 @@
 package net.optionfactory.spring.upstream.paths;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.MissingNode;
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -19,8 +20,12 @@ public class JsonPath {
         this.response = response;
     }
 
-    public JsonNode path(String path) throws IOException {
-        return converters.convert(response.body().bytes(), JsonNode.class, response.headers().getContentType()).findPath(path);
+    public JsonNode path(String path) {
+        try {
+            return converters.convert(response.body().bytes(), JsonNode.class, response.headers().getContentType()).findPath(path);
+        } catch (IOException | RuntimeException ex) {
+            return MissingNode.getInstance();
+        }
     }
 
     private static MethodHandle jsonPathMethodHandle() {

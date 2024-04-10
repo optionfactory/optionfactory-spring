@@ -33,8 +33,8 @@ public class XmlPath {
                 final var result = expression.evaluate(document, XPathConstants.BOOLEAN);
                 return (Boolean) result;
             }
-        } catch (SAXException | ParserConfigurationException | XPathExpressionException ex) {
-            throw new IllegalStateException(ex);
+        } catch (SAXException | ParserConfigurationException | XPathExpressionException |RuntimeException ex) {
+            return false;
         }
     }
 
