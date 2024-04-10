@@ -52,7 +52,7 @@ public class UpstreamFaultAfterMappingHandler implements UpstreamAfterMappingHan
         ectx.setVariable("response", response);
         ectx.setVariable("result", result);
         if (expression.getValue(ectx, boolean.class)) {
-            publisher.accept(new UpstreamFaultEvent(invocation, request, response, null));
+            publisher.accept(new UpstreamFaultEvent(invocation, request, response.detached(), null));
         }
     }
 

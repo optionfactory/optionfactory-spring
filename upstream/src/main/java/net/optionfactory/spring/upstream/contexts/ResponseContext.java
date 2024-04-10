@@ -6,7 +6,6 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
 import java.time.Instant;
-import org.springframework.core.io.InputStreamSource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.ClientHttpResponse;
@@ -18,9 +17,15 @@ public record ResponseContext(
         HttpHeaders headers,
         BodySource body) {
 
+    public ResponseContext detached() {
+        return new ResponseContext(at, status, statusText, headers, body.detached());
+    }
+
     public interface BodySource {
 
         InputStream inputStream();
+
+        BodySource detached();
 
         default byte[] bytes() {
             final var in = inputStream();
@@ -36,21 +41,23 @@ public record ResponseContext(
         }
 
         public static BodySource of(ClientHttpResponse cr) {
-            return () -> {
-                try {
-                    return cr.getBody();
-                } catch (IOException ex) {
-                    throw new UncheckedIOException(ex);
+            return new BodySource() {
+                @Override
+                public InputStream inputStream() {
+                    try {
+                        return cr.getBody();
+                    } catch (IOException ex) {
+                        throw new UncheckedIOException(ex);
+                    }
                 }
-            };
-        }
 
-        public static BodySource of(InputStreamSource cr) {
-            return () -> {
-                try {
-                    return cr.getInputStream();
-                } catch (IOException ex) {
-                    throw new UncheckedIOException(ex);
+                @Override
+                public BodySource detached() {
+                    try {
+                        return BodySource.of(cr.getBody().readAllBytes());
+                    } catch (IOException ex) {
+                        throw new UncheckedIOException(ex);
+                    }
                 }
             };
         }
@@ -60,6 +67,11 @@ public record ResponseContext(
                 @Override
                 public InputStream inputStream() {
                     return new ByteArrayInputStream(bs);
+                }
+
+                @Override
+                public BodySource detached() {
+                    return this;
                 }
 
                 @Override

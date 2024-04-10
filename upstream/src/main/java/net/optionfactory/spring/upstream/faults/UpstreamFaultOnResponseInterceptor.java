@@ -59,7 +59,7 @@ public class UpstreamFaultOnResponseInterceptor implements UpstreamHttpIntercept
         ectx.registerFunction("xpath_bool", XmlPath.xpathBooleanBoundMethodHandle(response));
 
         if (expression.getValue(ectx, boolean.class)) {
-            publisher.accept(new UpstreamFaultEvent(invocation, request, response, null));
+            publisher.accept(new UpstreamFaultEvent(invocation, request, response.detached(), null));
         }
         return response;
     }
