@@ -93,7 +93,7 @@
             <dependency>
                 <groupId>org.springframework.security</groupId>
                 <artifactId>spring-security-bom</artifactId>
-                <version>6.2.2</version>
+                <version>6.2.3</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -145,7 +145,7 @@
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-el</artifactId>
-                <version>10.1.19</version>
+                <version>10.1.20</version>
             </dependency>        
             
             <dependency>
@@ -166,7 +166,7 @@
             <dependency>
                 <groupId>io.micrometer</groupId>
                 <artifactId>micrometer-core</artifactId>
-                <version>1.12.4</version>
+                <version>1.12.5</version>
             </dependency>
             <dependency>
                 <groupId>jakarta.mail</groupId>
@@ -186,7 +186,7 @@
             <dependency>
                 <groupId>com.googlecode.libphonenumber</groupId>
                 <artifactId>libphonenumber</artifactId>
-                <version>8.13.32</version>
+                <version>8.13.34</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -229,7 +229,7 @@
             <dependency>
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcpkix-jdk18on</artifactId>
-                <version>1.77</version>
+                <version>1.78</version>
             </dependency>
             <dependency>
                 <groupId>junit</groupId>
@@ -263,7 +263,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
-                <version>3.3.0</version>
+                <version>3.3.1</version>
                 <executions>
                     <execution>
                         <id>attach-sources</id>
@@ -303,7 +303,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>3.2.0</version>
+                        <version>3.2.2</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
