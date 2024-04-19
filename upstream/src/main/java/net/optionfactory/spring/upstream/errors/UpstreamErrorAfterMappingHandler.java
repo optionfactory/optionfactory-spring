@@ -1,22 +1,20 @@
 package net.optionfactory.spring.upstream.errors;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import net.optionfactory.spring.upstream.Upstream;
+import net.optionfactory.spring.upstream.UpstreamAfterMappingHandler;
+import net.optionfactory.spring.upstream.contexts.InvocationContext;
+import net.optionfactory.spring.upstream.contexts.RequestContext;
+import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.common.TemplateParserContext;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.http.client.ClientHttpRequestFactory;
-import net.optionfactory.spring.upstream.UpstreamAfterMappingHandler;
-import net.optionfactory.spring.upstream.contexts.InvocationContext;
-import net.optionfactory.spring.upstream.contexts.RequestContext;
-import net.optionfactory.spring.upstream.contexts.ResponseContext;
-import org.springframework.util.FileCopyUtils;
 
 public class UpstreamErrorAfterMappingHandler implements UpstreamAfterMappingHandler {
 
@@ -30,10 +28,10 @@ public class UpstreamErrorAfterMappingHandler implements UpstreamAfterMappingHan
 
     @Override
     public void preprocess(Class<?> k, ClientHttpRequestFactory rf) {
-        for (Method m : k.getDeclaredMethods()) {
-            if (m.isDefault()) {
+        for (Method m : k.getMethods()) {
+            if(m.isSynthetic() || m.isBridge() || m.isDefault()){
                 continue;
-            }
+            }            
             final var anns = Stream.of(m.getAnnotationsByType(Upstream.ErrorAfterMapping.class))
                     .map(annotation -> {
                         final var predicate = parser.parseExpression(annotation.value());

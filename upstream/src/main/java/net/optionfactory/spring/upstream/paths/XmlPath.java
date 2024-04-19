@@ -1,6 +1,5 @@
 package net.optionfactory.spring.upstream.paths;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;

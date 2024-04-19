@@ -1,6 +1,5 @@
 package net.optionfactory.spring.upstream.errors;
 
-import net.optionfactory.spring.upstream.paths.JsonPath;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -14,6 +13,7 @@ import net.optionfactory.spring.upstream.UpstreamResponseErrorHandler;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
+import net.optionfactory.spring.upstream.paths.JsonPath;
 import net.optionfactory.spring.upstream.paths.XmlPath;
 import org.springframework.expression.Expression;
 import org.springframework.expression.common.TemplateParserContext;
@@ -22,7 +22,6 @@ import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatus.Series;
 import org.springframework.http.client.ClientHttpRequestFactory;
-import org.springframework.util.FileCopyUtils;
 
 public class UpstreamErrorOnReponseHandler implements UpstreamResponseErrorHandler {
 
@@ -36,8 +35,8 @@ public class UpstreamErrorOnReponseHandler implements UpstreamResponseErrorHandl
 
     @Override
     public void preprocess(Class<?> k, ClientHttpRequestFactory rf) {
-        for (Method m : k.getDeclaredMethods()) {
-            if (m.isDefault()) {
+        for (Method m : k.getMethods()) {
+            if(m.isSynthetic() || m.isBridge() || m.isDefault()){
                 continue;
             }
             final var anns = Stream.of(m.getAnnotationsByType(Upstream.ErrorOnResponse.class))

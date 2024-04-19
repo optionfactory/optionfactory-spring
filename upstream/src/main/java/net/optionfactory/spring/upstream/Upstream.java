@@ -104,6 +104,8 @@ public @interface Upstream {
 
         public String value();
 
+        public String condition() default "true";
+
         public enum Type {
             QUERY_PARAM,
             PATH_VARIABLE,
@@ -208,7 +210,11 @@ public @interface Upstream {
         public boolean resolve(Object argument, MethodParameter parameter, HttpRequestValues.Builder requestValues) {
             final var params = parameter.getParameter().getAnnotationsByType(Param.class);
             for (Param p : params) {
-                final var value = parser.parseExpression(p.value()).getValue(new StandardEvaluationContext(argument), String.class);
+                final StandardEvaluationContext ec = new StandardEvaluationContext(argument);
+                if (!"true".equals(p.condition()) && !parser.parseExpression(p.condition()).getValue(ec, boolean.class)) {
+                    continue;
+                }
+                final var value = parser.parseExpression(p.value()).getValue(ec, String.class);
                 switch (p.type()) {
                     case HEADER ->
                         requestValues.addHeader(p.key(), value);

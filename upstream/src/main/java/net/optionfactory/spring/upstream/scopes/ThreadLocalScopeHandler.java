@@ -14,26 +14,26 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.optionfactory.spring.upstream.Upstream;
+import net.optionfactory.spring.upstream.UpstreamAfterMappingHandler;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor.HttpMessageConverters;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
-import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
-import org.aopalliance.intercept.MethodInterceptor;
-import org.aopalliance.intercept.MethodInvocation;
-import org.springframework.aop.framework.ReflectiveMethodInvocation;
-import org.springframework.http.client.ClientHttpRequestFactory;
-import org.springframework.http.client.ClientHttpRequestInitializer;
-import org.springframework.http.client.ClientHttpRequestInterceptor;
 import net.optionfactory.spring.upstream.UpstreamResponseErrorHandler;
-import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.web.client.ResponseErrorHandler;
-import net.optionfactory.spring.upstream.UpstreamAfterMappingHandler;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
+import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
+import org.aopalliance.intercept.MethodInterceptor;
+import org.aopalliance.intercept.MethodInvocation;
+import org.springframework.aop.framework.ReflectiveMethodInvocation;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpRequestExecution;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.ClientHttpRequestInitializer;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
+import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.web.client.ResponseErrorHandler;
 
 public class ThreadLocalScopeHandler implements ScopeHandler {
 
@@ -57,7 +57,8 @@ public class ThreadLocalScopeHandler implements ScopeHandler {
 
     @Override
     public MethodInterceptor interceptor(HttpMessageConverters converters, List<UpstreamAfterMappingHandler> afterMappingHandlers) {
-        final var methodToPrincipalParamIndex = Stream.of(klass.getDeclaredMethods())
+        final var methodToPrincipalParamIndex = Stream.of(klass.getMethods())
+                .filter(m -> !m.isSynthetic() && !m.isBridge() && !m.isDefault())
                 .filter(m -> Stream.of(m.getParameters()).anyMatch(p -> p.isAnnotationPresent(Upstream.Principal.class)))
                 .collect(Collectors.toConcurrentMap(m -> m, m -> {
                     final Parameter[] ps = m.getParameters();

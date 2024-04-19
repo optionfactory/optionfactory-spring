@@ -1,6 +1,5 @@
 package net.optionfactory.spring.upstream.errors;
 
-import java.nio.charset.Charset;
 import java.util.Optional;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;

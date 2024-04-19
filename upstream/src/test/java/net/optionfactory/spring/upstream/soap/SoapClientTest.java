@@ -1,6 +1,5 @@
 package net.optionfactory.spring.upstream.soap;
 
-import net.optionfactory.spring.upstream.soap.calc.CalculatorClient;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.soap.SOAPFault;
 import java.net.URI;
@@ -11,6 +10,7 @@ import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
 import net.optionfactory.spring.upstream.soap.calc.Add;
+import net.optionfactory.spring.upstream.soap.calc.CalculatorClient;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.core.io.ByteArrayResource;

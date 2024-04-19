@@ -27,7 +27,10 @@ public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
     @Override
     public void preprocess(Class<?> k, ClientHttpRequestFactory rf) {
         final var interfaceAnn = Optional.ofNullable(k.getAnnotation(Upstream.Logging.class));
-        for (Method m : k.getDeclaredMethods()) {
+        for (Method m : k.getMethods()) {
+            if(m.isSynthetic() || m.isBridge() || m.isDefault()){
+                continue;
+            }            
             Optional.ofNullable(m.getAnnotation(Upstream.Logging.class))
                     .or(() -> interfaceAnn)
                     .ifPresent(ann -> confs.put(m, ann));

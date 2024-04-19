@@ -22,10 +22,11 @@ import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
 import net.optionfactory.spring.upstream.mocks.MockResourcesUpstreamHttpResponseFactory;
 import net.optionfactory.spring.upstream.mocks.MockUpstreamRequestFactory;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
+import net.optionfactory.spring.upstream.mocks.UpstreamHttpResponseFactory;
 import net.optionfactory.spring.upstream.scopes.ThreadLocalScopeHandler;
+import net.optionfactory.spring.upstream.soap.SoapHeaderWriter;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
-import net.optionfactory.spring.upstream.soap.SoapHeaderWriter;
 import net.optionfactory.spring.upstream.soap.SoapMessageHttpMessageConverter;
 import net.optionfactory.spring.upstream.soap.UpstreamSoapActionIninitializer;
 import org.apache.hc.client5.http.socket.LayeredConnectionSocketFactory;
@@ -33,19 +34,18 @@ import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestFactory;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.support.RestClientAdapter;
-import org.springframework.web.service.invoker.HttpServiceProxyFactory;
-import net.optionfactory.spring.upstream.mocks.UpstreamHttpResponseFactory;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
+import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.http.converter.support.AllEncompassingFormHttpMessageConverter;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceArgumentResolver;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 public class UpstreamBuilder<T> {
 
@@ -326,7 +326,8 @@ public class UpstreamBuilder<T> {
         if (k.getAnnotationsByType(annotation).length > 0) {
             return true;
         }
-        return Stream.of(k.getDeclaredMethods())
+        return Stream.of(k.getMethods())
+                .filter(m -> !m.isSynthetic() && !m.isBridge() && !m.isDefault())
                 .map(m -> m.getAnnotationsByType(annotation))
                 .anyMatch(as -> as.length > 0);
     }

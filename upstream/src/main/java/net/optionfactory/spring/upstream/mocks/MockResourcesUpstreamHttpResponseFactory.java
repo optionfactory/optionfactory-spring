@@ -50,7 +50,10 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
         final var defaultContentType = AnnotationUtils.synthesizeAnnotation(Upstream.MockContentType.class);
         final var defaultStatus = AnnotationUtils.synthesizeAnnotation(Upstream.MockStatus.class);
 
-        for (Method m : klass.getDeclaredMethods()) {
+        for (Method m : klass.getMethods()) {
+            if(m.isSynthetic() || m.isBridge() || m.isDefault()){
+                continue;
+            }
             final var methodConf = m.getAnnotationsByType(Upstream.Mock.class);
             final var conf = Stream.concat(Stream.of(methodConf), Stream.of(interfaceConf)).toArray(i -> new Upstream.Mock[i]);
             if (conf.length == 0) {

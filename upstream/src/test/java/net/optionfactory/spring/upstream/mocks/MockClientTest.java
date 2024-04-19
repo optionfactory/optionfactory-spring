@@ -2,7 +2,6 @@ package net.optionfactory.spring.upstream.mocks;
 
 import java.util.Map;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
-import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.http.HttpStatus;

@@ -7,14 +7,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.Upstream.FaultAfterMapping;
-import org.springframework.expression.Expression;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
-import org.springframework.http.client.ClientHttpRequestFactory;
 import net.optionfactory.spring.upstream.UpstreamAfterMappingHandler;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
+import org.springframework.expression.Expression;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
+import org.springframework.http.client.ClientHttpRequestFactory;
 
 public class UpstreamFaultAfterMappingHandler implements UpstreamAfterMappingHandler {
 
@@ -29,8 +29,8 @@ public class UpstreamFaultAfterMappingHandler implements UpstreamAfterMappingHan
     @Override
     public void preprocess(Class<?> k, ClientHttpRequestFactory rf) {
         final var interfaceOnRemotingError = Optional.ofNullable(k.getAnnotation(FaultAfterMapping.class));
-        for (Method m : k.getDeclaredMethods()) {
-            if (m.isDefault()) {
+        for (Method m : k.getMethods()) {
+            if(m.isSynthetic() || m.isBridge() || m.isDefault()){
                 continue;
             }
             Optional.ofNullable(m.getAnnotation(Upstream.FaultAfterMapping.class))

@@ -7,18 +7,18 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import net.optionfactory.spring.upstream.Upstream;
-import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
-import org.springframework.expression.Expression;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
-import org.springframework.http.client.ClientHttpRequestFactory;
 import net.optionfactory.spring.upstream.Upstream.FaultOnResponse;
+import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestExecution;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.paths.JsonPath;
 import net.optionfactory.spring.upstream.paths.XmlPath;
+import org.springframework.expression.Expression;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
+import org.springframework.http.client.ClientHttpRequestFactory;
 
 public class UpstreamFaultOnResponseInterceptor implements UpstreamHttpInterceptor {
 
@@ -33,8 +33,8 @@ public class UpstreamFaultOnResponseInterceptor implements UpstreamHttpIntercept
     @Override
     public void preprocess(Class<?> k, ClientHttpRequestFactory rf) {
         final var interfaceOnResponse = Optional.ofNullable(k.getAnnotation(FaultOnResponse.class));
-        for (Method m : k.getDeclaredMethods()) {
-            if (m.isDefault()) {
+        for (Method m : k.getMethods()) {
+            if(m.isSynthetic() || m.isBridge() || m.isDefault()){
                 continue;
             }
             Optional.ofNullable(m.getAnnotation(Upstream.FaultOnResponse.class))
