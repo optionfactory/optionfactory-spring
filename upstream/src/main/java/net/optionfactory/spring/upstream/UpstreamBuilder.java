@@ -243,7 +243,8 @@ public class UpstreamBuilder<T> {
                 return null;
             }
         };
-        final var endpointNames = Stream.of(klass.getDeclaredMethods())
+        final var endpointNames = Stream.of(klass.getMethods())
+                .filter(m -> !m.isSynthetic() && !m.isBridge() && !m.isDefault())
                 .collect(Collectors.toMap(
                         m -> m,
                         m -> m.getAnnotation(Upstream.Endpoint.class) != null ? m.getAnnotation(Upstream.Endpoint.class).value() : m.getName()
