@@ -7,9 +7,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.UpstreamResponseErrorHandler;
+import net.optionfactory.spring.upstream.annotations.Annotations;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
@@ -39,7 +39,8 @@ public class UpstreamErrorOnReponseHandler implements UpstreamResponseErrorHandl
             if(m.isSynthetic() || m.isBridge() || m.isDefault()){
                 continue;
             }
-            final var anns = Stream.of(m.getAnnotationsByType(Upstream.ErrorOnResponse.class))
+            final var anns = Annotations.closestRepeatable(m, Upstream.ErrorOnResponse.class)
+                    .stream()
                     .map(annotation -> {
                         final var predicate = parser.parseExpression(annotation.value());
                         final var message = parser.parseExpression(annotation.reason(), templateParserContext);

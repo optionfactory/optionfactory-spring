@@ -4,9 +4,9 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.UpstreamAfterMappingHandler;
+import net.optionfactory.spring.upstream.annotations.Annotations;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
@@ -32,7 +32,8 @@ public class UpstreamErrorAfterMappingHandler implements UpstreamAfterMappingHan
             if(m.isSynthetic() || m.isBridge() || m.isDefault()){
                 continue;
             }            
-            final var anns = Stream.of(m.getAnnotationsByType(Upstream.ErrorAfterMapping.class))
+            final var anns = Annotations.closestRepeatable(m, Upstream.ErrorAfterMapping.class)
+                    .stream()
                     .map(annotation -> {
                         final var predicate = parser.parseExpression(annotation.value());
                         final var message = parser.parseExpression(annotation.reason(), templateParserContext);

@@ -1,6 +1,7 @@
 package net.optionfactory.spring.upstream.log;
 
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.time.Instant;
@@ -10,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestExecution;
+import net.optionfactory.spring.upstream.annotations.Annotations;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
@@ -26,13 +28,11 @@ public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
 
     @Override
     public void preprocess(Class<?> k, ClientHttpRequestFactory rf) {
-        final var interfaceAnn = Optional.ofNullable(k.getAnnotation(Upstream.Logging.class));
         for (Method m : k.getMethods()) {
-            if(m.isSynthetic() || m.isBridge() || m.isDefault()){
+            if (m.isSynthetic() || m.isBridge() || m.isDefault()) {
                 continue;
-            }            
-            Optional.ofNullable(m.getAnnotation(Upstream.Logging.class))
-                    .or(() -> interfaceAnn)
+            }
+            Annotations.closest(m, Upstream.Logging.class)
                     .ifPresent(ann -> confs.put(m, ann));
         }
     }

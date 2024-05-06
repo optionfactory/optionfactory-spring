@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.xml.validation.Schema;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor.HttpMessageConverters;
+import net.optionfactory.spring.upstream.annotations.Annotations;
 import net.optionfactory.spring.upstream.errors.UpstreamErrorOnReponseHandler;
 import net.optionfactory.spring.upstream.faults.UpstreamFaultOnRemotingErrorInterceptor;
 import net.optionfactory.spring.upstream.faults.UpstreamFaultOnResponseInterceptor;
@@ -65,7 +66,7 @@ public class UpstreamBuilder<T> {
 
     public UpstreamBuilder(Class<T> klass) {
         this.klass = klass;
-        this.conf = klass.getAnnotation(Upstream.class) != null ? klass.getAnnotation(Upstream.class) : AnnotationUtils.synthesizeAnnotation(Upstream.class);
+        this.conf = Annotations.closest(klass, Upstream.class).orElseGet(() -> AnnotationUtils.synthesizeAnnotation(Upstream.class));
     }
 
     public static <T> UpstreamBuilder<T> create(Class<T> klass) {
@@ -276,17 +277,17 @@ public class UpstreamBuilder<T> {
                 .map(scopeHandler::adapt)
                 .forEach(rcb::requestInterceptor);
 
-        if (annotationAnywhereIn(klass, Upstream.Logging.class)) {
+        if (Annotations.anywhereIn(klass, Upstream.Logging.class)) {
             final UpstreamLoggingInterceptor i = new UpstreamLoggingInterceptor();
             i.preprocess(klass, bufferedRequestFactory);
             rcb.requestInterceptor(scopeHandler.adapt(i));
         }
-        if (annotationAnywhereIn(klass, Upstream.FaultOnRemotingError.class)) {
+        if (Annotations.anywhereIn(klass, Upstream.FaultOnRemotingError.class)) {
             final UpstreamFaultOnRemotingErrorInterceptor i = new UpstreamFaultOnRemotingErrorInterceptor(publisher);
             i.preprocess(klass, bufferedRequestFactory);
             rcb.requestInterceptor(scopeHandler.adapt(i));
         }
-        if (annotationAnywhereIn(klass, Upstream.FaultOnResponse.class)) {
+        if (Annotations.anywhereIn(klass, Upstream.FaultOnResponse.class)) {
             final UpstreamFaultOnResponseInterceptor i = new UpstreamFaultOnResponseInterceptor(publisher);
             i.preprocess(klass, bufferedRequestFactory);
             rcb.requestInterceptor(scopeHandler.adapt(i));
@@ -294,7 +295,7 @@ public class UpstreamBuilder<T> {
 
         rcb.requestInterceptor(scopeHandler.responseContextInterceptor(clockOrDefault));
 
-        if (annotationAnywhereIn(klass, Upstream.ErrorOnResponse.class)) {
+        if (Annotations.anywhereIn(klass, Upstream.ErrorOnResponse.class)) {
             final UpstreamErrorOnReponseHandler eh = new UpstreamErrorOnReponseHandler();
             eh.preprocess(klass, bufferedRequestFactory);
             rcb.defaultStatusHandler(scopeHandler.adapt(eh));
@@ -323,13 +324,4 @@ public class UpstreamBuilder<T> {
         return (T) p.getProxy();
     }
 
-    private static <A extends Annotation> boolean annotationAnywhereIn(Class<?> k, Class<A> annotation) {
-        if (k.getAnnotationsByType(annotation).length > 0) {
-            return true;
-        }
-        return Stream.of(k.getMethods())
-                .filter(m -> !m.isSynthetic() && !m.isBridge() && !m.isDefault())
-                .map(m -> m.getAnnotationsByType(annotation))
-                .anyMatch(as -> as.length > 0);
-    }
 }

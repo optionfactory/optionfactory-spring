@@ -60,37 +60,39 @@ public @interface Upstream {
 
     }
 
-    @Target({ElementType.METHOD, ElementType.TYPE})
+    @Target({ElementType.METHOD})
     @Retention(value = RetentionPolicy.RUNTIME)
     @Repeatable(Mock.List.class)
     @Documented
     public @interface Mock {
 
+        /**
+         * @return the body template path, as a SpEl template expression
+         */
         String value();
 
-        @Target({ElementType.METHOD, ElementType.TYPE})
+        HttpStatus status() default HttpStatus.OK;
+
+        /**
+         * @return Headers, as a SpEl template expressions
+         */
+        String[] headers() default {};
+
+        @Target({ElementType.TYPE})
+        @Retention(RetentionPolicy.RUNTIME)
+        public @interface DefaultContentType {
+
+            String value();
+
+        }
+
+        @Target({ElementType.METHOD})
         @Retention(RetentionPolicy.RUNTIME)
         @Documented
         public @interface List {
 
             Mock[] value();
         }
-    }
-
-    @Target({ElementType.TYPE, ElementType.METHOD})
-    @Retention(RetentionPolicy.RUNTIME)
-    public @interface MockStatus {
-
-        HttpStatus value() default HttpStatus.OK;
-
-    }
-
-    @Target({ElementType.TYPE, ElementType.METHOD})
-    @Retention(RetentionPolicy.RUNTIME)
-    public @interface MockContentType {
-
-        String value() default "application/json";
-
     }
 
     @Retention(value = RetentionPolicy.RUNTIME)
@@ -163,7 +165,7 @@ public @interface Upstream {
     }
 
     @Retention(RetentionPolicy.RUNTIME)
-    @Target(ElementType.METHOD)
+    @Target({ElementType.TYPE, ElementType.METHOD})
     @Documented
     @Repeatable(ErrorOnResponse.List.class)
     public @interface ErrorOnResponse {
@@ -184,7 +186,7 @@ public @interface Upstream {
     }
 
     @Retention(RetentionPolicy.RUNTIME)
-    @Target(ElementType.METHOD)
+    @Target({ElementType.TYPE, ElementType.METHOD})
     @Documented
     @Repeatable(ErrorAfterMapping.List.class)
     public @interface ErrorAfterMapping {

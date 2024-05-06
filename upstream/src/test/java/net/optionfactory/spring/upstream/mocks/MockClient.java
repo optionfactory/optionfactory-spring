@@ -8,14 +8,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.GetExchange;
 
-@Upstream(value = "mock-client")
-@Upstream.MockStatus(HttpStatus.CREATED)
-@Upstream.MockContentType("application/json;charset=utf-8")
+@Upstream("mock-client")
+@Upstream.Mock.DefaultContentType("application/json;charset=utf-8")
 public interface MockClient {
 
     @GetExchange("/endpoint/{parb}")
     @Upstream.Endpoint("endpoint")
-    @Upstream.Mock("#{upstream}-#{endpoint}-#{args.para}-#{args.parb}.json")
+    @Upstream.Mock(value="#{upstream}-#{endpoint}-#{args.para}-#{args.parb}.json", status=HttpStatus.CREATED)
     ResponseEntity<Map<String, String>> add(@RequestParam String para, @PathVariable String parb);
 
 }

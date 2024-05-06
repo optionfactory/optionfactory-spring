@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.Upstream.FaultAfterMapping;
 import net.optionfactory.spring.upstream.UpstreamAfterMappingHandler;
+import net.optionfactory.spring.upstream.annotations.Annotations;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
@@ -28,13 +29,11 @@ public class UpstreamFaultAfterMappingHandler implements UpstreamAfterMappingHan
 
     @Override
     public void preprocess(Class<?> k, ClientHttpRequestFactory rf) {
-        final var interfaceOnRemotingError = Optional.ofNullable(k.getAnnotation(FaultAfterMapping.class));
         for (Method m : k.getMethods()) {
             if(m.isSynthetic() || m.isBridge() || m.isDefault()){
                 continue;
             }
-            Optional.ofNullable(m.getAnnotation(Upstream.FaultAfterMapping.class))
-                    .or(() -> interfaceOnRemotingError)
+            Annotations.closest(m, Upstream.FaultAfterMapping.class)
                     .map(ann -> parser.parseExpression(ann.value()))
                     .ifPresent(expression -> confs.put(m, expression));
         }
