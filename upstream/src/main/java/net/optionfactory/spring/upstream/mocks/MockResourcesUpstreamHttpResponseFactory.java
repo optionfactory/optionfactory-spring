@@ -79,17 +79,17 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
 
     @Override
     public ClientHttpResponse create(InvocationContext invocation, URI uri, HttpMethod method, HttpHeaders headers) {
-        final var mcs = methodToMockConfigurations.get(invocation.method());
+        final var mcs = methodToMockConfigurations.get(invocation.endpoint().method());
         if (mcs == null) {
-            throw new RestClientException(String.format("mock resources not configured for %s:%s", invocation.upstream(), invocation.endpoint()));
+            throw new RestClientException(String.format("mock resources not configured for %s:%s", invocation.endpoint().upstream(), invocation.endpoint().name()));
         }
 
-        final var args = IntStream.range(0, invocation.method().getParameters().length).mapToObj(i -> i).collect(Collectors.toMap(i -> invocation.method().getParameters()[i].getName(), i -> invocation.arguments()[i]));
-        final var context = new StandardEvaluationContext(new MockEvaluationContext(invocation.upstream(), invocation.endpoint(), args));
+        final var args = IntStream.range(0, invocation.endpoint().method().getParameters().length).mapToObj(i -> i).collect(Collectors.toMap(i -> invocation.endpoint().method().getParameters()[i].getName(), i -> invocation.arguments()[i]));
+        final var context = new StandardEvaluationContext(new MockEvaluationContext(invocation.endpoint().upstream(), invocation.endpoint().name(), args));
         context.addPropertyAccessor(new MapAccessor());
         for (MockConfiguration mc : mcs) {
             final var path = mc.bodyPath().getValue(context, String.class);
-            final var resource = new ClassPathResource(path, invocation.method().getDeclaringClass());
+            final var resource = new ClassPathResource(path, invocation.endpoint().method().getDeclaringClass());
             if (!resource.exists()) {
                 continue;
             }
@@ -104,7 +104,7 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
 
             return new MockClientHttpResponse(mc.status(), mc.status().getReasonPhrase(), responseHeaders, resource);
         }
-        throw new RestClientException(String.format("mock resource not found for %s:%s", invocation.upstream(), invocation.endpoint()));
+        throw new RestClientException(String.format("mock resource not found for %s:%s", invocation.endpoint().upstream(), invocation.endpoint().name()));
     }
 
     private static String[] headerFromLine(String headerLine) {
@@ -116,7 +116,7 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
 
     public static HttpHeaders headersFromResource(String path, InvocationContext invocation) {
         final String hp = String.format("%s.headers", path);
-        final var resource = new ClassPathResource(hp, invocation.method().getDeclaringClass());
+        final var resource = new ClassPathResource(hp, invocation.endpoint().method().getDeclaringClass());
         final var headers = new HttpHeaders();
         if (!resource.exists()) {
             return headers;
@@ -128,7 +128,7 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
 
             return headers;
         } catch (IOException ex) {
-            throw new RestClientException(String.format("unreadable mock headers resource %s for %s:%s", hp, invocation.upstream(), invocation.endpoint()));
+            throw new RestClientException(String.format("unreadable mock headers resource %s for %s:%s", hp, invocation.endpoint().upstream(), invocation.endpoint().name()));
         }
     }
 

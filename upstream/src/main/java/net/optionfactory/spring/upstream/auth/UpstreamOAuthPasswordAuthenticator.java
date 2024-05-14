@@ -6,7 +6,6 @@ import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequest;
-import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestClient;
 
@@ -15,19 +14,13 @@ public class UpstreamOAuthPasswordAuthenticator implements UpstreamHttpRequestIn
     private final String clientId;
     private final String clientSecret;
     private final URI tokenUri;
-    private RestClient restClient;
+    private final RestClient restClient;
 
-    public UpstreamOAuthPasswordAuthenticator(String clientId, String clientSecret, URI tokenUri) {
+    public UpstreamOAuthPasswordAuthenticator(String clientId, String clientSecret, URI tokenUri, RestClient restClient) {
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.tokenUri = tokenUri;
-    }
-
-    @Override
-    public void preprocess(Class<?> k, ClientHttpRequestFactory rf) {
-        this.restClient = RestClient.builder()
-                .requestFactory(rf)
-                .build();
+        this.restClient = restClient;
     }
 
     @Override
@@ -51,7 +44,7 @@ public class UpstreamOAuthPasswordAuthenticator implements UpstreamHttpRequestIn
 
             request.getHeaders().set("Authorization", String.format("Bearer %s", token));
         } catch (RuntimeException ex) {
-            throw new RestClientAuthenticationException(invocation.upstream(), invocation.endpoint(), ex);
+            throw new RestClientAuthenticationException(invocation.endpoint().upstream(), invocation.endpoint().name(), ex);
         }
     }
 

@@ -1,17 +1,16 @@
 package net.optionfactory.spring.upstream.log;
 
 import java.io.IOException;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestExecution;
 import net.optionfactory.spring.upstream.annotations.Annotations;
+import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
@@ -19,7 +18,6 @@ import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
 import net.optionfactory.spring.upstream.rendering.BodyRendering;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.client.ClientHttpRequestFactory;
 
 public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
 
@@ -27,24 +25,21 @@ public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
     private final Map<Method, Upstream.Logging> confs = new ConcurrentHashMap<>();
 
     @Override
-    public void preprocess(Class<?> k, ClientHttpRequestFactory rf) {
-        for (Method m : k.getMethods()) {
-            if (m.isSynthetic() || m.isBridge() || m.isDefault()) {
-                continue;
-            }
-            Annotations.closest(m, Upstream.Logging.class)
-                    .ifPresent(ann -> confs.put(m, ann));
+    public void preprocess(Class<?> k, Map<Method, EndpointDescriptor> endpoints) {
+        for (final var endpoint : endpoints.values()) {
+            Annotations.closest(endpoint.method(), Upstream.Logging.class)
+                    .ifPresent(ann -> confs.put(endpoint.method(), ann));
         }
     }
 
     @Override
     public ResponseContext intercept(InvocationContext invocation, RequestContext request, UpstreamHttpRequestExecution execution) throws IOException {
-        final var principal = invocation.principal() == null || invocation.principal().toString().isBlank() ? "" : String.format("[user:%s]", invocation.principal());
-        final var conf = confs.get(invocation.method());
+        final var conf = confs.get(invocation.endpoint().method());
         if (conf == null) {
             return execution.execute(invocation, request);
         }
-        final var prefix = "[boot:%s][upstream:%s][ep:%s][req:%s]%s".formatted(invocation.boot(), invocation.upstream(), invocation.endpoint(), request.id(), principal);
+        final var principal = invocation.principal() == null || invocation.principal().toString().isBlank() ? "" : String.format("[user:%s]", invocation.principal());
+        final var prefix = "[boot:%s][upstream:%s][ep:%s][req:%s]%s".formatted(invocation.boot(), invocation.endpoint().upstream(), invocation.endpoint().name(), request.id(), principal);
         if (conf.requestHeaders()) {
             logger.info("{}[t:oh] headers: {}", prefix, request.headers());
         }

@@ -10,6 +10,7 @@ import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestExecution;
 import net.optionfactory.spring.upstream.annotations.Annotations;
+import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.ExceptionContext;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
@@ -17,7 +18,6 @@ import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
-import org.springframework.http.client.ClientHttpRequestFactory;
 
 public class UpstreamFaultOnRemotingErrorInterceptor implements UpstreamHttpInterceptor {
 
@@ -30,14 +30,11 @@ public class UpstreamFaultOnRemotingErrorInterceptor implements UpstreamHttpInte
     }
 
     @Override
-    public void preprocess(Class<?> k, ClientHttpRequestFactory rf) {
-        for (Method m : k.getMethods()) {
-            if(m.isSynthetic() || m.isBridge() || m.isDefault()){
-                continue;
-            }
-            Annotations.closest(m, Upstream.FaultOnRemotingError.class)
+    public void preprocess(Class<?> k, Map<Method, EndpointDescriptor> endpoints) {
+        for (final var endpoint : endpoints.values()) {
+            Annotations.closest(endpoint.method(), Upstream.FaultOnRemotingError.class)
                     .map(ann -> parser.parseExpression(ann.value()))
-                    .ifPresent(expression -> confs.put(m, expression));
+                    .ifPresent(expression -> confs.put(endpoint.method(), expression));
         }
     }
 
@@ -46,7 +43,7 @@ public class UpstreamFaultOnRemotingErrorInterceptor implements UpstreamHttpInte
         try {
             return execution.execute(invocation, request);
         } catch (Exception exception) {
-            final var expression = confs.get(invocation.method());
+            final var expression = confs.get(invocation.endpoint().method());
             if (expression == null) {
                 throw exception;
             }

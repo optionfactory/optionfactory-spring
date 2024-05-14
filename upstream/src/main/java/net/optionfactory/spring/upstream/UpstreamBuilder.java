@@ -3,7 +3,6 @@ package net.optionfactory.spring.upstream;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
-import java.lang.annotation.Annotation;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.time.temporal.ChronoUnit;
@@ -12,10 +11,12 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.xml.validation.Schema;
-import net.optionfactory.spring.upstream.UpstreamHttpInterceptor.HttpMessageConverters;
 import net.optionfactory.spring.upstream.annotations.Annotations;
+import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
+import net.optionfactory.spring.upstream.contexts.InvocationContext.HttpMessageConverters;
 import net.optionfactory.spring.upstream.errors.UpstreamErrorOnReponseHandler;
 import net.optionfactory.spring.upstream.faults.UpstreamFaultOnRemotingErrorInterceptor;
 import net.optionfactory.spring.upstream.faults.UpstreamFaultOnResponseInterceptor;
@@ -45,6 +46,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
+import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.invoker.HttpServiceArgumentResolver;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
@@ -55,7 +57,6 @@ public class UpstreamBuilder<T> {
     protected final List<UpstreamHttpInterceptor> interceptors = new ArrayList<>();
     protected final List<UpstreamResponseErrorHandler> responseErrorHandlers = new ArrayList<>();
     protected final List<Consumer<HttpServiceProxyFactory.Builder>> serviceProxyCustomizers = new ArrayList<>();
-    protected final List<UpstreamAfterMappingHandler> afterMappings = new ArrayList<>();
     protected final List<HttpServiceArgumentResolver> argumentResolvers = new ArrayList<>();
     protected UpstreamHttpRequestFactory upstreamRequestFactory;
     protected ClientHttpRequestFactory requestFactory;
@@ -244,14 +245,22 @@ public class UpstreamBuilder<T> {
                 return null;
             }
         };
-        final var endpointNames = Stream.of(klass.getMethods())
-                .filter(m -> !m.isSynthetic() && !m.isBridge() && !m.isDefault())
-                .collect(Collectors.toMap(
-                        m -> m,
-                        m -> m.getAnnotation(Upstream.Endpoint.class) != null ? m.getAnnotation(Upstream.Endpoint.class).value() : m.getName()
-                ));
 
-        final var scopeHandler = new ThreadLocalScopeHandler(klass, upstreamId, principalOrDefault, clockOrDefault, endpointNames);
+        final var endpointDescriptors = Stream.of(klass.getMethods())
+                .filter(m -> !m.isSynthetic() && !m.isBridge() && !m.isDefault())
+                .filter(m -> AnnotationUtils.findAnnotation(m, HttpExchange.class) != null)
+                .map(m -> {
+                    final var epa = AnnotationUtils.findAnnotation(m, Upstream.Endpoint.class);
+                    final var principalIndex = IntStream
+                            .range(0, m.getParameters().length)
+                            .filter(i -> m.getParameters()[i].isAnnotationPresent(Upstream.Principal.class))
+                            .mapToObj(i -> i)
+                            .findFirst();
+                    return new EndpointDescriptor(upstreamId, epa == null ? m.getName() : epa.value(), m, principalIndex.orElse(null));
+                })
+                .collect(Collectors.toMap(EndpointDescriptor::method, ed -> ed));
+
+        final var scopeHandler = new ThreadLocalScopeHandler(principalOrDefault, clockOrDefault, endpointDescriptors);
         if (requestFactory == null && upstreamRequestFactory == null) {
             this.requestFactory((LayeredConnectionSocketFactory) null);
         }
@@ -266,30 +275,30 @@ public class UpstreamBuilder<T> {
         restClientCustomizers.forEach(c -> c.accept(rcb));
 
         initializers.stream()
-                .peek(i -> i.preprocess(klass, bufferedRequestFactory))
+                .peek(i -> i.preprocess(klass, endpointDescriptors))
                 .map(scopeHandler::adapt)
                 .forEach(rcb::requestInitializer);
 
         rcb.requestInterceptor(scopeHandler.requestContextInterceptor());
 
         interceptors.stream()
-                .peek(i -> i.preprocess(klass, bufferedRequestFactory))
+                .peek(i -> i.preprocess(klass, endpointDescriptors))
                 .map(scopeHandler::adapt)
                 .forEach(rcb::requestInterceptor);
 
         if (Annotations.anywhereIn(klass, Upstream.Logging.class)) {
             final UpstreamLoggingInterceptor i = new UpstreamLoggingInterceptor();
-            i.preprocess(klass, bufferedRequestFactory);
+            i.preprocess(klass, endpointDescriptors);
             rcb.requestInterceptor(scopeHandler.adapt(i));
         }
         if (Annotations.anywhereIn(klass, Upstream.FaultOnRemotingError.class)) {
             final UpstreamFaultOnRemotingErrorInterceptor i = new UpstreamFaultOnRemotingErrorInterceptor(publisher);
-            i.preprocess(klass, bufferedRequestFactory);
+            i.preprocess(klass, endpointDescriptors);
             rcb.requestInterceptor(scopeHandler.adapt(i));
         }
         if (Annotations.anywhereIn(klass, Upstream.FaultOnResponse.class)) {
             final UpstreamFaultOnResponseInterceptor i = new UpstreamFaultOnResponseInterceptor(publisher);
-            i.preprocess(klass, bufferedRequestFactory);
+            i.preprocess(klass, endpointDescriptors);
             rcb.requestInterceptor(scopeHandler.adapt(i));
         }
 
@@ -297,11 +306,11 @@ public class UpstreamBuilder<T> {
 
         if (Annotations.anywhereIn(klass, Upstream.ErrorOnResponse.class)) {
             final UpstreamErrorOnReponseHandler eh = new UpstreamErrorOnReponseHandler();
-            eh.preprocess(klass, bufferedRequestFactory);
+            eh.preprocess(klass, endpointDescriptors);
             rcb.defaultStatusHandler(scopeHandler.adapt(eh));
         }
         responseErrorHandlers.stream()
-                .peek(i -> i.preprocess(klass, bufferedRequestFactory))
+                .peek(i -> i.preprocess(klass, endpointDescriptors))
                 .map(scopeHandler::adapt)
                 .forEach(rcb::defaultStatusHandler);
 
@@ -320,7 +329,7 @@ public class UpstreamBuilder<T> {
         final var p = new ProxyFactory();
         p.setTarget(client);
         p.setInterfaces(klass);
-        p.addAdvice(scopeHandler.interceptor(new HttpMessageConverters(messageConverters), afterMappings));
+        p.addAdvice(scopeHandler.interceptor(new HttpMessageConverters(messageConverters)));
         return (T) p.getProxy();
     }
 

@@ -158,15 +158,6 @@ public @interface Upstream {
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.TYPE, ElementType.METHOD})
     @Documented
-    public @interface FaultAfterMapping {
-
-        String value();
-
-    }
-
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target({ElementType.TYPE, ElementType.METHOD})
-    @Documented
     @Repeatable(ErrorOnResponse.List.class)
     public @interface ErrorOnResponse {
 
@@ -185,24 +176,6 @@ public @interface Upstream {
         }
     }
 
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target({ElementType.TYPE, ElementType.METHOD})
-    @Documented
-    @Repeatable(ErrorAfterMapping.List.class)
-    public @interface ErrorAfterMapping {
-
-        String value() default "false";
-
-        String reason() default "upstream error in response";
-
-        @Target(ElementType.METHOD)
-        @Retention(RetentionPolicy.RUNTIME)
-        @Documented
-        public @interface List {
-
-            ErrorAfterMapping[] value();
-        }
-    }
 
     public static class ArgumentResolver implements HttpServiceArgumentResolver {
 

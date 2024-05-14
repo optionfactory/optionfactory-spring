@@ -17,7 +17,7 @@ import net.optionfactory.spring.email.EmailSenderConfiguration;
 import net.optionfactory.spring.email.ScheduledEmailSender;
 import net.optionfactory.spring.email.spooling.BufferedScheduledSpooler;
 import net.optionfactory.spring.thymeleaf.SingletonDialect;
-import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
+import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
@@ -111,10 +111,8 @@ public class FaultsEmailsSpoolerTest {
 
         final var event = new UpstreamFaultEvent(
                 new InvocationContext(
-                        new UpstreamHttpInterceptor.HttpMessageConverters(List.of()),
-                        "upstream",
-                        "endpoint",
-                        Object.class.getMethod("toString"),
+                        new InvocationContext.HttpMessageConverters(List.of()),
+                        new EndpointDescriptor("upstream", "endpoint", Object.class.getMethod("toString"), null),
                         new Object[0],
                         "boot-id",
                         principal

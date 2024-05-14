@@ -8,7 +8,6 @@ import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequest;
-import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestClient;
 
@@ -16,19 +15,14 @@ public class UpstreamOAuthClientCredentiaAuthenticator implements UpstreamHttpRe
 
     private final String basicHeader;
     private final URI tokenUri;
-    private RestClient restClient;
+    private final RestClient restClient;
 
-    public UpstreamOAuthClientCredentiaAuthenticator(String clientId, String clientSecret, URI tokenUri) {
+    public UpstreamOAuthClientCredentiaAuthenticator(String clientId, String clientSecret, URI tokenUri, RestClient restClient) {
         this.basicHeader = String.format("Basic %s", HttpHeaders.encodeBasicAuth(clientId, clientSecret, StandardCharsets.UTF_8));
         this.tokenUri = tokenUri;
+        this.restClient = restClient;
     }
-
-    @Override
-    public void preprocess(Class<?> k, ClientHttpRequestFactory rf) {
-        this.restClient = RestClient.builder()
-                .requestFactory(rf)
-                .build();
-    }
+    
 
     @Override
     public void initialize(InvocationContext invocation, ClientHttpRequest request) {
@@ -48,7 +42,7 @@ public class UpstreamOAuthClientCredentiaAuthenticator implements UpstreamHttpRe
 
             request.getHeaders().set(HttpHeaders.AUTHORIZATION, String.format("Bearer %s", accesstoken));
         } catch (RuntimeException ex) {
-            throw new RestClientAuthenticationException(invocation.upstream(), invocation.endpoint(), ex);
+            throw new RestClientAuthenticationException(invocation.endpoint().upstream(), invocation.endpoint().name(), ex);
         }
     }
 }

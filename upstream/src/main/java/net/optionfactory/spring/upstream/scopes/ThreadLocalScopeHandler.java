@@ -3,23 +3,18 @@ package net.optionfactory.spring.upstream.scopes;
 import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
 import java.time.InstantSource;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import net.optionfactory.spring.upstream.Upstream;
-import net.optionfactory.spring.upstream.UpstreamAfterMappingHandler;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
-import net.optionfactory.spring.upstream.UpstreamHttpInterceptor.HttpMessageConverters;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
 import net.optionfactory.spring.upstream.UpstreamResponseErrorHandler;
+import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
+import net.optionfactory.spring.upstream.contexts.InvocationContext.HttpMessageConverters;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
@@ -40,36 +35,19 @@ public class ThreadLocalScopeHandler implements ScopeHandler {
     private final ThreadLocal<InvocationContext> ictx = new ThreadLocal<>();
     private final ThreadLocal<RequestContext> reqCtx = new ThreadLocal<>();
     private final ThreadLocal<ResponseContext> resCtx = new ThreadLocal<>();
-    private final Class<?> klass;
-    private final String upstreamId;
     private final AtomicLong requestCounter = new AtomicLong(0);
     private final Supplier<Object> principal;
     private final InstantSource clock;
-    private final Map<Method, String> endpointNames;
+    private final Map<Method, EndpointDescriptor> endpoints;
 
-    public ThreadLocalScopeHandler(Class<?> klass, String upstreamId, Supplier<Object> principal, InstantSource clock, Map<Method, String> endpointNames) {
-        this.klass = klass;
-        this.upstreamId = upstreamId;
+    public ThreadLocalScopeHandler(Supplier<Object> principal, InstantSource clock, Map<Method, EndpointDescriptor> endpoints) {
         this.principal = principal;
         this.clock = clock;
-        this.endpointNames = endpointNames;
+        this.endpoints = endpoints;
     }
 
     @Override
-    public MethodInterceptor interceptor(HttpMessageConverters converters, List<UpstreamAfterMappingHandler> afterMappingHandlers) {
-        final var methodToPrincipalParamIndex = Stream.of(klass.getMethods())
-                .filter(m -> !m.isSynthetic() && !m.isBridge() && !m.isDefault())
-                .filter(m -> Stream.of(m.getParameters()).anyMatch(p -> p.isAnnotationPresent(Upstream.Principal.class)))
-                .collect(Collectors.toConcurrentMap(m -> m, m -> {
-                    final Parameter[] ps = m.getParameters();
-                    for (int i = 0; i != ps.length; i++) {
-                        final var p = ps[i];
-                        if (p.isAnnotationPresent(Upstream.Principal.class)) {
-                            return i;
-                        }
-                    }
-                    throw new IllegalStateException("unreachable");
-                }));
+    public MethodInterceptor interceptor(HttpMessageConverters converters) {
 
         return (MethodInvocation invocation) -> {
             final var method = invocation.getMethod();
@@ -79,19 +57,15 @@ public class ThreadLocalScopeHandler implements ScopeHandler {
                 }
                 throw new IllegalStateException("Unexpected method invocation: " + method);
             }
-
+            final var endpoint = endpoints.get(method);
             //return ScopedValue.where(ctx, new UpstreamHttpInterceptor.InvocationContext(...).call(() -> {...});
-            final var eprincipal = Optional.ofNullable(methodToPrincipalParamIndex.get(method))
+            final var eprincipal = Optional.ofNullable(endpoint.principalParamIndex())
                     .map(i -> invocation.getArguments()[i])
                     .or(() -> Optional.ofNullable(principal.get()))
                     .orElse(null);
-            ictx.set(new InvocationContext(converters, upstreamId, endpointNames.get(method), method, invocation.getArguments(), BOOT_ID, eprincipal));
+            ictx.set(new InvocationContext(converters, endpoint, invocation.getArguments(), BOOT_ID, eprincipal));
             try {
-                final var result = invocation.proceed();
-                for (UpstreamAfterMappingHandler amh : afterMappingHandlers) {
-                    amh.handle(ictx.get(), reqCtx.get(), resCtx.get(), result);
-                }
-                return result;
+                return invocation.proceed();
             } finally {
                 ictx.remove();
                 reqCtx.remove();

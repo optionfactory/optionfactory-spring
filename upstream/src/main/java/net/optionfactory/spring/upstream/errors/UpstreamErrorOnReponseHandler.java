@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.UpstreamResponseErrorHandler;
 import net.optionfactory.spring.upstream.annotations.Annotations;
+import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
@@ -21,7 +22,6 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatus.Series;
-import org.springframework.http.client.ClientHttpRequestFactory;
 
 public class UpstreamErrorOnReponseHandler implements UpstreamResponseErrorHandler {
 
@@ -34,12 +34,9 @@ public class UpstreamErrorOnReponseHandler implements UpstreamResponseErrorHandl
     private final TemplateParserContext templateParserContext = new TemplateParserContext();
 
     @Override
-    public void preprocess(Class<?> k, ClientHttpRequestFactory rf) {
-        for (Method m : k.getMethods()) {
-            if(m.isSynthetic() || m.isBridge() || m.isDefault()){
-                continue;
-            }
-            final var anns = Annotations.closestRepeatable(m, Upstream.ErrorOnResponse.class)
+    public void preprocess(Class<?> k, Map<Method, EndpointDescriptor> endpoints) {
+        for (final var endpoint : endpoints.values()) {
+            final var anns = Annotations.closestRepeatable(endpoint.method(), Upstream.ErrorOnResponse.class)
                     .stream()
                     .map(annotation -> {
                         final var predicate = parser.parseExpression(annotation.value());
@@ -47,7 +44,7 @@ public class UpstreamErrorOnReponseHandler implements UpstreamResponseErrorHandl
                         return new Expressions(Set.of(annotation.series()), predicate, message);
                     })
                     .toList();
-            conf.put(m, anns);
+            conf.put(endpoint.method(), anns);
         }
     }
 
@@ -66,8 +63,8 @@ public class UpstreamErrorOnReponseHandler implements UpstreamResponseErrorHandl
         final String reason = e.getValue(ectx, String.class);
 
         throw new RestClientUpstreamException(
-                invocation.upstream(),
-                invocation.endpoint(),
+                invocation.endpoint().upstream(),
+                invocation.endpoint().name(),
                 reason,
                 response.status(),
                 response.statusText(),
@@ -76,9 +73,8 @@ public class UpstreamErrorOnReponseHandler implements UpstreamResponseErrorHandl
         );
     }
 
-
     private Optional<Expressions> firstMatching(InvocationContext invocation, RequestContext request, ResponseContext response) throws IOException {
-        final List<Expressions> expressions = conf.get(invocation.method());
+        final List<Expressions> expressions = conf.get(invocation.endpoint().method());
         if (expressions == null) {
             return Optional.empty();
         }

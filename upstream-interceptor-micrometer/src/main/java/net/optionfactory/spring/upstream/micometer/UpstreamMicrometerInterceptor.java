@@ -24,8 +24,8 @@ public class UpstreamMicrometerInterceptor implements UpstreamHttpInterceptor {
         try {
             final var response = execution.execute(ctx, request);
             Timer.builder("upstream_duration_seconds")
-                    .tags("upstream", ctx.upstream())
-                    .tags("endpoint", ctx.endpoint())
+                    .tags("upstream", ctx.endpoint().upstream())
+                    .tags("endpoint", ctx.endpoint().name())
                     .tags("response.status", response.status().toString())
                     .tags("outcome", "success")
                     .register(metrics)
@@ -33,8 +33,8 @@ public class UpstreamMicrometerInterceptor implements UpstreamHttpInterceptor {
             return response;
         } catch (Exception ex) {
             Timer.builder("upstream_duration_seconds")
-                    .tags("upstream", ctx.upstream())
-                    .tags("endpoint", ctx.endpoint())
+                    .tags("upstream", ctx.endpoint().upstream())
+                    .tags("endpoint", ctx.endpoint().name())
                     .tags("response.status", "NO_RESPONSE")
                     .tags("outcome", "error")
                     .register(metrics)

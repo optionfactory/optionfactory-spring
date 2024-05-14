@@ -5,30 +5,27 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
+import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import org.springframework.http.client.ClientHttpRequest;
-import org.springframework.http.client.ClientHttpRequestFactory;
 
 public class UpstreamSoapActionIninitializer implements UpstreamHttpRequestInitializer {
 
     private final Map<Method, String> soapActions = new ConcurrentHashMap<>();
 
     @Override
-    public void preprocess(Class<?> k, ClientHttpRequestFactory rf) {
-        for (Method m : k.getMethods()) {
-            if (m.isSynthetic() || m.isBridge() || m.isDefault()) {
-                continue;
-            }
-            final Upstream.SoapAction ann = m.getAnnotation(Upstream.SoapAction.class);
+    public void preprocess(Class<?> k, Map<Method, EndpointDescriptor> endpoints) {
+        for (final var endpoint : endpoints.values()) {
+            final Upstream.SoapAction ann = endpoint.method().getAnnotation(Upstream.SoapAction.class);
             if (ann != null) {
-                soapActions.put(m, ann.value());
+                soapActions.put(endpoint.method(), ann.value());
             }
         }
     }
 
     @Override
     public void initialize(InvocationContext invocation, ClientHttpRequest request) {
-        final var soapAction = soapActions.get(invocation.method());
+        final var soapAction = soapActions.get(invocation.endpoint().method());
         if (soapAction != null) {
             request.getHeaders().set("SOAPAction", String.format("\"%s\"", soapAction));
         }

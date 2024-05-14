@@ -1,13 +1,8 @@
 package net.optionfactory.spring.upstream.springoauth;
 
-import java.io.IOException;
-import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
-import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpRequest;
-import org.springframework.http.client.ClientHttpRequestExecution;
-import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 
