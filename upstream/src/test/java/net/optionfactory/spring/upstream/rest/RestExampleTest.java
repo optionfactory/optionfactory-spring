@@ -1,5 +1,6 @@
 package net.optionfactory.spring.upstream.rest;
 
+import io.micrometer.observation.ObservationRegistry;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
@@ -29,7 +30,7 @@ public class RestExampleTest {
                     return new MockClientHttpResponse(HttpStatus.OK, HttpStatus.OK.getReasonPhrase(), h, new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8)));
                 })
                 .restClient(r -> r.baseUrl("https://hub.dummyapis.com/statuscode/"))
-                .build(e -> {});
+                .build(ObservationRegistry.NOOP, e -> {});
         final var response = client.ok("asd");
         Assert.assertEquals("b", response.get("a"));
     }
@@ -45,7 +46,7 @@ public class RestExampleTest {
                     return new MockClientHttpResponse(HttpStatus.BAD_REQUEST, HttpStatus.BAD_REQUEST.getReasonPhrase(), h, new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8)));
                 })
                 .restClient(r -> r.baseUrl("https://hub.dummyapis.com/statuscode/"))
-                .build(e -> {});
+                .build(ObservationRegistry.NOOP, e -> {});
         client.error("asd");
     }
 

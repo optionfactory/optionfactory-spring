@@ -1,5 +1,6 @@
 package net.optionfactory.spring.upstream.soap;
 
+import io.micrometer.observation.ObservationRegistry;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.soap.SOAPFault;
 import java.net.URI;
@@ -42,7 +43,7 @@ public class SoapClientTest {
                 })
                 .soap(Protocol.SOAP_1_1, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
-                .build(e -> {
+                .build(ObservationRegistry.NOOP, e -> {
                 });
 
         Add req = new Add();
@@ -74,7 +75,7 @@ public class SoapClientTest {
                 })
                 .soap(Protocol.SOAP_1_2, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
-                .build(e -> {
+                .build(ObservationRegistry.NOOP, e -> {
                 });
 
         Add req = new Add();
@@ -108,7 +109,7 @@ public class SoapClientTest {
                 })
                 .soap(Protocol.SOAP_1_1, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
-                .build(e -> {
+                .build(ObservationRegistry.NOOP, e -> {
                 });
 
         Add req = new Add();

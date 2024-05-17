@@ -1,5 +1,6 @@
 package net.optionfactory.spring.upstream.soap;
 
+import io.micrometer.observation.ObservationRegistry;
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicReference;
@@ -41,7 +42,7 @@ public class UpstreamSoapActionInterceptorTest {
                 })
                 .soap(Protocol.SOAP_1_1, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
-                .build(e -> {})
+                .build(ObservationRegistry.NOOP, e -> {})
                 .add(new Add());
 
         Assert.assertEquals("\"http://tempuri.org/Add\"", capturedHeaders.get().getFirst("SOAPAction"));

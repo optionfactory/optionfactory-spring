@@ -1,5 +1,6 @@
 package net.optionfactory.spring.upstream.caching;
 
+import io.micrometer.observation.ObservationRegistry;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
 import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
 import org.junit.Test;
@@ -15,7 +16,7 @@ public class FetchModeArgumentResolverTest {
                     return MockClientHttpResponse.okUtf8(MediaType.APPLICATION_JSON, "{}");
                 })
                 .restClient(r -> r.baseUrl("http://example.com"))
-                .build(e -> {});
+                .build(ObservationRegistry.NOOP, e -> {});
 
         client.get("a", FetchMode.ANY);
     }

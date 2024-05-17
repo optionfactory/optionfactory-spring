@@ -108,19 +108,9 @@
             </dependency>
             <dependency>
                 <groupId>net.optionfactory.spring</groupId>
-                <artifactId>upstream-interceptor-micrometer</artifactId>
-                <version>${opfa-spring.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>net.optionfactory.spring</groupId>
                 <artifactId>upstream-email-faults</artifactId>
                 <version>${opfa-spring.version}</version>
             </dependency>
-            <dependency>
-                <groupId>net.optionfactory.spring</groupId>
-                <artifactId>upstream-legacy</artifactId>
-                <version>${opfa-spring.version}</version>
-            </dependency>            
             <dependency>
                 <groupId>net.optionfactory.spring</groupId>
                 <artifactId>validators</artifactId>

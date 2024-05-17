@@ -1,6 +1,8 @@
 package net.optionfactory.spring.upstream;
 
+import io.micrometer.observation.ObservationRegistry;
 import java.net.URI;
+import java.util.Map;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
 import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
@@ -21,8 +23,8 @@ public class UpstreamParamTest {
                     return MockClientHttpResponse.okUtf8(MediaType.APPLICATION_JSON, "{}");
                 })
                 .restClient(r -> r.baseUrl("http://example.com"))
-                .interceptor(new UpstreamLoggingInterceptor())
-                .build(o -> {})
+                .interceptor(new UpstreamLoggingInterceptor(Map.of()))
+                .build(ObservationRegistry.NOOP, o -> {})
                 .test("value");
 
     }

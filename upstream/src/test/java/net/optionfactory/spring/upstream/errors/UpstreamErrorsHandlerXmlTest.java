@@ -1,5 +1,6 @@
 package net.optionfactory.spring.upstream.errors;
 
+import io.micrometer.observation.ObservationRegistry;
 import java.net.URI;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
@@ -36,7 +37,7 @@ public class UpstreamErrorsHandlerXmlTest {
                     );
                 })
                 .restClient(r -> r.baseUrl("http://example.com"))
-                .build(e -> {
+                .build(ObservationRegistry.NOOP, e -> {
                 })
                 .callWithXpath();
     }
@@ -62,7 +63,7 @@ public class UpstreamErrorsHandlerXmlTest {
                     );
                 })
                 .restClient(r -> r.baseUrl("http://example.com"))
-                .build(e -> {
+                .build(ObservationRegistry.NOOP, e -> {
                 })
                 .callWithXpath();
     }

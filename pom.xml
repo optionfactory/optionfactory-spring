@@ -63,7 +63,6 @@
         <module>upstream</module>
         <module>upstream-interceptor-jjwt</module>
         <module>upstream-interceptor-spring-oauth2</module>
-        <module>upstream-interceptor-micrometer</module>
         <module>upstream-email-faults</module>
         <module>validators</module>
         <module>thymeleaf</module>

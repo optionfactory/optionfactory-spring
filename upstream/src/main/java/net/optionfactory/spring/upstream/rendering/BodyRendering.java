@@ -19,10 +19,16 @@ import org.springframework.http.MediaType;
 public class BodyRendering {
 
     public enum Strategy {
+        SKIP,
         SIZE,
         ABBREVIATED,
         ABBREVIATED_ONELINE,
         ABBREVIATED_COMPACT;
+    }
+
+    public enum HeadersStrategy {
+        SKIP,
+        CONTENT;
     }
 
     private static final String COMPACTING_XML_STYLESHEET = """
@@ -62,6 +68,8 @@ public class BodyRendering {
                 abbreviated(compact(source, type), infix, maxSize);
             case ABBREVIATED_ONELINE ->
                 oneline(abbreviated(source, infix, maxSize));
+            case SKIP ->
+                "";
         };
     }
 

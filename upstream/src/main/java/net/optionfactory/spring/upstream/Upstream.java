@@ -7,6 +7,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import net.optionfactory.spring.upstream.caching.FetchMode;
+import net.optionfactory.spring.upstream.rendering.BodyRendering.HeadersStrategy;
 import net.optionfactory.spring.upstream.rendering.BodyRendering.Strategy;
 import org.springframework.core.MethodParameter;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
@@ -44,19 +45,36 @@ public @interface Upstream {
     @Documented
     public @interface Logging {
 
+        public static final String INFIX_SCISSORS = "✂️";
+        public static final int DEFAULT_MAX_SIZE = 8 * 1024;
+
         Strategy request() default Strategy.ABBREVIATED_COMPACT;
 
-        int requestMaxSize() default 8 * 1024;
+        int requestMaxSize() default DEFAULT_MAX_SIZE;
 
-        boolean requestHeaders() default false;
+        HeadersStrategy requestHeaders() default HeadersStrategy.SKIP;
 
         Strategy response() default Strategy.ABBREVIATED_COMPACT;
 
-        int responseMaxSize() default 8 * 1024;
+        int responseMaxSize() default DEFAULT_MAX_SIZE;
 
-        boolean responseHeaders() default false;
+        HeadersStrategy responseHeaders() default HeadersStrategy.SKIP;
 
-        String infix() default "✂️";
+        String infix() default INFIX_SCISSORS;
+
+        public record Conf(
+                Strategy request,
+                int requestMaxSize,
+                HeadersStrategy requestHeaders,
+                Strategy response,
+                int responseMaxSize,
+                HeadersStrategy responseHeaders,
+                String infix) {
+
+            public static Conf defaults() {
+                return new Conf(Strategy.ABBREVIATED_COMPACT, DEFAULT_MAX_SIZE, HeadersStrategy.SKIP, Strategy.ABBREVIATED_COMPACT, DEFAULT_MAX_SIZE, HeadersStrategy.SKIP, INFIX_SCISSORS);
+            }
+        }
 
     }
 
@@ -175,7 +193,6 @@ public @interface Upstream {
             ErrorOnResponse[] value();
         }
     }
-
 
     public static class ArgumentResolver implements HttpServiceArgumentResolver {
 

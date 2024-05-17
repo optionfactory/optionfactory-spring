@@ -4,25 +4,9 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 public class Annotations {
 
-    public static <A extends Annotation> boolean anywhereIn(Class<?> k, Class<A> annotation) {
-        if (k.getAnnotationsByType(annotation).length > 0) {
-            return true;
-        }
-        for (var curr = k; curr != null; curr = curr.getSuperclass()) {
-            var canns = curr.getAnnotationsByType(annotation);
-            if (canns.length > 0) {
-                return true;
-            }
-        }
-        return Stream.of(k.getMethods())
-                .filter(m -> !m.isSynthetic() && !m.isBridge() && !m.isDefault())
-                .map(m -> m.getAnnotationsByType(annotation))
-                .anyMatch(as -> as.length > 0);
-    }
 
     public static <T extends Annotation> List<T> closestRepeatable(Method m, Class<T> annotation) {
         final var manns = m.getAnnotationsByType(annotation);

@@ -4,12 +4,12 @@ import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import org.springframework.http.client.ClientHttpRequest;
 
-public class UpstreamStaticTokenAuthenticator implements UpstreamHttpRequestInitializer {
+public class StaticTokenAuthenticator implements UpstreamHttpRequestInitializer {
 
     private final String tokenType;
     private final String token;
 
-    public UpstreamStaticTokenAuthenticator(String tokenType, String token) {
+    public StaticTokenAuthenticator(String tokenType, String token) {
         this.tokenType = tokenType;
         this.token = token;
     }

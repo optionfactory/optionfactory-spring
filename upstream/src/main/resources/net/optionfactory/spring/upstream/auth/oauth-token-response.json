@@ -1,0 +1,11 @@
+{
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtb2NrIn0.GZ6RFN2HiP5-lKMItClOuEqUfVDV-2akPWzHF4u_Q7I",
+    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtb2NrIn0.GZ6RFN2HiP5-lKMItClOuEqUfVDV-2akPWzHF4u_Q7I",
+    "id_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtb2NrIn0.GZ6RFN2HiP5-lKMItClOuEqUfVDV-2akPWzHF4u_Q7I",
+    "session_state": "22c8278b-3346-468e-9533-f41f22ed264f",
+    "token_type": "bearer",
+    "scope": "openid email profile",
+    "expires_in": 600,
+    "refresh_expires_in": 1800,
+    "not-before-policy": 0
+} 

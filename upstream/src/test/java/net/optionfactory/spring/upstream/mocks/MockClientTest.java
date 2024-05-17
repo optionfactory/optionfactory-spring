@@ -1,5 +1,6 @@
 package net.optionfactory.spring.upstream.mocks;
 
+import io.micrometer.observation.ObservationRegistry;
 import java.util.Map;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
 import org.junit.Assert;
@@ -12,7 +13,7 @@ public class MockClientTest {
     private final MockClient client = UpstreamBuilder.create(MockClient.class)
             .requestFactoryMockResources()
             .restClient(r -> r.baseUrl("http://example.com"))
-            .build(e -> {});
+            .build(ObservationRegistry.NOOP, e -> {});
 
     @Test
     public void canUseMockResources() {
