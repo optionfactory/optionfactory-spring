@@ -2,22 +2,27 @@ package net.optionfactory.spring.upstream.auth.digest;
 
 import java.net.URI;
 import net.optionfactory.spring.upstream.Upstream;
-import static net.optionfactory.spring.upstream.Upstream.FaultOnResponse.STATUS_IS_ERROR;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.service.annotation.PostExchange;
 
 @Upstream("digest-auth-client")
 @Upstream.FaultOnRemotingError
-@Upstream.FaultOnResponse(STATUS_IS_ERROR)
 public interface DigestAuthClient {
 
     @PostExchange
     @Upstream.Endpoint("digest-auth-challenge")
-    @Upstream.Mock("digest-auth-challenge")
+    @Upstream.Mock(value = "digest-auth-challenge", status = HttpStatus.UNAUTHORIZED)
     HttpHeaders challenge(URI uri);
 
     default String authenticate(DigestAuth da, URI uri) {
-        final var challenge = challenge(uri).getFirst("WWW-Authenticate");
-        return da.authHeader("POST", uri.getPath(), challenge);
+        try {
+            final var challenge = challenge(uri).getFirst("WWW-Authenticate");
+            return da.authHeader("POST", uri.getPath(), challenge);
+        } catch (HttpClientErrorException.Unauthorized ex) {
+            final var challenge = ex.getResponseHeaders().getFirst("WWW-Authenticate");
+            return da.authHeader("POST", uri.getPath(), challenge);
+        }
     }
 }
