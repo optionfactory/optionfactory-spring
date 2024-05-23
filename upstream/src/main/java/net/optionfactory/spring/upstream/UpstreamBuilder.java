@@ -316,20 +316,19 @@ public class UpstreamBuilder<T> {
                 .map(scopeHandler::adapt)
                 .forEach(rcb::requestInitializer);
 
-        rcb.requestInterceptor(scopeHandler.requestContextInterceptor());
-
-        Stream.concat(
-                interceptors.stream(),
-                Stream.of(
-                        new UpstreamLoggingInterceptor(loggingOverrides),
-                        new UpstreamObservingInterceptor(observations),
-                        new UpstreamFaultInterceptor(publisher, observations)
-                ))
-                .peek(i -> i.preprocess(klass, endpoints))
-                .map(scopeHandler::adapt)
-                .forEach(rcb::requestInterceptor);
-
-        rcb.requestInterceptor(scopeHandler.responseContextInterceptor(clockOrDefault));
+        rcb.requestInterceptor(
+                scopeHandler.adapt(
+                        Stream.concat(
+                                interceptors.stream(),
+                                Stream.of(
+                                        new UpstreamLoggingInterceptor(loggingOverrides),
+                                        new UpstreamObservingInterceptor(observations),
+                                        new UpstreamFaultInterceptor(publisher, observations)
+                                ))
+                                .peek(i -> i.preprocess(klass, endpoints))
+                                .toList()
+                )
+        );
 
         Stream.concat(
                 Stream.of(new UpstreamErrorOnReponseHandler()),

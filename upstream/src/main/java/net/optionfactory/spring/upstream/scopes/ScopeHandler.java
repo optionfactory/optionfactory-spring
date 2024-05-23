@@ -2,6 +2,7 @@ package net.optionfactory.spring.upstream.scopes;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.List;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
 import net.optionfactory.spring.upstream.UpstreamResponseErrorHandler;
@@ -20,7 +21,7 @@ public interface ScopeHandler {
 
     MethodInterceptor interceptor(HttpMessageConverters cs);
 
-    ClientHttpRequestInterceptor adapt(UpstreamHttpInterceptor interceptor);
+    ClientHttpRequestInterceptor adapt(List<UpstreamHttpInterceptor> interceptors);
 
     ClientHttpRequestInitializer adapt(UpstreamHttpRequestInitializer initializer);
 

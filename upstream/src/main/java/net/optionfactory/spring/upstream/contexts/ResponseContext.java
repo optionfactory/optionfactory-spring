@@ -11,10 +11,10 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.ClientHttpResponse;
 
 public record ResponseContext(
-        Instant at,
-        HttpStatusCode status,
-        String statusText,
-        HttpHeaders headers,
+            Instant at,
+            HttpStatusCode status,
+            String statusText,
+            HttpHeaders headers,
         BodySource body) {
 
     public ResponseContext detached() {

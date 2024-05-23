@@ -29,6 +29,7 @@ public class XmlPathTest {
 
         Assert.assertTrue(path.xpathBool("//CodicePositivo[@nil='true']"));
     }
+
     @Test
     public void canCheckIfElWithAttributeIsMissing() throws IOException {
         final var data = """

@@ -1,13 +1,12 @@
 package net.optionfactory.spring.upstream.scopes;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.time.InstantSource;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
@@ -15,26 +14,19 @@ import net.optionfactory.spring.upstream.UpstreamResponseErrorHandler;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.InvocationContext.HttpMessageConverters;
-import net.optionfactory.spring.upstream.contexts.RequestContext;
-import net.optionfactory.spring.upstream.contexts.ResponseContext;
-import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
+import net.optionfactory.spring.upstream.scopes.ResponseErrorHandlerAdapter;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.aop.framework.ReflectiveMethodInvocation;
-import org.springframework.http.HttpRequest;
-import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestInitializer;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
-import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.ResponseErrorHandler;
 
 public class ThreadLocalScopeHandler implements ScopeHandler {
 
     private final ThreadLocal<InvocationContext> ictx = new ThreadLocal<>();
-    private final ThreadLocal<RequestContext> reqCtx = new ThreadLocal<>();
-    private final ThreadLocal<ResponseContext> resCtx = new ThreadLocal<>();
     private final AtomicLong requestCounter = new AtomicLong(0);
     private final Supplier<Object> principal;
     private final InstantSource clock;
@@ -68,65 +60,29 @@ public class ThreadLocalScopeHandler implements ScopeHandler {
                 return invocation.proceed();
             } finally {
                 ictx.remove();
-                reqCtx.remove();
-                resCtx.remove();
             }
-        };
-    }
-
-    public ClientHttpRequestInterceptor requestContextInterceptor() {
-        return (HttpRequest request, byte[] body, ClientHttpRequestExecution execution) -> {
-            reqCtx.set(new RequestContext(requestCounter.incrementAndGet(), clock.instant(), request.getMethod(), request.getURI(), request.getHeaders(), body));
-            return execution.execute(request, body);
-        };
-    }
-
-    public ClientHttpRequestInterceptor responseContextInterceptor(InstantSource clock) {
-        return (HttpRequest request, byte[] body, ClientHttpRequestExecution execution) -> {
-            final var response = execution.execute(request, body);
-            resCtx.set(new ResponseContext(clock.instant(), response.getStatusCode(), response.getStatusText(), response.getHeaders(), BodySource.of(response)));
-            return response;
         };
     }
 
     @Override
     public ClientHttpRequestInitializer adapt(UpstreamHttpRequestInitializer initializer) {
-        return (request) -> initializer.initialize(ictx.get(), request);
+        return new RequestInitializerAdapter(initializer, ictx::get);
     }
 
     @Override
-    public ClientHttpRequestInterceptor adapt(UpstreamHttpInterceptor interceptor) {
-        return (HttpRequest request, byte[] body, ClientHttpRequestExecution execution) -> {
-            final var responseHolder = new AtomicReference<ClientHttpResponse>();
-            interceptor.intercept(ictx.get(), reqCtx.get(), (InvocationContext ctx, RequestContext rctx) -> {
-                reqCtx.set(rctx);
-                final ClientHttpResponse chr = execution.execute(request, rctx.body());
-                responseHolder.set(chr);
-                return resCtx.get();
-            });
-            return responseHolder.get();
-        };
+    public ClientHttpRequestInterceptor adapt(List<UpstreamHttpInterceptor> interceptors) {
+        return new InterceptorChainAdapter(interceptors, ictx::get, requestCounter, clock);
     }
 
     @Override
     public ClientHttpRequestFactory adapt(UpstreamHttpRequestFactory factory) {
-        return (uri, httpMethod) -> factory.createRequest(ictx.get(), uri, httpMethod);
+        return new RequestFactoryAdapter(factory, ictx::get);
 
     }
 
     @Override
     public ResponseErrorHandler adapt(UpstreamResponseErrorHandler eh) {
-        return new ResponseErrorHandler() {
-            @Override
-            public boolean hasError(ClientHttpResponse response) throws IOException {
-                return eh.hasError(ictx.get(), reqCtx.get(), resCtx.get());
-            }
-
-            @Override
-            public void handleError(ClientHttpResponse response) throws IOException {
-                eh.handleError(ictx.get(), reqCtx.get(), resCtx.get());
-            }
-        };
+        return new ResponseErrorHandlerAdapter(eh);
     }
 
 }
