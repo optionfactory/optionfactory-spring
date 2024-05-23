@@ -16,7 +16,7 @@ public class UpstreamParamTest {
 
     @Test
     public void canUseUpstreamParam() {
-        final URI expected = URI.create("http://example.com/endpoint/value?b=value");
+        final URI expected = URI.create("http://example.com/endpoint/value/value");
         UpstreamBuilder.create(UpstreamParamClient.class)
                 .requestFactory((InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
                     Assert.assertEquals(expected, uri);
@@ -24,8 +24,9 @@ public class UpstreamParamTest {
                 })
                 .restClient(r -> r.baseUrl("http://example.com"))
                 .interceptor(new UpstreamLoggingInterceptor(Map.of()))
-                .build(ObservationRegistry.NOOP, o -> {})
-                .test("value");
+                .build(ObservationRegistry.NOOP, o -> {
+                })
+                .testEndpoint("value");
 
     }
 

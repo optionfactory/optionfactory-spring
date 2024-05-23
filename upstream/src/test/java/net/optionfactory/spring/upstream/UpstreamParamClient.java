@@ -5,11 +5,11 @@ import org.springframework.web.service.annotation.GetExchange;
 
 public interface UpstreamParamClient {
 
-    @GetExchange("/endpoint/{parb}")
+    @GetExchange("/endpoint/{parb}/{b}")
     @Upstream.Endpoint("endpoint")
     @Upstream.Mock("mock.json")
-    Map<String, String> test(
-            @Upstream.Param(key = "parb", value = "#this", type = Upstream.Param.Type.PATH_VARIABLE)
-            @Upstream.Param(key = "b", value = "#root") String parameter);
+    Map<String, String> testEndpoint(
+            @Upstream.PathVariable(key = "parb", value = "#this")
+            @Upstream.PathVariable(key = "b", value = "#root") String parameter);
 
 }

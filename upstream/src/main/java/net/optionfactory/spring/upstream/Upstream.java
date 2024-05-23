@@ -6,7 +6,6 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import net.optionfactory.spring.upstream.caching.FetchMode;
 import net.optionfactory.spring.upstream.rendering.BodyRendering.HeadersStrategy;
 import net.optionfactory.spring.upstream.rendering.BodyRendering.Strategy;
 import org.springframework.core.MethodParameter;
@@ -26,10 +25,19 @@ import org.springframework.web.service.invoker.HttpServiceArgumentResolver;
 @Target(ElementType.TYPE)
 public @interface Upstream {
 
+    /**
+     * @return the name of this upstream
+     */
     String value() default "";
 
+    /**
+     * @return the connection timeout (in seconds)
+     */
     int connectionTimeout() default 5;
 
+    /**
+     * @return the socket timeout (in seconds)
+     */
     int socketTimeout() default 30;
 
     /**
@@ -42,6 +50,16 @@ public @interface Upstream {
     public @interface Principal {
 
     }
+    /**
+     * <strong>discovery</strong>: parameter<br>
+     * <strong>meta</strong>: no<br>
+     * <strong>merging</strong>: no<br>
+     */
+    @Retention(value = RetentionPolicy.RUNTIME)
+    @Target(value = ElementType.PARAMETER)
+    public @interface Context {
+
+    }
 
     /**
      * <strong>discovery</strong>: method<br>
@@ -52,6 +70,9 @@ public @interface Upstream {
     @Target(value = ElementType.METHOD)
     public @interface Endpoint {
 
+        /**
+         * @return the name of this endpoint
+         */
         String value();
 
     }
@@ -111,14 +132,17 @@ public @interface Upstream {
     public @interface Mock {
 
         /**
-         * @return the body template path, as a SpEl template expression
+         * @return the <strong>templated expressions</strong> to be evaluated as
+         * the body template path
+         *
          */
         String value();
 
         HttpStatus status() default HttpStatus.OK;
 
         /**
-         * @return Headers, as a SpEl template expressions
+         * @return the <strong>templated expressions</strong> to be evaluated as
+         * http headers
          */
         String[] headers() default {};
 
@@ -149,10 +173,19 @@ public @interface Upstream {
     @Repeatable(Header.List.class)
     public @interface Header {
 
+        /**
+         * @return the <strong>templated expression</strong> to be evaluated
+         */
         public String key();
 
+        /**
+         * @return the <strong>templated expression</strong> to be evaluated
+         */
         public String value();
 
+        /**
+         * @return the <strong>boolean expression</strong> to be evaluated
+         */
         public String condition() default "true";
 
         @Target({ElementType.METHOD})
@@ -174,10 +207,19 @@ public @interface Upstream {
     @Repeatable(QueryParam.List.class)
     public @interface QueryParam {
 
+        /**
+         * @return the <strong>templated expression</strong> to be evaluated
+         */
         public String key();
 
+        /**
+         * @return the <strong>templated expression</strong> to be evaluated
+         */
         public String value();
 
+        /**
+         * @return the <strong>boolean expression</strong> to be evaluated
+         */
         public String condition() default "true";
 
         @Target({ElementType.METHOD})
@@ -196,30 +238,28 @@ public @interface Upstream {
      */
     @Retention(value = RetentionPolicy.RUNTIME)
     @Target(value = ElementType.PARAMETER)
-    @Repeatable(Param.List.class)
-    public @interface Param {
+    @Repeatable(PathVariable.List.class)
+    public @interface PathVariable {
 
-        public Type type() default Type.QUERY_PARAM;
-
+        /**
+         * @return the key
+         */
         public String key();
 
+        /**
+         * <strong>context</strong>: #this: the annotated argument.
+         *
+         * @return the <strong>string expression</strong> to be evaluated
+         *
+         */
         public String value();
-
-        public String condition() default "true";
-
-        public enum Type {
-            QUERY_PARAM,
-            PATH_VARIABLE,
-            COOKIE,
-            HEADER;
-        }
 
         @Target({ElementType.PARAMETER})
         @Retention(RetentionPolicy.RUNTIME)
         @Documented
         public @interface List {
 
-            Param[] value();
+            PathVariable[] value();
         }
 
     }
@@ -233,6 +273,9 @@ public @interface Upstream {
     @Target(ElementType.METHOD)
     public @interface SoapAction {
 
+        /**
+         * @return the <strong>templated expression</strong> to be evaluated
+         */
         String value();
 
     }
@@ -249,6 +292,9 @@ public @interface Upstream {
 
         public static final String STATUS_IS_ERROR = "#response.status().isError()";
 
+        /**
+         * @return the <strong>boolean expression</strong> to be evaluated
+         */
         String value();
 
     }
@@ -265,6 +311,9 @@ public @interface Upstream {
 
         public static final String ALWAYS = "true";
 
+        /**
+         * @return the <strong>boolean expression</strong> to be evaluated
+         */
         String value() default ALWAYS;
 
     }
@@ -273,15 +322,21 @@ public @interface Upstream {
      * <strong>discovery</strong>: method, interface, super-interfaces<br>
      * <strong>meta</strong>: no<br>
      * <strong>merging</strong>: no<br>
-     */    
+     */
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.METHOD, ElementType.TYPE})
     @Documented
     @Repeatable(ErrorOnResponse.List.class)
     public @interface ErrorOnResponse {
 
+        /**
+         * @return the <strong>boolean expression</strong> to be evaluated
+         */
         String value() default "false";
 
+        /**
+         * @return the <strong>templated expression</strong> to be evaluated
+         */
         String reason() default "upstream error";
 
         HttpStatus.Series[] series() default HttpStatus.Series.SUCCESSFUL;
@@ -301,26 +356,14 @@ public @interface Upstream {
 
         @Override
         public boolean resolve(Object argument, MethodParameter parameter, HttpRequestValues.Builder requestValues) {
-            final var params = parameter.getParameter().getAnnotationsByType(Param.class);
-            for (Param p : params) {
+            final var uvs = parameter.getParameter().getAnnotationsByType(PathVariable.class);
+            for (PathVariable uv : uvs) {
                 final StandardEvaluationContext ec = new StandardEvaluationContext(argument);
-                if (!"true".equals(p.condition()) && !parser.parseExpression(p.condition()).getValue(ec, boolean.class)) {
-                    continue;
-                }
-                final var value = parser.parseExpression(p.value()).getValue(ec, String.class);
-                switch (p.type()) {
-                    case HEADER ->
-                        requestValues.addHeader(p.key(), value);
-                    case QUERY_PARAM ->
-                        requestValues.addRequestParameter(p.key(), value);
-                    case PATH_VARIABLE ->
-                        requestValues.setUriVariable(p.key(), value);
-                    case COOKIE ->
-                        requestValues.addCookie(p.key(), value);
-                }
+                final var value = parser.parseExpression(uv.value()).getValue(ec, String.class);
+                requestValues.setUriVariable(uv.key(), value);
             }
-            return params.length != 0
-                    || parameter.getParameterType() == FetchMode.class
+            return uvs.length != 0
+                    || parameter.hasParameterAnnotation(Context.class)
                     || parameter.hasParameterAnnotation(Principal.class);
 
         }
