@@ -22,6 +22,7 @@ import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
+import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.faults.UpstreamFaultEvent;
 import net.optionfactory.spring.upstream.faults.spooler.FaultsEmailsSpoolerTest.Conf;
 import org.junit.Assert;
@@ -111,6 +112,7 @@ public class FaultsEmailsSpoolerTest {
 
         final var event = new UpstreamFaultEvent(
                 new InvocationContext(
+                        new Expressions(),
                         new InvocationContext.HttpMessageConverters(List.of()),
                         new EndpointDescriptor("upstream", "endpoint", Object.class.getMethod("toString"), null),
                         new Object[0],
