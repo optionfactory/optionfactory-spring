@@ -7,7 +7,6 @@ import java.util.Optional;
 
 public class Annotations {
 
-
     public static <T extends Annotation> List<T> closestRepeatable(Method m, Class<T> annotation) {
         final var manns = m.getAnnotationsByType(annotation);
         if (manns.length > 0) {

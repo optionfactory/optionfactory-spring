@@ -16,6 +16,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.service.invoker.HttpRequestValues;
 import org.springframework.web.service.invoker.HttpServiceArgumentResolver;
 
+/**
+ *
+ * <strong>discovery</strong>: interface, super interfaces<br>
+ * <strong>meta</strong>: no<br>
+ * <strong>merging</strong>: no<br>
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface Upstream {
@@ -26,12 +32,22 @@ public @interface Upstream {
 
     int socketTimeout() default 30;
 
+    /**
+     * <strong>discovery</strong>: parameter<br>
+     * <strong>meta</strong>: no<br>
+     * <strong>merging</strong>: no<br>
+     */
     @Retention(value = RetentionPolicy.RUNTIME)
     @Target(value = ElementType.PARAMETER)
     public @interface Principal {
 
     }
 
+    /**
+     * <strong>discovery</strong>: method<br>
+     * <strong>meta</strong>: no<br>
+     * <strong>merging</strong>: no<br>
+     */
     @Retention(value = RetentionPolicy.RUNTIME)
     @Target(value = ElementType.METHOD)
     public @interface Endpoint {
@@ -40,8 +56,13 @@ public @interface Upstream {
 
     }
 
+    /**
+     * <strong>discovery</strong>: method, interface, super interfaces<br>
+     * <strong>meta</strong>: no<br>
+     * <strong>merging</strong>: no<br>
+     */
     @Retention(RetentionPolicy.RUNTIME)
-    @Target({ElementType.TYPE, ElementType.METHOD})
+    @Target({ElementType.METHOD, ElementType.TYPE})
     @Documented
     public @interface Logging {
 
@@ -78,6 +99,11 @@ public @interface Upstream {
 
     }
 
+    /**
+     * <strong>discovery</strong>: method<br>
+     * <strong>meta</strong>: no<br>
+     * <strong>merging</strong>: no<br>
+     */
     @Target({ElementType.METHOD})
     @Retention(value = RetentionPolicy.RUNTIME)
     @Repeatable(Mock.List.class)
@@ -113,6 +139,11 @@ public @interface Upstream {
         }
     }
 
+    /**
+     * <strong>discovery</strong>: method<br>
+     * <strong>meta</strong>: no<br>
+     * <strong>merging</strong>: no<br>
+     */
     @Retention(value = RetentionPolicy.RUNTIME)
     @Target(value = ElementType.METHOD)
     @Repeatable(Header.List.class)
@@ -133,6 +164,11 @@ public @interface Upstream {
         }
     }
 
+    /**
+     * <strong>discovery</strong>: method<br>
+     * <strong>meta</strong>: no<br>
+     * <strong>merging</strong>: no<br>
+     */
     @Retention(value = RetentionPolicy.RUNTIME)
     @Target(value = ElementType.METHOD)
     @Repeatable(QueryParam.List.class)
@@ -153,6 +189,11 @@ public @interface Upstream {
         }
     }
 
+    /**
+     * <strong>discovery</strong>: parameter<br>
+     * <strong>meta</strong>: no<br>
+     * <strong>merging</strong>: no<br>
+     */
     @Retention(value = RetentionPolicy.RUNTIME)
     @Target(value = ElementType.PARAMETER)
     @Repeatable(Param.List.class)
@@ -183,6 +224,11 @@ public @interface Upstream {
 
     }
 
+    /**
+     * <strong>discovery</strong>: method<br>
+     * <strong>meta</strong>: no<br>
+     * <strong>merging</strong>: no<br>
+     */
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.METHOD)
     public @interface SoapAction {
@@ -191,8 +237,13 @@ public @interface Upstream {
 
     }
 
+    /**
+     * <strong>discovery</strong>: method, interface, super-interfaces<br>
+     * <strong>meta</strong>: no<br>
+     * <strong>merging</strong>: no<br>
+     */
     @Retention(RetentionPolicy.RUNTIME)
-    @Target({ElementType.TYPE, ElementType.METHOD})
+    @Target({ElementType.METHOD, ElementType.TYPE})
     @Documented
     public @interface FaultOnResponse {
 
@@ -202,8 +253,13 @@ public @interface Upstream {
 
     }
 
+    /**
+     * <strong>discovery</strong>: method, interface, super-interfaces<br>
+     * <strong>meta</strong>: no<br>
+     * <strong>merging</strong>: no<br>
+     */
     @Retention(RetentionPolicy.RUNTIME)
-    @Target({ElementType.TYPE, ElementType.METHOD})
+    @Target({ElementType.METHOD, ElementType.TYPE})
     @Documented
     public @interface FaultOnRemotingError {
 
@@ -213,8 +269,13 @@ public @interface Upstream {
 
     }
 
+    /**
+     * <strong>discovery</strong>: method, interface, super-interfaces<br>
+     * <strong>meta</strong>: no<br>
+     * <strong>merging</strong>: no<br>
+     */    
     @Retention(RetentionPolicy.RUNTIME)
-    @Target({ElementType.TYPE, ElementType.METHOD})
+    @Target({ElementType.METHOD, ElementType.TYPE})
     @Documented
     @Repeatable(ErrorOnResponse.List.class)
     public @interface ErrorOnResponse {
