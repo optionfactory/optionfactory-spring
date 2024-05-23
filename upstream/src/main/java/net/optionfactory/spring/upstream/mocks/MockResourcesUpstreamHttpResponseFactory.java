@@ -16,6 +16,8 @@ import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.expression.Expression;
 import org.springframework.http.HttpHeaders;
@@ -33,13 +35,12 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
 
     }
 
+    private final Logger logger = LoggerFactory.getLogger(MockResourcesUpstreamHttpResponseFactory.class);
 
     @Override
     public void preprocess(Class<?> klass, Expressions expressions, Map<Method, EndpointDescriptor> endpoints) {
-        for (Method m : klass.getMethods()) {
-            if (m.isSynthetic() || m.isBridge() || m.isDefault()) {
-                continue;
-            }
+        for (final var endpoint : endpoints.values()) {
+            final var m = endpoint.method();
             final var conf = m.getAnnotationsByType(Upstream.Mock.class);
             if (conf.length == 0) {
                 continue;
@@ -60,17 +61,17 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
                 final Expression bodyPath = expressions.parseTemplated(annotation.value());
                 mockConfigurations.add(new MockConfiguration(status, defaultMediaType, headers, bodyPath));
             }
+            if (mockConfigurations.isEmpty()) {
+                logger.warn("missing mock configuration in {}:{}", klass, m);
+            }
             methodToMockConfigurations.put(m, mockConfigurations);
         }
+
     }
 
     @Override
     public ClientHttpResponse create(InvocationContext invocation, URI uri, HttpMethod method, HttpHeaders headers) {
         final var mcs = methodToMockConfigurations.get(invocation.endpoint().method());
-        if (mcs == null) {
-            throw new RestClientException(String.format("mock resources not configured for %s:%s", invocation.endpoint().upstream(), invocation.endpoint().name()));
-        }
-
         final var context = invocation.expressions().context(invocation);
         for (MockConfiguration mc : mcs) {
             final var path = mc.bodyPath().getValue(context, String.class);
