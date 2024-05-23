@@ -14,7 +14,7 @@ public interface MockClient {
 
     @GetExchange("/endpoint/{parb}")
     @Upstream.Endpoint("endpoint")
-    @Upstream.Mock(value="#{upstream}-#{endpoint}-#{args.para}-#{args.parb}.json", status=HttpStatus.CREATED)
+    @Upstream.Mock(value="#{#upstream}-#{#endpoint}-#{#para}-#{#parb}.json", status=HttpStatus.CREATED)
     ResponseEntity<Map<String, String>> add(@RequestParam String para, @PathVariable String parb);
 
 }

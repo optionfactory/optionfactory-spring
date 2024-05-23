@@ -16,6 +16,7 @@ import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
+import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.rendering.BodyRendering;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +32,7 @@ public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
     }
 
     @Override
-    public void preprocess(Class<?> k, Map<Method, EndpointDescriptor> endpoints) {
+    public void preprocess(Class<?> k, Expressions expressions, Map<Method, EndpointDescriptor> endpoints) {
         for (final var endpoint : endpoints.values()) {
             Annotations.closest(endpoint.method(), Upstream.Logging.class)
                     .map(a -> new Upstream.Logging.Conf(a.request(), a.requestMaxSize(), a.requestHeaders(), a.response(), a.responseMaxSize(), a.responseHeaders(), a.infix()))

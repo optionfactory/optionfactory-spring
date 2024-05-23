@@ -14,8 +14,8 @@ import net.optionfactory.spring.upstream.UpstreamResponseErrorHandler;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.InvocationContext.HttpMessageConverters;
+import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
-import net.optionfactory.spring.upstream.scopes.ResponseErrorHandlerAdapter;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.aop.framework.ReflectiveMethodInvocation;
@@ -39,7 +39,7 @@ public class ThreadLocalScopeHandler implements ScopeHandler {
     }
 
     @Override
-    public MethodInterceptor interceptor(HttpMessageConverters converters) {
+    public MethodInterceptor interceptor(Expressions expressions, HttpMessageConverters converters) {
 
         return (MethodInvocation invocation) -> {
             final var method = invocation.getMethod();
@@ -55,7 +55,7 @@ public class ThreadLocalScopeHandler implements ScopeHandler {
                     .map(i -> invocation.getArguments()[i])
                     .or(() -> Optional.ofNullable(principal.get()))
                     .orElse(null);
-            ictx.set(new InvocationContext(converters, endpoint, invocation.getArguments(), BOOT_ID, eprincipal));
+            ictx.set(new InvocationContext(expressions, converters, endpoint, invocation.getArguments(), BOOT_ID, eprincipal));
             try {
                 return invocation.proceed();
             } finally {

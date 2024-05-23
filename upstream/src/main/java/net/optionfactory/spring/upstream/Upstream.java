@@ -114,6 +114,46 @@ public @interface Upstream {
     }
 
     @Retention(value = RetentionPolicy.RUNTIME)
+    @Target(value = ElementType.METHOD)
+    @Repeatable(Header.List.class)
+    public @interface Header {
+
+        public String key();
+
+        public String value();
+
+        public String condition() default "true";
+
+        @Target({ElementType.METHOD})
+        @Retention(RetentionPolicy.RUNTIME)
+        @Documented
+        public @interface List {
+
+            Header[] value();
+        }
+    }
+
+    @Retention(value = RetentionPolicy.RUNTIME)
+    @Target(value = ElementType.METHOD)
+    @Repeatable(QueryParam.List.class)
+    public @interface QueryParam {
+
+        public String key();
+
+        public String value();
+
+        public String condition() default "true";
+
+        @Target({ElementType.METHOD})
+        @Retention(RetentionPolicy.RUNTIME)
+        @Documented
+        public @interface List {
+
+            QueryParam[] value();
+        }
+    }
+
+    @Retention(value = RetentionPolicy.RUNTIME)
     @Target(value = ElementType.PARAMETER)
     @Repeatable(Param.List.class)
     public @interface Param {

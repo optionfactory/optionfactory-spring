@@ -23,6 +23,7 @@ import net.optionfactory.spring.upstream.annotations.Annotations;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext.HttpMessageConverters;
 import net.optionfactory.spring.upstream.errors.UpstreamErrorOnReponseHandler;
+import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.faults.UpstreamFaultInterceptor;
 import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
 import net.optionfactory.spring.upstream.mocks.MockResourcesUpstreamHttpResponseFactory;
@@ -30,6 +31,8 @@ import net.optionfactory.spring.upstream.mocks.MockUpstreamRequestFactory;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpResponseFactory;
 import net.optionfactory.spring.upstream.observations.UpstreamObservingInterceptor;
+import net.optionfactory.spring.upstream.params.UpstreamAnnotatedHeadersInterceptor;
+import net.optionfactory.spring.upstream.params.UpstreamAnnotatedQueryParamsInterceptor;
 import net.optionfactory.spring.upstream.scopes.ThreadLocalScopeHandler;
 import net.optionfactory.spring.upstream.soap.SoapHeaderWriter;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter;
@@ -57,6 +60,7 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 public class UpstreamBuilder<T> {
 
+    protected final Expressions expressions = new Expressions();
     protected final List<Consumer<RestClient.Builder>> restClientCustomizers = new ArrayList<>();
     protected final List<UpstreamHttpRequestInitializer> initializers = new ArrayList<>();
     protected final List<UpstreamHttpInterceptor> interceptors = new ArrayList<>();
@@ -111,9 +115,7 @@ public class UpstreamBuilder<T> {
     }
 
     public UpstreamBuilder<T> requestFactoryMockResources() {
-        final var factory = new MockResourcesUpstreamHttpResponseFactory();
-        factory.prepare(klass);
-        this.upstreamRequestFactory = new MockUpstreamRequestFactory(factory);
+        this.upstreamRequestFactory = new MockUpstreamRequestFactory(new MockResourcesUpstreamHttpResponseFactory());
         return this;
     }
 
@@ -125,7 +127,6 @@ public class UpstreamBuilder<T> {
     }
 
     public UpstreamBuilder<T> requestFactory(UpstreamHttpResponseFactory factory) {
-        factory.prepare(klass);
         this.upstreamRequestFactory = new MockUpstreamRequestFactory(factory);
         return this;
     }
@@ -302,6 +303,11 @@ public class UpstreamBuilder<T> {
             this.requestFactory((LayeredConnectionSocketFactory) null);
         }
         Assert.state(upstreamRequestFactory == null || requestFactory == null, "either upstreamRequestFactory or requestFactory must be configured");
+
+        if(upstreamRequestFactory != null){
+            upstreamRequestFactory.preprocess(klass, expressions, endpoints);
+        }
+        
         final var bufferedRequestFactory = new BufferingClientHttpRequestFactory(
                 upstreamRequestFactory != null
                         ? scopeHandler.adapt(upstreamRequestFactory)
@@ -312,29 +318,26 @@ public class UpstreamBuilder<T> {
         restClientCustomizers.forEach(c -> c.accept(rcb));
 
         initializers.stream()
-                .peek(i -> i.preprocess(klass, endpoints))
+                .peek(i -> i.preprocess(klass, expressions, endpoints))
                 .map(scopeHandler::adapt)
                 .forEach(rcb::requestInitializer);
 
-        rcb.requestInterceptor(
-                scopeHandler.adapt(
-                        Stream.concat(
-                                interceptors.stream(),
-                                Stream.of(
-                                        new UpstreamLoggingInterceptor(loggingOverrides),
-                                        new UpstreamObservingInterceptor(observations),
-                                        new UpstreamFaultInterceptor(publisher, observations)
-                                ))
-                                .peek(i -> i.preprocess(klass, endpoints))
-                                .toList()
-                )
-        );
+        final var initializedInterceptors = Stream.concat(interceptors.stream(),
+                Stream.of(new UpstreamAnnotatedHeadersInterceptor(),
+                        new UpstreamAnnotatedQueryParamsInterceptor(),
+                        new UpstreamLoggingInterceptor(loggingOverrides),
+                        new UpstreamObservingInterceptor(observations),
+                        new UpstreamFaultInterceptor(publisher, observations)
+                ))
+                .peek(i -> i.preprocess(klass, expressions, endpoints))
+                .toList();
+
+        rcb.requestInterceptor(scopeHandler.adapt(initializedInterceptors));
 
         Stream.concat(
                 Stream.of(new UpstreamErrorOnReponseHandler()),
-                responseErrorHandlers.stream()
-        )
-                .peek(i -> i.preprocess(klass, endpoints))
+                responseErrorHandlers.stream())
+                .peek(i -> i.preprocess(klass, expressions, endpoints))
                 .map(scopeHandler::adapt)
                 .forEach(rcb::defaultStatusHandler);
 
@@ -353,7 +356,7 @@ public class UpstreamBuilder<T> {
         final var p = new ProxyFactory();
         p.setTarget(client);
         p.setInterfaces(klass);
-        p.addAdvice(scopeHandler.interceptor(new HttpMessageConverters(messageConverters)));
+        p.addAdvice(scopeHandler.interceptor(expressions, new HttpMessageConverters(messageConverters)));
         return (T) p.getProxy();
     }
 

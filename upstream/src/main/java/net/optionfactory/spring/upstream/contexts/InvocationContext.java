@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
+import net.optionfactory.spring.upstream.expressions.Expressions;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpOutputMessage;
@@ -13,14 +14,13 @@ import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.util.FastByteArrayOutputStream;
 
 public record InvocationContext(
+        Expressions expressions,
         HttpMessageConverters converters,
         EndpointDescriptor endpoint,
         Object[] arguments,
         String boot,
         Object principal) {
 
-    
-    
     public record HttpMessageConverters(List<HttpMessageConverter<?>> all) {
 
         public <T> T convert(byte[] bytes, Class<T> type, MediaType mediaType) throws IOException {

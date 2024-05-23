@@ -14,34 +14,29 @@ import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
-import net.optionfactory.spring.upstream.paths.JsonPath;
-import net.optionfactory.spring.upstream.paths.XmlPath;
+import net.optionfactory.spring.upstream.expressions.Expressions;
+import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
-import org.springframework.expression.common.TemplateParserContext;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatus.Series;
 
 public class UpstreamErrorOnReponseHandler implements UpstreamResponseErrorHandler {
 
-    private record Expressions(Set<HttpStatus.Series> series, Expression predicate, Expression message) {
+    private record AnnotatedValues(Set<HttpStatus.Series> series, Expression predicate, Expression message) {
 
     }
 
-    private final Map<Method, List<Expressions>> conf = new ConcurrentHashMap<>();
-    private final SpelExpressionParser parser = new SpelExpressionParser();
-    private final TemplateParserContext templateParserContext = new TemplateParserContext();
+    private final Map<Method, List<AnnotatedValues>> conf = new ConcurrentHashMap<>();
 
     @Override
-    public void preprocess(Class<?> k, Map<Method, EndpointDescriptor> endpoints) {
+    public void preprocess(Class<?> k, Expressions expressions, Map<Method, EndpointDescriptor> endpoints) {
         for (final var endpoint : endpoints.values()) {
             final var anns = Annotations.closestRepeatable(endpoint.method(), Upstream.ErrorOnResponse.class)
                     .stream()
                     .map(annotation -> {
-                        final var predicate = parser.parseExpression(annotation.value());
-                        final var message = parser.parseExpression(annotation.reason(), templateParserContext);
-                        return new Expressions(Set.of(annotation.series()), predicate, message);
+                        final var predicate = expressions.parse(annotation.value());
+                        final var message = expressions.parseTemplated(annotation.reason());
+                        return new AnnotatedValues(Set.of(annotation.series()), predicate, message);
                     })
                     .toList();
             conf.put(endpoint.method(), anns);
@@ -50,16 +45,14 @@ public class UpstreamErrorOnReponseHandler implements UpstreamResponseErrorHandl
 
     @Override
     public boolean hasError(InvocationContext invocation, RequestContext request, ResponseContext response) throws IOException {
-        return firstMatching(invocation, request, response).isPresent();
+        final var ectx = invocation.expressions().context(invocation, request, response);
+        return firstMatching(ectx, invocation.endpoint().method(), response.status().value()).isPresent();
     }
 
     @Override
     public void handleError(InvocationContext invocation, RequestContext request, ResponseContext response) throws IOException {
-        final var e = firstMatching(invocation, request, response).orElseThrow().message;
-        final var ectx = new StandardEvaluationContext();
-        ectx.setVariable("invocation", invocation);
-        ectx.setVariable("request", request);
-        ectx.setVariable("response", response);
+        final var ectx = invocation.expressions().context(invocation, request, response);
+        final var e = firstMatching(ectx, invocation.endpoint().method(), response.status().value()).orElseThrow().message;
         final String reason = e.getValue(ectx, String.class);
 
         throw new RestClientUpstreamException(
@@ -73,22 +66,16 @@ public class UpstreamErrorOnReponseHandler implements UpstreamResponseErrorHandl
         );
     }
 
-    private Optional<Expressions> firstMatching(InvocationContext invocation, RequestContext request, ResponseContext response) throws IOException {
-        final List<Expressions> expressions = conf.get(invocation.endpoint().method());
+    private Optional<AnnotatedValues> firstMatching(EvaluationContext ectx, Method m, int statusCode) throws IOException {
+        final List<AnnotatedValues> expressions = conf.get(m);
         if (expressions == null) {
             return Optional.empty();
         }
-        for (Expressions expression : expressions) {
-            final Series serie = Series.valueOf(response.status().value());
+        for (AnnotatedValues expression : expressions) {
+            final Series serie = Series.valueOf(statusCode);
             if (!expression.series().contains(serie)) {
                 continue;
             }
-            final var ectx = new StandardEvaluationContext();
-            ectx.setVariable("invocation", invocation);
-            ectx.setVariable("request", request);
-            ectx.setVariable("response", response);
-            ectx.registerFunction("json_path", JsonPath.boundMethodHandle(invocation.converters(), response));
-            ectx.registerFunction("xpath_bool", XmlPath.xpathBooleanBoundMethodHandle(response));
             if (expression.predicate.getValue(ectx, boolean.class)) {
                 return Optional.of(expression);
             }

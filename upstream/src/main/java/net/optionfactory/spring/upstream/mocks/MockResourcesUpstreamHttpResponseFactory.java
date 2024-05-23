@@ -11,17 +11,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import net.optionfactory.spring.upstream.Upstream;
+import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
-import org.springframework.context.expression.MapAccessor;
+import net.optionfactory.spring.upstream.expressions.Expressions;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.expression.Expression;
-import org.springframework.expression.common.TemplateParserContext;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -31,24 +27,15 @@ import org.springframework.web.client.RestClientException;
 
 public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpResponseFactory {
 
-    private final TemplateParserContext templateParserContext = new TemplateParserContext();
-    private final SpelExpressionParser parser;
     private final Map<Method, List<MockConfiguration>> methodToMockConfigurations = new ConcurrentHashMap<>();
-
-    public MockResourcesUpstreamHttpResponseFactory() {
-        this.parser = new SpelExpressionParser();
-    }
-
-    private record MockEvaluationContext(String upstream, String endpoint, Map<String, Object> args) {
-
-    }
 
     private record MockConfiguration(HttpStatus status, Optional<MediaType> defaultMediaType, Expression[] headers, Expression bodyPath) {
 
     }
 
+
     @Override
-    public void prepare(Class<?> klass) {
+    public void preprocess(Class<?> klass, Expressions expressions, Map<Method, EndpointDescriptor> endpoints) {
         for (Method m : klass.getMethods()) {
             if (m.isSynthetic() || m.isBridge() || m.isDefault()) {
                 continue;
@@ -68,9 +55,9 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
             for (Upstream.Mock annotation : conf) {
                 final HttpStatus status = annotation.status();
                 final Expression[] headers = Stream.of(annotation.headers())
-                        .map(header -> parser.parseExpression(header, templateParserContext))
+                        .map(header -> expressions.parseTemplated(header))
                         .toArray(i -> new Expression[i]);
-                final Expression bodyPath = parser.parseExpression(annotation.value(), templateParserContext);
+                final Expression bodyPath = expressions.parseTemplated(annotation.value());
                 mockConfigurations.add(new MockConfiguration(status, defaultMediaType, headers, bodyPath));
             }
             methodToMockConfigurations.put(m, mockConfigurations);
@@ -84,9 +71,7 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
             throw new RestClientException(String.format("mock resources not configured for %s:%s", invocation.endpoint().upstream(), invocation.endpoint().name()));
         }
 
-        final var args = IntStream.range(0, invocation.endpoint().method().getParameters().length).mapToObj(i -> i).collect(Collectors.toMap(i -> invocation.endpoint().method().getParameters()[i].getName(), i -> invocation.arguments()[i]));
-        final var context = new StandardEvaluationContext(new MockEvaluationContext(invocation.endpoint().upstream(), invocation.endpoint().name(), args));
-        context.addPropertyAccessor(new MapAccessor());
+        final var context = invocation.expressions().context(invocation);
         for (MockConfiguration mc : mcs) {
             final var path = mc.bodyPath().getValue(context, String.class);
             final var resource = new ClassPathResource(path, invocation.endpoint().method().getDeclaringClass());

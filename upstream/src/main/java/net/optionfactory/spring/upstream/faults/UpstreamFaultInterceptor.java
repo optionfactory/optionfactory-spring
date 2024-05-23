@@ -1,6 +1,5 @@
 package net.optionfactory.spring.upstream.faults;
 
-import io.micrometer.observation.Observation.Event;
 import io.micrometer.observation.ObservationRegistry;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -18,11 +17,8 @@ import net.optionfactory.spring.upstream.contexts.ExceptionContext;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
-import net.optionfactory.spring.upstream.paths.JsonPath;
-import net.optionfactory.spring.upstream.paths.XmlPath;
+import net.optionfactory.spring.upstream.expressions.Expressions;
 import org.springframework.expression.Expression;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
 
 public class UpstreamFaultInterceptor implements UpstreamHttpInterceptor {
 
@@ -30,7 +26,6 @@ public class UpstreamFaultInterceptor implements UpstreamHttpInterceptor {
     private final Map<Method, Expression> responseConfs = new ConcurrentHashMap<>();
     private final Consumer<Object> publisher;
     private final ObservationRegistry observations;
-    private final SpelExpressionParser parser = new SpelExpressionParser();
 
     public UpstreamFaultInterceptor(Consumer<Object> publisher, ObservationRegistry observations) {
         this.publisher = publisher;
@@ -38,13 +33,13 @@ public class UpstreamFaultInterceptor implements UpstreamHttpInterceptor {
     }
 
     @Override
-    public void preprocess(Class<?> k, Map<Method, EndpointDescriptor> endpoints) {
+    public void preprocess(Class<?> k, Expressions expressions, Map<Method, EndpointDescriptor> endpoints) {
         for (final var endpoint : endpoints.values()) {
             Annotations.closest(endpoint.method(), Upstream.FaultOnRemotingError.class)
-                    .map(ann -> parser.parseExpression(ann.value()))
+                    .map(ann -> expressions.parse(ann.value()))
                     .ifPresent(expression -> remotingConfs.put(endpoint.method(), expression));
             Annotations.closest(endpoint.method(), Upstream.FaultOnResponse.class)
-                    .map(ann -> parser.parseExpression(ann.value()))
+                    .map(ann -> expressions.parse(ann.value()))
                     .ifPresent(expression -> responseConfs.put(endpoint.method(), expression));
 
         }
@@ -58,13 +53,7 @@ public class UpstreamFaultInterceptor implements UpstreamHttpInterceptor {
             if (expression == null) {
                 return response;
             }
-            final var ectx = new StandardEvaluationContext();
-            ectx.setVariable("invocation", invocation);
-            ectx.setVariable("request", request);
-            ectx.setVariable("response", response);
-            ectx.registerFunction("json_path", JsonPath.boundMethodHandle(invocation.converters(), response));
-            ectx.registerFunction("xpath_bool", XmlPath.xpathBooleanBoundMethodHandle(response));
-
+            final var ectx = invocation.expressions().context(invocation, request, response);
             if (expression.getValue(ectx, boolean.class)) {
                 publish(invocation, request, response, null);
             }
@@ -76,10 +65,7 @@ public class UpstreamFaultInterceptor implements UpstreamHttpInterceptor {
                 throw exception;
             }
             final var exceptionContext = new ExceptionContext(Instant.now(), exception.getMessage());
-            final var ectx = new StandardEvaluationContext();
-            ectx.setVariable("invocation", invocation);
-            ectx.setVariable("request", request);
-            ectx.setVariable("exception", exceptionContext);
+            final var ectx = invocation.expressions().context(invocation, request, exceptionContext);
             if (expression.getValue(ectx, boolean.class)) {
                 publish(invocation, request, null, exceptionContext);
             }
