@@ -132,7 +132,8 @@ public class FaultsEmailsSpoolerTest {
                         HttpStatus.OK,
                         HttpStatus.OK.getReasonPhrase(),
                         new HttpHeaders(),
-                        BodySource.of("response_body".repeat(1000), StandardCharsets.UTF_8)
+                        BodySource.of("response_body".repeat(1000), StandardCharsets.UTF_8),
+                        false
                 ),
                 null);
 
