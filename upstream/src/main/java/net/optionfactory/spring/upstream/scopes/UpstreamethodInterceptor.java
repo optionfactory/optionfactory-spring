@@ -1,6 +1,7 @@
 package net.optionfactory.spring.upstream.scopes;
 
 import io.micrometer.observation.Observation;
+import io.micrometer.observation.Observation.Scope;
 import io.micrometer.observation.ObservationRegistry;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -23,6 +24,7 @@ import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.aop.framework.ReflectiveMethodInvocation;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.UnknownContentTypeException;
 
 public class UpstreamethodInterceptor implements MethodInterceptor {
 
@@ -80,15 +82,7 @@ public class UpstreamethodInterceptor implements MethodInterceptor {
             try {
                 return mi.proceed();
             } catch (RestClientException ex) {
-                if (ex.getCause() instanceof HttpMessageNotReadableException nre) {
-                    if ("none".equals(obs.getContext().getLowCardinalityKeyValue("fault").getValue())) {
-                        scope.getCurrentObservation().lowCardinalityKeyValue("fault", "mapping");
-                        final var request = requests.get();
-                        final var response = responses.get();
-                        final var exc = new ExceptionContext(clock.instant(), ex.getMessage());
-                        publisher.accept(new UpstreamFaultEvent(invocation, request, response == null ? null : response.detached(), exc));
-                    }
-                }
+                reportFaults(ex, invocation, scope);
                 throw ex;
             }
         } catch (Exception ex) {
@@ -101,4 +95,23 @@ public class UpstreamethodInterceptor implements MethodInterceptor {
 
     }
 
+    private void reportFaults(RestClientException ex, InvocationContext invocation, Scope scope) {
+
+        if (ex.getCause() instanceof HttpMessageNotReadableException == false && ex instanceof UnknownContentTypeException == false) {
+            return;
+        }
+        final ResponseContext response = responses.get();
+        if (response != null && response.faulted()) {
+            //already reported
+            return;
+        }
+        final Observation obs = scope.getCurrentObservation();
+        if ("none".equals(obs.getContext().getLowCardinalityKeyValue("fault").getValue())) {
+            obs.lowCardinalityKeyValue("fault", "mapping");
+        }
+        final var request = requests.get();
+        final var exc = new ExceptionContext(clock.instant(), ex.getMessage());
+        publisher.accept(new UpstreamFaultEvent(invocation, request, response == null ? null : response.detached(), exc));
+
+    }
 }

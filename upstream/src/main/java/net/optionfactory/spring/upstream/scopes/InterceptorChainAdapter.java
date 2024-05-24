@@ -77,6 +77,7 @@ public class InterceptorChainAdapter implements ClientHttpRequestInterceptor {
             if (interceptors.hasNext()) {
                 return interceptors.next().intercept(invocation, request, new InterceptorChain(interceptors, execution, clock, requests, originalResponse));
             }
+            requests.accept(request);
             final var response = this.execution.execute(new RequestAdapter(request), request.body());
             originalResponse.set(response);
             final var rctx = new ResponseContext(
