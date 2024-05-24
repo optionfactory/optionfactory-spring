@@ -5,6 +5,7 @@ import io.micrometer.observation.ObservationRegistry;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.time.temporal.ChronoUnit;
@@ -76,7 +77,7 @@ public class UpstreamBuilder<T> {
     protected UpstreamHttpRequestFactory upstreamRequestFactory;
     protected ClientHttpRequestFactory requestFactory;
     protected Supplier<Object> principal;
-    private InstantSource clock;
+    protected InstantSource clock;
 
     public UpstreamBuilder(Class<T> klass, Optional<String> name) {
         this.klass = klass;
@@ -91,7 +92,9 @@ public class UpstreamBuilder<T> {
                     final var epa = AnnotationUtils.findAnnotation(m, Upstream.Endpoint.class);
                     final var principalIndex = IntStream
                             .range(0, m.getParameters().length)
-                            .filter(i -> m.getParameters()[i].isAnnotationPresent(Upstream.Principal.class))
+                            .filter(i -> m.getParameters()[i].isAnnotationPresent(Upstream.Principal.class)
+                            || m.getParameters()[i].getType().isAnnotationPresent(Upstream.Principal.class)
+                            )
                             .mapToObj(i -> i)
                             .findFirst();
                     return new EndpointDescriptor(upstreamId, epa == null ? m.getName() : epa.value(), m, principalIndex.orElse(null));
@@ -238,6 +241,16 @@ public class UpstreamBuilder<T> {
         return this;
     }
 
+    public UpstreamBuilder<T> baseUri(URI baseUri) {
+        restClientCustomizers.add(b -> b.baseUrl(baseUri.toString()));
+        return this;
+    }
+
+    public UpstreamBuilder<T> baseUri(String baseUri) {
+        restClientCustomizers.add(b -> b.baseUrl(baseUri));
+        return this;
+    }
+
     public UpstreamBuilder<T> initializerIf(boolean test, UpstreamHttpRequestInitializer initializer) {
         if (!test) {
             return this;
@@ -304,10 +317,10 @@ public class UpstreamBuilder<T> {
         }
         Assert.state(upstreamRequestFactory == null || requestFactory == null, "either upstreamRequestFactory or requestFactory must be configured");
 
-        if(upstreamRequestFactory != null){
+        if (upstreamRequestFactory != null) {
             upstreamRequestFactory.preprocess(klass, expressions, endpoints);
         }
-        
+
         final var bufferedRequestFactory = new BufferingClientHttpRequestFactory(
                 upstreamRequestFactory != null
                         ? scopeHandler.adapt(upstreamRequestFactory)

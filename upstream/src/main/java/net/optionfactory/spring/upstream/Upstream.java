@@ -41,22 +41,22 @@ public @interface Upstream {
     int socketTimeout() default 30;
 
     /**
-     * <strong>discovery</strong>: parameter<br>
+     * <strong>discovery</strong>: parameter, parameter class<br>
      * <strong>meta</strong>: no<br>
      * <strong>merging</strong>: no<br>
      */
     @Retention(value = RetentionPolicy.RUNTIME)
-    @Target(value = ElementType.PARAMETER)
+    @Target({ElementType.PARAMETER, ElementType.TYPE})
     public @interface Principal {
 
     }
     /**
-     * <strong>discovery</strong>: parameter<br>
+     * <strong>discovery</strong>: parameter, parameter class<br>
      * <strong>meta</strong>: no<br>
      * <strong>merging</strong>: no<br>
      */
     @Retention(value = RetentionPolicy.RUNTIME)
-    @Target(value = ElementType.PARAMETER)
+    @Target({ElementType.PARAMETER, ElementType.TYPE})
     public @interface Context {
 
     }
@@ -364,7 +364,9 @@ public @interface Upstream {
             }
             return uvs.length != 0
                     || parameter.hasParameterAnnotation(Context.class)
-                    || parameter.hasParameterAnnotation(Principal.class);
+                    || parameter.getParameterType().isAnnotationPresent(Context.class)
+                    || parameter.hasParameterAnnotation(Principal.class)
+                    || parameter.getParameterType().isAnnotationPresent(Principal.class);
 
         }
 
