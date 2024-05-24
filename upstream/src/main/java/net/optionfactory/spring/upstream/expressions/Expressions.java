@@ -21,16 +21,72 @@ public class Expressions {
     private final TemplateParserContext templateContext = new TemplateParserContext();
     private final BeanResolver beanResolver;
 
+    public enum Type {
+        TEMPLATED, EXPRESSION, STATIC;
+    }
+
+    public static class StaticExpression implements StringExpression {
+
+        final String value;
+
+        public StaticExpression(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String evaluate(EvaluationContext context) {
+            return value;
+        }
+
+    }
+
+    public static class SpelStringExpression implements StringExpression {
+
+        final Expression e;
+
+        public SpelStringExpression(Expression e) {
+            this.e = e;
+        }
+
+        @Override
+        public String evaluate(EvaluationContext context) {
+            return e.getValue(context, String.class);
+        }
+
+    }
+
+    public static class SpelBooleanExpression implements BooleanExpression {
+
+        final Expression e;
+
+        public SpelBooleanExpression(Expression e) {
+            this.e = e;
+        }
+
+        @Override
+        public boolean evaluate(EvaluationContext context) {
+            return e.getValue(context, boolean.class);
+        }
+
+    }
+
     public Expressions(@Nullable BeanResolver beanResolver) {
         this.beanResolver = beanResolver;
     }
 
-    public Expression parse(String value) {
-        return parser.parseExpression(value);
+    public StringExpression string(String value, Type type) {
+        return switch (type) {
+            case Type.TEMPLATED ->
+                new SpelStringExpression(parser.parseExpression(value, templateContext));
+            case Type.EXPRESSION ->
+                new SpelStringExpression(parser.parseExpression(value));
+            case Type.STATIC ->
+                new StaticExpression(value);
+        };
     }
 
-    public Expression parseTemplated(String value) {
-        return parser.parseExpression(value, templateContext);
+    public BooleanExpression bool(String value) {
+        return new SpelBooleanExpression(parser.parseExpression(value));
     }
 
     public EvaluationContext context(InvocationContext invocation, RequestContext request) {

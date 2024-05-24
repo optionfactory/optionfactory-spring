@@ -14,13 +14,14 @@ import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
-import org.springframework.expression.Expression;
+import net.optionfactory.spring.upstream.expressions.BooleanExpression;
+import net.optionfactory.spring.upstream.expressions.StringExpression;
 
 public class UpstreamAnnotatedHeadersInterceptor implements UpstreamHttpInterceptor {
 
     private final Map<Method, List<AnnotatedHeader>> conf = new ConcurrentHashMap<>();
 
-    private record AnnotatedHeader(Expression condition, Expression key, Expression value) {
+    private record AnnotatedHeader(BooleanExpression condition, StringExpression key, StringExpression value) {
 
     }
 
@@ -29,9 +30,9 @@ public class UpstreamAnnotatedHeadersInterceptor implements UpstreamHttpIntercep
         for (final var endpoint : endpoints.values()) {
             final var anns = Stream.of(endpoint.method().getAnnotationsByType(Upstream.Header.class))
                     .map(annotation -> {
-                        final var condition = expressions.parse(annotation.condition());
-                        final var key = expressions.parseTemplated(annotation.key());
-                        final var value = expressions.parse(annotation.value());
+                        final var condition = expressions.bool(annotation.condition());
+                        final var key = expressions.string(annotation.key(), annotation.keyType());
+                        final var value = expressions.string(annotation.value(), annotation.valueType());
                         return new AnnotatedHeader(condition, key, value);
                     })
                     .toList();
@@ -45,12 +46,12 @@ public class UpstreamAnnotatedHeadersInterceptor implements UpstreamHttpIntercep
         final var annotatedHeaders = conf.get(invocation.endpoint().method());
         final var ectx = invocation.expressions().context(invocation, request);
         for (final var annotatedHeader : annotatedHeaders) {
-            if (!annotatedHeader.condition().getValue(ectx, boolean.class)) {
+            if (!annotatedHeader.condition().evaluate(ectx)) {
                 continue;
             }
             request.headers().add(
-                    annotatedHeader.key().getValue(ectx, String.class),
-                    annotatedHeader.value().getValue(ectx, String.class)
+                    annotatedHeader.key().evaluate(ectx),
+                    annotatedHeader.value().evaluate(ectx)
             );
 
         }

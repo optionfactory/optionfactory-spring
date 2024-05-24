@@ -15,14 +15,15 @@ import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
+import net.optionfactory.spring.upstream.expressions.BooleanExpression;
+import net.optionfactory.spring.upstream.expressions.StringExpression;
 import org.springframework.expression.EvaluationContext;
-import org.springframework.expression.Expression;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatus.Series;
 
 public class UpstreamErrorOnReponseHandler implements UpstreamResponseErrorHandler {
 
-    private record AnnotatedValues(Set<HttpStatus.Series> series, Expression predicate, Expression message) {
+    private record AnnotatedValues(Set<HttpStatus.Series> series, BooleanExpression predicate, StringExpression message) {
 
     }
 
@@ -34,8 +35,8 @@ public class UpstreamErrorOnReponseHandler implements UpstreamResponseErrorHandl
             final var anns = Annotations.closestRepeatable(endpoint.method(), Upstream.ErrorOnResponse.class)
                     .stream()
                     .map(annotation -> {
-                        final var predicate = expressions.parse(annotation.value());
-                        final var message = expressions.parseTemplated(annotation.reason());
+                        final var predicate = expressions.bool(annotation.value());
+                        final var message = expressions.string(annotation.reason(), annotation.reasonType());
                         return new AnnotatedValues(Set.of(annotation.series()), predicate, message);
                     })
                     .toList();
@@ -53,7 +54,7 @@ public class UpstreamErrorOnReponseHandler implements UpstreamResponseErrorHandl
     public void handleError(InvocationContext invocation, RequestContext request, ResponseContext response) throws IOException {
         final var ectx = invocation.expressions().context(invocation, request, response);
         final var e = firstMatching(ectx, invocation.endpoint().method(), response.status().value()).orElseThrow().message;
-        final String reason = e.getValue(ectx, String.class);
+        final String reason = e.evaluate(ectx);
 
         throw new RestClientUpstreamException(
                 invocation.endpoint().upstream(),
@@ -76,7 +77,7 @@ public class UpstreamErrorOnReponseHandler implements UpstreamResponseErrorHandl
             if (!expression.series().contains(serie)) {
                 continue;
             }
-            if (expression.predicate.getValue(ectx, boolean.class)) {
+            if (expression.predicate.evaluate(ectx)) {
                 return Optional.of(expression);
             }
         }

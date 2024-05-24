@@ -18,12 +18,12 @@ import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
-import org.springframework.expression.Expression;
+import net.optionfactory.spring.upstream.expressions.BooleanExpression;
 
 public class UpstreamFaultInterceptor implements UpstreamHttpInterceptor {
 
-    private final Map<Method, Expression> remotingConfs = new ConcurrentHashMap<>();
-    private final Map<Method, Expression> responseConfs = new ConcurrentHashMap<>();
+    private final Map<Method, BooleanExpression> remotingConfs = new ConcurrentHashMap<>();
+    private final Map<Method, BooleanExpression> responseConfs = new ConcurrentHashMap<>();
     private final Consumer<Object> publisher;
     private final ObservationRegistry observations;
 
@@ -36,10 +36,10 @@ public class UpstreamFaultInterceptor implements UpstreamHttpInterceptor {
     public void preprocess(Class<?> k, Expressions expressions, Map<Method, EndpointDescriptor> endpoints) {
         for (final var endpoint : endpoints.values()) {
             Annotations.closest(endpoint.method(), Upstream.FaultOnRemotingError.class)
-                    .map(ann -> expressions.parse(ann.value()))
+                    .map(ann -> expressions.bool(ann.value()))
                     .ifPresent(expression -> remotingConfs.put(endpoint.method(), expression));
             Annotations.closest(endpoint.method(), Upstream.FaultOnResponse.class)
-                    .map(ann -> expressions.parse(ann.value()))
+                    .map(ann -> expressions.bool(ann.value()))
                     .ifPresent(expression -> responseConfs.put(endpoint.method(), expression));
 
         }
@@ -54,8 +54,9 @@ public class UpstreamFaultInterceptor implements UpstreamHttpInterceptor {
                 return response;
             }
             final var ectx = invocation.expressions().context(invocation, request, response);
-            if (expression.getValue(ectx, boolean.class)) {
+            if (expression.evaluate(ectx)) {
                 publish(invocation, request, response, null);
+                return response.witFault();
             }
             return response;
 
@@ -66,7 +67,7 @@ public class UpstreamFaultInterceptor implements UpstreamHttpInterceptor {
             }
             final var exceptionContext = new ExceptionContext(Instant.now(), exception.getMessage());
             final var ectx = invocation.expressions().context(invocation, request, exceptionContext);
-            if (expression.getValue(ectx, boolean.class)) {
+            if (expression.evaluate(ectx)) {
                 publish(invocation, request, null, exceptionContext);
             }
             throw exception;
@@ -77,7 +78,6 @@ public class UpstreamFaultInterceptor implements UpstreamHttpInterceptor {
         Optional.ofNullable(observations.getCurrentObservation())
                 .ifPresent(o -> {
                     o.lowCardinalityKeyValue("fault", ex == null ? "response" : "remoting");
-                    //maybe we could generate an event here o.event(Event.of("fault", "my fault contextual name"));
                 });
 
         publisher.accept(new UpstreamFaultEvent(invocation, request, response == null ? null : response.detached(), ex));

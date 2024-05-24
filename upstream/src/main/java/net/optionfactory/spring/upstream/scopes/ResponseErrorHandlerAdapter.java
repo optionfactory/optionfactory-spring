@@ -15,13 +15,13 @@ public class ResponseErrorHandlerAdapter implements ResponseErrorHandler {
 
     @Override
     public boolean hasError(ClientHttpResponse response) throws IOException {
-        final net.optionfactory.spring.upstream.scopes.ResponseAdapter r = (ResponseAdapter) response;
+        final var r = (ResponseAdapter) response;
         return inner.hasError(r.invocation(), r.request(), r.response());
     }
 
     @Override
     public void handleError(ClientHttpResponse response) throws IOException {
-        final net.optionfactory.spring.upstream.scopes.ResponseAdapter r = (ResponseAdapter) response;
+        final var r = (ResponseAdapter) response;
         inner.handleError(r.invocation(), r.request(), r.response());
     }
 

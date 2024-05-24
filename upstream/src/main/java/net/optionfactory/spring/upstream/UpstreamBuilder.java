@@ -31,7 +31,6 @@ import net.optionfactory.spring.upstream.mocks.MockResourcesUpstreamHttpResponse
 import net.optionfactory.spring.upstream.mocks.MockUpstreamRequestFactory;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpResponseFactory;
-import net.optionfactory.spring.upstream.observations.UpstreamObservingInterceptor;
 import net.optionfactory.spring.upstream.params.UpstreamAnnotatedHeadersInterceptor;
 import net.optionfactory.spring.upstream.params.UpstreamAnnotatedQueryParamsInterceptor;
 import net.optionfactory.spring.upstream.scopes.ThreadLocalScopeHandler;
@@ -321,7 +320,7 @@ public class UpstreamBuilder<T> {
             }
         };
 
-        final var scopeHandler = new ThreadLocalScopeHandler(principalOrDefault, clockOrDefault, endpoints);
+        final var scopeHandler = new ThreadLocalScopeHandler(principalOrDefault, clockOrDefault, endpoints, expressions, observations, publisher);
         if (requestFactory == null && upstreamRequestFactory == null) {
             this.requestFactory((LayeredConnectionSocketFactory) null);
         }
@@ -349,7 +348,6 @@ public class UpstreamBuilder<T> {
                 Stream.of(new UpstreamAnnotatedHeadersInterceptor(),
                         new UpstreamAnnotatedQueryParamsInterceptor(),
                         new UpstreamLoggingInterceptor(loggingOverrides),
-                        new UpstreamObservingInterceptor(observations),
                         new UpstreamFaultInterceptor(publisher, observations)
                 ))
                 .peek(i -> i.preprocess(klass, expressions, endpoints))
@@ -379,7 +377,7 @@ public class UpstreamBuilder<T> {
         final var p = new ProxyFactory();
         p.setTarget(client);
         p.setInterfaces(klass);
-        p.addAdvice(scopeHandler.interceptor(expressions, new HttpMessageConverters(messageConverters)));
+        p.addAdvice(scopeHandler.interceptor(new HttpMessageConverters(messageConverters)));
         return (T) p.getProxy();
     }
 

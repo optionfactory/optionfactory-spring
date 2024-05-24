@@ -6,6 +6,7 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import net.optionfactory.spring.upstream.expressions.Expressions.Type;
 import net.optionfactory.spring.upstream.rendering.BodyRendering.HeadersStrategy;
 import net.optionfactory.spring.upstream.rendering.BodyRendering.Strategy;
 import org.springframework.core.MethodParameter;
@@ -50,6 +51,7 @@ public @interface Upstream {
     public @interface Principal {
 
     }
+
     /**
      * <strong>discovery</strong>: parameter, parameter class<br>
      * <strong>meta</strong>: no<br>
@@ -132,19 +134,21 @@ public @interface Upstream {
     public @interface Mock {
 
         /**
-         * @return the <strong>templated expressions</strong> to be evaluated as
-         * the body template path
+         * @return the body template path
          *
          */
         String value();
 
+        public Type valueType() default Type.TEMPLATED;
+
         HttpStatus status() default HttpStatus.OK;
 
         /**
-         * @return the <strong>templated expressions</strong> to be evaluated as
-         * http headers
+         * @return the response http headers
          */
         String[] headers() default {};
+
+        public Type headersType() default Type.TEMPLATED;
 
         @Target({ElementType.TYPE})
         @Retention(RetentionPolicy.RUNTIME)
@@ -174,17 +178,21 @@ public @interface Upstream {
     public @interface Header {
 
         /**
-         * @return the <strong>templated expression</strong> to be evaluated
+         * @return the header name
          */
         public String key();
 
+        public Type keyType() default Type.TEMPLATED;
+
         /**
-         * @return the <strong>string expression</strong> to be evaluated
+         * @return the header value
          */
         public String value();
 
+        public Type valueType() default Type.EXPRESSION;
+
         /**
-         * @return the <strong>boolean expression</strong> to be evaluated
+         * @return the condition expression
          */
         public String condition() default "true";
 
@@ -208,17 +216,21 @@ public @interface Upstream {
     public @interface QueryParam {
 
         /**
-         * @return the <strong>templated expression</strong> to be evaluated
+         * @return the query param name
          */
         public String key();
 
+        public Type keyType() default Type.TEMPLATED;
+
         /**
-         * @return the <strong>string expression</strong> to be evaluated
+         * @return the query param value
          */
         public String value();
 
+        public Type valueType() default Type.EXPRESSION;
+
         /**
-         * @return the <strong>boolean expression</strong> to be evaluated
+         * @return the condition to be evaluated
          */
         public String condition() default "true";
 
@@ -249,10 +261,12 @@ public @interface Upstream {
         /**
          * <strong>context</strong>: #this: the annotated argument.
          *
-         * @return the <strong>string expression</strong> to be evaluated
+         * @return the value of the path variable
          *
          */
         public String value();
+
+        public Type valueType() default Type.EXPRESSION;
 
         @Target({ElementType.PARAMETER})
         @Retention(RetentionPolicy.RUNTIME)
@@ -274,9 +288,11 @@ public @interface Upstream {
     public @interface SoapAction {
 
         /**
-         * @return the <strong>templated expression</strong> to be evaluated
+         * @return the soap action
          */
         String value();
+
+        public Type valueType() default Type.TEMPLATED;
 
     }
 
@@ -293,7 +309,7 @@ public @interface Upstream {
         public static final String STATUS_IS_ERROR = "#response.status().isError()";
 
         /**
-         * @return the <strong>boolean expression</strong> to be evaluated
+         * @return the condition to be evaluated
          */
         String value();
 
@@ -312,7 +328,7 @@ public @interface Upstream {
         public static final String ALWAYS = "true";
 
         /**
-         * @return the <strong>boolean expression</strong> to be evaluated
+         * @return the condition to be evaluated
          */
         String value() default ALWAYS;
 
@@ -330,14 +346,16 @@ public @interface Upstream {
     public @interface ErrorOnResponse {
 
         /**
-         * @return the <strong>boolean expression</strong> to be evaluated
+         * @return the condition to be evaluated
          */
         String value() default "false";
 
         /**
-         * @return the <strong>templated expression</strong> to be evaluated
+         * @return the reported reason
          */
         String reason() default "upstream error";
+
+        public Type reasonType() default Type.TEMPLATED;
 
         HttpStatus.Series[] series() default HttpStatus.Series.SUCCESSFUL;
 

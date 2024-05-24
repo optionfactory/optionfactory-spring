@@ -25,7 +25,7 @@ public class XmlPathTest {
                         </s:Envelope>  
                          """;
 
-        final var path = new XmlPath(new ResponseContext(Instant.now(), HttpStatus.OK, HttpStatus.OK.getReasonPhrase(), HttpHeaders.EMPTY, BodySource.of(data, StandardCharsets.UTF_8)));
+        final var path = new XmlPath(new ResponseContext(Instant.now(), HttpStatus.OK, HttpStatus.OK.getReasonPhrase(), HttpHeaders.EMPTY, BodySource.of(data, StandardCharsets.UTF_8), false));
 
         Assert.assertTrue(path.xpathBool("//CodicePositivo[@nil='true']"));
     }
@@ -43,7 +43,7 @@ public class XmlPathTest {
                         </s:Envelope>  
                          """;
 
-        final var path = new XmlPath(new ResponseContext(Instant.now(), HttpStatus.OK, HttpStatus.OK.getReasonPhrase(), HttpHeaders.EMPTY, BodySource.of(data, StandardCharsets.UTF_8)));
+        final var path = new XmlPath(new ResponseContext(Instant.now(), HttpStatus.OK, HttpStatus.OK.getReasonPhrase(), HttpHeaders.EMPTY, BodySource.of(data, StandardCharsets.UTF_8), false));
 
         Assert.assertFalse(path.xpathBool("//CodicePositivo[@nil='true']"));
     }

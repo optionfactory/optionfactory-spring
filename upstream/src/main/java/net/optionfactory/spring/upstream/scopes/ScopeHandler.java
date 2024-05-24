@@ -20,7 +20,7 @@ public interface ScopeHandler {
 
     public static final String BOOT_ID = Hex.encodeHexString(ByteBuffer.allocate(Integer.BYTES).putInt((int) Instant.now().getEpochSecond()).array());
 
-    MethodInterceptor interceptor(Expressions expressions, HttpMessageConverters cs);
+    MethodInterceptor interceptor(HttpMessageConverters cs);
 
     ClientHttpRequestInterceptor adapt(List<UpstreamHttpInterceptor> interceptors);
 

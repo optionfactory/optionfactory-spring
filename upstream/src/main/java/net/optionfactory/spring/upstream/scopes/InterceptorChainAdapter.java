@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestExecution;
@@ -21,24 +22,37 @@ import org.springframework.http.client.ClientHttpResponse;
 public class InterceptorChainAdapter implements ClientHttpRequestInterceptor {
 
     private final List<UpstreamHttpInterceptor> interceptors;
-    private final Supplier<InvocationContext> invocation;
+    private final Supplier<InvocationContext> invocations;
+    private final Consumer<RequestContext> requests;
+    private final Consumer<ResponseContext> responses;
     private final AtomicLong requestCounter;
     private final InstantSource clock;
 
-    public InterceptorChainAdapter(List<UpstreamHttpInterceptor> interceptors, Supplier<InvocationContext> invocation, AtomicLong requestCounter, InstantSource clock) {
+    public InterceptorChainAdapter(
+            List<UpstreamHttpInterceptor> interceptors,
+            Supplier<InvocationContext> invocations,
+            Consumer<RequestContext> requests,
+            Consumer<ResponseContext> responses,
+            AtomicLong requestCounter,
+            InstantSource clock) {
         this.interceptors = interceptors;
-        this.invocation = invocation;
+        this.invocations = invocations;
+        this.requests = requests;
+        this.responses = responses;
         this.requestCounter = requestCounter;
         this.clock = clock;
     }
 
     @Override
     public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
+        requests.accept(null);
+        responses.accept(null);
         final AtomicReference<ClientHttpResponse> originalResponse = new AtomicReference<>();
-        final InvocationContext ictx = invocation.get();
-        final var chain = new InterceptorChain(interceptors.iterator(), execution, clock, originalResponse);
+        final InvocationContext ictx = invocations.get();
+        final var chain = new InterceptorChain(interceptors.iterator(), execution, clock, requests, originalResponse);
         final var reqCtx = new RequestContext(requestCounter.incrementAndGet(), clock.instant(), request.getMethod(), request.getURI(), request.getHeaders(), body);
         final var respCtx = chain.execute(ictx, reqCtx);
+        responses.accept(respCtx);
         return new ResponseAdapter(ictx, reqCtx, respCtx, originalResponse.get());
     }
 
@@ -47,29 +61,33 @@ public class InterceptorChainAdapter implements ClientHttpRequestInterceptor {
         private final Iterator<UpstreamHttpInterceptor> interceptors;
         private final ClientHttpRequestExecution execution;
         private final InstantSource clock;
+        private final Consumer<RequestContext> requests;
         private final AtomicReference<ClientHttpResponse> originalResponse;
 
-        public InterceptorChain(Iterator<UpstreamHttpInterceptor> interceptors, ClientHttpRequestExecution execution, InstantSource clock, AtomicReference<ClientHttpResponse> originalResponse) {
+        public InterceptorChain(Iterator<UpstreamHttpInterceptor> interceptors, ClientHttpRequestExecution execution, InstantSource clock, Consumer<RequestContext> requests, AtomicReference<ClientHttpResponse> originalResponse) {
             this.interceptors = interceptors;
             this.execution = execution;
             this.clock = clock;
+            this.requests = requests;
             this.originalResponse = originalResponse;
         }
 
         @Override
         public ResponseContext execute(InvocationContext invocation, RequestContext request) throws IOException {
             if (interceptors.hasNext()) {
-                return interceptors.next().intercept(invocation, request, new InterceptorChain(interceptors, execution, clock, originalResponse));
+                return interceptors.next().intercept(invocation, request, new InterceptorChain(interceptors, execution, clock, requests, originalResponse));
             }
             final var response = this.execution.execute(new RequestAdapter(request), request.body());
             originalResponse.set(response);
-            return new ResponseContext(
+            final var rctx = new ResponseContext(
                     clock.instant(),
                     response.getStatusCode(),
                     response.getStatusText(),
                     response.getHeaders(),
-                    BodySource.of(response)
+                    BodySource.of(response),
+                    false
             );
+            return rctx;
         }
 
     }

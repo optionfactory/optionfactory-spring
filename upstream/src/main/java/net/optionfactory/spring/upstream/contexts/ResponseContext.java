@@ -11,14 +11,19 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.ClientHttpResponse;
 
 public record ResponseContext(
-            Instant at,
-            HttpStatusCode status,
-            String statusText,
-            HttpHeaders headers,
-        BodySource body) {
+        Instant at,
+        HttpStatusCode status,
+        String statusText,
+        HttpHeaders headers,
+        BodySource body,
+        boolean faulted) {
 
     public ResponseContext detached() {
-        return new ResponseContext(at, status, statusText, headers, body.detached());
+        return new ResponseContext(at, status, statusText, headers, body.detached(), faulted);
+    }
+
+    public ResponseContext witFault() {
+        return new ResponseContext(at, status, statusText, headers, body, true);
     }
 
     public interface BodySource {

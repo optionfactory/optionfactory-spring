@@ -16,10 +16,10 @@ import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
+import net.optionfactory.spring.upstream.expressions.StringExpression;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.expression.Expression;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -31,7 +31,7 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
 
     private final Map<Method, List<MockConfiguration>> methodToMockConfigurations = new ConcurrentHashMap<>();
 
-    private record MockConfiguration(HttpStatus status, Optional<MediaType> defaultMediaType, Expression[] headers, Expression bodyPath) {
+    private record MockConfiguration(HttpStatus status, Optional<MediaType> defaultMediaType, StringExpression[] headers, StringExpression bodyPath) {
 
     }
 
@@ -55,10 +55,10 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
             final var mockConfigurations = new ArrayList<MockConfiguration>();
             for (Upstream.Mock annotation : conf) {
                 final HttpStatus status = annotation.status();
-                final Expression[] headers = Stream.of(annotation.headers())
-                        .map(header -> expressions.parseTemplated(header))
-                        .toArray(i -> new Expression[i]);
-                final Expression bodyPath = expressions.parseTemplated(annotation.value());
+                final StringExpression[] headers = Stream.of(annotation.headers())
+                        .map(header -> expressions.string(header, annotation.headersType()))
+                        .toArray(i -> new StringExpression[i]);
+                final var bodyPath = expressions.string(annotation.value(), annotation.valueType());
                 mockConfigurations.add(new MockConfiguration(status, defaultMediaType, headers, bodyPath));
             }
             if (mockConfigurations.isEmpty()) {
@@ -74,7 +74,7 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
         final var mcs = methodToMockConfigurations.get(invocation.endpoint().method());
         final var context = invocation.expressions().context(invocation);
         for (MockConfiguration mc : mcs) {
-            final var path = mc.bodyPath().getValue(context, String.class);
+            final var path = mc.bodyPath().evaluate(context);
             final var resource = new ClassPathResource(path, invocation.endpoint().method().getDeclaringClass());
             if (!resource.exists()) {
                 continue;
@@ -83,7 +83,7 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
             mc.defaultMediaType().ifPresent(responseHeaders::setContentType);
             responseHeaders.addAll(headersFromResource(path, invocation));
             Stream.of(mc.headers())
-                    .map(he -> he.getValue(context, String.class))
+                    .map(he -> he.evaluate(context))
                     .map(MockResourcesUpstreamHttpResponseFactory::headerFromLine)
                     .map(kv -> new String[]{kv[0].trim(), kv[1].trim()})
                     .forEach(kv -> responseHeaders.add(kv[0], kv[1]));
