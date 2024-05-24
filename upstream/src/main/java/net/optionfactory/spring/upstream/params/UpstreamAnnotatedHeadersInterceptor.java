@@ -31,7 +31,7 @@ public class UpstreamAnnotatedHeadersInterceptor implements UpstreamHttpIntercep
                     .map(annotation -> {
                         final var condition = expressions.parse(annotation.condition());
                         final var key = expressions.parseTemplated(annotation.key());
-                        final var value = expressions.parseTemplated(annotation.value());
+                        final var value = expressions.parse(annotation.value());
                         return new AnnotatedHeader(condition, key, value);
                     })
                     .toList();

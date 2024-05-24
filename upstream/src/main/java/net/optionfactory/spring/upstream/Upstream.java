@@ -179,7 +179,7 @@ public @interface Upstream {
         public String key();
 
         /**
-         * @return the <strong>templated expression</strong> to be evaluated
+         * @return the <strong>string expression</strong> to be evaluated
          */
         public String value();
 
@@ -213,7 +213,7 @@ public @interface Upstream {
         public String key();
 
         /**
-         * @return the <strong>templated expression</strong> to be evaluated
+         * @return the <strong>string expression</strong> to be evaluated
          */
         public String value();
 
