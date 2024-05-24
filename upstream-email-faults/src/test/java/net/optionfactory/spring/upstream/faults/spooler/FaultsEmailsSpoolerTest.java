@@ -112,7 +112,7 @@ public class FaultsEmailsSpoolerTest {
 
         final var event = new UpstreamFaultEvent(
                 new InvocationContext(
-                        new Expressions(),
+                        new Expressions(null),
                         new InvocationContext.HttpMessageConverters(List.of()),
                         new EndpointDescriptor("upstream", "endpoint", Object.class.getMethod("toString"), null),
                         new Object[0],

@@ -43,6 +43,7 @@ import net.optionfactory.spring.upstream.soap.UpstreamSoapActionIninitializer;
 import org.apache.hc.client5.http.socket.LayeredConnectionSocketFactory;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.expression.BeanResolver;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
@@ -61,7 +62,7 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 public class UpstreamBuilder<T> {
 
-    protected final Expressions expressions = new Expressions();
+    protected final Expressions expressions;
     protected final List<Consumer<RestClient.Builder>> restClientCustomizers = new ArrayList<>();
     protected final List<UpstreamHttpRequestInitializer> initializers = new ArrayList<>();
     protected final List<UpstreamHttpInterceptor> interceptors = new ArrayList<>();
@@ -79,8 +80,9 @@ public class UpstreamBuilder<T> {
     protected Supplier<Object> principal;
     protected InstantSource clock;
 
-    public UpstreamBuilder(Class<T> klass, Optional<String> name) {
+    public UpstreamBuilder(Class<T> klass, Optional<BeanResolver> beanResolver, Optional<String> name) {
         this.klass = klass;
+        this.expressions = new Expressions(beanResolver.orElse(null));
         this.upstreamId = name.or(() -> Annotations.closest(klass, Upstream.class)
                 .map(a -> a.value()))
                 .filter(n -> !n.isBlank())
@@ -102,12 +104,20 @@ public class UpstreamBuilder<T> {
                 .collect(Collectors.toMap(EndpointDescriptor::method, ed -> ed));
     }
 
+    public static <T> UpstreamBuilder<T> create(Class<T> klass, Optional<BeanResolver> beanResolver) {
+        return new UpstreamBuilder(klass, beanResolver, Optional.empty());
+    }
+
     public static <T> UpstreamBuilder<T> create(Class<T> klass) {
-        return new UpstreamBuilder(klass, Optional.empty());
+        return new UpstreamBuilder(klass, Optional.empty(), Optional.empty());
+    }
+
+    public static <T> UpstreamBuilder<T> named(Class<T> klass, Optional<BeanResolver> beanResolver, String name) {
+        return new UpstreamBuilder(klass, beanResolver, Optional.of(name));
     }
 
     public static <T> UpstreamBuilder<T> named(Class<T> klass, String name) {
-        return new UpstreamBuilder(klass, Optional.of(name));
+        return new UpstreamBuilder(klass, Optional.empty(), Optional.of(name));
     }
 
     public UpstreamBuilder<T> requestFactoryMockResourcesIf(boolean test) {
