@@ -8,7 +8,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.util.GregorianCalendar;
 import java.util.List;
-import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.SignatureInterface;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -43,7 +43,8 @@ public class PdfSigner {
             signature.setLocation(sinfo.location);
             signature.setReason(sinfo.reason);
             signature.setSignDate(GregorianCalendar.from(sinfo.at));
-            try (final var is = pdf.getInputStream(); final var reloaded = PDDocument.load(is)) {
+            final var bytes = pdf.getContentAsByteArray();
+            try (final var reloaded = Loader.loadPDF(bytes)) {
                 reloaded.addSignature(signature, signer);
                 final var signed = new FastByteArrayOutputStream(64 * 1024);
                 reloaded.saveIncremental(signed);
@@ -53,7 +54,6 @@ public class PdfSigner {
             throw new UncheckedIOException(ex);
         }
     }
-
 
     private static class BouncyCastleSigner implements SignatureInterface {
 

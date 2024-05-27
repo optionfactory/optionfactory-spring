@@ -18,12 +18,12 @@
         </dependency>        
         
         <dependency>
-            <groupId>com.openhtmltopdf</groupId>
+            <groupId>io.github.openhtmltopdf</groupId>
             <artifactId>openhtmltopdf-core</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.openhtmltopdf</groupId>
+            <groupId>io.github.openhtmltopdf</groupId>
             <artifactId>openhtmltopdf-pdfbox</artifactId>
         </dependency>
         <dependency>

@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Set;
-import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.Assert;
 import org.junit.Before;
@@ -46,7 +46,7 @@ public class ThymeleafToPdfRendererTest {
     public void canRender() throws Exception {
         Resource rendered = renderer.render("example.html", new Context());
         dump(rendered, "target/example.rendered.pdf");
-        try (final var doc = PDDocument.load(new File("target/example.rendered.pdf"))) {
+        try (final var doc = Loader.loadPDF(new File("target/example.rendered.pdf"))) {
             final var got = new PDFTextStripper().getText(doc);
             Assert.assertEquals("test", got.trim());
         }

@@ -11,6 +11,7 @@ import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.bouncycastle.cms.CMSProcessableByteArray;
 import org.bouncycastle.cms.CMSSignedData;
@@ -48,7 +49,7 @@ public class PdfSignerTest {
         dump(signed, "target/signed.pdf");
 
         final var signedFile = new File("target/signed.pdf");
-        try (PDDocument document = PDDocument.load(signedFile)) {
+        try (PDDocument document = Loader.loadPDF(signedFile)) {
             final var signatureDictionaries = document.getSignatureDictionaries();
             final var pdSignature = signatureDictionaries.get(0);
             final var signatureContent = pdSignature.getContents(new FileInputStream(signedFile));
