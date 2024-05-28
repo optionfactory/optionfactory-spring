@@ -1,0 +1,98 @@
+options {
+    STATIC = false;
+    UNICODE_INPUT = true;
+}
+
+PARSER_BEGIN(PemParser)
+package net.optionfactory.spring.pem.parsing;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import net.optionfactory.spring.pem.PemException;
+
+public class PemParser {
+
+    public static List<PemEntry> parse(InputStream is) {
+        try{
+            final var r = new InputStreamReader(is, StandardCharsets.UTF_8);
+            final var p = new PemParser(r);
+            return p.entries();
+        }catch(ParseException ex){
+            throw new PemException(ex);
+        }
+    }
+
+}
+PARSER_END(PemParser)
+
+
+
+<DEFAULT> TOKEN: {
+      <BEGIN_PREFIX: "-----BEGIN ">: IN_BEGIN_LABEL
+    | <SPACES: (["\r", "\n", " "])+ >
+    | <METADATA_KEY: ["a"-"z","A"-"Z"](["a"-"z","A"-"Z","0"-"9","."])+ >
+    | <METADATA_SEPARATOR: [":","="] >: METADATA
+
+}
+
+<METADATA> TOKEN : {
+    <METADATA_VALUE: (~["\r","\n"])+> : DEFAULT
+}
+
+<IN_BEGIN_LABEL> TOKEN: {
+      <BEGIN_SUFFIX:       "-----">: IN_BASE64
+    | <BEGIN_LABEL: (["\u0021"-"\u002c","\u002e"-"\u007e", " ", "\t"])+ > 
+
+}
+
+<IN_BASE64> TOKEN: {
+      <BASE64_FRAGMENT: (["A"-"Z","a"-"z","0"-"9","+","/","="])+ >
+    | <END_PREFIX:   "-----END "  >: IN_END_LABEL
+
+}
+
+<IN_END_LABEL> TOKEN: {
+      <END_SUFFIX:       "-----">: DEFAULT
+    | <END_LABEL: (["\u0021"-"\u002c","\u002e"-"\u007e", " ", "\t"])+ > // %x21-2C / %x2E-7E
+
+}
+
+<IN_BASE64> SKIP: {
+    "\t"|" "|"\r"|"\n"
+}
+
+ <*> TOKEN : { 
+    <UNKNOWN: ~[]> 
+}
+
+private List<PemEntry> entries():
+{
+    List<PemEntry> results = new ArrayList<PemEntry>(); PemEntry e;
+}
+{
+    (<SPACES>)?
+    (e=entry() (<SPACES>)? { results.add(e); })*
+    <EOF>
+    { return results; }
+}
+
+
+private PemEntry entry():
+{
+    Token mk=null;
+    Token mv=null;
+    Token bl=null;
+    Token b64=null;
+    List<PemEntry.Metadata> metadata = new ArrayList<PemEntry.Metadata>();
+    StringBuilder b64s = new StringBuilder();
+}
+{
+    (mk=<METADATA_KEY> (<SPACES>)? <METADATA_SEPARATOR> mv=<METADATA_VALUE> <SPACES> {metadata.add(new PemEntry.Metadata(mk.image.toLowerCase(), mv.image.trim())); })*
+    <BEGIN_PREFIX> (bl=<BEGIN_LABEL>)? <BEGIN_SUFFIX>
+    (b64=<BASE64_FRAGMENT> { b64s.append(b64.image); })+
+    <END_PREFIX> (<END_LABEL>)? <END_SUFFIX>
+    { return new PemEntry(bl.image, metadata, b64s.toString()); }
+}
+

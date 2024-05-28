@@ -133,6 +133,21 @@
             </dependency>
             <dependency>
                 <groupId>net.optionfactory.spring</groupId>
+                <artifactId>pdf</artifactId>
+                <version>${opfa-spring.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.optionfactory.spring</groupId>
+                <artifactId>pdf</artifactId>
+                <version>${opfa-spring.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.optionfactory.spring</groupId>
+                <artifactId>pem</artifactId>
+                <version>${opfa-spring.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.optionfactory.spring</groupId>
                 <artifactId>pdf-signing</artifactId>
                 <version>${opfa-spring.version}</version>
             </dependency>

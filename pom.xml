@@ -69,6 +69,7 @@
         <module>localized-enums</module>
         <module>pdf</module>
         <module>pdf-signing</module>
+        <module>pem</module>
         <module>mock-resources-json</module>
         <module>mock-resources-jaxb</module>
         <module>optionfactory-spring-bom</module>
