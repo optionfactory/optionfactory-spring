@@ -67,12 +67,13 @@ public class Pem {
      * </ul>
      *
      * @param is the input stream
+     * @param passphrase the passphrase, can be null if keys are in cleartext
      * @return the loaded KeyStore
      */
-    public static KeyStore keyStore(InputStream is) {
+    public static KeyStore keyStore(InputStream is, char[] passphrase) {
         try {
             final var ks = KeyStore.getInstance(PemProvider.TYPE, new PemProvider());
-            ks.load(is, null);
+            ks.load(is, passphrase);
             return ks;
         } catch (GeneralSecurityException | IOException ex) {
             throw new PemException(ex);

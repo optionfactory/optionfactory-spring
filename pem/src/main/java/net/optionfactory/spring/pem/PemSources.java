@@ -39,11 +39,12 @@ public class PemSources {
     /**
      * @see Pem#keyStore
      * @param iss the input stream source
+     * @param passphrase the passphrase, can be null if keys are in cleartext
      * @return the loaded KeyStore
      */
-    public static KeyStore keyStore(InputStreamSource iss) {
+    public static KeyStore keyStore(InputStreamSource iss, char[] passphrase) {
         try (final InputStream is = iss.getInputStream()) {
-            return Pem.keyStore(is);
+            return Pem.keyStore(is, passphrase);
         } catch (IOException ex) {
             throw new PemException(ex);
         }

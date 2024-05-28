@@ -45,7 +45,7 @@ public record PemEntry(String label, List<Metadata> metadata, String b64) {
             case "RSA PRIVATE KEY" ->
                 new PemEntry.KeyAndCertificates(alias, this.unmarshalPkcs1PrivateKey(), new X509Certificate[0]);
             case "ENCRYPTED PRIVATE KEY" ->
-                new PemEntry.KeyAndCertificates(alias, this.unmarshalEncryptedPcks8PrivateKey(passphrase), new X509Certificate[0]);
+                new PemEntry.KeyAndCertificates(alias, this.unmarshalEncryptedPkcs8PrivateKey(passphrase), new X509Certificate[0]);
             case "PRIVATE KEY" ->
                 new PemEntry.KeyAndCertificates(alias, this.unmarshalPkcs8PrivateKey(), new X509Certificate[0]);
             default ->
@@ -58,7 +58,7 @@ public record PemEntry(String label, List<Metadata> metadata, String b64) {
             case "RSA PRIVATE KEY" ->
                 this.unmarshalPkcs1PrivateKey();
             case "ENCRYPTED PRIVATE KEY" ->
-                this.unmarshalEncryptedPcks8PrivateKey(passphrase);
+                this.unmarshalEncryptedPkcs8PrivateKey(passphrase);
             case "PRIVATE KEY" ->
                 this.unmarshalPkcs8PrivateKey();
             default ->
@@ -117,7 +117,8 @@ public record PemEntry(String label, List<Metadata> metadata, String b64) {
         }
     }
 
-    public RSAPrivateKey unmarshalEncryptedPcks8PrivateKey(char[] passphrase) {
+    public RSAPrivateKey unmarshalEncryptedPkcs8PrivateKey(char[] passphrase) {
+        PemException.ensure(passphrase != null, "trying to use a null passphrase to unmarshal an encrypted PKCS#8 PrivateKey");
         final var bytes = Base64.getDecoder().decode(b64);
         try {
             final var pki = new EncryptedPrivateKeyInfo(bytes);
