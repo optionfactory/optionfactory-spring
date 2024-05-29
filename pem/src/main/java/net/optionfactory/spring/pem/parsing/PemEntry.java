@@ -16,8 +16,8 @@ import java.util.Set;
 import javax.crypto.EncryptedPrivateKeyInfo;
 import net.optionfactory.spring.pem.Pem;
 import net.optionfactory.spring.pem.PemException;
-import net.optionfactory.spring.pem.der.DerTokenizer;
-import net.optionfactory.spring.pem.der.DerTokenizer.DerValue;
+import net.optionfactory.spring.pem.der.DerCursor;
+import net.optionfactory.spring.pem.der.DerCursor.DerValue;
 
 public record PemEntry(String label, List<Metadata> metadata, String b64) {
 
@@ -89,19 +89,19 @@ public record PemEntry(String label, List<Metadata> metadata, String b64) {
     public PrivateKey unmarshalPkcs1PrivateKey() {
         final var bytes = Base64.getDecoder().decode(b64);
         try {
-            final var ders = new DerTokenizer(bytes);
-            final var sequence = ders.ensureNext().ensureTag(DerValue.TAG_SEQUENCE);
-            final var version = ders.ensureNext().asBigInteger(bytes);
-            final var modulus = ders.ensureNext().asBigInteger(bytes);
-            final var publicExp = ders.ensureNext().asBigInteger(bytes);
-            final var privateExp = ders.ensureNext().asBigInteger(bytes);
-            final var prime1 = ders.ensureNext().asBigInteger(bytes);
-            final var prime2 = ders.ensureNext().asBigInteger(bytes);
-            final var exp1 = ders.ensureNext().asBigInteger(bytes);
-            final var exp2 = ders.ensureNext().asBigInteger(bytes);
-            final var crtCoef = ders.ensureNext().asBigInteger(bytes);
+            final var cursor = DerCursor.flat(bytes);
+            final var sequence = cursor.next().ensure(DerValue.TAG_SEQUENCE);
+            final var version = cursor.next().integer(bytes);
+            final var modulus = cursor.next().integer(bytes);
+            final var publicExp = cursor.next().integer(bytes);
+            final var privateExp = cursor.next().integer(bytes);
+            final var prime1 = cursor.next().integer(bytes);
+            final var prime2 = cursor.next().integer(bytes);
+            final var exp1 = cursor.next().integer(bytes);
+            final var exp2 = cursor.next().integer(bytes);
+            final var crtCoef = cursor.next().integer(bytes);
 
-            ders.ensureDone();
+            cursor.eof();
 
             final var keySpec = new RSAPrivateCrtKeySpec(modulus, publicExp, privateExp, prime1, prime2, exp1, exp2, crtCoef);
             return KeyFactory.getInstance("RSA").generatePrivate(keySpec);
