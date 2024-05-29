@@ -1,6 +1,7 @@
 package net.optionfactory.spring.pem;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -14,11 +15,15 @@ import org.junit.Test;
 
 public class PemTest {
 
+    private InputStream is(String src) {
+        return new ByteArrayInputStream(src.getBytes(StandardCharsets.UTF_8));
+    }
+
     @Test
     public void canLoadKeyStoreWithKey() throws GeneralSecurityException {
 
         final var src = TestData.PRIVATE_KEY_PKCS8_CLEARTEXT;
-        final var ks = Pem.keyStore(new ByteArrayInputStream(src.getBytes(StandardCharsets.UTF_8)), null);
+        final var ks = Pem.keyStore(is(src));
         final var key = ks.getKey(Pem.DEFAULT_ALIAS, "unused".toCharArray());
         Assert.assertEquals("RSA", key.getAlgorithm());
         Assert.assertEquals("PKCS#8", key.getFormat());
@@ -30,13 +35,14 @@ public class PemTest {
     @Test
     public void canLoadKeyStoreWithKeyAndCertificate() throws GeneralSecurityException {
         final var src = TestData.PRIVATE_KEY_PKCS8_CLEARTEXT_AND_CERTIFICATE_CHAIN;
-        final var ks = Pem.keyStore(new ByteArrayInputStream(src.getBytes(StandardCharsets.UTF_8)), null);
+        final var ks = Pem.keyStore(is(src));
 
         final var key = ks.getKey(Pem.DEFAULT_ALIAS, "unused".toCharArray());
 
         Assert.assertEquals(Set.of("default"), new HashSet<>(Collections.list(ks.aliases())));
 
         final var entry = ks.getEntry(Pem.DEFAULT_ALIAS, new KeyStore.PasswordProtection("unused".toCharArray()));
+        
         Assert.assertEquals(KeyStore.PrivateKeyEntry.class, entry.getClass());
         Assert.assertEquals(1, ((KeyStore.PrivateKeyEntry) entry).getCertificateChain().length);
     }
@@ -44,7 +50,7 @@ public class PemTest {
     @Test
     public void canLoadTrustedCertificates() throws GeneralSecurityException {
         final var src = TestData.CERTIFICATE_X509_CHAIN;
-        final var ks = Pem.keyStore(new ByteArrayInputStream(src.getBytes(StandardCharsets.UTF_8)), null);
+        final var ks = Pem.keyStore(is(src));
 
         Assert.assertEquals(Set.of("default.1", "default.2"), new HashSet<>(Collections.list(ks.aliases())));
         Assert.assertEquals(KeyStore.TrustedCertificateEntry.class, ks.getEntry("default.1", null).getClass());

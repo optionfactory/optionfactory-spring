@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import net.optionfactory.spring.pem.PemException;
 import net.optionfactory.spring.pem.parsing.PemEntry;
-import net.optionfactory.spring.pem.parsing.PemEntry.KeyAndCertificates;
+import net.optionfactory.spring.pem.parsing.KeyAndCertificates;
 import net.optionfactory.spring.pem.parsing.PemParser;
 
 public class PemKeyStore extends KeyStoreSpi {
@@ -30,20 +30,20 @@ public class PemKeyStore extends KeyStoreSpi {
 
     @Override
     public void engineLoad(InputStream stream, char[] passphrase) throws IOException, NoSuchAlgorithmException, CertificateException {
-        final var unrolled = PemParser.parse(stream)
+        final java.util.Map<java.lang.String, net.optionfactory.spring.pem.parsing.KeyAndCertificates> unrolled = PemParser.parse(stream)
                 .stream()
-                .map(e -> e.unmarshal(passphrase))
+                .map(PemEntry::unmarshal)
                 .collect(Collectors.toMap(KeyAndCertificates::alias, kac -> kac, (a, b) -> {
                     PemException.ensure((a.key() == null) || (b.key() == null), "Found two keys with the same alias: %s", a.alias());
                     //assert (a != null) != (b != null)
-                    final var key = a.key() != null ? a.key() : b.key();
+                    final net.optionfactory.spring.pem.parsing.PrivateKeyHolder key = a.key() != null ? a.key() : b.key();
                     final var certs = Arrays.copyOf(a.certs(), a.certs().length + b.certs().length);
                     System.arraycopy(b.certs(), 0, certs, a.certs().length, b.certs().length);
-                    return new PemEntry.KeyAndCertificates(a.alias(), key, certs);
+                    return new KeyAndCertificates(a.alias(), key, certs);
                 }))
                 .values()
                 .stream()
-                .<PemEntry.KeyAndCertificates>mapMulti((kac, consumer) -> {
+                .<KeyAndCertificates>mapMulti((kac, consumer) -> {
                     if (kac.key() != null || kac.certs().length == 1) {
                         consumer.accept(kac);
                         return;
@@ -53,7 +53,7 @@ public class PemKeyStore extends KeyStoreSpi {
                     for (int i = 0; i != certs.length; ++i) {
                         final var alias = String.format("%s.%s", kac.alias(), i + 1);
                         final var cur = kac.certs()[i];
-                        consumer.accept(new PemEntry.KeyAndCertificates(alias, null, new X509Certificate[]{
+                        consumer.accept(new KeyAndCertificates(alias, null, new X509Certificate[]{
                             cur
                         }));
                     }
@@ -70,6 +70,7 @@ public class PemKeyStore extends KeyStoreSpi {
     public Key engineGetKey(String alias, char[] password) throws NoSuchAlgorithmException, UnrecoverableKeyException {
         return byAlias(alias)
                 .map(KeyAndCertificates::key)
+                .map(kh -> kh.decrypt(password))
                 .orElse(null);
     }
 

@@ -4,11 +4,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
-import java.security.interfaces.RSAPrivateKey;
+import net.optionfactory.spring.pem.parsing.PemEntry;
 import net.optionfactory.spring.pem.parsing.PemParser;
 import net.optionfactory.spring.pem.spi.PemProvider;
-import org.springframework.core.io.InputStreamSource;
 
 public class Pem {
 
@@ -26,13 +26,14 @@ public class Pem {
      *
      * @param is the input stream
      * @param passphrase the passphrase, can be null if the key is not encrypted
-     * @return the RSA private key
+     * @return the private key
      */
-    public static RSAPrivateKey privateKey(InputStream is, char[] passphrase) {
+    public static PrivateKey privateKey(InputStream is, char[] passphrase) {
         return PemParser.parse(is)
                 .stream()
                 .findFirst()
-                .map(e -> e.unmarshalPrivateKey(passphrase))
+                .map(PemEntry::unmarshalPrivateKey)
+                .map(kh -> kh.decrypt(passphrase))
                 .orElseThrow(() -> new PemException("private key not found"));
     }
 
@@ -51,7 +52,7 @@ public class Pem {
         return PemParser.parse(is)
                 .stream()
                 .findFirst()
-                .map(e -> e.unmarshalX509Certificate())
+                .map(PemEntry::unmarshalX509Certificate)
                 .orElseThrow(() -> new PemException("certificate not found"));
     }
 
@@ -67,13 +68,12 @@ public class Pem {
      * </ul>
      *
      * @param is the input stream
-     * @param passphrase the passphrase, can be null if keys are in cleartext
      * @return the loaded KeyStore
      */
-    public static KeyStore keyStore(InputStream is, char[] passphrase) {
+    public static KeyStore keyStore(InputStream is) {
         try {
             final var ks = KeyStore.getInstance(PemProvider.TYPE, new PemProvider());
-            ks.load(is, passphrase);
+            ks.load(is, null);
             return ks;
         } catch (GeneralSecurityException | IOException ex) {
             throw new PemException(ex);

@@ -4,19 +4,16 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
+import java.security.PrivateKey;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.util.Base64;
 import java.util.List;
 import java.util.Set;
-import javax.crypto.Cipher;
 import javax.crypto.EncryptedPrivateKeyInfo;
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.PBEKeySpec;
 import net.optionfactory.spring.pem.Pem;
 import net.optionfactory.spring.pem.PemException;
 import net.optionfactory.spring.pem.der.DerTokenizer;
@@ -28,11 +25,7 @@ public record PemEntry(String label, List<Metadata> metadata, String b64) {
 
     }
 
-    public record KeyAndCertificates(String alias, RSAPrivateKey key, X509Certificate[] certs) {
-
-    }
-
-    public KeyAndCertificates unmarshal(char[] passphrase) {
+    public KeyAndCertificates unmarshal() {
         final var alias = metadata.stream()
                 .filter(m -> m.k().equals("alias"))
                 .map(m -> m.v())
@@ -41,26 +34,26 @@ public record PemEntry(String label, List<Metadata> metadata, String b64) {
 
         return switch (label) {
             case "TRUSTED CERTIFICATE", "X509 CERTIFICATE", "CERTIFICATE" ->
-                new PemEntry.KeyAndCertificates(alias, null, new X509Certificate[]{this.x509Certificate()});
+                new KeyAndCertificates(alias, null, new X509Certificate[]{this.x509Certificate()});
             case "RSA PRIVATE KEY" ->
-                new PemEntry.KeyAndCertificates(alias, this.unmarshalPkcs1PrivateKey(), new X509Certificate[0]);
+                new KeyAndCertificates(alias, new ClearTextPrivateKeyHolder(this.unmarshalPkcs1PrivateKey()), new X509Certificate[0]);
             case "ENCRYPTED PRIVATE KEY" ->
-                new PemEntry.KeyAndCertificates(alias, this.unmarshalEncryptedPkcs8PrivateKey(passphrase), new X509Certificate[0]);
+                new KeyAndCertificates(alias, new EncryptedPrivateKeyHolder(this.unmarshalEncryptedPkcs8PrivateKey()), new X509Certificate[0]);
             case "PRIVATE KEY" ->
-                new PemEntry.KeyAndCertificates(alias, this.unmarshalPkcs8PrivateKey(), new X509Certificate[0]);
+                new KeyAndCertificates(alias, new ClearTextPrivateKeyHolder(this.unmarshalPkcs8PrivateKey()), new X509Certificate[0]);
             default ->
                 throw new PemException(String.format("unsupported PEM label: %s", label));
         };
     }
 
-    public RSAPrivateKey unmarshalPrivateKey(char[] passphrase) {
+    public PrivateKeyHolder unmarshalPrivateKey() {
         return switch (label) {
             case "RSA PRIVATE KEY" ->
-                this.unmarshalPkcs1PrivateKey();
+                new ClearTextPrivateKeyHolder(this.unmarshalPkcs1PrivateKey());
             case "ENCRYPTED PRIVATE KEY" ->
-                this.unmarshalEncryptedPkcs8PrivateKey(passphrase);
+                new EncryptedPrivateKeyHolder(this.unmarshalEncryptedPkcs8PrivateKey());
             case "PRIVATE KEY" ->
-                this.unmarshalPkcs8PrivateKey();
+                new ClearTextPrivateKeyHolder(this.unmarshalPkcs8PrivateKey());
             default ->
                 throw new PemException(String.format("unsupported PEM label: %s", label));
         };
@@ -81,19 +74,19 @@ public record PemEntry(String label, List<Metadata> metadata, String b64) {
         }
     }
 
-    public RSAPrivateKey unmarshalPkcs8PrivateKey() {
+    public PrivateKey unmarshalPkcs8PrivateKey() {
         final var bytes = Base64.getDecoder().decode(b64);
         try {
             final var kf = KeyFactory.getInstance("RSA");
             final var ks = new PKCS8EncodedKeySpec(bytes);
-            return (RSAPrivateKey) kf.generatePrivate(ks);
+            return kf.generatePrivate(ks);
         } catch (GeneralSecurityException ex) {
             throw new PemException(ex);
         }
 
     }
 
-    public RSAPrivateKey unmarshalPkcs1PrivateKey() {
+    public PrivateKey unmarshalPkcs1PrivateKey() {
         final var bytes = Base64.getDecoder().decode(b64);
         try {
             final var ders = new DerTokenizer(bytes);
@@ -111,25 +104,17 @@ public record PemEntry(String label, List<Metadata> metadata, String b64) {
             ders.ensureDone();
 
             final var keySpec = new RSAPrivateCrtKeySpec(modulus, publicExp, privateExp, prime1, prime2, exp1, exp2, crtCoef);
-            return (RSAPrivateKey) KeyFactory.getInstance("RSA").generatePrivate(keySpec);
+            return KeyFactory.getInstance("RSA").generatePrivate(keySpec);
         } catch (GeneralSecurityException ex) {
             throw new PemException(ex);
         }
     }
 
-    public RSAPrivateKey unmarshalEncryptedPkcs8PrivateKey(char[] passphrase) {
-        PemException.ensure(passphrase != null, "trying to use a null passphrase to unmarshal an encrypted PKCS#8 PrivateKey");
+    public EncryptedPrivateKeyInfo unmarshalEncryptedPkcs8PrivateKey() {
         final var bytes = Base64.getDecoder().decode(b64);
         try {
-            final var pki = new EncryptedPrivateKeyInfo(bytes);
-            final var pbeKey = SecretKeyFactory.getInstance(pki.getAlgName())
-                    .generateSecret(new PBEKeySpec(passphrase));
-            final var cipher = Cipher.getInstance(pki.getAlgName());
-            cipher.init(Cipher.DECRYPT_MODE, pbeKey, pki.getAlgParameters());
-            final var keySpec = pki.getKeySpec(cipher);
-            final var kf = KeyFactory.getInstance("RSA");
-            return (RSAPrivateKey) kf.generatePrivate(keySpec);
-        } catch (GeneralSecurityException | IOException ex) {
+            return new EncryptedPrivateKeyInfo(bytes);
+        } catch (IOException ex) {
             throw new PemException(ex);
         }
 

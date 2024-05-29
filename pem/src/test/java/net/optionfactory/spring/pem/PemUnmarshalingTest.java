@@ -1,6 +1,5 @@
 package net.optionfactory.spring.pem;
 
-import net.optionfactory.spring.pem.Pem;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -32,12 +31,9 @@ public class PemUnmarshalingTest {
 
     @Test
     public void canUnmarshalPkcs8EncryptedPrivateKey() throws GeneralSecurityException {
-        //openssl genrsa -aes256 -out asd.pem 
-        //only aes is supported by jdk
         final var src = TestData.PRIVATE_KEY_PKCS8_ENCRYPTED;
         final var pk = Pem.privateKey(is(src), "changeit".toCharArray());
         Assert.assertNotNull(pk);
-
     }
 
     @Test
