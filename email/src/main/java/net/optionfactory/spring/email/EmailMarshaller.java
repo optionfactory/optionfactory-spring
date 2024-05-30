@@ -1,7 +1,5 @@
 package net.optionfactory.spring.email;
 
-import net.optionfactory.spring.email.AttachmentSource;
-import net.optionfactory.spring.email.CidSource;
 import jakarta.activation.DataHandler;
 import jakarta.activation.DataSource;
 import jakarta.mail.Message;
@@ -19,8 +17,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import net.optionfactory.spring.email.EmailMessage;
-import net.optionfactory.spring.email.EmailPaths;
 import org.springframework.core.io.InputStreamSource;
 
 public class EmailMarshaller {

@@ -83,6 +83,7 @@ public record EmailMessage(
         private ITemplateEngine htmlBodyEngine;
         private String htmlBodyTemplate;
         private String htmlBodyLiteral;
+        private HtmlBodyPostprocessor htmlBodyPostprocessor;
 
         private List<AttachmentSource> attachments = new ArrayList<>();
         private List<CidSource> cids = new ArrayList<>();
@@ -185,6 +186,11 @@ public record EmailMessage(
 
         public Builder htmlBody(String htmlBody) {
             this.htmlBodyLiteral = htmlBody;
+            return this;
+        }
+
+        public Builder htmlBodyPostprocessor(HtmlBodyPostprocessor htmlBodyPostprocessor) {
+            this.htmlBodyPostprocessor = htmlBodyPostprocessor;
             return this;
         }
 
@@ -309,6 +315,7 @@ public record EmailMessage(
 
             final var context = templated ? makeContext(variables) : null;
             final var htmlBody = htmlBodyTemplateConfigured ? htmlBodyEngine.process(htmlBodyTemplate, context) : htmlBodyLiteral;
+            final var postprocessedHtmlBody = htmlBodyPostprocessor != null ? htmlBodyPostprocessor.postprocess(htmlBody) : htmlBody;
             final var textBody = textBodyTemplateConfigured ? textBodyEngine.process(textBodyTemplate, context) : textBodyLiteral;
 
             return new EmailMessage(
@@ -320,7 +327,7 @@ public record EmailMessage(
                     bccAddresses != null ? bccAddresses : new InternetAddress[0],
                     subject,
                     textBody,
-                    htmlBody,
+                    postprocessedHtmlBody,
                     attachments != null ? attachments : List.of(),
                     cids != null ? cids : List.of(),
                     spooling

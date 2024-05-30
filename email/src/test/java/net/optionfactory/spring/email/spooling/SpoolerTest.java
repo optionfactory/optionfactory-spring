@@ -44,8 +44,8 @@ public class SpoolerTest {
                     publisher,
                     ts,
                     Duration.ofSeconds(0),
-                    Duration.ofSeconds(2),
-                    Duration.ofSeconds(2),
+                    Duration.ofMillis(50),
+                    Duration.ofMillis(500),
                     (List<TestEvent> events) -> {
                         System.out.format("spooled: %s events: %s%n", events.size(), events);
                         for (TestEvent event : events) {
@@ -73,11 +73,11 @@ public class SpoolerTest {
     public CountDownLatch countDownLatch;
 
     @Test
-    public void asd() throws InterruptedException {
+    public void allEventsAreConsumed() throws InterruptedException {
         for (int i = 0; i != 100; i++) {
             publisher.publishEvent(new TestEvent(i));
         }
-        boolean reachedZero = countDownLatch.await(10, TimeUnit.SECONDS);
+        boolean reachedZero = countDownLatch.await(1, TimeUnit.SECONDS);
         Assert.assertTrue(reachedZero);
     }
 
