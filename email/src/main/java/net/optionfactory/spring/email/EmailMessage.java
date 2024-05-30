@@ -252,6 +252,7 @@ public record EmailMessage(
 
             builder.htmlBodyEngine = htmlBodyEngine;
             builder.htmlBodyTemplate = htmlBodyTemplate;
+            builder.htmlBodyPostprocessor = htmlBodyPostprocessor;
             builder.htmlBodyLiteral = htmlBodyLiteral;
 
             builder.attachments = new ArrayList<>(attachments);
