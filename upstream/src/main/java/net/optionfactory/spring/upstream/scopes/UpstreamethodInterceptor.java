@@ -105,8 +105,9 @@ public class UpstreamethodInterceptor implements MethodInterceptor {
             //already reported
             return;
         }
-        final Observation obs = scope.getCurrentObservation();
-        if ("none".equals(obs.getContext().getLowCardinalityKeyValue("fault").getValue())) {
+        final var obs = scope.getCurrentObservation();
+        final var kv = obs.getContext().getLowCardinalityKeyValue("fault");
+        if (kv != null && "none".equals(kv.getValue())) {
             obs.lowCardinalityKeyValue("fault", "mapping");
         }
         final var request = requests.get();

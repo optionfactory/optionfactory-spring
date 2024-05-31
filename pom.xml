@@ -45,9 +45,8 @@
 
 
     <modules>
-        <module>time-jaxb</module>
-        <module>money-jaxb</module>
-        <module>time-jackson</module>
+        <module>marshaling-jaxb</module>
+        <module>marshaling-jackson</module>
         <module>data-jpa</module>
         <module>data-jpa-web</module>
         <module>context</module>
@@ -70,8 +69,6 @@
         <module>pdf</module>
         <module>pdf-signing</module>
         <module>pem</module>
-        <module>mock-resources-json</module>
-        <module>mock-resources-jaxb</module>
         <module>optionfactory-spring-bom</module>
     </modules>
 

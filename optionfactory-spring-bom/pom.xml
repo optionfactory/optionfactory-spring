@@ -18,17 +18,12 @@
         <dependencies>
             <dependency>
                 <groupId>net.optionfactory.spring</groupId>
-                <artifactId>time-jaxb</artifactId>
+                <artifactId>marshaling-jaxb</artifactId>
                 <version>${opfa-spring.version}</version>
             </dependency>
             <dependency>
                 <groupId>net.optionfactory.spring</groupId>
-                <artifactId>money-jaxb</artifactId>
-                <version>${opfa-spring.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>net.optionfactory.spring</groupId>
-                <artifactId>time-jackson</artifactId>
+                <artifactId>marshaling-jackson</artifactId>
                 <version>${opfa-spring.version}</version>
             </dependency>
             <dependency>
@@ -139,16 +134,6 @@
             <dependency>
                 <groupId>net.optionfactory.spring</groupId>
                 <artifactId>pem</artifactId>
-                <version>${opfa-spring.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>net.optionfactory.spring</groupId>
-                <artifactId>mock-resources-json</artifactId>
-                <version>${opfa-spring.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>net.optionfactory.spring</groupId>
-                <artifactId>mock-resources-jaxb</artifactId>
                 <version>${opfa-spring.version}</version>
             </dependency>
         </dependencies>
