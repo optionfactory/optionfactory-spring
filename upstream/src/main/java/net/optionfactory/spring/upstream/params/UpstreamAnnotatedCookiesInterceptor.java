@@ -42,13 +42,13 @@ public class UpstreamAnnotatedCookiesInterceptor implements UpstreamHttpIntercep
 
     @Override
     public ResponseContext intercept(InvocationContext invocation, RequestContext request, UpstreamHttpRequestExecution execution) throws IOException {
-        final var annotatedHeaders = conf.get(invocation.endpoint().method());
+        final var annotatedCookies = conf.get(invocation.endpoint().method());
         final var ectx = invocation.expressions().context(invocation, request);
-        for (final var annotatedHeader : annotatedHeaders) {
-            if (!annotatedHeader.condition().evaluate(ectx)) {
+        for (final var annotatedCookie : annotatedCookies) {
+            if (!annotatedCookie.condition().evaluate(ectx)) {
                 continue;
             }
-            request.headers().add("Cookie", annotatedHeader.value().evaluate(ectx));
+            request.headers().add("Cookie", annotatedCookie.value().evaluate(ectx));
         }
         return execution.execute(invocation, request);
     }
