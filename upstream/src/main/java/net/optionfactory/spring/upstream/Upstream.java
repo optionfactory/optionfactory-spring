@@ -212,6 +212,37 @@ public @interface Upstream {
      */
     @Retention(value = RetentionPolicy.RUNTIME)
     @Target(value = ElementType.METHOD)
+    @Repeatable(Cookie.List.class)
+    public @interface Cookie {
+
+        /**
+         * @return the header value
+         */
+        public String value();
+
+        public Type valueType() default Type.TEMPLATED;
+
+        /**
+         * @return the condition expression
+         */
+        public String condition() default "true";
+
+        @Target({ElementType.METHOD})
+        @Retention(RetentionPolicy.RUNTIME)
+        @Documented
+        public @interface List {
+
+            Cookie[] value();
+        }
+    }
+
+    /**
+     * <strong>discovery</strong>: method<br>
+     * <strong>meta</strong>: no<br>
+     * <strong>merging</strong>: no<br>
+     */
+    @Retention(value = RetentionPolicy.RUNTIME)
+    @Target(value = ElementType.METHOD)
     @Repeatable(QueryParam.List.class)
     public @interface QueryParam {
 

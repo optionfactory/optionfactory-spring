@@ -31,6 +31,7 @@ import net.optionfactory.spring.upstream.mocks.MockResourcesUpstreamHttpResponse
 import net.optionfactory.spring.upstream.mocks.MockUpstreamRequestFactory;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpResponseFactory;
+import net.optionfactory.spring.upstream.params.UpstreamAnnotatedCookiesInterceptor;
 import net.optionfactory.spring.upstream.params.UpstreamAnnotatedHeadersInterceptor;
 import net.optionfactory.spring.upstream.params.UpstreamAnnotatedQueryParamsInterceptor;
 import net.optionfactory.spring.upstream.scopes.ThreadLocalScopeHandler;
@@ -345,7 +346,9 @@ public class UpstreamBuilder<T> {
                 .forEach(rcb::requestInitializer);
 
         final var initializedInterceptors = Stream.concat(interceptors.stream(),
-                Stream.of(new UpstreamAnnotatedHeadersInterceptor(),
+                Stream.of(
+                        new UpstreamAnnotatedHeadersInterceptor(),
+                        new UpstreamAnnotatedCookiesInterceptor(),
                         new UpstreamAnnotatedQueryParamsInterceptor(),
                         new UpstreamLoggingInterceptor(loggingOverrides),
                         new UpstreamFaultInterceptor(publisher, observations)
