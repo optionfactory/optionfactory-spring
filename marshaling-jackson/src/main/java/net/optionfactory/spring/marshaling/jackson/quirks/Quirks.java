@@ -26,11 +26,6 @@ public interface Quirks {
     }
 
     @Retention(RetentionPolicy.RUNTIME)
-    public @interface Scream {
-
-    }
-
-    @Retention(RetentionPolicy.RUNTIME)
     public @interface LocalDateAsIsoInstant {
 
         String value() default "UTC";
@@ -51,7 +46,8 @@ public interface Quirks {
     }
 
     @Retention(RetentionPolicy.RUNTIME)
-    public @interface EffectiveLocalDateAsIsoInstant {
+    public @interface Scream {
+
     }
 
     @Retention(RetentionPolicy.RUNTIME)
