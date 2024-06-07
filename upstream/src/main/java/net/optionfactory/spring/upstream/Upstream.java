@@ -150,6 +150,11 @@ public @interface Upstream {
 
         public Type headersType() default Type.TEMPLATED;
 
+        /**
+         * <strong>discovery</strong>: declaring class, super interfaces<br>
+         * <strong>meta</strong>: no<br>
+         * <strong>merging</strong>: no<br>
+         */
         @Target({ElementType.TYPE})
         @Retention(RetentionPolicy.RUNTIME)
         public @interface DefaultContentType {

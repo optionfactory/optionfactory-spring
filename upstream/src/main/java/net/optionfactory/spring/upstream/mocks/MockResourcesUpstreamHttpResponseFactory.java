@@ -19,6 +19,7 @@ import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.expressions.StringExpression;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -47,7 +48,7 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
             }
 
             final var defaultMediaType = Optional
-                    .ofNullable(m.getDeclaringClass().getAnnotation(Upstream.Mock.DefaultContentType.class))
+                    .ofNullable(AnnotationUtils.findAnnotation(m.getDeclaringClass(), Upstream.Mock.DefaultContentType.class))
                     .map(ann -> ann.value())
                     .filter(v -> !v.isBlank())
                     .map(MediaType::parseMediaType);
