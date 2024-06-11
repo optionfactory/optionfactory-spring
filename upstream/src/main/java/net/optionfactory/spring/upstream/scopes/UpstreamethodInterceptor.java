@@ -82,7 +82,7 @@ public class UpstreamethodInterceptor implements MethodInterceptor {
             try {
                 return mi.proceed();
             } catch (RestClientException ex) {
-                reportFaults(ex, invocation, scope);
+                reportMappingFaults(ex, invocation, scope);
                 throw ex;
             }
         } catch (Exception ex) {
@@ -95,7 +95,7 @@ public class UpstreamethodInterceptor implements MethodInterceptor {
 
     }
 
-    private void reportFaults(RestClientException ex, InvocationContext invocation, Scope scope) {
+    private void reportMappingFaults(RestClientException ex, InvocationContext invocation, Scope scope) {
 
         if (ex.getCause() instanceof HttpMessageNotReadableException == false && ex instanceof UnknownContentTypeException == false) {
             return;
@@ -111,7 +111,7 @@ public class UpstreamethodInterceptor implements MethodInterceptor {
             obs.lowCardinalityKeyValue("fault", "mapping");
         }
         final var request = requests.get();
-        final var exc = new ExceptionContext(clock.instant(), ex.getMessage());
+        final var exc = new ExceptionContext(clock.instant(), ex.getCause().getMessage());
         publisher.accept(new UpstreamFaultEvent(invocation, request, response == null ? null : response.detached(), exc));
 
     }
