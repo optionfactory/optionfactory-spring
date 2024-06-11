@@ -4,7 +4,7 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>13.3</version>
+        <version>13.4-SNAPSHOT</version>
     </parent>
     <artifactId>authentication-bearer-token</artifactId>
     <description>optionfactory-spring authentication-bearer-token</description>
