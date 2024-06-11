@@ -21,7 +21,7 @@ import org.springframework.http.MediaType;
 public class UpstreamSoapActionInterceptorTest {
 
     @Test
-    public void soapActionIsDoubleQuoted() throws IOException {
+    public void soapActionHeaderIsAddedForSoap11() throws IOException {
         final Schema schema = Schemas.load(new ClassPathResource("/calculator/schema.xsd"));
 
         final var capturedHeaders = new AtomicReference<HttpHeaders>();
@@ -42,10 +42,40 @@ public class UpstreamSoapActionInterceptorTest {
                 })
                 .soap(Protocol.SOAP_1_1, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
-                .build(ObservationRegistry.NOOP, e -> {})
+                .build(ObservationRegistry.NOOP, e -> {
+                })
                 .add(new Add());
 
         Assert.assertEquals("\"http://tempuri.org/Add\"", capturedHeaders.get().getFirst("SOAPAction"));
+    }
+
+    @Test
+    public void soapActionIsAddedAsContentTypeParameterForSoap12() throws IOException {
+        final Schema schema = Schemas.load(new ClassPathResource("/calculator/schema.xsd"));
+
+        final var capturedHeaders = new AtomicReference<HttpHeaders>();
+
+        UpstreamBuilder.create(CalculatorClient.class)
+                .requestFactory((InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
+                    capturedHeaders.set(headers);
+                    return MockClientHttpResponse.okUtf8(MediaType.TEXT_XML, """
+                                        <?xml version="1.0" encoding="utf-8"?>
+                                        <soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+                                            <soap:Body>
+                                                <AddResponse xmlns="http://tempuri.org/">
+                                                    <AddResult>8</AddResult>
+                                                </AddResponse>
+                                            </soap:Body>
+                                        </soap:Envelope>
+                                        """);
+                })
+                .soap(Protocol.SOAP_1_2, schema, SoapHeaderWriter.NONE, Add.class)
+                .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
+                .build(ObservationRegistry.NOOP, e -> {
+                })
+                .add(new Add());
+
+        Assert.assertEquals("\"http://tempuri.org/Add\"", capturedHeaders.get().getContentType().getParameter("action"));
     }
 
 }

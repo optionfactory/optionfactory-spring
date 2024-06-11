@@ -14,7 +14,11 @@ import jakarta.xml.soap.SOAPFault;
 import jakarta.xml.soap.SOAPMessage;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import javax.xml.validation.Schema;
+import org.apache.hc.core5.http.ContentType;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpOutputMessage;
 import org.springframework.http.MediaType;
@@ -35,13 +39,28 @@ public class SoapJaxbHttpMessageConverter implements HttpMessageConverter<Object
             this.value = value;
             this.mediaType = mediaType;
         }
+
+        private String quoted(String v) {
+            return String.format("\"%s\"", v.replace("\\", "\\\\").replace("\"", "\\\""));
+        }
+
+        public HttpHeaders headers(Optional<String> action) {
+            final var headers = new HttpHeaders();
+            if (this == SOAP_1_1) {
+                headers.setContentType(mediaType);
+                action.ifPresent(a -> headers.set("SOAPAction", quoted(a)));
+                return headers;
+            }
+            final var params = action.map(a -> Map.of("action", quoted(a))).orElse(Map.of());
+            headers.setContentType(new MediaType(mediaType.getType(), mediaType.getSubtype(), params));
+            return headers;
+        }
     }
     private final Protocol protocol;
     private final JAXBContext context;
     private final Schema schema;
     private final SoapHeaderWriter headerWriter;
     private final MessageFactory messageFactory;
-
 
     public SoapJaxbHttpMessageConverter(Protocol protocol, JAXBContext context, @Nullable Schema schema, @Nullable SoapHeaderWriter headerWriter) {
         this.protocol = protocol;
@@ -77,7 +96,7 @@ public class SoapJaxbHttpMessageConverter implements HttpMessageConverter<Object
             if (clazz == SOAPFault.class) {
                 return message.getSOAPBody().getFault();
             }
-            final Unmarshaller unmarshaller = context.createUnmarshaller();            
+            final Unmarshaller unmarshaller = context.createUnmarshaller();
             unmarshaller.setSchema(schema);
             return unmarshaller.unmarshal(firstSoapElement(message.getSOAPBody()), clazz).getValue();
         } catch (JAXBException | SOAPException ex) {
@@ -97,7 +116,6 @@ public class SoapJaxbHttpMessageConverter implements HttpMessageConverter<Object
 
     @Override
     public void write(Object t, MediaType contentType, HttpOutputMessage outputMessage) throws IOException, HttpMessageNotWritableException {
-        outputMessage.getHeaders().setContentType(protocol.mediaType);
         try (var os = outputMessage.getBody()) {
             final SOAPMessage message = messageFactory.createMessage();
             message.setProperty(SOAPMessage.WRITE_XML_DECLARATION, "true");

@@ -60,7 +60,6 @@ public class SoapMessageHttpMessageConverter implements HttpMessageConverter<SOA
 
     @Override
     public void write(SOAPMessage message, MediaType contentType, HttpOutputMessage outputMessage) throws IOException, HttpMessageNotWritableException {
-        outputMessage.getHeaders().setContentType(protocol.mediaType);
         try (var os = outputMessage.getBody()) {
             message.writeTo(os);
         } catch (SOAPException ex) {

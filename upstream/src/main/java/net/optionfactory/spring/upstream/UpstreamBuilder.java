@@ -219,9 +219,7 @@ public class UpstreamBuilder<T> {
     }
 
     public UpstreamBuilder<T> soap(Protocol protocol, @Nullable Schema schema, @Nullable SoapHeaderWriter headerWriter, JAXBContext context) {
-        if (protocol == Protocol.SOAP_1_1) {
-            this.initializer(new UpstreamSoapActionIninitializer());
-        }
+        this.initializer(new UpstreamSoapActionIninitializer(protocol));
         restClientCustomizers.add(b -> {
             b.messageConverters(c -> {
                 c.clear();
