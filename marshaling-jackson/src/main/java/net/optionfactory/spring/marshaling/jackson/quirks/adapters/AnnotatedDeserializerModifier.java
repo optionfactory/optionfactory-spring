@@ -6,7 +6,9 @@ import com.fasterxml.jackson.databind.deser.BeanDeserializerBuilder;
 import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
 import com.fasterxml.jackson.databind.deser.SettableBeanProperty;
 import com.fasterxml.jackson.databind.deser.std.StdValueInstantiator;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import net.optionfactory.spring.marshaling.jackson.quirks.QuirkHandler;
 
@@ -18,9 +20,18 @@ public class AnnotatedDeserializerModifier extends BeanDeserializerModifier {
         this.transformers = transformers;
     }
 
+    private static <T> List<T> asList(Iterator<T> iter) {
+        final var r = new ArrayList<T>();
+        while (iter.hasNext()) {
+            r.add(iter.next());
+        }
+        return r;
+    }
+
     @Override
     public BeanDeserializerBuilder updateBuilder(DeserializationConfig config, BeanDescription bd, BeanDeserializerBuilder builder) {
-        builder.getProperties().forEachRemaining(prop -> {
+        final var props = asList(builder.getProperties());        
+        props.forEach(prop -> {
             transformers.stream().forEach(handler -> {
                 final var ann = prop.getAnnotation(handler.annotation());
                 if (ann == null) {
@@ -47,11 +58,11 @@ public class AnnotatedDeserializerModifier extends BeanDeserializerModifier {
                 }).toArray(length -> new SettableBeanProperty[length]);
                 // configure valueInstantiator to use the modified properties
                 vi.configureFromObjectSettings(
-                        vi.getDefaultCreator(), 
-                        vi.getDelegateCreator(), 
-                        vi.getDelegateType(config), 
-                        new SettableBeanProperty[0] /*Not really sure what to do here*/, 
-                        vi.getWithArgsCreator(), 
+                        vi.getDefaultCreator(),
+                        vi.getDelegateCreator(),
+                        vi.getDelegateType(config),
+                        new SettableBeanProperty[0] /*Not really sure what to do here*/,
+                        vi.getWithArgsCreator(),
                         modifiedProperties
                 );
             }
