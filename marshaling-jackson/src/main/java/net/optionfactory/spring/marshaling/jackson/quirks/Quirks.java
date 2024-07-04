@@ -10,6 +10,7 @@ import java.util.List;
 import net.optionfactory.spring.marshaling.jackson.quirks.adapters.AnnotatedDeserializerModifier;
 import net.optionfactory.spring.marshaling.jackson.quirks.adapters.AnnotatedSeralizerModifier;
 import net.optionfactory.spring.marshaling.jackson.quirks.bool.BooleanQuirkHandler;
+import net.optionfactory.spring.marshaling.jackson.quirks.text.RenameQuirkHandler;
 import net.optionfactory.spring.marshaling.jackson.quirks.text.ScreamQuirkHandler;
 import net.optionfactory.spring.marshaling.jackson.quirks.text.TrimQuirkHandler;
 import net.optionfactory.spring.marshaling.jackson.quirks.time.LocalDateAsIsoInstantQuirkHandler;
@@ -46,6 +47,12 @@ public interface Quirks {
     }
 
     @Retention(RetentionPolicy.RUNTIME)
+    public @interface Rename {
+
+        String value();
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
     public @interface Scream {
 
     }
@@ -60,6 +67,7 @@ public interface Quirks {
                 .add(new LocalDateAsIsoInstantQuirkHandler())
                 .add(new TemporalFormatQuirkHandler())
                 .add(new ScreamQuirkHandler())
+                .add(new RenameQuirkHandler())
                 .add(new TrimQuirkHandler());
 
     }
