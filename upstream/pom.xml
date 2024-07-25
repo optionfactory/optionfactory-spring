@@ -4,7 +4,7 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>13.6</version>
+        <version>13.7-SNAPSHOT</version>
     </parent>
     <artifactId>upstream</artifactId>
     <description>optionfactory-spring REST upstream core project</description>
