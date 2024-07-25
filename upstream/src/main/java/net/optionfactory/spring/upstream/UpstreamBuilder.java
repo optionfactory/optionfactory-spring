@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.ObservationRegistry;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
+
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.time.Duration;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.xml.validation.Schema;
+
 import net.optionfactory.spring.upstream.annotations.Annotations;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext.HttpMessageConverters;
@@ -47,6 +49,7 @@ import org.springframework.expression.BeanResolver;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
+import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
@@ -84,7 +87,7 @@ public class UpstreamBuilder<T> {
         this.klass = klass;
         this.expressions = new Expressions(beanResolver.orElse(null));
         this.upstreamId = name.or(() -> Annotations.closest(klass, Upstream.class)
-                .map(a -> a.value()))
+                        .map(a -> a.value()))
                 .filter(n -> !n.isBlank())
                 .orElse(klass.getSimpleName());
         this.endpoints = Stream.of(klass.getMethods())
@@ -95,7 +98,7 @@ public class UpstreamBuilder<T> {
                     final var principalIndex = IntStream
                             .range(0, m.getParameters().length)
                             .filter(i -> m.getParameters()[i].isAnnotationPresent(Upstream.Principal.class)
-                            || m.getParameters()[i].getType().isAnnotationPresent(Upstream.Principal.class)
+                                    || m.getParameters()[i].getType().isAnnotationPresent(Upstream.Principal.class)
                             )
                             .mapToObj(i -> i)
                             .findFirst();
@@ -234,10 +237,16 @@ public class UpstreamBuilder<T> {
         restClientCustomizers.add(b -> {
             b.messageConverters(c -> {
                 c.clear();
+                final var multipart = new AllEncompassingFormHttpMessageConverter();
+                for (var converter : multipart.getPartConverters()) {
+                    if (converter instanceof MappingJackson2HttpMessageConverter j) {
+                        j.setObjectMapper(objectMapper);
+                    }
+                }
                 c.add(new ByteArrayHttpMessageConverter());
                 c.add(new StringHttpMessageConverter());
                 c.add(new ResourceHttpMessageConverter(false));
-                c.add(new AllEncompassingFormHttpMessageConverter());
+                c.add(multipart);
                 c.add(new MappingJackson2HttpMessageConverter(objectMapper));
             });
         });
@@ -344,21 +353,21 @@ public class UpstreamBuilder<T> {
                 .forEach(rcb::requestInitializer);
 
         final var initializedInterceptors = Stream.concat(interceptors.stream(),
-                Stream.of(
-                        new UpstreamAnnotatedHeadersInterceptor(),
-                        new UpstreamAnnotatedCookiesInterceptor(),
-                        new UpstreamAnnotatedQueryParamsInterceptor(),
-                        new UpstreamLoggingInterceptor(loggingOverrides),
-                        new UpstreamFaultInterceptor(publisher, observations)
-                ))
+                        Stream.of(
+                                new UpstreamAnnotatedHeadersInterceptor(),
+                                new UpstreamAnnotatedCookiesInterceptor(),
+                                new UpstreamAnnotatedQueryParamsInterceptor(),
+                                new UpstreamLoggingInterceptor(loggingOverrides),
+                                new UpstreamFaultInterceptor(publisher, observations)
+                        ))
                 .peek(i -> i.preprocess(klass, expressions, endpoints))
                 .toList();
 
         rcb.requestInterceptor(scopeHandler.adapt(initializedInterceptors));
 
         Stream.concat(
-                Stream.of(new UpstreamErrorOnReponseHandler()),
-                responseErrorHandlers.stream())
+                        Stream.of(new UpstreamErrorOnReponseHandler()),
+                        responseErrorHandlers.stream())
                 .peek(i -> i.preprocess(klass, expressions, endpoints))
                 .map(scopeHandler::adapt)
                 .forEach(rcb::defaultStatusHandler);
