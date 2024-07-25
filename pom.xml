@@ -5,7 +5,7 @@
 
     <groupId>net.optionfactory.spring</groupId>
     <artifactId>optionfactory-spring</artifactId>
-    <version>13.7-SNAPSHOT</version>
+    <version>13.7</version>
     <packaging>pom</packaging>
     <description>optionfactory-spring parent pom</description>
 
