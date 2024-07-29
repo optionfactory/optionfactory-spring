@@ -6,6 +6,7 @@ import java.util.Map;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
 import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
+import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.http.HttpHeaders;

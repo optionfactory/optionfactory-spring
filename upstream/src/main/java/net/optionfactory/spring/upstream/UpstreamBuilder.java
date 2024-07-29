@@ -42,6 +42,7 @@ import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
 import net.optionfactory.spring.upstream.soap.SoapMessageHttpMessageConverter;
 import net.optionfactory.spring.upstream.soap.UpstreamSoapActionIninitializer;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.socket.LayeredConnectionSocketFactory;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -87,7 +88,7 @@ public class UpstreamBuilder<T> {
         this.klass = klass;
         this.expressions = new Expressions(beanResolver.orElse(null));
         this.upstreamId = name.or(() -> Annotations.closest(klass, Upstream.class)
-                        .map(a -> a.value()))
+                .map(a -> a.value()))
                 .filter(n -> !n.isBlank())
                 .orElse(klass.getSimpleName());
         this.endpoints = Stream.of(klass.getMethods())
@@ -98,7 +99,7 @@ public class UpstreamBuilder<T> {
                     final var principalIndex = IntStream
                             .range(0, m.getParameters().length)
                             .filter(i -> m.getParameters()[i].isAnnotationPresent(Upstream.Principal.class)
-                                    || m.getParameters()[i].getType().isAnnotationPresent(Upstream.Principal.class)
+                            || m.getParameters()[i].getType().isAnnotationPresent(Upstream.Principal.class)
                             )
                             .mapToObj(i -> i)
                             .findFirst();
@@ -171,27 +172,29 @@ public class UpstreamBuilder<T> {
         return this;
     }
 
-    public UpstreamBuilder<T> requestFactoryIf(boolean test, LayeredConnectionSocketFactory factory) {
+    public UpstreamBuilder<T> requestFactoryIf(boolean test, LayeredConnectionSocketFactory factory, Consumer<PoolingHttpClientConnectionManagerBuilder> connectionManagerCustomizer) {
         if (!test) {
             return this;
         }
-        return requestFactory(factory);
+        return requestFactory(factory, connectionManagerCustomizer);
     }
 
-    public UpstreamBuilder<T> requestFactory(LayeredConnectionSocketFactory sslSocketFactory) {
+    public UpstreamBuilder<T> requestFactory(@Nullable LayeredConnectionSocketFactory sslSocketFactory, @Nullable Consumer<PoolingHttpClientConnectionManagerBuilder> connectionManagerCustomizer) {
         final var conf = Annotations.closest(klass, Upstream.class).orElseGet(() -> AnnotationUtils.synthesizeAnnotation(Upstream.class));
-        this.requestFactory = RequestFactories.create(
+        this.requestFactory = RequestFactories.pooled(
                 Duration.of(conf.connectionTimeout(), ChronoUnit.SECONDS),
                 Duration.of(conf.socketTimeout(), ChronoUnit.SECONDS),
+                connectionManagerCustomizer,
                 sslSocketFactory
         );
         return this;
     }
 
-    public UpstreamBuilder<T> requestFactory(LayeredConnectionSocketFactory sslSocketFactory, Duration connectionTimeout, Duration socketTimeout) {
-        this.requestFactory = RequestFactories.create(
+    public UpstreamBuilder<T> requestFactory(@Nullable LayeredConnectionSocketFactory sslSocketFactory, @Nullable Consumer<PoolingHttpClientConnectionManagerBuilder> connectionManagerCustomizer, Duration connectionTimeout, Duration socketTimeout) {
+        this.requestFactory = RequestFactories.pooled(
                 connectionTimeout,
                 socketTimeout,
+                connectionManagerCustomizer,
                 sslSocketFactory
         );
         return this;
@@ -330,7 +333,7 @@ public class UpstreamBuilder<T> {
 
         final var scopeHandler = new ThreadLocalScopeHandler(principalOrDefault, clockOrDefault, endpoints, expressions, observations, publisher);
         if (requestFactory == null && upstreamRequestFactory == null) {
-            this.requestFactory((LayeredConnectionSocketFactory) null);
+            this.requestFactory((LayeredConnectionSocketFactory) null, null);
         }
         Assert.state(upstreamRequestFactory == null || requestFactory == null, "either upstreamRequestFactory or requestFactory must be configured");
 
@@ -353,21 +356,21 @@ public class UpstreamBuilder<T> {
                 .forEach(rcb::requestInitializer);
 
         final var initializedInterceptors = Stream.concat(interceptors.stream(),
-                        Stream.of(
-                                new UpstreamAnnotatedHeadersInterceptor(),
-                                new UpstreamAnnotatedCookiesInterceptor(),
-                                new UpstreamAnnotatedQueryParamsInterceptor(),
-                                new UpstreamLoggingInterceptor(loggingOverrides),
-                                new UpstreamFaultInterceptor(publisher, observations)
-                        ))
+                Stream.of(
+                        new UpstreamAnnotatedHeadersInterceptor(),
+                        new UpstreamAnnotatedCookiesInterceptor(),
+                        new UpstreamAnnotatedQueryParamsInterceptor(),
+                        new UpstreamLoggingInterceptor(loggingOverrides),
+                        new UpstreamFaultInterceptor(publisher, observations)
+                ))
                 .peek(i -> i.preprocess(klass, expressions, endpoints))
                 .toList();
 
         rcb.requestInterceptor(scopeHandler.adapt(initializedInterceptors));
 
         Stream.concat(
-                        Stream.of(new UpstreamErrorOnReponseHandler()),
-                        responseErrorHandlers.stream())
+                Stream.of(new UpstreamErrorOnReponseHandler()),
+                responseErrorHandlers.stream())
                 .peek(i -> i.preprocess(klass, expressions, endpoints))
                 .map(scopeHandler::adapt)
                 .forEach(rcb::defaultStatusHandler);
