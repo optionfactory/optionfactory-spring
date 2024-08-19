@@ -2,6 +2,7 @@ package net.optionfactory.spring.upstream.errors;
 
 import io.micrometer.observation.ObservationRegistry;
 import java.net.URI;
+import java.util.Optional;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
@@ -28,7 +29,7 @@ public class UpstreamErrorsHandlerJsonTest {
                     );
                 })
                 .restClient(r -> r.baseUrl("http://example.com"))
-                .build(ObservationRegistry.NOOP, e -> {
+                .build(ObservationRegistry.NOOP, Optional.empty(), e -> {
                 })
                 .callWithJsonPath();
     }
@@ -48,7 +49,7 @@ public class UpstreamErrorsHandlerJsonTest {
                     );
                 })
                 .restClient(r -> r.baseUrl("http://example.com"))
-                .build(ObservationRegistry.NOOP, e -> {
+                .build(ObservationRegistry.NOOP, Optional.empty(), e -> {
                 })
                 .callWithJsonPath();
 

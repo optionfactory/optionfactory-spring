@@ -7,7 +7,6 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestExecution;
@@ -19,15 +18,16 @@ import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.expressions.BooleanExpression;
+import org.springframework.context.ApplicationEventPublisher;
 
 public class UpstreamFaultInterceptor implements UpstreamHttpInterceptor {
 
     private final Map<Method, BooleanExpression> remotingConfs = new ConcurrentHashMap<>();
     private final Map<Method, BooleanExpression> responseConfs = new ConcurrentHashMap<>();
-    private final Consumer<Object> publisher;
+    private final ApplicationEventPublisher publisher;
     private final ObservationRegistry observations;
 
-    public UpstreamFaultInterceptor(Consumer<Object> publisher, ObservationRegistry observations) {
+    public UpstreamFaultInterceptor(ApplicationEventPublisher publisher, ObservationRegistry observations) {
         this.publisher = publisher;
         this.observations = observations;
     }
@@ -80,7 +80,7 @@ public class UpstreamFaultInterceptor implements UpstreamHttpInterceptor {
                     o.lowCardinalityKeyValue("fault", ex == null ? "response" : "remoting");
                 });
 
-        publisher.accept(new UpstreamFaultEvent(invocation, request, response == null ? null : response.detached(), ex));
+        publisher.publishEvent(new UpstreamFaultEvent(invocation, request, response == null ? null : response.detached(), ex));
 
     }
 }

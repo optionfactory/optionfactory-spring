@@ -5,6 +5,7 @@ import jakarta.xml.bind.JAXBException;
 import jakarta.xml.soap.SOAPFault;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import javax.xml.validation.Schema;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
@@ -43,7 +44,7 @@ public class SoapClientTest {
                 })
                 .soap(Protocol.SOAP_1_1, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
-                .build(ObservationRegistry.NOOP, e -> {
+                .build(ObservationRegistry.NOOP, Optional.empty(), e -> {
                 });
 
         Add req = new Add();
@@ -75,7 +76,7 @@ public class SoapClientTest {
                 })
                 .soap(Protocol.SOAP_1_2, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
-                .build(ObservationRegistry.NOOP, e -> {
+                .build(ObservationRegistry.NOOP, Optional.empty(), e -> {
                 });
 
         Add req = new Add();
@@ -109,7 +110,7 @@ public class SoapClientTest {
                 })
                 .soap(Protocol.SOAP_1_1, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
-                .build(ObservationRegistry.NOOP, e -> {
+                .build(ObservationRegistry.NOOP, Optional.empty(), e -> {
                 });
 
         Add req = new Add();

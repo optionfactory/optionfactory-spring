@@ -6,12 +6,11 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.expressions.Expressions.Type;
 import net.optionfactory.spring.upstream.rendering.BodyRendering.HeadersStrategy;
 import net.optionfactory.spring.upstream.rendering.BodyRendering.Strategy;
 import org.springframework.core.MethodParameter;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.service.invoker.HttpRequestValues;
 import org.springframework.web.service.invoker.HttpServiceArgumentResolver;
@@ -32,14 +31,18 @@ public @interface Upstream {
     String value() default "";
 
     /**
-     * @return the connection timeout (in seconds)
+     * @return the connection timeout, parseable by Duration.parse
      */
-    int connectionTimeout() default 5;
+    String connectionTimeout() default "PT5S";
+
+    public Type connectionTimeoutType() default Type.TEMPLATED;
 
     /**
-     * @return the socket timeout (in seconds)
+     * @return the socket timeout, parseable by Duration.parse
      */
-    int socketTimeout() default 30;
+    String socketTimeout() default "PT30S";
+
+    public Type socketTimeoutType() default Type.TEMPLATED;
 
     /**
      * <strong>discovery</strong>: parameter, parameter class<br>
@@ -290,12 +293,18 @@ public @interface Upstream {
     public @interface PathVariable {
 
         /**
+         * <strong>context</strong>: the annotated argument with method
+         * parameter name.
+         *
          * @return the key
          */
         public String key();
 
+        public Type keyType() default Type.STATIC;
+
         /**
-         * <strong>context</strong>: #this: the annotated argument.
+         * <strong>context</strong>: the annotated argument with method
+         * parameter name.
          *
          * @return the value of the path variable
          *
@@ -406,15 +415,21 @@ public @interface Upstream {
 
     public static class ArgumentResolver implements HttpServiceArgumentResolver {
 
-        private final SpelExpressionParser parser = new SpelExpressionParser();
+        private final Expressions expressions;
+
+        public ArgumentResolver(Expressions expressions) {
+            this.expressions = expressions;
+        }
 
         @Override
         public boolean resolve(Object argument, MethodParameter parameter, HttpRequestValues.Builder requestValues) {
             final var uvs = parameter.getParameter().getAnnotationsByType(PathVariable.class);
             for (PathVariable uv : uvs) {
-                final StandardEvaluationContext ec = new StandardEvaluationContext(argument);
-                final var value = parser.parseExpression(uv.value()).getValue(ec, String.class);
-                requestValues.setUriVariable(uv.key(), value);
+                final var ctx = expressions.context();
+                ctx.setVariable(parameter.getParameterName(), argument);
+                final var key = expressions.string(uv.key(), uv.keyType()).evaluate(ctx);
+                final var value = expressions.string(uv.value(), uv.valueType()).evaluate(ctx);
+                requestValues.setUriVariable(key, value);
             }
             return uvs.length != 0
                     || parameter.hasParameterAnnotation(Context.class)

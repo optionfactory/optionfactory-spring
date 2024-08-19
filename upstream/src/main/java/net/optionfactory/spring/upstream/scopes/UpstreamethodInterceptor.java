@@ -8,7 +8,6 @@ import java.lang.reflect.Method;
 import java.time.InstantSource;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.ExceptionContext;
@@ -22,6 +21,7 @@ import static net.optionfactory.spring.upstream.scopes.ScopeHandler.BOOT_ID;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.aop.framework.ReflectiveMethodInvocation;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.UnknownContentTypeException;
@@ -37,13 +37,13 @@ public class UpstreamethodInterceptor implements MethodInterceptor {
     private final Supplier<RequestContext> requests;
     private final Supplier<ResponseContext> responses;
     private final InstantSource clock;
-    private final Consumer<Object> publisher;
+    private final ApplicationEventPublisher publisher;
 
     public UpstreamethodInterceptor(Map<Method, EndpointDescriptor> endpoints, ThreadLocal<InvocationContext> invocations, Supplier<Object> principal, Expressions expressions, HttpMessageConverters converters, ObservationRegistry observations,
             Supplier<RequestContext> requests,
             Supplier<ResponseContext> responses,
             InstantSource clock,
-            Consumer<Object> publisher) {
+            ApplicationEventPublisher publisher) {
         this.endpoints = endpoints;
         this.invocations = invocations;
         this.principal = principal;
@@ -112,7 +112,7 @@ public class UpstreamethodInterceptor implements MethodInterceptor {
         }
         final var request = requests.get();
         final var exc = new ExceptionContext(clock.instant(), ex.getCause().getMessage());
-        publisher.accept(new UpstreamFaultEvent(invocation, request, response == null ? null : response.detached(), exc));
+        publisher.publishEvent(new UpstreamFaultEvent(invocation, request, response == null ? null : response.detached(), exc));
 
     }
 }

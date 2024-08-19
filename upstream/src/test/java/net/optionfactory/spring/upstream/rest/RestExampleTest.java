@@ -3,6 +3,7 @@ package net.optionfactory.spring.upstream.rest;
 import io.micrometer.observation.ObservationRegistry;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
@@ -30,7 +31,7 @@ public class RestExampleTest {
                     return new MockClientHttpResponse(HttpStatus.OK, HttpStatus.OK.getReasonPhrase(), h, new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8)));
                 })
                 .restClient(r -> r.baseUrl("https://hub.dummyapis.com/statuscode/"))
-                .build(ObservationRegistry.NOOP, e -> {});
+                .build(ObservationRegistry.NOOP, Optional.empty(), e -> {});
         final var response = client.ok("asd");
         Assert.assertEquals("b", response.get("a"));
     }
@@ -46,7 +47,7 @@ public class RestExampleTest {
                     return new MockClientHttpResponse(HttpStatus.BAD_REQUEST, HttpStatus.BAD_REQUEST.getReasonPhrase(), h, new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8)));
                 })
                 .restClient(r -> r.baseUrl("https://hub.dummyapis.com/statuscode/"))
-                .build(ObservationRegistry.NOOP, e -> {});
+                .build(ObservationRegistry.NOOP, Optional.empty(), e -> {});
         client.error("asd");
     }
 

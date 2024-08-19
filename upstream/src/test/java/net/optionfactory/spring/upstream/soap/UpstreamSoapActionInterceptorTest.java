@@ -3,6 +3,7 @@ package net.optionfactory.spring.upstream.soap;
 import io.micrometer.observation.ObservationRegistry;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.xml.validation.Schema;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
@@ -42,7 +43,7 @@ public class UpstreamSoapActionInterceptorTest {
                 })
                 .soap(Protocol.SOAP_1_1, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
-                .build(ObservationRegistry.NOOP, e -> {
+                .build(ObservationRegistry.NOOP, Optional.empty(), e -> {
                 })
                 .add(new Add());
 
@@ -71,7 +72,7 @@ public class UpstreamSoapActionInterceptorTest {
                 })
                 .soap(Protocol.SOAP_1_2, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
-                .build(ObservationRegistry.NOOP, e -> {
+                .build(ObservationRegistry.NOOP, Optional.empty(), e -> {
                 })
                 .add(new Add());
 

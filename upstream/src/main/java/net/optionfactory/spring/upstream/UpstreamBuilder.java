@@ -9,7 +9,6 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.time.Duration;
 import java.time.InstantSource;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,6 +35,7 @@ import net.optionfactory.spring.upstream.mocks.UpstreamHttpResponseFactory;
 import net.optionfactory.spring.upstream.params.UpstreamAnnotatedCookiesInterceptor;
 import net.optionfactory.spring.upstream.params.UpstreamAnnotatedHeadersInterceptor;
 import net.optionfactory.spring.upstream.params.UpstreamAnnotatedQueryParamsInterceptor;
+import net.optionfactory.spring.upstream.scopes.ScopeHandler;
 import net.optionfactory.spring.upstream.scopes.ThreadLocalScopeHandler;
 import net.optionfactory.spring.upstream.soap.SoapHeaderWriter;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter;
@@ -45,12 +45,12 @@ import net.optionfactory.spring.upstream.soap.UpstreamSoapActionIninitializer;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.socket.LayeredConnectionSocketFactory;
 import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.expression.BeanResolver;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
-import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
@@ -66,7 +66,6 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 public class UpstreamBuilder<T> {
 
-    protected final Expressions expressions;
     protected final List<Consumer<RestClient.Builder>> restClientCustomizers = new ArrayList<>();
     protected final List<UpstreamHttpRequestInitializer> initializers = new ArrayList<>();
     protected final List<UpstreamHttpInterceptor> interceptors = new ArrayList<>();
@@ -79,14 +78,12 @@ public class UpstreamBuilder<T> {
     protected final String upstreamId;
     protected final Map<Method, EndpointDescriptor> endpoints;
 
-    protected UpstreamHttpRequestFactory upstreamRequestFactory;
-    protected ClientHttpRequestFactory requestFactory;
+    protected RequestFactoryConfigurer rff;
     protected Supplier<Object> principal;
     protected InstantSource clock;
 
-    public UpstreamBuilder(Class<T> klass, Optional<BeanResolver> beanResolver, Optional<String> name) {
+    public UpstreamBuilder(Class<T> klass, Optional<String> name) {
         this.klass = klass;
-        this.expressions = new Expressions(beanResolver.orElse(null));
         this.upstreamId = name.or(() -> Annotations.closest(klass, Upstream.class)
                 .map(a -> a.value()))
                 .filter(n -> !n.isBlank())
@@ -106,22 +103,15 @@ public class UpstreamBuilder<T> {
                     return new EndpointDescriptor(upstreamId, epa == null ? m.getName() : epa.value(), m, principalIndex.orElse(null));
                 })
                 .collect(Collectors.toMap(EndpointDescriptor::method, ed -> ed));
-    }
 
-    public static <T> UpstreamBuilder<T> create(Class<T> klass, Optional<BeanResolver> beanResolver) {
-        return new UpstreamBuilder(klass, beanResolver, Optional.empty());
     }
 
     public static <T> UpstreamBuilder<T> create(Class<T> klass) {
-        return new UpstreamBuilder(klass, Optional.empty(), Optional.empty());
-    }
-
-    public static <T> UpstreamBuilder<T> named(Class<T> klass, Optional<BeanResolver> beanResolver, String name) {
-        return new UpstreamBuilder(klass, beanResolver, Optional.of(name));
+        return new UpstreamBuilder<>(klass, Optional.empty());
     }
 
     public static <T> UpstreamBuilder<T> named(Class<T> klass, String name) {
-        return new UpstreamBuilder(klass, Optional.empty(), Optional.of(name));
+        return new UpstreamBuilder<>(klass, Optional.of(name));
     }
 
     public UpstreamBuilder<T> requestFactoryMockResourcesIf(boolean test) {
@@ -132,7 +122,11 @@ public class UpstreamBuilder<T> {
     }
 
     public UpstreamBuilder<T> requestFactoryMockResources() {
-        this.upstreamRequestFactory = new MockUpstreamRequestFactory(new MockResourcesUpstreamHttpResponseFactory());
+        this.rff = (ScopeHandler sh, Class<?> klass, Expressions exprs, Map<Method, EndpointDescriptor> eps) -> {
+            final var hrf = new MockUpstreamRequestFactory(new MockResourcesUpstreamHttpResponseFactory());
+            hrf.preprocess(klass, exprs, eps);
+            return sh.adapt(hrf);
+        };
         return this;
     }
 
@@ -144,7 +138,11 @@ public class UpstreamBuilder<T> {
     }
 
     public UpstreamBuilder<T> requestFactory(UpstreamHttpResponseFactory factory) {
-        this.upstreamRequestFactory = new MockUpstreamRequestFactory(factory);
+        this.rff = (ScopeHandler sh, Class<?> klass1, Expressions exprs, Map<Method, EndpointDescriptor> eps) -> {
+            final var hrf = new MockUpstreamRequestFactory(factory);
+            hrf.preprocess(klass1, exprs, eps);
+            return sh.adapt(hrf);
+        };
         return this;
     }
 
@@ -156,7 +154,10 @@ public class UpstreamBuilder<T> {
     }
 
     public UpstreamBuilder<T> requestFactory(UpstreamHttpRequestFactory factory) {
-        this.upstreamRequestFactory = factory;
+        this.rff = (ScopeHandler sh, Class<?> klass1, Expressions exprs, Map<Method, EndpointDescriptor> eps) -> {
+            factory.preprocess(klass1, exprs, eps);
+            return sh.adapt(factory);
+        };
         return this;
     }
 
@@ -168,7 +169,9 @@ public class UpstreamBuilder<T> {
     }
 
     public UpstreamBuilder<T> requestFactory(ClientHttpRequestFactory factory) {
-        this.requestFactory = factory;
+        this.rff = (ScopeHandler sh, Class<?> klass1, Expressions exprs, Map<Method, EndpointDescriptor> eps) -> {
+            return factory;
+        };
         return this;
     }
 
@@ -180,23 +183,29 @@ public class UpstreamBuilder<T> {
     }
 
     public UpstreamBuilder<T> requestFactory(@Nullable LayeredConnectionSocketFactory sslSocketFactory, @Nullable Consumer<PoolingHttpClientConnectionManagerBuilder> connectionManagerCustomizer) {
-        final var conf = Annotations.closest(klass, Upstream.class).orElseGet(() -> AnnotationUtils.synthesizeAnnotation(Upstream.class));
-        this.requestFactory = RequestFactories.pooled(
-                Duration.of(conf.connectionTimeout(), ChronoUnit.SECONDS),
-                Duration.of(conf.socketTimeout(), ChronoUnit.SECONDS),
-                connectionManagerCustomizer,
-                sslSocketFactory
-        );
+        this.rff = (ScopeHandler sh, Class<?> klass1, Expressions expressions, Map<Method, EndpointDescriptor> endpoints1) -> {
+            final var conf = Annotations.closest(klass, Upstream.class).orElseGet(() -> AnnotationUtils.synthesizeAnnotation(Upstream.class));
+            final var connTimeout = Duration.parse(expressions.string(conf.socketTimeout(), conf.socketTimeoutType()).evaluate(expressions.context()));
+            final var sockTimeout = Duration.parse(expressions.string(conf.connectionTimeout(), conf.connectionTimeoutType()).evaluate(expressions.context()));
+            return RequestFactories.pooled(
+                    connTimeout,
+                    sockTimeout,
+                    connectionManagerCustomizer,
+                    sslSocketFactory
+            );
+        };
         return this;
     }
 
     public UpstreamBuilder<T> requestFactory(@Nullable LayeredConnectionSocketFactory sslSocketFactory, @Nullable Consumer<PoolingHttpClientConnectionManagerBuilder> connectionManagerCustomizer, Duration connectionTimeout, Duration socketTimeout) {
-        this.requestFactory = RequestFactories.pooled(
-                connectionTimeout,
-                socketTimeout,
-                connectionManagerCustomizer,
-                sslSocketFactory
-        );
+        this.rff = (ScopeHandler sh, Class<?> klass1, Expressions expressions1, Map<Method, EndpointDescriptor> endpoints1) -> {
+            return RequestFactories.pooled(
+                    connectionTimeout,
+                    socketTimeout,
+                    connectionManagerCustomizer,
+                    sslSocketFactory
+            );
+        };
         return this;
     }
 
@@ -320,7 +329,21 @@ public class UpstreamBuilder<T> {
         return this;
     }
 
-    public T build(ObservationRegistry observations, Consumer<Object> publisher) {
+    public static interface RequestFactoryConfigurer {
+
+        public ClientHttpRequestFactory configure(ScopeHandler sh, Class<?> klass, Expressions expressions, Map<Method, EndpointDescriptor> endpoints);
+    }
+    
+    public static class NullApplicationEventPublisher implements ApplicationEventPublisher {
+
+        @Override
+        public void publishEvent(Object event) {
+            
+        }
+    
+    }
+
+    public T build(ObservationRegistry observations, Optional<ConfigurableBeanFactory> beanFactory, ApplicationEventPublisher publisher) {
         Assert.notNull(observations, "observations must be configured (ObservationRegistry.NOOP?)");
         Assert.notNull(publisher, "publisher must be configured");
         final var clockOrDefault = this.clock != null ? this.clock : InstantSource.system();
@@ -330,22 +353,16 @@ public class UpstreamBuilder<T> {
                 return null;
             }
         };
+        final var expressions = new Expressions(beanFactory.orElse(null));
 
         final var scopeHandler = new ThreadLocalScopeHandler(principalOrDefault, clockOrDefault, endpoints, expressions, observations, publisher);
-        if (requestFactory == null && upstreamRequestFactory == null) {
+        
+        if (rff == null) {
             this.requestFactory((LayeredConnectionSocketFactory) null, null);
         }
-        Assert.state(upstreamRequestFactory == null || requestFactory == null, "either upstreamRequestFactory or requestFactory must be configured");
+        final var requestFactory = this.rff.configure(scopeHandler, klass, expressions, endpoints);
 
-        if (upstreamRequestFactory != null) {
-            upstreamRequestFactory.preprocess(klass, expressions, endpoints);
-        }
-
-        final var bufferedRequestFactory = new BufferingClientHttpRequestFactory(
-                upstreamRequestFactory != null
-                        ? scopeHandler.adapt(upstreamRequestFactory)
-                        : requestFactory
-        );
+        final var bufferedRequestFactory = new BufferingClientHttpRequestFactory(requestFactory);
 
         final var rcb = RestClient.builder().requestFactory(bufferedRequestFactory);
         restClientCustomizers.forEach(c -> c.accept(rcb));
@@ -381,7 +398,7 @@ public class UpstreamBuilder<T> {
         });
 
         final var serviceProxyFactoryBuilder = HttpServiceProxyFactory.builderFor(RestClientAdapter.create(rcb.build()));
-        serviceProxyFactoryBuilder.customArgumentResolver(new Upstream.ArgumentResolver());
+        serviceProxyFactoryBuilder.customArgumentResolver(new Upstream.ArgumentResolver(expressions));
         serviceProxyCustomizers.forEach(c -> c.accept(serviceProxyFactoryBuilder));
         for (HttpServiceArgumentResolver argumentResolver : argumentResolvers) {
             serviceProxyFactoryBuilder.customArgumentResolver(argumentResolver);
