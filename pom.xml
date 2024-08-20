@@ -5,7 +5,7 @@
 
     <groupId>net.optionfactory.spring</groupId>
     <artifactId>optionfactory-spring</artifactId>
-    <version>15.0</version>
+    <version>16.0</version>
     <packaging>pom</packaging>
     <description>optionfactory-spring parent pom</description>
 
@@ -90,7 +90,7 @@
             <dependency>
                 <groupId>org.springframework.security</groupId>
                 <artifactId>spring-security-bom</artifactId>
-                <version>6.3.1</version>
+                <version>6.3.2</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -117,7 +117,7 @@
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-core</artifactId>
-                <version>6.5.2.Final</version>
+                <version>6.6.0.Final</version>
             </dependency>
             <dependency>
                 <groupId>com.zaxxer</groupId>
@@ -326,11 +326,10 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>3.7.0</version>
+                        <version>3.8.0</version>
                         <configuration>
                             <doclint>none</doclint>
                         </configuration>
-                        
                         <executions>
                             <execution>
                                 <id>attach-javadocs</id>
