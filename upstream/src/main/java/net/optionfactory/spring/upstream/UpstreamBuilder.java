@@ -185,8 +185,8 @@ public class UpstreamBuilder<T> {
     public UpstreamBuilder<T> requestFactory(@Nullable LayeredConnectionSocketFactory sslSocketFactory, @Nullable Consumer<PoolingHttpClientConnectionManagerBuilder> connectionManagerCustomizer) {
         this.rff = (ScopeHandler sh, Class<?> klass1, Expressions expressions, Map<Method, EndpointDescriptor> endpoints1) -> {
             final var conf = Annotations.closest(klass, Upstream.class).orElseGet(() -> AnnotationUtils.synthesizeAnnotation(Upstream.class));
-            final var connTimeout = Duration.parse(expressions.string(conf.socketTimeout(), conf.socketTimeoutType()).evaluate(expressions.context()));
-            final var sockTimeout = Duration.parse(expressions.string(conf.connectionTimeout(), conf.connectionTimeoutType()).evaluate(expressions.context()));
+            final var connTimeout = Duration.parse(expressions.string(conf.connectionTimeout(), conf.connectionTimeoutType()).evaluate(expressions.context()));
+            final var sockTimeout = Duration.parse(expressions.string(conf.socketTimeout(), conf.socketTimeoutType()).evaluate(expressions.context()));
             return RequestFactories.pooled(
                     connTimeout,
                     sockTimeout,
