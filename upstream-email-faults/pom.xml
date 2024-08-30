@@ -4,7 +4,7 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>16.2</version>
+        <version>16.3-SNAPSHOT</version>
     </parent>
     <artifactId>upstream-email-faults</artifactId>
     <description>optionfactory-spring REST upstream core project</description>
