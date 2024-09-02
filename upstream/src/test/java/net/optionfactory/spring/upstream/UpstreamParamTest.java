@@ -1,9 +1,7 @@
 package net.optionfactory.spring.upstream;
 
-import io.micrometer.observation.ObservationRegistry;
 import java.net.URI;
 import java.util.Map;
-import java.util.Optional;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
 import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
@@ -19,14 +17,15 @@ public class UpstreamParamTest {
     public void canUseUpstreamParam() {
         final URI expected = URI.create("http://example.com/endpoint/value/value");
         UpstreamBuilder.create(UpstreamParamClient.class)
-                .requestFactory((InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
-                    Assert.assertEquals(expected, uri);
-                    return MockClientHttpResponse.okUtf8(MediaType.APPLICATION_JSON, "{}");
+                .requestFactoryMock(c -> {
+                    c.responseFactory((InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
+                        Assert.assertEquals(expected, uri);
+                        return MockClientHttpResponse.okUtf8(MediaType.APPLICATION_JSON, "{}");
+                    });
                 })
                 .restClient(r -> r.baseUrl("http://example.com"))
                 .interceptor(new UpstreamLoggingInterceptor(Map.of()))
-                .build(ObservationRegistry.NOOP, Optional.empty(), o -> {
-                })
+                .build()
                 .testEndpoint("value");
 
     }

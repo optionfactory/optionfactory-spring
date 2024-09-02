@@ -1,4 +1,4 @@
-package net.optionfactory.spring.upstream;
+package net.optionfactory.spring.upstream.hc5;
 
 import java.security.KeyManagementException;
 import java.security.KeyStore;

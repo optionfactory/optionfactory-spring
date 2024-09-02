@@ -1,14 +1,10 @@
 package net.optionfactory.spring.upstream.soap;
 
-import io.micrometer.observation.ObservationRegistry;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.soap.SOAPFault;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 import javax.xml.validation.Schema;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
-import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
 import net.optionfactory.spring.upstream.soap.calc.Add;
@@ -18,7 +14,6 @@ import org.junit.Test;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.HttpServerErrorException.InternalServerError;
@@ -30,8 +25,8 @@ public class SoapClientTest {
         final Schema schema = Schemas.load(new ClassPathResource("/calculator/schema.xsd"));
 
         final var client = UpstreamBuilder.create(CalculatorClient.class)
-                .requestFactory((InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
-                    return MockClientHttpResponse.okUtf8(MediaType.TEXT_XML, """
+                .requestFactoryMock(c -> {
+                    c.response(MockClientHttpResponse.okUtf8(MediaType.TEXT_XML, """
                                         <?xml version="1.0" encoding="utf-8"?>
                                         <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
                                             <soap:Body>
@@ -40,12 +35,11 @@ public class SoapClientTest {
                                                 </AddResponse>
                                             </soap:Body>
                                         </soap:Envelope>
-                                        """);
+                                        """));
                 })
                 .soap(Protocol.SOAP_1_1, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
-                .build(ObservationRegistry.NOOP, Optional.empty(), e -> {
-                });
+                .build();
 
         Add req = new Add();
         req.intA = 3;
@@ -59,7 +53,7 @@ public class SoapClientTest {
         final Schema schema = null;
         final var client = UpstreamBuilder
                 .create(CalculatorClient.class)
-                .requestFactory((InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
+                .requestFactoryMock(c -> {
                     final var h = new HttpHeaders();
                     h.setContentType(MediaType.valueOf("application/soap+xml; charset=utf-8"));
                     final var content = """
@@ -72,12 +66,11 @@ public class SoapClientTest {
                                             </soap:Body>
                                         </soap:Envelope>
                                         """;
-                    return new MockClientHttpResponse(HttpStatus.OK, HttpStatus.OK.getReasonPhrase(), headers, new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8)));
+                    c.response(new MockClientHttpResponse(HttpStatus.OK, HttpStatus.OK.getReasonPhrase(), h, new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8))));
                 })
                 .soap(Protocol.SOAP_1_2, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
-                .build(ObservationRegistry.NOOP, Optional.empty(), e -> {
-                });
+                .build();
 
         Add req = new Add();
         req.intA = 3;
@@ -91,7 +84,7 @@ public class SoapClientTest {
         final Schema schema = null;
         final var client = UpstreamBuilder
                 .create(CalculatorClient.class)
-                .requestFactory((InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
+                .requestFactoryMock(c -> {
                     final var h = new HttpHeaders();
                     h.setContentType(MediaType.valueOf("text/xml;charset=utf-8"));
                     final var content = """
@@ -106,12 +99,11 @@ public class SoapClientTest {
                                             </soap:Body>
                                         </soap:Envelope>
                                         """;
-                    return new MockClientHttpResponse(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(), headers, new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8)));
+                    c.response(new MockClientHttpResponse(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(), h, new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8))));
                 })
                 .soap(Protocol.SOAP_1_1, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
-                .build(ObservationRegistry.NOOP, Optional.empty(), e -> {
-                });
+                .build();
 
         Add req = new Add();
         req.intA = 3;

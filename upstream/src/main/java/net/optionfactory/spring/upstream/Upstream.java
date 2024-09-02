@@ -30,19 +30,46 @@ public @interface Upstream {
      */
     String value() default "";
 
-    /**
-     * @return the connection timeout, parseable by Duration.parse
-     */
-    String connectionTimeout() default "PT5S";
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.TYPE)
+    public @interface HttpComponents {
 
-    public Type connectionTimeoutType() default Type.TEMPLATED;
+        /**
+         * @return the connection timeout, parseable by Duration.parse
+         */
+        String connectionTimeout() default "PT5S";
 
-    /**
-     * @return the socket timeout, parseable by Duration.parse
-     */
-    String socketTimeout() default "PT30S";
+        public Type connectionTimeoutType() default Type.TEMPLATED;
 
-    public Type socketTimeoutType() default Type.TEMPLATED;
+        /**
+         * @return the socket timeout, parseable by Duration.parse
+         */
+        String socketTimeout() default "PT30S";
+
+        public Type socketTimeoutType() default Type.TEMPLATED;
+
+        String maxConnections() default "100";
+
+        public Type maxConnectionsType() default Type.STATIC;
+
+        String maxConnectionsPerRoute() default "100";
+
+        public Type maxConnectionsPerRouteType() default Type.STATIC;
+
+        boolean disableAuthCaching() default false;
+
+        boolean disableAutomaticRetries() default false;
+
+        boolean disableConnectionState() default false;
+
+        boolean disableContentCompression() default false;
+
+        boolean disableCookieManagement() default false;
+
+        boolean disableDefaultUserAgent() default false;
+
+        boolean disableRedirectHandling() default false;
+    }
 
     /**
      * <strong>discovery</strong>: parameter, parameter class<br>

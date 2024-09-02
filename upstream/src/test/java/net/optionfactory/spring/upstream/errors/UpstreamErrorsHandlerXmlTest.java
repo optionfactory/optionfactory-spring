@@ -1,18 +1,12 @@
 package net.optionfactory.spring.upstream.errors;
 
-import io.micrometer.observation.ObservationRegistry;
-import java.net.URI;
-import java.util.Optional;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
-import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
 import net.optionfactory.spring.upstream.soap.Schemas;
 import net.optionfactory.spring.upstream.soap.SoapHeaderWriter;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter;
 import net.optionfactory.spring.upstream.soap.calc.AddResponse;
 import org.junit.Test;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 
 public class UpstreamErrorsHandlerXmlTest {
@@ -22,8 +16,8 @@ public class UpstreamErrorsHandlerXmlTest {
         UpstreamBuilder
                 .create(UpstreamErrorsSoapClient.class)
                 .soap(SoapJaxbHttpMessageConverter.Protocol.SOAP_1_1, Schemas.NONE, SoapHeaderWriter.NONE, AddResponse.class)
-                .requestFactory((InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
-                    return MockClientHttpResponse.okUtf8(
+                .requestFactoryMock(c -> {
+                    c.response(MockClientHttpResponse.okUtf8(
                             MediaType.TEXT_XML,
                             """
                             <?xml version="1.0" encoding="utf-8"?>
@@ -35,11 +29,10 @@ public class UpstreamErrorsHandlerXmlTest {
                                 </soap:Body>
                             </soap:Envelope>
                             """
-                    );
+                    ));
                 })
                 .restClient(r -> r.baseUrl("http://example.com"))
-                .build(ObservationRegistry.NOOP, Optional.empty(), e -> {
-                })
+                .build()
                 .callWithXpath();
     }
 
@@ -48,8 +41,8 @@ public class UpstreamErrorsHandlerXmlTest {
         UpstreamBuilder
                 .create(UpstreamErrorsSoapClient.class)
                 .soap(SoapJaxbHttpMessageConverter.Protocol.SOAP_1_1, Schemas.NONE, SoapHeaderWriter.NONE, AddResponse.class)
-                .requestFactory((InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
-                    return MockClientHttpResponse.okUtf8(
+                .requestFactoryMock(c -> {
+                    c.response(MockClientHttpResponse.okUtf8(
                             MediaType.TEXT_XML,
                             """
                             <?xml version="1.0" encoding="utf-8"?>
@@ -61,11 +54,10 @@ public class UpstreamErrorsHandlerXmlTest {
                                 </soap:Body>
                             </soap:Envelope>
                             """
-                    );
+                    ));
                 })
                 .restClient(r -> r.baseUrl("http://example.com"))
-                .build(ObservationRegistry.NOOP, Optional.empty(), e -> {
-                })
+                .build()
                 .callWithXpath();
     }
 

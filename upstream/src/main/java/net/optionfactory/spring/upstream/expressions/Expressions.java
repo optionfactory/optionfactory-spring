@@ -79,6 +79,21 @@ public class Expressions {
 
     }
 
+    public static class SpelIntExpression implements IntExpression {
+
+        final Expression e;
+
+        public SpelIntExpression(Expression e) {
+            this.e = e;
+        }
+
+        @Override
+        public int evaluate(EvaluationContext context) {
+            return e.getValue(context, int.class);
+        }
+
+    }
+
     public Expressions(@Nullable ConfigurableBeanFactory beanFactory) {
         this.beanFactory = beanFactory;
     }
@@ -96,6 +111,10 @@ public class Expressions {
 
     public BooleanExpression bool(String value) {
         return new SpelBooleanExpression(parser.parseExpression(value));
+    }
+    
+    public IntExpression integer(String value) {
+        return new SpelIntExpression(parser.parseExpression(value));
     }
 
     public StandardEvaluationContext context() {

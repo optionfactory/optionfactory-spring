@@ -4,11 +4,11 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.apache.hc.client5.http.utils.Hex;
 
 public class DigestAuth {
     
@@ -61,7 +61,7 @@ public class DigestAuth {
     private static String md5LowercaseHex(String v) {
         try {
             final byte[] md5 = MessageDigest.getInstance("MD5").digest(v.getBytes(StandardCharsets.UTF_8));
-            return Hex.encodeHexString(md5);
+            return HexFormat.of().formatHex(md5);
         } catch (NoSuchAlgorithmException ex) {
             throw new IllegalStateException(ex);
         }
