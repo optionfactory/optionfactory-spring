@@ -175,7 +175,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             final Problem problem = Problem.of("UPSTREAM_ERROR", null, "upstream failure", ex.getMessage());
             logger.warn(String.format("Upstream error %s: %s", requestUri, ex.getMessage()), ex);
             return new HttpStatusAndFailures(HttpStatus.BAD_GATEWAY, Collections.singletonList(problem));
-        }        
+        }
         if (ex instanceof AccessDeniedException) {
             final Problem problem = Problem.of("FORBIDDEN", null, null, ex.getMessage());
             logger.debug(String.format("Access denied at %s: %s", requestUri, problem));
@@ -245,7 +245,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
     private static Problem contraintViolationToProblem(ConstraintViolation error) {
         final var path = StreamSupport.stream(error.getPropertyPath().spliterator(), false)
                 .skip(1)
-                .map(node -> node.getName())
+                .map(node -> node.getIndex() != null ? String.valueOf(node.getIndex()) : node.getName())
                 .collect(Collectors.joining("."));
         return Problem.of("FIELD_ERROR", path, error.getMessage(), null);
     }
