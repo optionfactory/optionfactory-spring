@@ -319,7 +319,7 @@ public class UpstreamBuilder<T> {
     }
 
     public UpstreamBuilder<T> applicationContext(ConfigurableApplicationContext ac) {
-        this.beanFactory = ac.getBeanFactory();
+        this.beanFactory = ac == null ? null : ac.getBeanFactory();
         this.publisher = ac;
         return this;
     }
