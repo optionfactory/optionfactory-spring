@@ -1,5 +1,7 @@
 package net.optionfactory.spring.upstream.hc5;
 
+import java.net.ProxySelector;
+import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,10 +11,13 @@ import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.Upstream.HttpComponents;
 import net.optionfactory.spring.upstream.UpstreamBuilder.RequestFactoryConfigurer;
 import net.optionfactory.spring.upstream.annotations.Annotations;
+import org.apache.hc.client5.http.AuthenticationStrategy;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.socket.LayeredConnectionSocketFactory;
+import org.apache.hc.core5.http.ConnectionReuseStrategy;
+import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.io.SocketConfig;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
@@ -25,16 +30,21 @@ public class HttpComponentsCustomizer {
     private final List<Consumer<PoolingHttpClientConnectionManagerBuilder>> connectionManagerCustomizers = new ArrayList<>();
     private final List<Consumer<HttpClientBuilder>> clientBuilderCustomizers = new ArrayList<>();
 
-    public HttpComponentsCustomizer tlsSocketFactory(@Nullable LayeredConnectionSocketFactory sslSocketFactory) {
-        this.connectionManagerCustomizers.add(t -> {
-            t.setSSLSocketFactory(sslSocketFactory);
-        });
-        return this;
-    }
-
     public HttpComponentsCustomizer connectionManager(Consumer<PoolingHttpClientConnectionManagerBuilder> c) {
         this.connectionManagerCustomizers.add(c);
         return this;
+    }
+
+    public HttpComponentsCustomizer tlsSocketFactory(@Nullable LayeredConnectionSocketFactory sslSocketFactory) {
+        return connectionManager(c -> c.setSSLSocketFactory(sslSocketFactory));
+    }
+
+    public HttpComponentsCustomizer maxConnections(int max) {
+        return connectionManager(c -> c.setMaxConnTotal(max));
+    }
+
+    public HttpComponentsCustomizer maxConnectionsPerRoute(int max) {
+        return connectionManager(c -> c.setMaxConnPerRoute(max));
     }
 
     public HttpComponentsCustomizer socketConfig(Consumer<SocketConfig.Builder> c) {
@@ -42,13 +52,20 @@ public class HttpComponentsCustomizer {
         return this;
     }
 
-    public HttpComponentsCustomizer connectionConfig(Consumer<ConnectionConfig.Builder> c) {
-        this.connectionConfigCustomizers.add(c);
-        return this;
+    public HttpComponentsCustomizer socketKeepAlive(boolean value) {
+        return socketConfig(c -> c.setSoKeepAlive(value));
     }
 
-    public HttpComponentsCustomizer clientBuilder(Consumer<HttpClientBuilder> c) {
-        this.clientBuilderCustomizers.add(c);
+    public HttpComponentsCustomizer socketTcpNoDelay(boolean value) {
+        return socketConfig(c -> c.setTcpNoDelay(value));
+    }
+
+    public HttpComponentsCustomizer socketSocksProxy(SocketAddress address) {
+        return socketConfig(c -> c.setSocksProxyAddress(address));
+    }
+
+    public HttpComponentsCustomizer connectionConfig(Consumer<ConnectionConfig.Builder> c) {
+        this.connectionConfigCustomizers.add(c);
         return this;
     }
 
@@ -60,12 +77,45 @@ public class HttpComponentsCustomizer {
         return connectionConfig(c -> c.setSocketTimeout((int) d.toSeconds(), TimeUnit.SECONDS));
     }
 
-    public HttpComponentsCustomizer maxConnections(int max) {
-        return connectionManager(c -> c.setMaxConnTotal(max));
+    public HttpComponentsCustomizer connectionTimeToLive(Duration d) {
+        return connectionConfig(c -> {
+            if (d == null) {
+                c.setTimeToLive(null);
+            } else {
+                c.setTimeToLive(d.toSeconds(), TimeUnit.SECONDS);
+            }
+        });
     }
 
-    public HttpComponentsCustomizer maxConnectionsPerRoute(int max) {
-        return connectionManager(c -> c.setMaxConnPerRoute(max));
+    public HttpComponentsCustomizer connectionValidateAfterInactivity(Duration d) {
+        return connectionConfig(c -> {
+            if (d == null) {
+                c.setValidateAfterInactivity(null);
+            } else {
+                c.setValidateAfterInactivity(d.toSeconds(), TimeUnit.SECONDS);
+            }
+        });
+    }
+
+    public HttpComponentsCustomizer clientBuilder(Consumer<HttpClientBuilder> c) {
+        this.clientBuilderCustomizers.add(c);
+        return this;
+    }
+
+    public HttpComponentsCustomizer connectionReuseStrategy(ConnectionReuseStrategy strategy) {
+        return clientBuilder(c -> c.setConnectionReuseStrategy(strategy));
+    }
+
+    public HttpComponentsCustomizer proxy(HttpHost proxy) {
+        return clientBuilder(c -> c.setProxy(proxy));
+    }
+
+    public HttpComponentsCustomizer proxySelector(ProxySelector selector) {
+        return clientBuilder(c -> c.setProxySelector(selector));
+    }
+
+    public HttpComponentsCustomizer proxyAuthenticator(AuthenticationStrategy strategy) {
+        return clientBuilder(c -> c.setProxyAuthenticationStrategy(strategy));
     }
 
     public HttpComponentsCustomizer disableAuthCaching() {
