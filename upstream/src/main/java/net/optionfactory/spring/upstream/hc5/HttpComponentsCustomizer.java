@@ -146,6 +146,44 @@ public class HttpComponentsCustomizer {
         return clientBuilder(c -> c.disableRedirectHandling());
     }
 
+    public HttpComponentsClientHttpRequestFactory toRequestFactory() {
+        final var defaults = AnnotationUtils.synthesizeAnnotation(HttpComponents.class);
+        final var connTimeout = Duration.parse(defaults.connectionTimeout());
+        final var sockTimeout = Duration.parse(defaults.socketTimeout());
+        final var maxConnections = Integer.parseInt(defaults.maxConnections());
+        final var maxConnectionsPerRoute = Integer.parseInt(defaults.maxConnectionsPerRoute());
+
+        final var socketConfigBuilder = SocketConfig.custom().setSoKeepAlive(true);
+
+        for (final var socketConfigCustomizer : socketConfigCustomizers) {
+            socketConfigCustomizer.accept(socketConfigBuilder);
+        }
+
+        final var connectionConfigBuilder = ConnectionConfig.custom()
+                .setConnectTimeout(connTimeout.toSeconds(), TimeUnit.SECONDS)
+                .setSocketTimeout((int) sockTimeout.toSeconds(), TimeUnit.SECONDS);
+
+        for (final var connectionConfigCustomizer : connectionConfigCustomizers) {
+            connectionConfigCustomizer.accept(connectionConfigBuilder);
+        }
+
+        final var connectionManagerBuilder = PoolingHttpClientConnectionManagerBuilder.create()
+                .setDefaultConnectionConfig(connectionConfigBuilder.build())
+                .setDefaultSocketConfig(socketConfigBuilder.build())
+                .setMaxConnTotal(maxConnections)
+                .setMaxConnPerRoute(maxConnectionsPerRoute);
+
+        for (final var connectionManagerCustomizer : connectionManagerCustomizers) {
+            connectionManagerCustomizer.accept(connectionManagerBuilder);
+        }
+
+        final var clientBuilder = HttpClientBuilder.create().setConnectionManager(connectionManagerBuilder.build());
+        for (final var clientBuilderCustomizer : clientBuilderCustomizers) {
+            clientBuilderCustomizer.accept(clientBuilder);
+        }
+        return new HttpComponentsClientHttpRequestFactory(clientBuilder.build());
+    }
+
     public RequestFactoryConfigurer toRequestFactoryConfigurer() {
         return (scopeHandler, klass, expressions, endpoints) -> {
             final var conf = Annotations.closest(klass, Upstream.HttpComponents.class).orElseGet(() -> AnnotationUtils.synthesizeAnnotation(HttpComponents.class));
