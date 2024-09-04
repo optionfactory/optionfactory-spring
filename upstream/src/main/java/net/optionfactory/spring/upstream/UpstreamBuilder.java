@@ -1,6 +1,6 @@
 package net.optionfactory.spring.upstream;
 
-import net.optionfactory.spring.upstream.hc5.HttpComponentsCustomizer;
+import net.optionfactory.spring.upstream.hc5.HcRequestFactories;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.ObservationRegistry;
 import jakarta.xml.bind.JAXBContext;
@@ -162,19 +162,19 @@ public class UpstreamBuilder<T> {
         return this;
     }
 
-    public UpstreamBuilder<T> requestFactoryHttpComponentsIf(boolean test, Consumer<HttpComponentsCustomizer> customizer) {
+    public UpstreamBuilder<T> requestFactoryHttpComponentsIf(boolean test, Consumer<HcRequestFactories.Builder> customizer) {
         if (!test) {
             return this;
         }
         return requestFactoryHttpComponents(customizer);
     }
 
-    public UpstreamBuilder<T> requestFactoryHttpComponents(Consumer<HttpComponentsCustomizer> customizer) {
+    public UpstreamBuilder<T> requestFactoryHttpComponents(Consumer<HcRequestFactories.Builder> customizer) {
         Assert.notNull(customizer, "customizer must not be null");
         Assert.isNull(this.rff, "request factory is already configured");
-        final HttpComponentsCustomizer hcc = new HttpComponentsCustomizer();
-        customizer.accept(hcc);
-        this.rff = hcc.toRequestFactoryConfigurer();
+        final var builder = HcRequestFactories.builder();
+        customizer.accept(builder);
+        this.rff = builder.buildConfigurer();
         return this;
     }
 
