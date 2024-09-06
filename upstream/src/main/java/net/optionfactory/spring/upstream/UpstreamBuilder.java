@@ -27,6 +27,7 @@ import net.optionfactory.spring.upstream.contexts.InvocationContext.HttpMessageC
 import net.optionfactory.spring.upstream.errors.UpstreamErrorOnReponseHandler;
 import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.faults.UpstreamFaultInterceptor;
+import net.optionfactory.spring.upstream.hc5.HcRequestFactories.Builder.Buffering;
 import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
 import net.optionfactory.spring.upstream.mocks.MocksCustomizer;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
@@ -174,7 +175,7 @@ public class UpstreamBuilder<T> {
         Assert.isNull(this.rff, "request factory is already configured");
         final var builder = HcRequestFactories.builder();
         customizer.accept(builder);
-        this.rff = builder.buildConfigurer();
+        this.rff = builder.buildConfigurer(Buffering.BUFFERED);
         return this;
     }
 
@@ -346,9 +347,7 @@ public class UpstreamBuilder<T> {
 
         final var requestFactory = this.rff.configure(scopeHandler, klass, expressions, endpoints);
 
-        final var bufferedRequestFactory = new BufferingClientHttpRequestFactory(requestFactory);
-
-        final var rcb = RestClient.builder().requestFactory(bufferedRequestFactory);
+        final var rcb = RestClient.builder().requestFactory(requestFactory);
         restClientCustomizers.forEach(c -> c.accept(rcb));
 
         initializers.stream()

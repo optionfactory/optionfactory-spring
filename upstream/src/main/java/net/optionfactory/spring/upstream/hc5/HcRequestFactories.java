@@ -20,6 +20,8 @@ import org.apache.hc.core5.http.ConnectionReuseStrategy;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.io.SocketConfig;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.http.client.BufferingClientHttpRequestFactory;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.lang.Nullable;
 
@@ -152,7 +154,11 @@ public class HcRequestFactories {
             return clientBuilder(c -> c.disableRedirectHandling());
         }
 
-        public HttpComponentsClientHttpRequestFactory build() {
+        public enum Buffering {
+            BUFFERED, UNBUFFERED;
+        }
+
+        public ClientHttpRequestFactory build(Buffering buffering) {
             final var defaults = AnnotationUtils.synthesizeAnnotation(HttpComponents.class);
             final var connTimeout = Duration.parse(defaults.connectionTimeout());
             final var sockTimeout = Duration.parse(defaults.socketTimeout());
@@ -187,10 +193,12 @@ public class HcRequestFactories {
             for (final var clientBuilderCustomizer : clientBuilderCustomizers) {
                 clientBuilderCustomizer.accept(clientBuilder);
             }
-            return new HttpComponentsClientHttpRequestFactory(clientBuilder.build());
+            final var f = new HttpComponentsClientHttpRequestFactory(clientBuilder.build());
+            return buffering == Buffering.BUFFERED ? new BufferingClientHttpRequestFactory(f) : f;
+
         }
 
-        public RequestFactoryConfigurer buildConfigurer() {
+        public RequestFactoryConfigurer buildConfigurer(Buffering buffering) {
             return (scopeHandler, klass, expressions, endpoints) -> {
                 final var conf = Annotations.closest(klass, Upstream.HttpComponents.class).orElseGet(() -> AnnotationUtils.synthesizeAnnotation(HttpComponents.class));
                 final var connTimeout = Duration.parse(expressions.string(conf.connectionTimeout(), conf.connectionTimeoutType()).evaluate(expressions.context()));
@@ -247,7 +255,8 @@ public class HcRequestFactories {
                 for (final var clientBuilderCustomizer : clientBuilderCustomizers) {
                     clientBuilderCustomizer.accept(clientBuilder);
                 }
-                return new HttpComponentsClientHttpRequestFactory(clientBuilder.build());
+                final var f = new HttpComponentsClientHttpRequestFactory(clientBuilder.build());
+                return buffering == Buffering.BUFFERED ? new BufferingClientHttpRequestFactory(f) : f;
             };
         }
     }
