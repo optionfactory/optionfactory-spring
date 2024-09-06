@@ -6,7 +6,6 @@ import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
@@ -24,6 +23,7 @@ import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestInitializer;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.web.client.ResponseErrorHandler;
+import org.springframework.web.service.invoker.HttpExchangeAdapter;
 
 public class ThreadLocalScopeHandler implements ScopeHandler {
 
@@ -45,6 +45,11 @@ public class ThreadLocalScopeHandler implements ScopeHandler {
         this.expressions = expressions;
         this.observations = observations;
         this.publisher = publisher;
+    }
+
+    @Override
+    public HttpExchangeAdapter adapt(UpstreamHttpExchangeAdapter adapter) {
+        return new UpstreamHttpExchangeAdapterAdapter(adapter, invocations::get);
     }
 
     @Override

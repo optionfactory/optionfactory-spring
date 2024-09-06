@@ -14,12 +14,15 @@ import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestInitializer;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.web.client.ResponseErrorHandler;
+import org.springframework.web.service.invoker.HttpExchangeAdapter;
 
 public interface ScopeHandler {
 
     public static final String BOOT_ID = HexFormat.of().formatHex(ByteBuffer.allocate(Integer.BYTES).putInt((int) Instant.now().getEpochSecond()).array());
 
     MethodInterceptor interceptor(HttpMessageConverters cs);
+
+    HttpExchangeAdapter adapt(UpstreamHttpExchangeAdapter adapter);
 
     ClientHttpRequestInterceptor adapt(List<UpstreamHttpInterceptor> interceptors);
 

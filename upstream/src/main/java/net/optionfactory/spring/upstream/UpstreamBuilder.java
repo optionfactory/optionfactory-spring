@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -36,6 +37,7 @@ import net.optionfactory.spring.upstream.params.UpstreamAnnotatedHeadersIntercep
 import net.optionfactory.spring.upstream.params.UpstreamAnnotatedQueryParamsInterceptor;
 import net.optionfactory.spring.upstream.scopes.ScopeHandler;
 import net.optionfactory.spring.upstream.scopes.ThreadLocalScopeHandler;
+import net.optionfactory.spring.upstream.scopes.UpstreamHttpExchangeAdapter;
 import net.optionfactory.spring.upstream.soap.SoapHeaderWriter;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
@@ -46,7 +48,6 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -59,6 +60,7 @@ import org.springframework.util.Assert;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.annotation.HttpExchange;
+import org.springframework.web.service.invoker.HttpExchangeAdapter;
 import org.springframework.web.service.invoker.HttpServiceArgumentResolver;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
@@ -83,6 +85,7 @@ public class UpstreamBuilder<T> {
     protected ObservationRegistry observations;
     protected ConfigurableBeanFactory beanFactory;
     protected ApplicationEventPublisher publisher;
+    protected Function<HttpExchangeAdapter, UpstreamHttpExchangeAdapter> exchangeAdapterFactory;
 
     public UpstreamBuilder(Class<T> klass, Optional<String> name) {
         this.klass = klass;
@@ -274,6 +277,11 @@ public class UpstreamBuilder<T> {
         return this;
     }
 
+    public UpstreamBuilder<T> exchangeAdapter(Function<HttpExchangeAdapter, UpstreamHttpExchangeAdapter> af) {
+        this.exchangeAdapterFactory = af;
+        return this;
+    }
+
     public UpstreamBuilder<T> responseErrorHandler(UpstreamResponseErrorHandler eh) {
         responseErrorHandlers.add(eh);
         return this;
@@ -380,7 +388,17 @@ public class UpstreamBuilder<T> {
             messageConverters.addAll(mcs);
         });
 
-        final var serviceProxyFactoryBuilder = HttpServiceProxyFactory.builderFor(RestClientAdapter.create(rcb.build()));
+        final var innerExchangeAdapter = RestClientAdapter.create(rcb.build());
+        final HttpExchangeAdapter httpExchangeAdapter;
+        if (exchangeAdapterFactory == null) {
+            httpExchangeAdapter = innerExchangeAdapter;
+        } else {
+            final var a = exchangeAdapterFactory.apply(innerExchangeAdapter);
+            a.preprocess(klass, expressions, endpoints);
+            httpExchangeAdapter = scopeHandler.adapt(a);
+        }
+
+        final var serviceProxyFactoryBuilder = HttpServiceProxyFactory.builderFor(httpExchangeAdapter);
         serviceProxyFactoryBuilder.customArgumentResolver(new Upstream.ArgumentResolver(expressions));
         serviceProxyCustomizers.forEach(c -> c.accept(serviceProxyFactoryBuilder));
         for (HttpServiceArgumentResolver argumentResolver : argumentResolvers) {
