@@ -1,7 +1,7 @@
 package net.optionfactory.spring.oidc.authcode;
 
 import java.util.List;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.security.oauth2.client.endpoint.DefaultAuthorizationCodeTokenResponseClient;
 import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
@@ -14,7 +14,7 @@ public class ConfigurableAuthorizationCodeTokenResponseClient implements OAuth2A
 
     private final DefaultAuthorizationCodeTokenResponseClient inner;
 
-    public ConfigurableAuthorizationCodeTokenResponseClient(HttpComponentsClientHttpRequestFactory httpRequestFactory) {
+    public ConfigurableAuthorizationCodeTokenResponseClient(ClientHttpRequestFactory httpRequestFactory) {
         final var accessTokenRestTemplate = new RestTemplate(List.of(new FormHttpMessageConverter(), new OAuth2AccessTokenResponseHttpMessageConverter()));
         accessTokenRestTemplate.setRequestFactory(httpRequestFactory);
         this.inner = new DefaultAuthorizationCodeTokenResponseClient();

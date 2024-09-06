@@ -6,7 +6,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.http.OAuth2ErrorResponseErrorHandler;
@@ -26,7 +26,7 @@ public class ConfigurableOauth2UserService<U extends OidcUser> implements OAuth2
     private final OidcUserService delegate;
     private final BiFunction<Set<GrantedAuthority>, OidcUser, U> userFactory;
 
-    public ConfigurableOauth2UserService(HttpComponentsClientHttpRequestFactory httpRequestFactory, ApplicationEventPublisher events, BiFunction<Set<GrantedAuthority>, OidcUser, U> userFactory) {
+    public ConfigurableOauth2UserService(ClientHttpRequestFactory httpRequestFactory, ApplicationEventPublisher events, BiFunction<Set<GrantedAuthority>, OidcUser, U> userFactory) {
         final var oauth2RestTemplate = new RestTemplate(httpRequestFactory);
         oauth2RestTemplate.setErrorHandler(new OAuth2ErrorResponseErrorHandler());
         final var defaultOAuth2UserService = new DefaultOAuth2UserService();

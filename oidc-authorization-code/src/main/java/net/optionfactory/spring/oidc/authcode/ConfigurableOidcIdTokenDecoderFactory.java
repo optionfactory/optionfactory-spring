@@ -11,7 +11,7 @@ import java.util.function.Function;
 import javax.crypto.spec.SecretKeySpec;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenValidator;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
@@ -56,7 +56,7 @@ public final class ConfigurableOidcIdTokenDecoderFactory implements JwtDecoderFa
     
     private final RestTemplate restTemplate;
 
-    public ConfigurableOidcIdTokenDecoderFactory(HttpComponentsClientHttpRequestFactory oauthHttpRequestFactory) {
+    public ConfigurableOidcIdTokenDecoderFactory(ClientHttpRequestFactory oauthHttpRequestFactory) {
         this.restTemplate = new RestTemplate(oauthHttpRequestFactory);
     }
 
