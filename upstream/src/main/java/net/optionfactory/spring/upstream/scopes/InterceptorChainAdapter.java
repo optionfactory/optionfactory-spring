@@ -25,7 +25,6 @@ public class InterceptorChainAdapter implements ClientHttpRequestInterceptor {
     private final Supplier<InvocationContext> invocations;
     private final Consumer<RequestContext> requests;
     private final Consumer<ResponseContext> responses;
-    private final AtomicLong requestCounter;
     private final InstantSource clock;
 
     public InterceptorChainAdapter(
@@ -33,13 +32,11 @@ public class InterceptorChainAdapter implements ClientHttpRequestInterceptor {
             Supplier<InvocationContext> invocations,
             Consumer<RequestContext> requests,
             Consumer<ResponseContext> responses,
-            AtomicLong requestCounter,
             InstantSource clock) {
         this.interceptors = interceptors;
         this.invocations = invocations;
         this.requests = requests;
         this.responses = responses;
-        this.requestCounter = requestCounter;
         this.clock = clock;
     }
 
@@ -50,7 +47,7 @@ public class InterceptorChainAdapter implements ClientHttpRequestInterceptor {
         final AtomicReference<ClientHttpResponse> originalResponse = new AtomicReference<>();
         final InvocationContext ictx = invocations.get();
         final var chain = new InterceptorChain(interceptors.iterator(), execution, clock, requests, originalResponse);
-        final var reqCtx = new RequestContext(requestCounter.incrementAndGet(), clock.instant(), request.getMethod(), request.getURI(), request.getHeaders(), body);
+        final var reqCtx = new RequestContext(clock.instant(), request.getMethod(), request.getURI(), request.getHeaders(), body);
         final var respCtx = chain.execute(ictx, reqCtx);
         responses.accept(respCtx);
         return new ResponseAdapter(ictx, reqCtx, respCtx, originalResponse.get());

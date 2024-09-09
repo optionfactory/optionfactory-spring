@@ -117,10 +117,10 @@ public class FaultsEmailsSpoolerTest {
                         new EndpointDescriptor("upstream", "endpoint", Object.class.getMethod("toString"), null),
                         new Object[0],
                         "boot-id",
+                        1,
                         principal
                 ),
                 new RequestContext(
-                        1,
                         Instant.now(),
                         HttpMethod.PATCH,
                         URI.create("https://example.com"),

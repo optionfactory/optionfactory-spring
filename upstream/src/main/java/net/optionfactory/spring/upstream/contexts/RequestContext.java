@@ -6,7 +6,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 
 public record RequestContext(
-        long id,
         Instant at,
         HttpMethod method,
         URI uri,
@@ -14,6 +13,6 @@ public record RequestContext(
         byte[] body) {
 
     public RequestContext withUri(URI uri) {
-        return new RequestContext(id, at, method, uri, headers, body);
+        return new RequestContext(at, method, uri, headers, body);
     }
 }

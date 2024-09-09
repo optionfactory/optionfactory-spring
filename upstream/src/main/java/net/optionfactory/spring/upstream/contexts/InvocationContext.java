@@ -19,6 +19,7 @@ public record InvocationContext(
         EndpointDescriptor endpoint,
         Object[] arguments,
         String boot,
+        long id,
         Object principal) {
 
     public record HttpMessageConverters(List<HttpMessageConverter<?>> all) {

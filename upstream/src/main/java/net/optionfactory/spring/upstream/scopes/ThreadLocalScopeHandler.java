@@ -30,7 +30,6 @@ public class ThreadLocalScopeHandler implements ScopeHandler {
     private final ThreadLocal<InvocationContext> invocations = new ThreadLocal<>();
     private final ThreadLocal<RequestContext> requests = new ThreadLocal<>();
     private final ThreadLocal<ResponseContext> responses = new ThreadLocal<>();
-    private final AtomicLong requestCounter = new AtomicLong(0);
     private final Supplier<Object> principal;
     private final InstantSource clock;
     private final Map<Method, EndpointDescriptor> endpoints;
@@ -64,7 +63,7 @@ public class ThreadLocalScopeHandler implements ScopeHandler {
 
     @Override
     public ClientHttpRequestInterceptor adapt(List<UpstreamHttpInterceptor> interceptors) {
-        return new InterceptorChainAdapter(interceptors, invocations::get, requests::set, responses::set, requestCounter, clock);
+        return new InterceptorChainAdapter(interceptors, invocations::get, requests::set, responses::set, clock);
     }
 
     @Override

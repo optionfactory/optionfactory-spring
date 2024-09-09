@@ -48,7 +48,7 @@ public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
             return execution.execute(invocation, request);
         }
         final var principal = invocation.principal() == null || invocation.principal().toString().isBlank() ? "" : String.format("[user:%s]", invocation.principal());
-        final var prefix = "[boot:%s][upstream:%s][ep:%s][req:%s]%s".formatted(invocation.boot(), invocation.endpoint().upstream(), invocation.endpoint().name(), request.id(), principal);
+        final var prefix = "[boot:%s][upstream:%s][ep:%s][req:%s]%s".formatted(invocation.boot(), invocation.endpoint().upstream(), invocation.endpoint().name(), invocation.id(), principal);
         if (conf.requestHeaders() != BodyRendering.HeadersStrategy.SKIP) {
             logger.info("{}[t:oh] headers: {}", prefix, request.headers());
         }

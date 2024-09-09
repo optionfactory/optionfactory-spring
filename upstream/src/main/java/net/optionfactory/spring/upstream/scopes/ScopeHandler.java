@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
 import net.optionfactory.spring.upstream.UpstreamResponseErrorHandler;
@@ -19,6 +20,8 @@ import org.springframework.web.service.invoker.HttpExchangeAdapter;
 public interface ScopeHandler {
 
     public static final String BOOT_ID = HexFormat.of().formatHex(ByteBuffer.allocate(Integer.BYTES).putInt((int) Instant.now().getEpochSecond()).array());
+
+    public static final AtomicLong INVOCATION_COUNTER = new AtomicLong();
 
     MethodInterceptor interceptor(HttpMessageConverters cs);
 
