@@ -4,7 +4,7 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>19.3-SNAPSHOT</version>
+        <version>19.3</version>
     </parent>    
     <artifactId>pem</artifactId>
     <packaging>jar</packaging>
