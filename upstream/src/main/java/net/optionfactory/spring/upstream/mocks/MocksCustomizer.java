@@ -30,7 +30,12 @@ public class MocksCustomizer {
     }
 
     public MocksCustomizer thymeleaf(@Nullable MessageSource ms, IDialect... dialects) {
-        this.renderer = new ThymeleafRenderer(ms, dialects);
+        this.renderer = new ThymeleafRenderer(".template", ms, dialects);
+        return this;
+    }
+
+    public MocksCustomizer thymeleaf(String templateSuffix, @Nullable MessageSource ms, IDialect... dialects) {
+        this.renderer = new ThymeleafRenderer(templateSuffix, ms, dialects);
         return this;
     }
 

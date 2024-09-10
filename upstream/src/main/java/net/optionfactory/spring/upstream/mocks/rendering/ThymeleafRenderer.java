@@ -17,22 +17,24 @@ import org.thymeleaf.util.ContentTypeUtils;
 
 public class ThymeleafRenderer implements MocksRenderer {
 
+    private final String templateSuffix;
     private final SpringTemplateEngine engine;
 
-    public ThymeleafRenderer(@Nullable MessageSource ms, IDialect[] dialects) {
+    public ThymeleafRenderer(String templateSuffix, @Nullable MessageSource ms, IDialect[] dialects) {
         final var e = new SpringTemplateEngine();
         e.setMessageSource(ms);
         e.setTemplateResolver(new StringTemplateResolver());
         for (IDialect dialect : dialects) {
             e.addDialect(dialect);
         }
+        this.templateSuffix = templateSuffix;
         this.engine = e;
     }
 
     @Override
     public Resource render(Resource source, InvocationContext invocation) {
         final var filename = source.getFilename();
-        if (filename == null || !filename.contains(".tpl.")) {
+        if (filename == null || !filename.endsWith(templateSuffix)) {
             return source;
         }
         final var context = new Context();
@@ -43,7 +45,8 @@ public class ThymeleafRenderer implements MocksRenderer {
         for (int i = 0; i != params.length; ++i) {
             context.setVariable(params[i].getName(), args[i]);
         }
-        final var templateMode = ContentTypeUtils.computeTemplateModeForTemplateName(filename);
+        final var filenameWithoutSuffix = filename.substring(0, filename.lastIndexOf(templateSuffix));
+        final var templateMode = ContentTypeUtils.computeTemplateModeForTemplateName(filenameWithoutSuffix);
         try {
             final var sourceAsString = source.getContentAsString(StandardCharsets.UTF_8);
             final var spec = new TemplateSpec(sourceAsString, templateMode);
