@@ -17,7 +17,7 @@ public class UpstreamErrorsHandlerXmlTest {
                 .create(UpstreamErrorsSoapClient.class)
                 .soap(SoapJaxbHttpMessageConverter.Protocol.SOAP_1_1, Schemas.NONE, SoapHeaderWriter.NONE, AddResponse.class)
                 .requestFactoryMock(c -> {
-                    c.response(MockClientHttpResponse.okUtf8(
+                    c.response(
                             MediaType.TEXT_XML,
                             """
                             <?xml version="1.0" encoding="utf-8"?>
@@ -29,7 +29,7 @@ public class UpstreamErrorsHandlerXmlTest {
                                 </soap:Body>
                             </soap:Envelope>
                             """
-                    ));
+                    );
                 })
                 .restClient(r -> r.baseUrl("http://example.com"))
                 .build()
@@ -42,7 +42,7 @@ public class UpstreamErrorsHandlerXmlTest {
                 .create(UpstreamErrorsSoapClient.class)
                 .soap(SoapJaxbHttpMessageConverter.Protocol.SOAP_1_1, Schemas.NONE, SoapHeaderWriter.NONE, AddResponse.class)
                 .requestFactoryMock(c -> {
-                    c.response(MockClientHttpResponse.okUtf8(
+                    c.response(
                             MediaType.TEXT_XML,
                             """
                             <?xml version="1.0" encoding="utf-8"?>
@@ -54,7 +54,7 @@ public class UpstreamErrorsHandlerXmlTest {
                                 </soap:Body>
                             </soap:Envelope>
                             """
-                    ));
+                    );
                 })
                 .restClient(r -> r.baseUrl("http://example.com"))
                 .build()

@@ -18,12 +18,9 @@ public class RestExampleTest {
         final var client = UpstreamBuilder
                 .create(RestTestClient.class)
                 .requestFactoryMock(c -> {
-                    HttpHeaders h = new HttpHeaders();
-                    h.setContentType(MediaType.APPLICATION_JSON);
-                    final var content = """
+                    c.response(MediaType.APPLICATION_JSON, """
                         {"a": "b"}
-                    """;
-                    c.response(new MockClientHttpResponse(HttpStatus.OK, HttpStatus.OK.getReasonPhrase(), h, new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8))));
+                    """);
                 })
                 .restClient(r -> r.baseUrl("https://hub.dummyapis.com/statuscode/"))
                 .build();
@@ -36,10 +33,7 @@ public class RestExampleTest {
         final var client = UpstreamBuilder
                 .create(RestTestClient.class)
                 .requestFactoryMock(c -> {
-                    HttpHeaders h = new HttpHeaders();
-                    h.setContentType(MediaType.APPLICATION_JSON);
-                    final var content = "";
-                    c.response(new MockClientHttpResponse(HttpStatus.BAD_REQUEST, HttpStatus.BAD_REQUEST.getReasonPhrase(), h, new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8))));
+                    c.response(HttpStatus.BAD_REQUEST, MediaType.APPLICATION_JSON, "");
                 })
                 .restClient(r -> r.baseUrl("https://hub.dummyapis.com/statuscode/"))
                 .build();

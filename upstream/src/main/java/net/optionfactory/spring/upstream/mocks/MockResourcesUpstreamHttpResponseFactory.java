@@ -1,5 +1,6 @@
 package net.optionfactory.spring.upstream.mocks;
 
+import net.optionfactory.spring.upstream.mocks.rendering.ThymeleafRenderer;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -27,13 +28,19 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.RestClientException;
+import net.optionfactory.spring.upstream.mocks.rendering.MocksRenderer;
 
 public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpResponseFactory {
 
     private final Map<Method, List<MockConfiguration>> methodToMockConfigurations = new ConcurrentHashMap<>();
+    private final MocksRenderer renderer;
 
     private record MockConfiguration(HttpStatus status, Optional<MediaType> defaultMediaType, StringExpression[] headers, StringExpression bodyPath) {
 
+    }
+
+    public MockResourcesUpstreamHttpResponseFactory(MocksRenderer renderer) {
+        this.renderer = renderer;
     }
 
     private final Logger logger = LoggerFactory.getLogger(MockResourcesUpstreamHttpResponseFactory.class);
@@ -89,7 +96,7 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
                     .map(kv -> new String[]{kv[0].trim(), kv[1].trim()})
                     .forEach(kv -> responseHeaders.add(kv[0], kv[1]));
 
-            return new MockClientHttpResponse(mc.status(), mc.status().getReasonPhrase(), responseHeaders, resource);
+            return new MockClientHttpResponse(mc.status(), mc.status().getReasonPhrase(), responseHeaders, renderer.render(resource, invocation));
         }
         throw new RestClientException(String.format("mock resource not found for %s:%s", invocation.endpoint().upstream(), invocation.endpoint().name()));
     }

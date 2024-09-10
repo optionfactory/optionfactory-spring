@@ -169,7 +169,7 @@ public @interface Upstream {
          */
         String value();
 
-        public Type valueType() default Type.TEMPLATED;
+        Type valueType() default Type.TEMPLATED;
 
         HttpStatus status() default HttpStatus.OK;
 
@@ -178,7 +178,7 @@ public @interface Upstream {
          */
         String[] headers() default {};
 
-        public Type headersType() default Type.TEMPLATED;
+        Type headersType() default Type.TEMPLATED;
 
         /**
          * <strong>discovery</strong>: declaring class, super interfaces<br>

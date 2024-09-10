@@ -112,7 +112,7 @@ public class UpstreamethodInterceptor implements MethodInterceptor {
             obs.lowCardinalityKeyValue("fault", "mapping");
         }
         final var request = requests.get();
-        final var exc = new ExceptionContext(clock.instant(), ex.getCause().getMessage());
+        final var exc = new ExceptionContext(clock.instant(), ex.getCause() != null ? ex.getCause().getMessage(): ex.getMessage());
         publisher.publishEvent(new UpstreamFaultEvent(invocation, request, response == null ? null : response.detached(), exc));
 
     }

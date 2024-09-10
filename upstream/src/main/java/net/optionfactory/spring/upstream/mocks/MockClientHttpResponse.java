@@ -25,16 +25,6 @@ public class MockClientHttpResponse implements ClientHttpResponse {
         this.body = body;
     }
 
-    public static MockClientHttpResponse ok(MediaType mediaType, byte[] content) {
-        final HttpHeaders h = new HttpHeaders();
-        h.setContentType(mediaType);
-        return new MockClientHttpResponse(HttpStatus.OK, HttpStatus.OK.getReasonPhrase(), h, new ByteArrayResource(content));
-    }
-
-    public static MockClientHttpResponse okUtf8(MediaType mediaType, String content) {
-        return ok(mediaType, content.getBytes(StandardCharsets.UTF_8));
-    }
-
     @Override
     public HttpStatusCode getStatusCode() throws IOException {
         return statusCode;

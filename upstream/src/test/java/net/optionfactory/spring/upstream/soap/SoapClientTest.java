@@ -2,18 +2,14 @@ package net.optionfactory.spring.upstream.soap;
 
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.soap.SOAPFault;
-import java.nio.charset.StandardCharsets;
 import javax.xml.validation.Schema;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
-import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
 import net.optionfactory.spring.upstream.soap.calc.Add;
 import net.optionfactory.spring.upstream.soap.calc.CalculatorClient;
 import org.junit.Assert;
 import org.junit.Test;
-import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.HttpServerErrorException.InternalServerError;
@@ -26,7 +22,7 @@ public class SoapClientTest {
 
         final var client = UpstreamBuilder.create(CalculatorClient.class)
                 .requestFactoryMock(c -> {
-                    c.response(MockClientHttpResponse.okUtf8(MediaType.TEXT_XML, """
+                    c.response(MediaType.TEXT_XML, """
                                         <?xml version="1.0" encoding="utf-8"?>
                                         <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
                                             <soap:Body>
@@ -35,7 +31,7 @@ public class SoapClientTest {
                                                 </AddResponse>
                                             </soap:Body>
                                         </soap:Envelope>
-                                        """));
+                                        """);
                 })
                 .soap(Protocol.SOAP_1_1, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
@@ -54,9 +50,7 @@ public class SoapClientTest {
         final var client = UpstreamBuilder
                 .create(CalculatorClient.class)
                 .requestFactoryMock(c -> {
-                    final var h = new HttpHeaders();
-                    h.setContentType(MediaType.valueOf("application/soap+xml; charset=utf-8"));
-                    final var content = """
+                    c.response(MediaType.valueOf("application/soap+xml; charset=utf-8"), """
                                         <?xml version="1.0" encoding="utf-8"?>
                                         <soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
                                             <soap:Body>
@@ -65,8 +59,7 @@ public class SoapClientTest {
                                                 </AddResponse>
                                             </soap:Body>
                                         </soap:Envelope>
-                                        """;
-                    c.response(new MockClientHttpResponse(HttpStatus.OK, HttpStatus.OK.getReasonPhrase(), h, new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8))));
+                                        """);
                 })
                 .soap(Protocol.SOAP_1_2, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
@@ -85,9 +78,7 @@ public class SoapClientTest {
         final var client = UpstreamBuilder
                 .create(CalculatorClient.class)
                 .requestFactoryMock(c -> {
-                    final var h = new HttpHeaders();
-                    h.setContentType(MediaType.valueOf("text/xml;charset=utf-8"));
-                    final var content = """
+                    c.response(HttpStatus.INTERNAL_SERVER_ERROR, MediaType.valueOf("text/xml;charset=utf-8"), """
                                         <?xml version="1.0" encoding="utf-8"?>
                                         <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
                                             <soap:Body>
@@ -98,8 +89,7 @@ public class SoapClientTest {
                                                 </soap:Fault>
                                             </soap:Body>
                                         </soap:Envelope>
-                                        """;
-                    c.response(new MockClientHttpResponse(HttpStatus.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(), h, new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8))));
+                                        """);
                 })
                 .soap(Protocol.SOAP_1_1, schema, SoapHeaderWriter.NONE, Add.class)
                 .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))

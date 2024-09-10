@@ -12,6 +12,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.service.invoker.HttpExchangeAdapter;
 import org.springframework.web.service.invoker.HttpRequestValues;
@@ -31,7 +32,7 @@ public class UpstreamHttpExchangeAdapterTest {
                 })
                 .exchangeAdapter((inner) -> new AddWrapperToRequest(inner))
                 .requestFactoryMock(c -> {
-                    c.response(new MockClientHttpResponse(HttpStatus.OK, HttpStatus.OK.getReasonPhrase(), new HttpHeaders(), new ByteArrayResource(new byte[0])));
+                    c.response(HttpStatus.OK, MediaType.APPLICATION_JSON, "");
                 })
                 .restClient(r -> r.baseUrl("https://hub.dummyapis.com/statuscode/"))
                 .build();
