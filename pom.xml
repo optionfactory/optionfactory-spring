@@ -5,7 +5,7 @@
 
     <groupId>net.optionfactory.spring</groupId>
     <artifactId>optionfactory-spring</artifactId>
-    <version>19.3</version>
+    <version>19.4-SNAPSHOT</version>
     <packaging>pom</packaging>
     <description>optionfactory-spring parent pom</description>
 
@@ -83,7 +83,7 @@
             <dependency>
                 <groupId>org.springframework.data</groupId>
                 <artifactId>spring-data-bom</artifactId>
-                <version>2024.0.3</version>
+                <version>2024.0.4</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -97,7 +97,7 @@
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-framework-bom</artifactId>
-                <version>6.1.12</version>
+                <version>6.1.13</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -117,7 +117,7 @@
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-core</artifactId>
-                <version>6.6.0.Final</version>
+                <version>6.6.1.Final</version>
             </dependency>
             <dependency>
                 <groupId>com.zaxxer</groupId>
@@ -142,7 +142,7 @@
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-el</artifactId>
-                <version>10.1.28</version>
+                <version>10.1.30</version>
             </dependency>        
             
             <dependency>
@@ -169,7 +169,7 @@
             <dependency>
                 <groupId>org.apache.httpcomponents.client5</groupId>
                 <artifactId>httpclient5</artifactId>
-                <version>5.3.1</version>
+                <version>5.4</version>
             </dependency>
             <dependency>
                 <groupId>jakarta.mail</groupId>
@@ -189,7 +189,7 @@
             <dependency>
                 <groupId>com.googlecode.libphonenumber</groupId>
                 <artifactId>libphonenumber</artifactId>
-                <version>8.13.45</version>
+                <version>8.13.46</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
