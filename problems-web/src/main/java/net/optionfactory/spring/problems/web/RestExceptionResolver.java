@@ -76,7 +76,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
     private HttpStatusAndFailures handleMessageNotReadable(String requestUri, HttpMessageNotReadableException ex) {
         final Throwable cause = ex.getCause();
         return switch (ex.getCause()) {
-            case UnrecognizedPropertyException inner: {
+            case UnrecognizedPropertyException inner -> {
                 final Map<String, Object> metadata = new ConcurrentHashMap<>();
                 metadata.put("known", inner.getKnownPropertyIds());
                 metadata.put("in", inner.getReferringClass().getSimpleName());
@@ -84,19 +84,19 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 logger.debug(String.format("Unrecognized property at %s: %s", requestUri, failure));
                 yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(failure));
             }
-            case InvalidFormatException inner: {
+            case InvalidFormatException inner -> {
                 final String path = inner.getPath().stream().map(p -> p.getFieldName()).collect(Collectors.joining("."));
                 final Problem failure = Problem.of("INVALID_FORMAT", path, "Invalid format", inner.getMessage());
                 logger.debug(String.format("Invalid format at %s: %s", requestUri, failure));
                 yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(failure));
             }
-            case JsonMappingException inner: {
+            case JsonMappingException inner -> {
                 final String path = inner.getPath().stream().map(p -> p.getFieldName()).collect(Collectors.joining("."));
                 final Problem failure = Problem.of("INVALID_FORMAT", path, "Invalid format", inner.getMessage());
                 logger.debug(String.format("Json mapping exception at %s: %s", requestUri, failure));
                 yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(failure));
             }
-            case JsonParseException inner: {
+            case JsonParseException inner -> {
                 final Map<String, Object> details = new ConcurrentHashMap<>();
                 details.put("location", inner.getLocation());
                 details.put("message", cause.getMessage());
@@ -104,7 +104,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 logger.debug(String.format("Unparseable message: %s", failure.toString()));
                 yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(failure));
             }
-            default: {
+            case null, default -> {
                 final Problem failure = Problem.of("MESSAGE_NOT_READABLE", Problem.NO_CONTEXT, "Message not readable", cause != null ? cause.getMessage() : ex.getMessage());
                 logger.debug(String.format("Unreadable message at %s: %s", requestUri, failure));
                 yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(failure));
