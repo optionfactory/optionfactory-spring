@@ -1,12 +1,9 @@
 package net.optionfactory.spring.upstream.auth;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
-import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequest;
-import org.springframework.util.LinkedMultiValueMap;
 
 public class OauthPasswordAuthenticator implements UpstreamHttpRequestInitializer {
 

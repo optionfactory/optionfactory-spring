@@ -1,9 +1,9 @@
 package net.optionfactory.spring.upstream.auth;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
+import java.nio.charset.Charset;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.ClientHttpRequest;
 
 public class StaticTokenAuthenticator implements UpstreamHttpRequestInitializer {
@@ -31,15 +31,13 @@ public class StaticTokenAuthenticator implements UpstreamHttpRequestInitializer 
         return new StaticTokenAuthenticator("Authorization", "Bearer", token);
     }
 
-    public static StaticTokenAuthenticator basic(String username, String password) {
-        final var credBytes = String.format("%s:%s", username, password).getBytes(StandardCharsets.UTF_8);
-        final var credentials = Base64.getEncoder().encodeToString(credBytes);
+    public static StaticTokenAuthenticator basic(String username, String password, Charset charset) {
+        final var credentials = HttpHeaders.encodeBasicAuth(username, password, charset);
         return new StaticTokenAuthenticator("Authorization", "Basic", credentials);
     }
 
-    public static StaticTokenAuthenticator proxyBasic(String username, String password) {
-        final var credBytes = String.format("%s:%s", username, password).getBytes(StandardCharsets.UTF_8);
-        final var credentials = Base64.getEncoder().encodeToString(credBytes);
+    public static StaticTokenAuthenticator proxyBasic(String username, String password, Charset charset) {
+        final var credentials = HttpHeaders.encodeBasicAuth(username, password, charset);
         return new StaticTokenAuthenticator("Proxy-Authorization", "Basic", credentials);
     }
 
