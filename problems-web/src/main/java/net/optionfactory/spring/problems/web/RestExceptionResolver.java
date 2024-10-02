@@ -114,79 +114,81 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
 
     protected HttpStatusAndFailures toStatusAndErrors(HttpServletRequest request, HttpServletResponse response, HandlerMethod hm, Exception ex) {
         final String requestUri = request.getRequestURI();
-        if (ex instanceof HttpMessageNotReadableException inner) {
-            return handleMessageNotReadable(requestUri, inner);
-        }
-        if (ex instanceof BindException be) {
-            final Stream<Problem> globalFailures = be.getGlobalErrors().stream().map(RestExceptionResolver::objectErrorToProblem);
-            final Stream<Problem> fieldFailures = be.getFieldErrors().stream().map(RestExceptionResolver::fieldErrorToProblem);
-            final List<Problem> failures = Stream.concat(globalFailures, fieldFailures).collect(Collectors.toList());
-            logger.debug(String.format("Binding failure at %s: %s", requestUri, failures));
-            return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, failures);
-        }
-        if (ex instanceof ConstraintViolationException cve) {
-            final Stream<Problem> fieldFailures = cve.getConstraintViolations().stream().map(RestExceptionResolver::constraintViolationToProblem);
-            final List<Problem> failures = fieldFailures.collect(Collectors.toList());
-            logger.debug(String.format("Constraint violations at %s: %s", requestUri, failures));
-            return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, failures);
-        }
-        if (ex instanceof MissingServletRequestParameterException msrpe) {
-            final Problem problem = Problem.of("FIELD_ERROR", msrpe.getParameterName(), "Parameter is missing", Problem.NO_DETAILS);
-            return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, Collections.singletonList(problem));
-        }
-        if (ex instanceof MethodArgumentTypeMismatchException matme) { // Handles type errors in path variables (Es. not-numeric string when expecting an int)
-            final String parameterName = matme.getParameter().getParameterName();
-            final String parameterType = matme.getParameter().getParameterType().toGenericString();
-            final Object value = matme.getValue();
-            final String sourceType = value == null ? "null" : value.getClass().toGenericString();
-            final List<Problem> failures = Collections.singletonList(Problem.of("CONVERSION_ERROR", parameterName, "Conversion error", String.format("Failed to convert value of type '%s' to '%s'.", sourceType, parameterType)));
-            logger.debug(String.format("Conversion error for argument %s expected type %s found type %s at %s: %s", parameterName, parameterType, sourceType, requestUri, failures));
-            return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, failures);
-        }
-        if (ex instanceof MissingServletRequestPartException msrpe) { // Handles missing multipart request part
-            final Problem problem = Problem.of("FIELD_ERROR", msrpe.getRequestPartName(), "Required request part is not present", Problem.NO_DETAILS);
-            logger.debug(String.format("Missing required part %s of multipart request: %s", msrpe.getRequestPartName(), requestUri));
-            return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, Collections.singletonList(problem));
-        }
-        if (ex instanceof ResponseStatusException rse) {
-            final Problem problem = Problem.of(HttpStatus.resolve(rse.getStatusCode().value()).name(), null, rse.getReason(), Problem.NO_DETAILS);
-            return new HttpStatusAndFailures(HttpStatus.resolve(rse.getStatusCode().value()), Collections.singletonList(problem));
-        }
-        final ResponseStatus responseStatus = AnnotationUtils.findAnnotation(ex.getClass(), ResponseStatus.class);
-        if (responseStatus != null) {
-            if (ex instanceof Failure failure) {
+
+        return switch (ex) {
+            case HttpMessageNotReadableException inner -> {
+                yield handleMessageNotReadable(requestUri, inner);
+            }
+            case BindException be -> {
+                final Stream<Problem> globalFailures = be.getGlobalErrors().stream().map(RestExceptionResolver::objectErrorToProblem);
+                final Stream<Problem> fieldFailures = be.getFieldErrors().stream().map(RestExceptionResolver::fieldErrorToProblem);
+                final List<Problem> failures = Stream.concat(globalFailures, fieldFailures).collect(Collectors.toList());
+                logger.debug(String.format("Binding failure at %s: %s", requestUri, failures));
+                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, failures);
+            }
+            case ConstraintViolationException cve -> {
+                final Stream<Problem> fieldFailures = cve.getConstraintViolations().stream().map(RestExceptionResolver::constraintViolationToProblem);
+                final List<Problem> failures = fieldFailures.collect(Collectors.toList());
+                logger.debug(String.format("Constraint violations at %s: %s", requestUri, failures));
+                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, failures);
+            }
+            case MissingServletRequestParameterException msrpe -> {
+                final Problem problem = Problem.of("FIELD_ERROR", msrpe.getParameterName(), "Parameter is missing", Problem.NO_DETAILS);
+                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, Collections.singletonList(problem));
+            }
+            case MethodArgumentTypeMismatchException matme -> { // Handles type errors in path variables (Es. not-numeric string when expecting an int)
+                final String parameterName = matme.getParameter().getParameterName();
+                final String parameterType = matme.getParameter().getParameterType().toGenericString();
+                final Object value = matme.getValue();
+                final String sourceType = value == null ? "null" : value.getClass().toGenericString();
+                final List<Problem> failures = Collections.singletonList(Problem.of("CONVERSION_ERROR", parameterName, "Conversion error", String.format("Failed to convert value of type '%s' to '%s'.", sourceType, parameterType)));
+                logger.debug(String.format("Conversion error for argument %s expected type %s found type %s at %s: %s", parameterName, parameterType, sourceType, requestUri, failures));
+                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, failures);
+            }
+            case MissingServletRequestPartException msrpe -> {
+                final Problem problem = Problem.of("FIELD_ERROR", msrpe.getRequestPartName(), "Required request part is not present", Problem.NO_DETAILS);
+                logger.debug(String.format("Missing required part %s of multipart request: %s", msrpe.getRequestPartName(), requestUri));
+                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, Collections.singletonList(problem));
+            }
+            case ResponseStatusException rse -> {
+                final Problem problem = Problem.of(HttpStatus.resolve(rse.getStatusCode().value()).name(), null, rse.getReason(), Problem.NO_DETAILS);
+                yield new HttpStatusAndFailures(HttpStatus.resolve(rse.getStatusCode().value()), Collections.singletonList(problem));
+            }
+            case Failure failure -> {
                 logger.debug(String.format("Failure at %s", requestUri), failure);
-                return new HttpStatusAndFailures(responseStatus.value(), failure.problems);
+                yield new HttpStatusAndFailures(annotatedStatusOr(failure, HttpStatus.BAD_REQUEST), failure.problems);
             }
-            final String reason = responseStatus.reason().isEmpty() ? ex.getMessage() : responseStatus.reason();
-            final Problem problem = Problem.of("GENERIC_PROBLEM", null, null, reason);
-            logger.debug(String.format("Failure at %s: %s", requestUri, problem));
-            return new HttpStatusAndFailures(responseStatus.value(), List.of(problem));
-        }
-        if (ex instanceof Failure failure) {
-            logger.debug(String.format("Failure at %s", requestUri), failure);
-            return new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, failure.problems);
-        }
-        if (ex instanceof RestClientException) {
-            final Problem problem = Problem.of("UPSTREAM_ERROR", null, "upstream failure", ex.getMessage());
-            logger.warn(String.format("Upstream error %s: %s", requestUri, ex.getMessage()), ex);
-            return new HttpStatusAndFailures(HttpStatus.BAD_GATEWAY, List.of(problem));
-        }
-        if (ex instanceof AccessDeniedException) {
-            final Problem problem = Problem.of("FORBIDDEN", null, null, ex.getMessage());
-            logger.debug(String.format("Access denied at %s: %s", requestUri, problem));
-            return new HttpStatusAndFailures(HttpStatus.FORBIDDEN, List.of(problem));
-        }
-        if (null != super.doResolveException(request, new SendErrorToSetStatusHttpServletResponse(response), hm, ex)) {
-            if (request.getAttribute("javax.servlet.error.exception") != null) {
-                logger.warn(String.format("got an internal error from spring at %s", requestUri), ex);
+            case RestClientException rce -> {
+                final Problem problem = Problem.of("UPSTREAM_ERROR", null, "upstream failure", ex.getMessage());
+                logger.warn(String.format("Upstream error %s: %s", requestUri, ex.getMessage()), ex);
+                yield new HttpStatusAndFailures(HttpStatus.BAD_GATEWAY, List.of(problem));
             }
-            final HttpStatus currentStatus = HttpStatus.valueOf(response.getStatus());
-            logger.warn(String.format("got an unexpected error while processing request at %s", requestUri), ex);
-            return new HttpStatusAndFailures(currentStatus, List.of(Problem.of("INTERNAL_ERROR", null, null, ex.getMessage())));
+            case AccessDeniedException ade -> {
+                final Problem problem = Problem.of("FORBIDDEN", null, null, ex.getMessage());
+                logger.debug(String.format("Access denied at %s: %s", requestUri, problem));
+                yield new HttpStatusAndFailures(HttpStatus.FORBIDDEN, List.of(problem));
+            }
+            default -> {
+                if (null != super.doResolveException(request, new SendErrorToSetStatusHttpServletResponse(response), hm, ex)) {
+                    if (request.getAttribute("javax.servlet.error.exception") != null) {
+                        logger.warn(String.format("got an internal error from spring at %s", requestUri), ex);
+                    }
+                    final HttpStatus currentStatus = HttpStatus.valueOf(response.getStatus());
+                    logger.warn(String.format("got an unexpected error while processing request at %s", requestUri), ex);
+                    yield new HttpStatusAndFailures(annotatedStatusOr(ex, currentStatus), List.of(Problem.of("INTERNAL_ERROR", null, null, ex.getMessage())));
+                }
+                logger.error(String.format("got an unexpected error while processing request at %s", requestUri), ex);
+                yield new HttpStatusAndFailures(annotatedStatusOr(ex, HttpStatus.INTERNAL_SERVER_ERROR), List.of(Problem.of("UNEXPECTED_PROBLEM", null, null, ex.getMessage())));
+            }
+        };
+    }
+
+    private HttpStatus annotatedStatusOr(Exception ex, HttpStatus defaultValue) {
+        if (ex == null) {
+            return defaultValue;
         }
-        logger.error(String.format("got an unexpected error while processing request at %s", requestUri), ex);
-        return new HttpStatusAndFailures(HttpStatus.INTERNAL_SERVER_ERROR, List.of(Problem.of("UNEXPECTED_PROBLEM", null, null, ex.getMessage())));
+        final var rs = AnnotationUtils.findAnnotation(ex.getClass(), ResponseStatus.class);
+        return rs == null ? defaultValue : rs.value();
     }
 
     @Override
