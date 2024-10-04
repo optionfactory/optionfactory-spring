@@ -50,6 +50,7 @@ import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
  *   {"type": "", "context": null, "reason": "a global error", "details": null},
  * ]
  * </code>
+ * Content-Type header is set to <code>application/failures+json</code>
  */
 public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
 
@@ -80,34 +81,34 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 final Map<String, Object> metadata = new ConcurrentHashMap<>();
                 metadata.put("known", inner.getKnownPropertyIds());
                 metadata.put("in", inner.getReferringClass().getSimpleName());
-                final Problem failure = Problem.of("UNRECOGNIZED_PROPERTY", inner.getPropertyName(), "Unrecognized field", metadata);
-                logger.debug(String.format("Unrecognized property at %s: %s", requestUri, failure));
-                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(failure));
+                final Problem problem = Problem.of("UNRECOGNIZED_PROPERTY", inner.getPropertyName(), "Unrecognized field", metadata);
+                logger.debug(String.format("Unrecognized property at %s: %s", requestUri, problem));
+                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(problem));
             }
             case InvalidFormatException inner -> {
                 final String path = inner.getPath().stream().map(p -> p.getFieldName()).collect(Collectors.joining("."));
-                final Problem failure = Problem.of("INVALID_FORMAT", path, "Invalid format", inner.getMessage());
-                logger.debug(String.format("Invalid format at %s: %s", requestUri, failure));
-                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(failure));
+                final Problem problem = Problem.of("INVALID_FORMAT", path, "Invalid format", inner.getMessage());
+                logger.debug(String.format("Invalid format at %s: %s", requestUri, problem));
+                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(problem));
             }
             case JsonMappingException inner -> {
                 final String path = inner.getPath().stream().map(p -> p.getFieldName()).collect(Collectors.joining("."));
-                final Problem failure = Problem.of("INVALID_FORMAT", path, "Invalid format", inner.getMessage());
-                logger.debug(String.format("Json mapping exception at %s: %s", requestUri, failure));
-                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(failure));
+                final Problem problem = Problem.of("INVALID_FORMAT", path, "Invalid format", inner.getMessage());
+                logger.debug(String.format("Json mapping exception at %s: %s", requestUri, problem));
+                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(problem));
             }
             case JsonParseException inner -> {
                 final Map<String, Object> details = new ConcurrentHashMap<>();
                 details.put("location", inner.getLocation());
                 details.put("message", cause.getMessage());
-                final Problem failure = Problem.of("UNPARSEABLE_MESSAGE", Problem.NO_CONTEXT, "Unpearsable message", details);
-                logger.debug(String.format("Unparseable message: %s", failure.toString()));
-                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(failure));
+                final Problem problem = Problem.of("UNPARSEABLE_MESSAGE", Problem.NO_CONTEXT, "Unpearsable message", details);
+                logger.debug(String.format("Unparseable message: %s", problem.toString()));
+                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(problem));
             }
             case null, default -> {
-                final Problem failure = Problem.of("MESSAGE_NOT_READABLE", Problem.NO_CONTEXT, "Message not readable", cause != null ? cause.getMessage() : ex.getMessage());
-                logger.debug(String.format("Unreadable message at %s: %s", requestUri, failure));
-                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(failure));
+                final Problem problem = Problem.of("MESSAGE_NOT_READABLE", Problem.NO_CONTEXT, "Message not readable", cause != null ? cause.getMessage() : ex.getMessage());
+                logger.debug(String.format("Unreadable message at %s: %s", requestUri, problem));
+                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(problem));
             }
         };
     }
@@ -134,6 +135,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             }
             case MissingServletRequestParameterException msrpe -> {
                 final Problem problem = Problem.of("FIELD_ERROR", msrpe.getParameterName(), "Parameter is missing", Problem.NO_DETAILS);
+                logger.debug(String.format("Missing servlet RequestParameter at %s: %s", requestUri, problem));
                 yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, Collections.singletonList(problem));
             }
             case MethodArgumentTypeMismatchException matme -> { // Handles type errors in path variables (Es. not-numeric string when expecting an int)
@@ -152,6 +154,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             }
             case ResponseStatusException rse -> {
                 final Problem problem = Problem.of(HttpStatus.resolve(rse.getStatusCode().value()).name(), null, rse.getReason(), Problem.NO_DETAILS);
+                logger.debug(String.format("ResponseStatusException at %s: %s", requestUri, problem));
                 yield new HttpStatusAndFailures(HttpStatus.resolve(rse.getStatusCode().value()), Collections.singletonList(problem));
             }
             case Failure failure -> {
@@ -159,14 +162,14 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 yield new HttpStatusAndFailures(annotatedStatusOr(failure, HttpStatus.BAD_REQUEST), failure.problems);
             }
             case RestClientException rce -> {
-                final Problem problem = Problem.of("UPSTREAM_ERROR", null, "upstream failure", ex.getMessage());
-                logger.warn(String.format("Upstream error %s: %s", requestUri, ex.getMessage()), ex);
+                final Problem problem = Problem.of("UPSTREAM_ERROR", null, "upstream failure", rce.getMessage());
+                logger.warn(String.format("Upstream error %s: %s", requestUri, rce.getMessage()), rce);
                 yield new HttpStatusAndFailures(HttpStatus.BAD_GATEWAY, List.of(problem));
             }
             case AccessDeniedException ade -> {
-                final Problem problem = Problem.of("FORBIDDEN", null, null, ex.getMessage());
+                final Problem problem = Problem.of("FORBIDDEN", null, null, ade.getMessage());
                 logger.debug(String.format("Access denied at %s: %s", requestUri, problem));
-                yield new HttpStatusAndFailures(HttpStatus.FORBIDDEN, List.of(problem));
+                yield new HttpStatusAndFailures(annotatedStatusOr(ade, HttpStatus.FORBIDDEN), List.of(problem));
             }
             default -> {
                 if (null != super.doResolveException(request, new SendErrorToSetStatusHttpServletResponse(response), hm, ex)) {
@@ -187,7 +190,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
         if (ex == null) {
             return defaultValue;
         }
-        final var rs = AnnotationUtils.findAnnotation(ex.getClass(), ResponseStatus.class);
+        final var rs = AnnotatedElementUtils.findMergedAnnotation(ex.getClass(), ResponseStatus.class);
         return rs == null ? defaultValue : rs.value();
     }
 
@@ -217,7 +220,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
         final MappingJackson2JsonView view = new MappingJackson2JsonView();
         view.setExtractValueFromSingleKeyModel(true);
         view.setObjectMapper(mapper);
-        view.setContentType("application/json;charset=UTF-8");
+        view.setContentType("application/failures+json");
         return new ModelAndView(view, "errors", transformedFailures);
     }
 

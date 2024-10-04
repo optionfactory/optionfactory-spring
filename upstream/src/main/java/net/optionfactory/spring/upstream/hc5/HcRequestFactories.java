@@ -15,7 +15,7 @@ import org.apache.hc.client5.http.AuthenticationStrategy;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
-import org.apache.hc.client5.http.socket.LayeredConnectionSocketFactory;
+import org.apache.hc.client5.http.ssl.TlsSocketStrategy;
 import org.apache.hc.core5.http.ConnectionReuseStrategy;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.io.SocketConfig;
@@ -43,8 +43,8 @@ public class HcRequestFactories {
             return this;
         }
 
-        public Builder tlsSocketFactory(@Nullable LayeredConnectionSocketFactory sslSocketFactory) {
-            return connectionManager(c -> c.setSSLSocketFactory(sslSocketFactory));
+        public Builder tlsSocketStrategy(@Nullable TlsSocketStrategy strategy) {
+            return connectionManager(c -> c.setTlsSocketStrategy(strategy));
         }
 
         public Builder maxConnections(int max) {

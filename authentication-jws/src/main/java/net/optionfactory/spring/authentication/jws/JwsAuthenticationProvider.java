@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.crypto.SecretKey;
 import net.optionfactory.spring.authentication.bearer.token.BearerToken;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.Authentication;
@@ -16,10 +17,10 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 public class JwsAuthenticationProvider implements AuthenticationProvider {
 
-    private final byte[] key;
+    private final SecretKey key;
     private final Function<Claims, List<GrantedAuthority>> authoritiesMapper;
 
-    public JwsAuthenticationProvider(byte[] key, Function<Claims, List<GrantedAuthority>> authoritiesMapper) {
+    public JwsAuthenticationProvider(SecretKey key, Function<Claims, List<GrantedAuthority>> authoritiesMapper) {
         this.key = key;
         this.authoritiesMapper = authoritiesMapper;
     }
@@ -46,8 +47,8 @@ public class JwsAuthenticationProvider implements AuthenticationProvider {
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         final BearerToken bearer = (BearerToken) authentication;
-        final Jws<Claims> jws = Jwts.parser().setSigningKey(key).build().parseClaimsJws(bearer.getCredentials());
-        final Claims principal = jws.getBody();
+        final Jws<Claims> jws = Jwts.parser().verifyWith(key).build().parseSignedClaims(bearer.getCredentials());
+        final Claims principal = jws.getPayload();
         final var authorities = authoritiesMapper.apply(principal);
         final var a = new JwsAuthenticatedToken(bearer.getCredentials(), principal, authorities);
         a.setDetails(bearer.getDetails());

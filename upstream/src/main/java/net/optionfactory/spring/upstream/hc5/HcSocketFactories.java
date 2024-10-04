@@ -7,8 +7,11 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
+import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
+import org.apache.hc.client5.http.ssl.HostnameVerificationPolicy;
 import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
-import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
+import org.apache.hc.client5.http.ssl.TlsSocketStrategy;
+import org.apache.hc.core5.reactor.ssl.SSLBufferMode;
 import org.apache.hc.core5.ssl.PrivateKeyStrategy;
 import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.apache.hc.core5.ssl.TrustStrategy;
@@ -16,31 +19,35 @@ import org.springframework.lang.Nullable;
 
 public class HcSocketFactories {
 
-    public static SSLConnectionSocketFactory trusting(KeyStore keystore, TrustStrategy strategy, HostnameVerifier verifier) {
+    public static TlsSocketStrategy trusting(KeyStore keystore, TrustStrategy strategy, HostnameVerificationPolicy policy, HostnameVerifier verifier) {
         try {
             final SSLContext context = new SSLContextBuilder()
                     .loadTrustMaterial(keystore, strategy)
                     .build();
-            return new SSLConnectionSocketFactory(context, verifier);
+            return new DefaultClientTlsStrategy(context, policy, verifier);
         } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException ex) {
             throw new IllegalStateException(ex);
         }
     }
 
-    public static SSLConnectionSocketFactory trustAll() {
+    public static TlsSocketStrategy trustAll() {
         try {
             final SSLContext context = new SSLContextBuilder()
                     .loadTrustMaterial(null, (chain, authType) -> true)
                     .build();
-            return new SSLConnectionSocketFactory(context, new NoopHostnameVerifier());
+            return new DefaultClientTlsStrategy(context, HostnameVerificationPolicy.CLIENT, NoopHostnameVerifier.INSTANCE);
         } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException ex) {
             //never happens.
             throw new IllegalStateException(ex);
         }
     }
 
-    public static SSLConnectionSocketFactory system() {
-        return null;
+    public static TlsSocketStrategy system() {
+        return DefaultClientTlsStrategy.createSystemDefault();
+    }
+
+    public static TlsSocketStrategy defaults() {
+        return DefaultClientTlsStrategy.createDefault();
     }
 
     public static Builder builder() {
@@ -50,9 +57,11 @@ public class HcSocketFactories {
     public static class Builder {
 
         private final SSLContextBuilder inner = new SSLContextBuilder();
-        private HostnameVerifier hostnameVerifier;
         private String[] protocols;
         private String[] cipherSuites;
+        private SSLBufferMode sslBufferMode;
+        private HostnameVerificationPolicy hostnameVerificationPolicy;
+        private HostnameVerifier hostnameVerifier;
 
         public Builder key(KeyStore keyStore, char[] keySecret) {
             try {
@@ -90,8 +99,40 @@ public class HcSocketFactories {
             }
         }
 
+        /**
+         * defaults to HostnameVerificationPolicy.BOTH
+         *
+         * @param hostnameVerificationPolicy
+         * @return
+         */
+        public Builder hostnameVerificationPolicy(@Nullable HostnameVerificationPolicy hostnameVerificationPolicy) {
+            this.hostnameVerificationPolicy = hostnameVerificationPolicy;
+            return this;
+        }
+
+        /**
+         *
+         * defaults to NoopHostnameVerifier.INSTANCE if
+         * HostnameVerificationPolicy.BUILTIN {
+         *
+         * @see HttpsSupport.getDefaultHostnameVerifier()} otherwise.
+         *
+         * @param hostnameVerifier
+         * @return
+         */
         public Builder hostnameVerifier(@Nullable HostnameVerifier hostnameVerifier) {
             this.hostnameVerifier = hostnameVerifier;
+            return this;
+        }
+
+        /**
+         * defaults to SSLBufferMode.STATIC
+         *
+         * @param sslBufferMode
+         * @return
+         */
+        public Builder sslBufferMode(SSLBufferMode sslBufferMode) {
+            this.sslBufferMode = sslBufferMode;
             return this;
         }
 
@@ -105,9 +146,9 @@ public class HcSocketFactories {
             return this;
         }
 
-        public SSLConnectionSocketFactory build() {
+        public TlsSocketStrategy build() {
             try {
-                return new SSLConnectionSocketFactory(inner.build(), protocols, cipherSuites, hostnameVerifier);
+                return new DefaultClientTlsStrategy(inner.build(), protocols, cipherSuites, sslBufferMode, hostnameVerificationPolicy, hostnameVerifier);
             } catch (NoSuchAlgorithmException | KeyManagementException ex) {
                 throw new IllegalStateException(ex);
             }
