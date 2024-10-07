@@ -34,7 +34,7 @@ public class UpstreamJwtAuthenticator implements UpstreamHttpRequestInitializer 
         final String jwt = Jwts.builder()
                 .claims(claims)
                 .subject(subjectFactory.apply(ctx))
-                .audience().single(audience)
+                .audience().add(audience).and()
                 .issuer(jwtIssuer)
                 .issuedAt(jwtIssuedAt)
                 .expiration(jwtExpiration)
