@@ -6,6 +6,10 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import net.optionfactory.spring.upstream.contexts.ExceptionContext;
+import net.optionfactory.spring.upstream.contexts.InvocationContext;
+import net.optionfactory.spring.upstream.contexts.RequestContext;
+import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.expressions.Expressions.Type;
 import net.optionfactory.spring.upstream.rendering.BodyRendering.HeadersStrategy;
@@ -30,6 +34,11 @@ public @interface Upstream {
      */
     String value() default "";
 
+    /**
+     * Apache HttpCmponents 5 specific configuration for an upstream.
+     * Configuration is honored iff an HttpComponents request factory is
+     * configured.
+     */
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.TYPE)
     public @interface HttpComponents {
@@ -72,6 +81,10 @@ public @interface Upstream {
     }
 
     /**
+     * Marks a parameter as the principal. The annotated parameter is ignored by
+     * the HttpServiceProxy. The annotated parameter will be retrived by using
+     * {@code #invocation.principal} The annotated parameter will be used by the
+     * logging interceptor.
      * <strong>discovery</strong>: parameter, parameter class<br>
      * <strong>meta</strong>: no<br>
      * <strong>merging</strong>: no<br>
@@ -83,6 +96,9 @@ public @interface Upstream {
     }
 
     /**
+     * Mark a parameter as a context parameter. Context parameters are ignored
+     * by the HttpServiceProxy but can be used by expressions and interceptors.
+     *
      * <strong>discovery</strong>: parameter, parameter class<br>
      * <strong>meta</strong>: no<br>
      * <strong>merging</strong>: no<br>
@@ -94,6 +110,7 @@ public @interface Upstream {
     }
 
     /**
+     * Used to give a descriptive name to an endpoint.
      * <strong>discovery</strong>: method<br>
      * <strong>meta</strong>: no<br>
      * <strong>merging</strong>: no<br>
@@ -153,6 +170,9 @@ public @interface Upstream {
     }
 
     /**
+     * Mock specific configuration for an upstream endpoint. Configuration is
+     * honored iff a mock request factory is configured.
+     *
      * <strong>discovery</strong>: method<br>
      * <strong>meta</strong>: no<br>
      * <strong>merging</strong>: no<br>
@@ -181,6 +201,7 @@ public @interface Upstream {
         Type headersType() default Type.TEMPLATED;
 
         /**
+         * Default Content-Type that will be produced when mocking endpoints.
          * <strong>discovery</strong>: declaring class, super interfaces<br>
          * <strong>meta</strong>: no<br>
          * <strong>merging</strong>: no<br>
@@ -203,6 +224,7 @@ public @interface Upstream {
     }
 
     /**
+     * An expression based HTTP header.
      * <strong>discovery</strong>: method<br>
      * <strong>meta</strong>: no<br>
      * <strong>merging</strong>: no<br>
@@ -241,6 +263,7 @@ public @interface Upstream {
     }
 
     /**
+     * An expression based Cookie.
      * <strong>discovery</strong>: method<br>
      * <strong>meta</strong>: no<br>
      * <strong>merging</strong>: no<br>
@@ -272,6 +295,7 @@ public @interface Upstream {
     }
 
     /**
+     * An expression based query parameter.
      * <strong>discovery</strong>: method<br>
      * <strong>meta</strong>: no<br>
      * <strong>merging</strong>: no<br>
@@ -310,6 +334,7 @@ public @interface Upstream {
     }
 
     /**
+     * An expression based path variable.
      * <strong>discovery</strong>: parameter<br>
      * <strong>meta</strong>: no<br>
      * <strong>merging</strong>: no<br>
@@ -351,6 +376,13 @@ public @interface Upstream {
     }
 
     /**
+     * Adds the evaluated expression to the request as a
+     * <ul>
+     * <li>{@code SOAPAction} header if the configured protocol is
+     * {@code SOAP_1_1}
+     * <li>{@code action} parameter to the Content-Type header if the configured
+     * protocol is {@code SOAP_1_2}
+     * </ul>
      * <strong>discovery</strong>: method<br>
      * <strong>meta</strong>: no<br>
      * <strong>merging</strong>: no<br>
@@ -369,6 +401,14 @@ public @interface Upstream {
     }
 
     /**
+     * Annotated method or any method in the annotated type will generate a
+     * fault when the configured condition matches. The configured condition is
+     * usually evaluated against the received response.
+     *
+     * @see FaultOnRemotingError for generating faults on remoting errors.<br>
+     * @see InvocationContext exposed as {@code #invocation}<br>
+     * @see RequestContext exposed as {@code #request}<br>
+     * @see ResponseContext exposed as {@code #response}<br>
      * <strong>discovery</strong>: method, interface, super-interfaces<br>
      * <strong>meta</strong>: no<br>
      * <strong>merging</strong>: no<br>
@@ -388,6 +428,14 @@ public @interface Upstream {
     }
 
     /**
+     * Annotated method or any method in the annotated type will generate a
+     * fault when a remoting error occurs.
+     *
+     * @see FaultOnResponse for generating faults when a response is
+     * received<br>
+     * @see InvocationContext exposed as {@code #invocation}<br>
+     * @see RequestContext exposed as {@code #request}<br>
+     * @see ExceptionContext exposed as {@code #exception}<br>
      * <strong>discovery</strong>: method, interface, super-interfaces<br>
      * <strong>meta</strong>: no<br>
      * <strong>merging</strong>: no<br>
@@ -407,6 +455,13 @@ public @interface Upstream {
     }
 
     /**
+     * Annotated method or any method in the annotated type will generate an
+     * exception when a the configured condition is matches. The configured
+     * condition is usually evaluated against the received response.
+     *
+     * @see InvocationContext exposed as {@code #invocation}<br>
+     * @see RequestContext exposed as {@code #request}<br>
+     * @see ResponseContext exposed as {@code #response}<br>
      * <strong>discovery</strong>: method, interface, super-interfaces<br>
      * <strong>meta</strong>: no<br>
      * <strong>merging</strong>: no<br>
@@ -418,15 +473,21 @@ public @interface Upstream {
     public @interface ErrorOnResponse {
 
         /**
-         * @return the condition to be evaluated
+         * @return the condition to be evaluated. Always of type
+         * {@code Type.EXPRESSION}
          */
         String value() default "false";
 
         /**
-         * @return the reported reason
+         * @return the reported reason. Default type is {@code Type.TEMPLATED},
+         *
          */
         String reason() default "upstream error";
 
+        /**
+         *
+         * @return the expression type for the configured reason.
+         */
         public Type reasonType() default Type.TEMPLATED;
 
         HttpStatus.Series[] series() default HttpStatus.Series.SUCCESSFUL;
