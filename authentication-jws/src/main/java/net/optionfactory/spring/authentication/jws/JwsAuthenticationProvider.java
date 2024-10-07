@@ -30,6 +30,7 @@ public class JwsAuthenticationProvider implements AuthenticationProvider {
         return new SimpleGrantedAuthority(String.format("%s_%s", type.toUpperCase(), suffix));
     }
 
+    @SuppressWarnings("unchecked")
     public static List<GrantedAuthority> rolesAndGroupsFromClaims(Claims claims) {
         final List<String> rolesOrNull = claims.get("roles", List.class);
         final List<String> groupsOrNull = claims.get("groups", List.class);

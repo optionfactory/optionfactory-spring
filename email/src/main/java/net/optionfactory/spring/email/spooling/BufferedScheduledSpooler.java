@@ -90,6 +90,7 @@ public class BufferedScheduledSpooler<T> {
 
         @Override
         public void onApplicationEvent(ApplicationEvent event) {
+            @SuppressWarnings("unchecked")
             final var payload = (T) ((PayloadApplicationEvent) event).getPayload();
             bufferLock.lock();
             try {

@@ -666,7 +666,9 @@ public class UpstreamBuilder<T> {
         p.setTarget(client);
         p.setInterfaces(klass);
         p.addAdvice(scopeHandler.interceptor(new HttpMessageConverters(messageConverters)));
-        return (T) p.getProxy();
+        @SuppressWarnings("unchecked")
+        final var r = (T) p.getProxy();
+        return r;
     }
 
 }

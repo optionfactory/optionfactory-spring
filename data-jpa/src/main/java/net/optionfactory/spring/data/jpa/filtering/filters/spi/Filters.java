@@ -53,10 +53,10 @@ public interface Filters {
             } catch (IllegalArgumentException exception) {
                 throw new InvalidFilterConfiguration(annotation, entity, String.format("referenced a non-existent property %s.%s in spec %s", currentType.getJavaType().getSimpleName(), attributeName, pathTraversalSpec));
             }
-            if (currentAttribute instanceof SingularAttribute) {
+            if (currentAttribute instanceof SingularAttribute sa) {
                 final AttributeTraversal candidate = new AttributeTraversal(attributeName, Optional.ofNullable(type).map(TraversalType::valueOf).orElse(TraversalType.GET));
                 path.add(candidate);
-                final Type targetType = ((SingularAttribute) currentAttribute).getType();
+                final Type targetType = sa.getType();
                 if (targetType instanceof ManagedType) {
                     currentType = (ManagedType<?>) targetType;
                 } else {
@@ -64,11 +64,11 @@ public interface Filters {
                 }
                 continue;
             }
-            if (currentAttribute instanceof PluralAttribute) {
+            if (currentAttribute instanceof PluralAttribute pa) {
                 final AttributeTraversal candidate = new AttributeTraversal(attributeName, Optional.ofNullable(type).map(TraversalType::valueOf).orElse(TraversalType.INNER_JOIN_REUSE));
                 ensureConf(TraversalType.GET != candidate.type, annotation, entity, "used an invalid traversal type '%s' for plural attribute '%s' in spec: '%s'", candidate.type, candidate.name, pathTraversalSpec);
                 path.add(candidate);
-                final Type targetType = ((PluralAttribute) currentAttribute).getElementType();
+                final Type targetType = pa.getElementType();
                 if (targetType instanceof ManagedType) {
                     currentType = (ManagedType<?>) targetType;
                 } else {
@@ -154,27 +154,17 @@ public interface Filters {
         );
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> Path<T> path(String filterName, Root<?> root, Traversal traversal) {
         Path<?> path = root;
         for (AttributeTraversal part : traversal.path) {
             switch (part.type) {
-                case GET:
-                    path = path.get(part.name);
-                    break;
-                case INNER_JOIN:
-                    path = join(filterName, root, path, part.name, JoinType.INNER, false);
-                    break;
-                case INNER_JOIN_REUSE:
-                    path = join(filterName, root, path, part.name, JoinType.INNER, true);
-                    break;
-                case LEFT_JOIN:
-                    path = join(filterName, root, path, part.name, JoinType.LEFT, false);
-                    break;
-                case LEFT_JOIN_REUSE:
-                    path = join(filterName, root, path, part.name, JoinType.LEFT, true);
-                    break;
-                default:
-                    ensure(false, filterName, root, "Unsupported TraversalType: %s for %s in traversal %s", part.type, part.name, traversal);
+                case GET -> path = path.get(part.name);
+                case INNER_JOIN -> path = join(filterName, root, path, part.name, JoinType.INNER, false);
+                case INNER_JOIN_REUSE -> path = join(filterName, root, path, part.name, JoinType.INNER, true);
+                case LEFT_JOIN -> path = join(filterName, root, path, part.name, JoinType.LEFT, false);
+                case LEFT_JOIN_REUSE -> path = join(filterName, root, path, part.name, JoinType.LEFT, true);
+                default -> ensure(false, filterName, root, "Unsupported TraversalType: %s for %s in traversal %s", part.type, part.name, traversal);
             }
         }
         return (Path<T>) path;

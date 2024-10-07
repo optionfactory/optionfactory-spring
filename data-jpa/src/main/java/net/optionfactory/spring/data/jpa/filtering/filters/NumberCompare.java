@@ -67,6 +67,7 @@ public @interface NumberCompare {
         private final Class<? extends Number> propertyClass;
         private final Traversal traversal;
 
+        @SuppressWarnings("unchecked") 
         public NumberCompareFilter(NumberCompare annotation, EntityType<?> entity) {
             this.name = annotation.name();
             this.mode = annotation.mode();

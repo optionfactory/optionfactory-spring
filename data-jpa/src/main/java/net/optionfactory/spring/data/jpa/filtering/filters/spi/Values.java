@@ -13,25 +13,27 @@ public interface Values {
             return value;
         }
         if (Number.class.isAssignableFrom(target)) {
-            return NumberUtils.parseNumber(value, (Class<? extends Number>) target);
+            @SuppressWarnings("unchecked")
+            final var a = NumberUtils.parseNumber(value, (Class<? extends Number>) target);
+            return a;
         }
         if (byte.class.isAssignableFrom(target)) {
-            return Byte.parseByte(value);
+            return Byte.valueOf(value);
         }
         if (short.class.isAssignableFrom(target)) {
-            return Short.parseShort(value);
+            return Short.valueOf(value);
         }
         if (int.class.isAssignableFrom(target)) {
-            return Integer.parseInt(value);
+            return Integer.valueOf(value);
         }
         if (long.class.isAssignableFrom(target)) {
-            return Long.parseLong(value);
+            return Long.valueOf(value);
         }
         if (float.class.isAssignableFrom(target)) {
-            return Float.parseFloat(value);
+            return Float.valueOf(value);
         }
         if (double.class.isAssignableFrom(target)) {
-            return Double.parseDouble(value);
+            return Double.valueOf(value);
         }
         if (char.class.isAssignableFrom(target)) {
             return value.charAt(0);

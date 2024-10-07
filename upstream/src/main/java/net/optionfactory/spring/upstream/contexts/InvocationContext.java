@@ -43,6 +43,7 @@ public record InvocationContext(
         }
 
         public <T> T convert(HttpInputMessage im, Class<T> type, MediaType mediaType) throws IOException {
+            @SuppressWarnings("unchecked")
             final HttpMessageConverter<T> converter = (HttpMessageConverter) all().stream()
                     .filter(c -> c.canRead(type, mediaType))
                     .findFirst()
@@ -67,7 +68,9 @@ public record InvocationContext(
             return baos.toByteArrayUnsafe();
         }
 
+        @SuppressWarnings("unchecked")
         public void convert(Object value, HttpOutputMessage om, Class<?> type, MediaType mediaType) throws IOException {
+
             final HttpMessageConverter converter = all().stream()
                     .filter(c -> c.canWrite(type, mediaType))
                     .findFirst()

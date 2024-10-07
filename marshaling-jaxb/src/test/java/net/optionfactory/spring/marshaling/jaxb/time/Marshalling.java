@@ -20,6 +20,8 @@ public class Marshalling {
     public static <B> B unmarshal(String source, Class<B> beanType) throws JAXBException {
         final JAXBContext ctx = JAXBContext.newInstance(beanType);
         final Unmarshaller unmarshaller = ctx.createUnmarshaller();
-        return (B) unmarshaller.unmarshal(new StringReader(source));        
+        @SuppressWarnings("unchecked")
+        final var r = (B) unmarshaller.unmarshal(new StringReader(source));
+        return r;
     }
 }

@@ -216,8 +216,12 @@
                 <artifactId>saaj-impl</artifactId>
                 <version>3.0.4</version>        
             </dependency>
-            
-            
+            <dependency>
+                <groupId>com.google.code.findbugs</groupId>
+                <artifactId>jsr305</artifactId>
+                <version>3.0.2</version>
+                <scope>compile</scope>
+            </dependency>
             <dependency>
                 <groupId>io.github.openhtmltopdf</groupId>
                 <artifactId>openhtmltopdf-core</artifactId>

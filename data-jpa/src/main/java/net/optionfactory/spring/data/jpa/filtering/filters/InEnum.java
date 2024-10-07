@@ -75,6 +75,7 @@ public @interface InEnum {
         public Predicate condition(Root<?> root, Path<Enum<?>> path, CriteriaBuilder builder, String[] values) {
             final boolean hasNull = Stream.of(values).anyMatch(Objects::isNull);
             Filters.ensure(!hasNull || nullable, name, root, "null enum filter values is not whitelisted");
+            @SuppressWarnings("unchecked")
             final Set<Enum> requested = Stream.of(values)
                     .filter(Objects::nonNull)
                     .map(value -> Enum.valueOf(type, value))
