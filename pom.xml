@@ -82,21 +82,21 @@
             <dependency>
                 <groupId>org.springframework.data</groupId>
                 <artifactId>spring-data-bom</artifactId>
-                <version>2024.0.4</version>
+                <version>2024.0.5</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>org.springframework.security</groupId>
                 <artifactId>spring-security-bom</artifactId>
-                <version>6.3.3</version>
+                <version>6.3.4</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-framework-bom</artifactId>
-                <version>6.1.13</version>
+                <version>6.1.14</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -188,7 +188,7 @@
             <dependency>
                 <groupId>com.googlecode.libphonenumber</groupId>
                 <artifactId>libphonenumber</artifactId>
-                <version>8.13.47</version>
+                <version>8.13.48</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
