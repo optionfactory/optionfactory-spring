@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -69,11 +70,11 @@ public class DerCursor {
             DerCursor.this.eof(Navigation.NESTED);
         }
 
-        public DerValue next(Navigation n) {
+        public DerValue next() {
             return DerCursor.this.next(Navigation.NESTED);
         }
 
-        public Optional<DerValue> mnext(Navigation n) {
+        public Optional<DerValue> mnext() {
             return DerCursor.this.mnext(Navigation.NESTED);
         }
 
@@ -106,7 +107,7 @@ public class DerCursor {
         final byte tag = source[pos++];
         final int length = length();
         final var value = new DerValue(tag, length, pos, pos + length);
-        if (n == Navigation.FLAT && tag != DerValue.TAG_SEQUENCE && tag != DerValue.TAG_SET) {
+        if (n == Navigation.FLAT || !Tag.isStructured(tag)) {
             //we don't advance the pos for containers so nested elements are yielded
             pos += length;
         }
@@ -132,6 +133,36 @@ public class DerCursor {
         return length;
     }
 
+    public static class Tag {
+
+        public static byte type(byte value) {
+            return (byte) (value & 0b00011111);
+        }
+
+        public static boolean isUniversal(byte value) {
+            return (value & 0b11000000) == 0b00000000;
+        }
+
+        public static boolean isApplication(byte value) {
+            return (value & 0b11000000) == 0b01000000;
+        }
+
+        public static boolean isContextSpecific(byte value) {
+            return (value & 0b11000000) == 0b10000000;
+        }
+
+        public static boolean isPrivate(byte value) {
+            return (value & 0b11000000) == 0b11000000;
+        }
+
+        public static boolean isStructured(byte value) {
+            return (value & 0b00100000) == 0b00100000;
+        }
+        public static boolean isPrimitive(byte value) {
+            return (value & 0b00100000) == 0b00000000;
+        }
+    }
+
     public record DerValue(byte tag, long length, int from, int to) {
 
         public static final byte TAG_BOOLEAN = 0x01;
@@ -150,12 +181,13 @@ public class DerCursor {
         public static final byte TAG_GENERALSTRING = 0x1B;
         public static final byte TAG_UNIVERSALSTRING = 0x1C;
         public static final byte TAG_BMPSTRING = 0x1E;
-        public static final byte TAG_SEQUENCE = 0x30;
-        public static final byte TAG_SET = 0x31;
+        public static final byte TAG_SEQUENCE = 0x10;
+        public static final byte TAG_SET = 0x11;
         public static final DateTimeFormatter UTC_TIME_PATTERN = DateTimeFormatter.ofPattern("yyMMddHHmm[ss]XX");
 
         public DerValue ensure(Byte... tags) {
-            DerException.ensure(Set.of(tags).contains(this.tag), "expected type to be one of %s but was: %s", tags, tag);
+            final byte clean = (byte) (this.tag & 0b00011111);
+            DerException.ensure(Set.of(tags).contains(clean), "expected type to be one of %s but was: %s", List.of(tags), clean);
             return this;
         }
 

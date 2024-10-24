@@ -89,7 +89,7 @@ public record PemEntry(String label, List<Metadata> metadata, String b64) {
     public PrivateKey unmarshalPkcs1PrivateKey() {
         final var bytes = Base64.getDecoder().decode(b64);
         try {
-            final var cursor = DerCursor.flat(bytes);
+            final var cursor = DerCursor.nested(bytes);
             final var sequence = cursor.next().ensure(DerValue.TAG_SEQUENCE);
             final var version = cursor.next().integer(bytes);
             final var modulus = cursor.next().integer(bytes);
