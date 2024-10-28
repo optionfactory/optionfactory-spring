@@ -17,6 +17,7 @@ public @interface WhitelistedFilter {
 
     /**
      * The {@link Filter} implementation type.
+     * @return the type
      */
     Class<? extends Filter> value();
 }

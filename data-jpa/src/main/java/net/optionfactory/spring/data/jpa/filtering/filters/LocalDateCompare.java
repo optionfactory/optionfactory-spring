@@ -137,7 +137,7 @@ public @interface LocalDateCompare {
             return value.format(DateTimeFormatter.ofPattern(format));
         }
 
-        private static String DEFAULT_FORMAT = "yyyy-MM-dd";
+        private static final String DEFAULT_FORMAT = "yyyy-MM-dd";
 
         public static String[] eq(LocalDate value) {
             return new String[]{Operator.EQ.name(), str(DEFAULT_FORMAT, value)};

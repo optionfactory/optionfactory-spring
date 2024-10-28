@@ -25,11 +25,13 @@ public @interface Filterable {
 
     /**
      * The filter name.
+     * @return the name
      */
     String name();
 
     /**
      * The filter implementation type.
+     * @return the type
      */
     @AliasFor(annotation = WhitelistedFilter.class, attribute = "value")
     Class<? extends Filter> filter();

@@ -28,6 +28,7 @@ public interface Filter {
 
     /**
      * The filter name, which is referenced by {@link FilterRequest}s.
+     * @return the name
      */
     String name();
 
@@ -38,6 +39,7 @@ public interface Filter {
      * @param query
      * @param builder
      * @param values filter arguments
+     * @return the predicate
      */
     Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values);
 }

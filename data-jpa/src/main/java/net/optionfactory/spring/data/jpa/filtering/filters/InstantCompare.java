@@ -87,53 +87,52 @@ public @interface InstantCompare {
             Filters.ensure(values.length == (operator == Operator.BETWEEN ? 3 : 2), name, root, "unexpected number of values: %d", values.length);
             final String value = values[1];
             final Instant rhs = parseInstant(value);
-            switch (operator) {
-                case EQ:
-                    return rhs == null ? lhs.isNull() : builder.equal(lhs, rhs);
-                case NEQ:
-                    return rhs == null ? lhs.isNotNull() : builder.or(lhs.isNull(), builder.notEqual(lhs, rhs));
-                case LT:
+            return switch (operator) {
+                case EQ -> rhs == null ? lhs.isNull() : builder.equal(lhs, rhs);
+                case NEQ -> rhs == null ? lhs.isNotNull() : builder.or(lhs.isNull(), builder.notEqual(lhs, rhs));
+                case LT -> {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
-                    return builder.lessThan(lhs, rhs);
-                case GT:
+                    yield builder.lessThan(lhs, rhs);
+                }
+                case GT -> {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
-                    return builder.greaterThan(lhs, rhs);
-                case LTE:
+                    yield builder.greaterThan(lhs, rhs);
+                }
+                case LTE -> {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
-                    return builder.lessThanOrEqualTo(lhs, rhs);
-                case GTE:
+                    yield builder.lessThanOrEqualTo(lhs, rhs);
+                }
+                case GTE -> {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
-                    return builder.greaterThanOrEqualTo(lhs, rhs);
-                case BETWEEN:
+                    yield builder.greaterThanOrEqualTo(lhs, rhs);
+                }
+                case BETWEEN -> {
                     final String value2 = values[2];
                     final Instant rhs2 = parseInstant(value2);
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
                     Filters.ensure(rhs2 != null, name, root, "value2 cannot be null for operator %s", operator);
                     final Instant[] instants = Stream.of(rhs, rhs2).sorted().toArray((l) -> new Instant[l]);
-                    return builder.and(builder.greaterThanOrEqualTo(lhs, instants[0]), builder.lessThan(lhs, instants[1]));
-                default:
-                    throw new IllegalStateException("unreachable");
-            }
+                    yield builder.and(builder.greaterThanOrEqualTo(lhs, instants[0]), builder.lessThan(lhs, instants[1]));
+                }
+                default -> throw new IllegalStateException("unreachable");
+            };
         }
 
         private Instant parseInstant(String value) {
             if (value == null) {
                 return null;
             }
-            switch (format) {
-                case ISO_8601:
-                    return Instant.parse(value);
-                case UNIX_S:
-                    return Instant.ofEpochSecond(Long.parseLong(value, 10));
-                case UNIX_MS:
-                    return Instant.ofEpochMilli(Long.parseLong(value, 10));
-                case UNIX_NS:
+            return switch (format) {
+                case ISO_8601 -> Instant.parse(value);
+                case UNIX_S -> Instant.ofEpochSecond(Long.parseLong(value, 10));
+                case UNIX_MS -> Instant.ofEpochMilli(Long.parseLong(value, 10));
+                case UNIX_NS -> {
                     final BigInteger nanoseconds = new BigInteger(value, 10);
                     final BigInteger[] secondsAndNanosecondsFraction = nanoseconds.divideAndRemainder(BigInteger.valueOf(1_000_000_000L));
-                    return Instant.ofEpochSecond(secondsAndNanosecondsFraction[0].longValueExact(), secondsAndNanosecondsFraction[1].longValueExact());
-                default:
-                    throw new IllegalStateException("unreachable");
-            }
+                    yield Instant.ofEpochSecond(secondsAndNanosecondsFraction[0].longValueExact(), secondsAndNanosecondsFraction[1].longValueExact());
+                }
+                default -> throw new IllegalStateException("unreachable");
+            };
         }
 
         @Override
@@ -158,21 +157,16 @@ public @interface InstantCompare {
             if (value == null) {
                 return null;
             }
-            switch(format){
-                case ISO_8601:
-                    return value.toString();
-                case UNIX_S:
-                    return Long.toString(value.getEpochSecond());
-                case UNIX_MS:
-                    return Long.toString(value.toEpochMilli());
-                case UNIX_NS:
-                    return BigInteger.valueOf(value.getEpochSecond())
+            return switch(format){
+                case ISO_8601 -> value.toString();
+                case UNIX_S -> Long.toString(value.getEpochSecond());
+                case UNIX_MS -> Long.toString(value.toEpochMilli());
+                case UNIX_NS -> BigInteger.valueOf(value.getEpochSecond())
                             .multiply(BigInteger.valueOf(1_000_000_000))
                             .add(BigInteger.valueOf(value.getNano()))
                             .toString();
-                default:
-                    throw new IllegalStateException("unreachable");
-            }
+                default -> throw new IllegalStateException("unreachable");
+            };
         }
 
         public static String[] eq(Format format, Instant value) {

@@ -92,42 +92,50 @@ public @interface TextCompare {
             final String value = values[2];
             final Expression<String> lhs = mode == CaseSensitivity.CASE_SENSITIVE ? lpath : builder.lower(lpath);
             final String rhs = mode == CaseSensitivity.CASE_SENSITIVE || value == null ? value : value.toLowerCase();
-            switch (operator) {
-                case EQ:
-                    return rhs == null ? lhs.isNull() : builder.equal(lhs, rhs);
-                case NEQ:
-                    return rhs == null ? lhs.isNotNull() : builder.or(lhs.isNull(), builder.notEqual(lhs, rhs));
-                case LT:
+            return switch (operator) {
+                case EQ ->
+                    rhs == null ? lhs.isNull() : builder.equal(lhs, rhs);
+                case NEQ ->
+                    rhs == null ? lhs.isNotNull() : builder.or(lhs.isNull(), builder.notEqual(lhs, rhs));
+                case LT -> {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
-                    return builder.lessThan(lhs, rhs);
-                case GT:
+                    yield builder.lessThan(lhs, rhs);
+                }
+                case GT -> {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
-                    return builder.greaterThan(lhs, rhs);
-                case LTE:
+                    yield builder.greaterThan(lhs, rhs);
+                }
+                case LTE -> {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
-                    return builder.lessThanOrEqualTo(lhs, rhs);
-                case GTE:
+                    yield builder.lessThanOrEqualTo(lhs, rhs);
+                }
+                case GTE -> {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
-                    return builder.greaterThanOrEqualTo(lhs, rhs);
-                case BETWEEN:
+                    yield builder.greaterThanOrEqualTo(lhs, rhs);
+                }
+                case BETWEEN -> {
                     final String value2 = values[3];
                     final String rhs2 = mode == CaseSensitivity.CASE_SENSITIVE || value2 == null ? null : value2.toLowerCase();
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
                     Filters.ensure(rhs2 != null, name, root, "value2 cannot be null for operator %s", operator);
                     final String[] sorted = Stream.of(rhs, rhs2).sorted().toArray((l) -> new String[l]);
-                    return builder.and(builder.greaterThanOrEqualTo(lhs, sorted[0]), builder.lessThan(lhs, sorted[1]));
-                case CONTAINS:
+                    yield builder.and(builder.greaterThanOrEqualTo(lhs, sorted[0]), builder.lessThan(lhs, sorted[1]));
+                }
+                case CONTAINS -> {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
-                    return builder.like(lhs, "%" + rhs + "%");
-                case STARTS_WITH:
+                    yield builder.like(lhs, "%" + rhs + "%");
+                }
+                case STARTS_WITH -> {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
-                    return builder.like(lhs, rhs + "%");
-                case ENDS_WITH:
+                    yield builder.like(lhs, rhs + "%");
+                }
+                case ENDS_WITH -> {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
-                    return builder.like(lhs, "%" + rhs);
-                default:
+                    yield builder.like(lhs, "%" + rhs);
+                }
+                default ->
                     throw new IllegalStateException("unreachable");
-            }
+            };
         }
 
         @Override

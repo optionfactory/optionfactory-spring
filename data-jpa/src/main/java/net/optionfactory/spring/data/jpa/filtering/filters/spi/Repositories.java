@@ -40,8 +40,8 @@ public interface Repositories {
 
     private static Stream<Annotation> flattenRepeatables(Annotation repeatableAnnotation) {
         final Object value = AnnotationUtils.getValue(repeatableAnnotation);
-        if (value instanceof Annotation[]) {
-            return Stream.of((Annotation[]) value);
+        if (value instanceof Annotation[] annotations) {
+            return Stream.of(annotations);
         }
         return Stream.of(repeatableAnnotation);
     }
@@ -71,8 +71,8 @@ public interface Repositories {
             final Object[] arguments = Stream.of(constructor.getParameterTypes()).map(pt -> typeToArgument.get(pt)).toArray();
             return (Filter) constructor.newInstance(arguments);
         } catch (InvocationTargetException ex) {
-            if (ex.getCause() instanceof RuntimeException) {
-                throw (RuntimeException) ex.getCause();
+            if (ex.getCause() instanceof RuntimeException re) {
+                throw re;
             }
             throw new IllegalStateException(ex);
         } catch (IllegalAccessException | InstantiationException | SecurityException ex) {

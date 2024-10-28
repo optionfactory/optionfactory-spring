@@ -14,7 +14,7 @@ public class WhitelistFilteringSpecificationAdapter<T> implements Specification<
     private final Map<String, Filter> whitelisted;
 
     public WhitelistFilteringSpecificationAdapter(FilterRequest requested, Map<String, Filter> whitelisted) {
-        this.requested = requested.filters == null ? Map.of() : requested.filters;
+        this.requested = requested.filters() == null ? Map.of() : requested.filters();
         this.whitelisted = whitelisted;
     }
 

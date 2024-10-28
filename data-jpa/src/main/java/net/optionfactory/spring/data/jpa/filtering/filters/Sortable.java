@@ -20,14 +20,14 @@ public @interface Sortable {
     /**
      * The sortable name.
      *
-     * @return
+     * @return the name
      */
     String name();
 
     /**
      * The whitelisted path.
      *
-     * @return
+     * @return the path
      */
     String path();
 

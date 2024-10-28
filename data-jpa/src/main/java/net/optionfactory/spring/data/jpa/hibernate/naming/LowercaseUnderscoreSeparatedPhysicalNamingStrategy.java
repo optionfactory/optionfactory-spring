@@ -8,11 +8,13 @@ import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 /**
  * Table and column names are lowercase and underscore separated, while entity
  * names and fields are in camel-case.
+ * @deprecated Use org.hibernate.boot.model.naming.CamelCaseToUnderscoreNamingStrategy 
  * <br><br>
  * E.g.:
  * <br> {@code CustomerSettings} &rarr; {@code customer_settings}
  * <br> {@code useDefaultPriority} &rarr; {@code use_default_priority}.
  */
+@Deprecated
 public class LowercaseUnderscoreSeparatedPhysicalNamingStrategy implements PhysicalNamingStrategy {
 
     @Override
