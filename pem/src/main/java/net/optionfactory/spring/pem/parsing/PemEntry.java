@@ -17,7 +17,7 @@ import javax.crypto.EncryptedPrivateKeyInfo;
 import net.optionfactory.spring.pem.Pem;
 import net.optionfactory.spring.pem.PemException;
 import net.optionfactory.spring.pem.der.DerCursor;
-import net.optionfactory.spring.pem.der.DerCursor.DerValue;
+import net.optionfactory.spring.pem.der.DerCursor.Tag;
 
 public record PemEntry(String label, List<Metadata> metadata, String b64) {
 
@@ -90,7 +90,7 @@ public record PemEntry(String label, List<Metadata> metadata, String b64) {
         final var bytes = Base64.getDecoder().decode(b64);
         try {
             final var cursor = DerCursor.nested(bytes);
-            final var sequence = cursor.next().ensure(DerValue.TAG_SEQUENCE);
+            final var sequence = cursor.next().ensure(Tag.SEQUENCE);
             final var version = cursor.next().integer(bytes);
             final var modulus = cursor.next().integer(bytes);
             final var publicExp = cursor.next().integer(bytes);
