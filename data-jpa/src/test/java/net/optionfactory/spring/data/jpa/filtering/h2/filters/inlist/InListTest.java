@@ -34,7 +34,9 @@ public class InListTest {
 
     @Test
     public void canFilterByInListOnStringField() {
-        final FilterRequest fr = FilterRequest.of(Map.of("nameIn", new String[]{"walking", "skiing", "sleeping"}));
+        final var fr = FilterRequest.builder()
+                .inList("nameIn", "walking", "skiing", "sleeping")
+                .build();
         final Pageable pr = Pageable.unpaged();
         final Page<EntityForInList> page = repo.findAll(null, fr, pr);
         Assert.assertEquals(Set.of(2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
@@ -42,7 +44,10 @@ public class InListTest {
 
     @Test
     public void canFilterByInEmptyListYieldingAnEmptyResult() {
-        final FilterRequest fr = FilterRequest.of(Map.of("nameIn", new String[0]));
+        final var fr = FilterRequest.builder()
+                .inList("nameIn")
+                .build();
+
         final Pageable pr = Pageable.unpaged();
         final Page<EntityForInList> page = repo.findAll(null, fr, pr);
         Assert.assertEquals(0L, page.getTotalElements());
@@ -50,7 +55,10 @@ public class InListTest {
 
     @Test
     public void canFilterByInListOnNonNullBoxedNumber() {
-        final FilterRequest fr = FilterRequest.of(Map.of("maxPersonsIn", new String[]{"10", "11", "12"}));
+        final var fr = FilterRequest.builder()
+                .inList("maxPersonsIn", "10", "11", "12")
+                .build();
+
         final Pageable pr = Pageable.unpaged();
         final Page<EntityForInList> page = repo.findAll(null, fr, pr);
         Assert.assertEquals(Set.of(1L, 2L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
@@ -58,7 +66,10 @@ public class InListTest {
 
     @Test
     public void canFilterByInListOnNullBoxedNumber() {
-        final FilterRequest fr = FilterRequest.of(Map.of("maxPersonsIn", new String[]{null, "5"}));
+        final var fr = FilterRequest.builder()
+                .inList("maxPersonsIn", null, "5")
+                .build();
+
         final Pageable pr = Pageable.unpaged();
         final Page<EntityForInList> page = repo.findAll(null, fr, pr);
         Assert.assertEquals(Set.of(3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
@@ -66,7 +77,10 @@ public class InListTest {
 
     @Test
     public void canFilterByInListOnPrimitiveNumber() {
-        final FilterRequest fr = FilterRequest.of(Map.of("ratingIn", new String[]{Double.toString(2.3e5d), Double.toString(Math.PI)}));
+        final var fr = FilterRequest.builder()
+                .inList("ratingIn", Double.toString(2.3e5d), Double.toString(Math.PI))
+                .build();
+
         final Pageable pr = Pageable.unpaged();
         final Page<EntityForInList> page = repo.findAll(null, fr, pr);
         Assert.assertEquals(Set.of(3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));

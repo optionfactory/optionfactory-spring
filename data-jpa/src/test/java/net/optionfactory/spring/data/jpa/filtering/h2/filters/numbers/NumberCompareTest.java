@@ -1,7 +1,6 @@
 package net.optionfactory.spring.data.jpa.filtering.h2.filters.numbers;
 
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
@@ -79,7 +78,9 @@ public class NumberCompareTest {
     }
 
     private static FilterRequest filter(String filterName, NumberCompare.Operator operator, String value) {
-        return FilterRequest.of(Map.of(filterName, new String[]{operator.name(), value}));
+        return FilterRequest.builder()
+                .number(filterName, f -> f.of(operator, value))
+                .build();
     }
 
     private static Set<Long> idsIn(Page<EntityForNumberCompare> page) {

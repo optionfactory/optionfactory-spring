@@ -67,7 +67,7 @@ public @interface NumberCompare {
         private final Class<? extends Number> propertyClass;
         private final Traversal traversal;
 
-        @SuppressWarnings("unchecked") 
+        @SuppressWarnings("unchecked")
         public NumberCompareFilter(NumberCompare annotation, EntityType<?> entity) {
             this.name = annotation.name();
             this.mode = annotation.mode();
@@ -83,8 +83,10 @@ public @interface NumberCompare {
             final String value = values[1];
             final Number rhs = (Number) Values.convert(name, root, value, propertyClass);
             return switch (operator) {
-                case EQ -> rhs == null ? lhs.isNull() : builder.equal(lhs, rhs);
-                case NEQ -> rhs == null ? lhs.isNotNull() : builder.or(lhs.isNull(), builder.notEqual(lhs, rhs));
+                case EQ ->
+                    rhs == null ? lhs.isNull() : builder.equal(lhs, rhs);
+                case NEQ ->
+                    rhs == null ? lhs.isNotNull() : builder.or(lhs.isNull(), builder.notEqual(lhs, rhs));
                 case LT -> {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
                     yield builder.lt(lhs, rhs);
@@ -109,7 +111,8 @@ public @interface NumberCompare {
                     final Number[] sorted = Stream.of(rhs, rhs2).sorted().toArray((l) -> new Number[l]);
                     yield builder.and(builder.ge(lhs, sorted[0]), builder.lt(lhs, sorted[1]));
                 }
-                default -> throw new IllegalStateException("unreachable");
+                default ->
+                    throw new IllegalStateException("unreachable");
             };
         }
 
@@ -129,37 +132,52 @@ public @interface NumberCompare {
         }
     }
 
-    public static class Filter {
+    public enum Filter {
+        INSTANCE;
 
         private static String str(Number n) {
             return n == null ? null : n.toString();
         }
 
-        public static String[] eq(Number value) {
+        public String[] of(Operator op, Number... values) {
+            return Stream.concat(
+                    Stream.of(op.name()),
+                    Stream.of(values).map(v -> str(v))
+            ).toArray(i -> new String[i]);
+        }
+
+        public String[] of(Operator op, String... values) {
+            return Stream.concat(
+                    Stream.of(op.name()),
+                    Stream.of(values)
+            ).toArray(i -> new String[i]);
+        }
+
+        public String[] eq(Number value) {
             return new String[]{Operator.EQ.name(), str(value)};
         }
 
-        public static String[] neq(Number value) {
+        public String[] neq(Number value) {
             return new String[]{Operator.NEQ.name(), str(value)};
         }
 
-        public static String[] lt(Number value) {
+        public String[] lt(Number value) {
             return new String[]{Operator.LT.name(), str(value)};
         }
 
-        public static String[] gt(Number value) {
+        public String[] gt(Number value) {
             return new String[]{Operator.GT.name(), str(value)};
         }
 
-        public static String[] lte(Number value) {
+        public String[] lte(Number value) {
             return new String[]{Operator.LTE.name(), str(value)};
         }
 
-        public static String[] gte(Number value) {
+        public String[] gte(Number value) {
             return new String[]{Operator.GTE.name(), str(value)};
         }
 
-        public static String[] between(Number value1, Number value2) {
+        public String[] between(Number value1, Number value2) {
             return new String[]{Operator.BETWEEN.name(), str(value1), str(value2)};
         }
 

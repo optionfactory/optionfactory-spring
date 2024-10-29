@@ -84,7 +84,9 @@ public class LocalDateCompareTest {
     }
 
     private static FilterRequest filter(LocalDateCompare.Operator operator, String... values) {
-        return FilterRequest.of(Map.of("date", Stream.concat(Stream.of(operator.name()), Stream.of(values)).toArray(i -> new String[i])));
+        return FilterRequest.builder()
+                .localDate("date", f -> f.of(operator, values))
+                .build();
     }
 
     private static EntityForLocalDate entity(long id, LocalDate date) {

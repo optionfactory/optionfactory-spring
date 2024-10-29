@@ -55,8 +55,9 @@ public class BooleanCompareTest {
     }
 
     private static FilterRequest filter(String filterName, String value) {
-        final FilterRequest fr = FilterRequest.of(Map.of(filterName, new String[]{"EQ", value}));
-        return fr;
+        return FilterRequest.builder()
+                .bool(filterName, f -> f.eq(value))
+                .build();
     }
 
     private static Set<Long> idsIn(Page<Flag> page) {

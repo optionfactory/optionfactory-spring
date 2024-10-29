@@ -3,6 +3,7 @@ package net.optionfactory.spring.data.jpa.filtering.h2.filters.text;
 import java.util.Map;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
+import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare.CaseSensitivity;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare.Operator;
 import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
 import org.junit.Assert;
@@ -40,11 +41,10 @@ public class TextCompareTest {
 
     @Test
     public void textCompareEquals() {
-        final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
-            TextCompare.Operator.EQ.toString(),
-            TextCompare.CaseSensitivity.CASE_SENSITIVE.toString(),
-            "asd"
-        }));
+        final var fr = FilterRequest.builder()
+                .text("byName", f -> f.eq("asd"))
+                .build();
+
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
@@ -52,11 +52,9 @@ public class TextCompareTest {
 
     @Test
     public void textCompareEqualsIgnoreCase() {
-        final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
-            TextCompare.Operator.EQ.toString(),
-            TextCompare.CaseSensitivity.IGNORE_CASE.toString(),
-            "ASD"
-        }));
+        final var fr = FilterRequest.builder()
+                .text("byName", f -> f.eq(CaseSensitivity.IGNORE_CASE, "ASD"))
+                .build();
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
@@ -64,11 +62,9 @@ public class TextCompareTest {
 
     @Test
     public void textCompareContains() {
-        final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
-            TextCompare.Operator.CONTAINS.toString(),
-            TextCompare.CaseSensitivity.CASE_SENSITIVE.toString(),
-            "s"
-        }));
+        final var fr = FilterRequest.builder()
+                .text("byName", f -> f.contains("s"))
+                .build();
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
@@ -76,11 +72,10 @@ public class TextCompareTest {
 
     @Test
     public void textCompareContainsIgnoreCase() {
-        final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
-            TextCompare.Operator.CONTAINS.toString(),
-            TextCompare.CaseSensitivity.IGNORE_CASE.toString(),
-            "S"
-        }));
+        final var fr = FilterRequest.builder()
+                .text("byName", f -> f.contains(CaseSensitivity.IGNORE_CASE, "S"))
+                .build();
+
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
@@ -88,11 +83,10 @@ public class TextCompareTest {
 
     @Test
     public void textCompareStartsWith() {
-        final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
-            TextCompare.Operator.STARTS_WITH.toString(),
-            TextCompare.CaseSensitivity.CASE_SENSITIVE.toString(),
-            "a"
-        }));
+        final var fr = FilterRequest.builder()
+                .text("byName", f -> f.startsWith("a"))
+                .build();
+
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
@@ -100,11 +94,11 @@ public class TextCompareTest {
 
     @Test
     public void textCompareStartsWithIgnoreCase() {
-        final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
-            TextCompare.Operator.STARTS_WITH.toString(),
-            TextCompare.CaseSensitivity.IGNORE_CASE.toString(),
-            "A"
-        }));
+
+        final var fr = FilterRequest.builder()
+                .text("byName", f -> f.startsWith(CaseSensitivity.IGNORE_CASE, "A"))
+                .build();
+
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
@@ -112,11 +106,11 @@ public class TextCompareTest {
 
     @Test
     public void textCompareEndsWith() {
-        final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
-            TextCompare.Operator.ENDS_WITH.toString(),
-            TextCompare.CaseSensitivity.CASE_SENSITIVE.toString(),
-            "d"
-        }));
+
+        final var fr = FilterRequest.builder()
+                .text("byName", f -> f.endsWith("d"))
+                .build();
+
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
@@ -124,24 +118,21 @@ public class TextCompareTest {
 
     @Test
     public void textCompareEndsWithIgnoreCase() {
-        final FilterRequest fr = FilterRequest.of(Map.of("byName", new String[]{
-            TextCompare.Operator.ENDS_WITH.toString(),
-            TextCompare.CaseSensitivity.IGNORE_CASE.toString(),
-            "D"
-        }));
+        final var fr = FilterRequest.builder()
+                .text("byName", f -> f.endsWith(CaseSensitivity.IGNORE_CASE, "D"))
+                .build();
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
         Assert.assertEquals(123L, page.getContent().get(0).id);
     }
 
-
     @Test
     public void filteringWithNeqIncludesNullValues() {
-        final FilterRequest fr = FilterRequest.of(Map.of("byTitle", new String[]{
-                Operator.NEQ.toString(),
-                TextCompare.CaseSensitivity.IGNORE_CASE.toString(),
-                "D"
-        }));
+
+        final var fr = FilterRequest.builder()
+                .text("byTitle", f -> f.neq(CaseSensitivity.IGNORE_CASE, "D"))
+                .build();
+
         final Page<EntityForTextCompare> all = repo.findAll(Pageable.unpaged());
         final Page<EntityForTextCompare> page = repo.findAll(null, fr, Pageable.unpaged());
         Assert.assertEquals(all.getTotalElements(), page.getTotalElements());

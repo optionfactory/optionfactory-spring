@@ -83,33 +83,38 @@ public @interface LocalDateCompare {
             Filters.ensure(values.length == (operator == Operator.BETWEEN ? 3 : 2), name, root, "unexpected number of values: %d", values.length);
             final String value = values[1];
             final LocalDate rhs = value == null ? null : LocalDate.parse(value, formatter);
-            switch (operator) {
-                case EQ:
-                    return rhs == null ? lhs.isNull() : builder.equal(lhs, rhs);
-                case NEQ:
-                    return rhs == null ? lhs.isNotNull() : builder.or(lhs.isNull(), builder.notEqual(lhs, rhs));
-                case LT:
+            return switch (operator) {
+                case EQ ->
+                    rhs == null ? lhs.isNull() : builder.equal(lhs, rhs);
+                case NEQ ->
+                    rhs == null ? lhs.isNotNull() : builder.or(lhs.isNull(), builder.notEqual(lhs, rhs));
+                case LT -> {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
-                    return builder.lessThan(lhs, rhs);
-                case GT:
+                    yield builder.lessThan(lhs, rhs);
+                }
+                case GT -> {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
-                    return builder.greaterThan(lhs, rhs);
-                case LTE:
+                    yield builder.greaterThan(lhs, rhs);
+                }
+                case LTE -> {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
-                    return builder.lessThanOrEqualTo(lhs, rhs);
-                case GTE:
+                    yield builder.lessThanOrEqualTo(lhs, rhs);
+                }
+                case GTE -> {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
-                    return builder.greaterThanOrEqualTo(lhs, rhs);
-                case BETWEEN:
+                    yield builder.greaterThanOrEqualTo(lhs, rhs);
+                }
+                case BETWEEN -> {
                     final String value2 = values[2];
                     final LocalDate rhs2 = value == null ? null : LocalDate.parse(value2, formatter);
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
                     Filters.ensure(rhs2 != null, name, root, "value cannot be null for operator %s", operator);
                     final LocalDate[] sorted = Stream.of(rhs, rhs2).sorted().toArray((l) -> new LocalDate[l]);
-                    return builder.and(builder.greaterThanOrEqualTo(lhs, sorted[0]), builder.lessThanOrEqualTo(lhs, sorted[1]));
-                default:
+                    yield builder.and(builder.greaterThanOrEqualTo(lhs, sorted[0]), builder.lessThanOrEqualTo(lhs, sorted[1]));
+                }
+                default ->
                     throw new IllegalStateException("unreachable");
-            }
+            };
         }
 
         @Override
@@ -128,7 +133,8 @@ public @interface LocalDateCompare {
         }
     }
 
-    public static class Filter {
+    public enum Filter {
+        INSTANCE;
 
         private static String str(String format, LocalDate value) {
             if (value == null) {
@@ -139,59 +145,77 @@ public @interface LocalDateCompare {
 
         private static final String DEFAULT_FORMAT = "yyyy-MM-dd";
 
-        public static String[] eq(LocalDate value) {
+        public static String[] of(Operator op, String format, LocalDate... values) {
+            return Stream.concat(
+                    Stream.of(op.name()),
+                    Stream.of(values).map(v -> str(format, v))
+            ).toArray(i -> new String[i]);
+        }
+
+        public String[] of(Operator op, LocalDate... values) {
+            return of(op, DEFAULT_FORMAT, values);
+        }
+
+        public String[] of(Operator op, String... values) {
+            return Stream.concat(
+                    Stream.of(op.name()),
+                    Stream.of(values)
+            ).toArray(i -> new String[i]);
+        }
+
+        public String[] eq(LocalDate value) {
             return new String[]{Operator.EQ.name(), str(DEFAULT_FORMAT, value)};
         }
 
-        public static String[] eq(String format, LocalDate value) {
+        public String[] eq(String format, LocalDate value) {
             return new String[]{Operator.EQ.name(), str(format, value)};
         }
 
-        public static String[] neq(LocalDate value) {
+        public String[] neq(LocalDate value) {
             return new String[]{Operator.NEQ.name(), str(DEFAULT_FORMAT, value)};
         }
 
-        public static String[] neq(String format, LocalDate value) {
+        public String[] neq(String format, LocalDate value) {
             return new String[]{Operator.NEQ.name(), str(format, value)};
         }
 
-        public static String[] lt(LocalDate value) {
+        public String[] lt(LocalDate value) {
             return new String[]{Operator.LT.name(), str(DEFAULT_FORMAT, value)};
         }
 
-        public static String[] lt(String format, LocalDate value) {
+        public String[] lt(String format, LocalDate value) {
             return new String[]{Operator.LT.name(), str(format, value)};
         }
 
-        public static String[] gt(LocalDate value) {
+        public String[] gt(LocalDate value) {
             return new String[]{Operator.GT.name(), str(DEFAULT_FORMAT, value)};
         }
 
-        public static String[] gt(String format, LocalDate value) {
+        public String[] gt(String format, LocalDate value) {
             return new String[]{Operator.GT.name(), str(format, value)};
         }
 
-        public static String[] lte(LocalDate value) {
+        public String[] lte(LocalDate value) {
             return new String[]{Operator.LTE.name(), str(DEFAULT_FORMAT, value)};
         }
 
-        public static String[] lte(String format, LocalDate value) {
+        public String[] lte(String format, LocalDate value) {
             return new String[]{Operator.LTE.name(), str(format, value)};
         }
 
-        public static String[] gte(LocalDate value) {
+        public String[] gte(LocalDate value) {
             return new String[]{Operator.GTE.name(), str(DEFAULT_FORMAT, value)};
         }
 
-        public static String[] gte(String format, LocalDate value) {
+        public String[] gte(String format, LocalDate value) {
             return new String[]{Operator.GTE.name(), str(format, value)};
         }
 
-        public static String[] between(LocalDate value1, LocalDate value2) {
+        public String[] between(LocalDate value1, LocalDate value2) {
             return new String[]{Operator.BETWEEN.name(), str(DEFAULT_FORMAT, value1), str(DEFAULT_FORMAT, value2)};
         }
 
-        public static String[] between(String format, LocalDate value1, LocalDate value2) {
+        public String[] between(String format, LocalDate value1, LocalDate value2) {
             return new String[]{Operator.BETWEEN.name(), str(format, value1), str(format, value2)};
         }
 

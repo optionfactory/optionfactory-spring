@@ -51,11 +51,9 @@ public class PropertyChainTest {
 
     @Test
     public void canFilterByComparingPerformerName() {
-        final FilterRequest fr = FilterRequest.of(Map.of("performerName", new String[]{
-            TextCompare.Operator.EQ.toString(),
-            TextCompare.CaseSensitivity.CASE_SENSITIVE.toString(),
-            "pietro"
-        }));
+        final var fr = FilterRequest.builder()
+                .text("performerName", f -> f.eq("pietro"))
+                .build();
         final Pageable pr = Pageable.unpaged();
         final Page<Appointment> page = appointments.findAll(null, fr, pr);
         Assert.assertEquals(Set.of(1L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
@@ -63,7 +61,9 @@ public class PropertyChainTest {
 
     @Test
     public void canFilterByEmptyEnum() {
-        final FilterRequest fr = FilterRequest.of(Map.of("status", new String[0]));
+        final var fr = FilterRequest.builder()
+                .inEnum("status")
+                .build();
         final Pageable pr = Pageable.unpaged();
         final Page<Appointment> page = appointments.findAll(null, fr, pr);
         Assert.assertTrue(page.isEmpty());
@@ -71,7 +71,10 @@ public class PropertyChainTest {
 
     @Test
     public void canFilterByStatusInEnum() {
-        final FilterRequest fr = FilterRequest.of(Map.of("status", new String[]{Appointment.Status.CONFIRMED.name()}));
+        final var fr = FilterRequest.builder()
+                .inEnum("status", Appointment.Status.CONFIRMED)
+                .build();
+        
         final Pageable pr = Pageable.unpaged();
         final Page<Appointment> page = appointments.findAll(null, fr, pr);
         Assert.assertEquals(Set.of(1L, 2L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
@@ -79,7 +82,10 @@ public class PropertyChainTest {
 
     @Test
     public void canFilterByActivitySeasonInEnum() {
-        final FilterRequest fr = FilterRequest.of(Map.of("activitySeason", new String[]{Activity.Season.SUMMER.name()}));
+        final var fr = FilterRequest.builder()
+                .inEnum("activitySeason", Activity.Season.SUMMER)
+                .build();
+        
         final Pageable pr = Pageable.unpaged();
         final Page<Appointment> page = appointments.findAll(null, fr, pr);
         Assert.assertEquals(Set.of(4L, 5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));

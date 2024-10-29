@@ -39,11 +39,10 @@ public class PluralAttributesChainTest {
 
     @Test
     public void setupIsGoodEnough() {
-        final FilterRequest fr = FilterRequest.of(Map.of("byLeafColor", new String[]{
-            TextCompare.Operator.EQ.toString(),
-            TextCompare.CaseSensitivity.CASE_SENSITIVE.toString(),
-            "brown"
-        }));
+        final var fr = FilterRequest
+                .builder()
+                .text("byLeafColor", f -> f.eq("brown"))
+                .build();
         final Pageable pr = Pageable.unpaged();
         final Page<Root> page = roots.findAll(null, fr, pr);
         Assert.assertEquals(2, page.getContent().get(0).leaves.size());

@@ -88,8 +88,10 @@ public @interface InstantCompare {
             final String value = values[1];
             final Instant rhs = parseInstant(value);
             return switch (operator) {
-                case EQ -> rhs == null ? lhs.isNull() : builder.equal(lhs, rhs);
-                case NEQ -> rhs == null ? lhs.isNotNull() : builder.or(lhs.isNull(), builder.notEqual(lhs, rhs));
+                case EQ ->
+                    rhs == null ? lhs.isNull() : builder.equal(lhs, rhs);
+                case NEQ ->
+                    rhs == null ? lhs.isNotNull() : builder.or(lhs.isNull(), builder.notEqual(lhs, rhs));
                 case LT -> {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
                     yield builder.lessThan(lhs, rhs);
@@ -114,7 +116,8 @@ public @interface InstantCompare {
                     final Instant[] instants = Stream.of(rhs, rhs2).sorted().toArray((l) -> new Instant[l]);
                     yield builder.and(builder.greaterThanOrEqualTo(lhs, instants[0]), builder.lessThan(lhs, instants[1]));
                 }
-                default -> throw new IllegalStateException("unreachable");
+                default ->
+                    throw new IllegalStateException("unreachable");
             };
         }
 
@@ -123,15 +126,19 @@ public @interface InstantCompare {
                 return null;
             }
             return switch (format) {
-                case ISO_8601 -> Instant.parse(value);
-                case UNIX_S -> Instant.ofEpochSecond(Long.parseLong(value, 10));
-                case UNIX_MS -> Instant.ofEpochMilli(Long.parseLong(value, 10));
+                case ISO_8601 ->
+                    Instant.parse(value);
+                case UNIX_S ->
+                    Instant.ofEpochSecond(Long.parseLong(value, 10));
+                case UNIX_MS ->
+                    Instant.ofEpochMilli(Long.parseLong(value, 10));
                 case UNIX_NS -> {
                     final BigInteger nanoseconds = new BigInteger(value, 10);
                     final BigInteger[] secondsAndNanosecondsFraction = nanoseconds.divideAndRemainder(BigInteger.valueOf(1_000_000_000L));
                     yield Instant.ofEpochSecond(secondsAndNanosecondsFraction[0].longValueExact(), secondsAndNanosecondsFraction[1].longValueExact());
                 }
-                default -> throw new IllegalStateException("unreachable");
+                default ->
+                    throw new IllegalStateException("unreachable");
             };
         }
 
@@ -151,49 +158,69 @@ public @interface InstantCompare {
         }
     }
 
-    public static class Filter {
+    public enum Filter {
+        INSTANCE;
 
-        private static String str(Format format, Instant value) {
+        private String str(Format format, Instant value) {
             if (value == null) {
                 return null;
             }
-            return switch(format){
-                case ISO_8601 -> value.toString();
-                case UNIX_S -> Long.toString(value.getEpochSecond());
-                case UNIX_MS -> Long.toString(value.toEpochMilli());
-                case UNIX_NS -> BigInteger.valueOf(value.getEpochSecond())
-                            .multiply(BigInteger.valueOf(1_000_000_000))
-                            .add(BigInteger.valueOf(value.getNano()))
-                            .toString();
-                default -> throw new IllegalStateException("unreachable");
+            return switch (format) {
+                case ISO_8601 ->
+                    value.toString();
+                case UNIX_S ->
+                    Long.toString(value.getEpochSecond());
+                case UNIX_MS ->
+                    Long.toString(value.toEpochMilli());
+                case UNIX_NS ->
+                    BigInteger.valueOf(value.getEpochSecond())
+                    .multiply(BigInteger.valueOf(1_000_000_000))
+                    .add(BigInteger.valueOf(value.getNano()))
+                    .toString();
+                default ->
+                    throw new IllegalStateException("unreachable");
             };
         }
 
-        public static String[] eq(Format format, Instant value) {
+        public String[] of(Operator op, Format format, Instant... values) {
+            return Stream.concat(
+                    Stream.of(op.name()),
+                    Stream.of(values).map(v -> str(format, v))
+            ).toArray(i -> new String[i]);
+        }
+
+        public String[] of(Operator op, String... values) {
+            return Stream.concat(
+                    Stream.of(op.name()),
+                    Stream.of(values)
+            ).toArray(i -> new String[i]);
+        }
+
+        public String[] eq(Format format, Instant value) {
             return new String[]{Operator.EQ.name(), str(format, value)};
         }
 
-        public static String[] neq(Format format, Instant value) {
+        public String[] neq(Format format, Instant value) {
             return new String[]{Operator.NEQ.name(), str(format, value)};
         }
 
-        public static String[] lt(Format format, Instant value) {
+        public String[] lt(Format format, Instant value) {
             return new String[]{Operator.LT.name(), str(format, value)};
         }
 
-        public static String[] gt(Format format, Instant value) {
+        public String[] gt(Format format, Instant value) {
             return new String[]{Operator.GT.name(), str(format, value)};
         }
 
-        public static String[] lte(Format format, Instant value) {
+        public String[] lte(Format format, Instant value) {
             return new String[]{Operator.LTE.name(), str(format, value)};
         }
 
-        public static String[] gte(Format format, Instant value) {
+        public String[] gte(Format format, Instant value) {
             return new String[]{Operator.GTE.name(), str(format, value)};
         }
 
-        public static String[] between(Format format, Instant value1, Instant value2) {
+        public String[] between(Format format, Instant value1, Instant value2) {
             return new String[]{Operator.BETWEEN.name(), str(format, value1), str(format, value2)};
         }
 

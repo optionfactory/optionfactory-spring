@@ -69,7 +69,7 @@ public @interface InList {
             }
             final Object[] nonNullValues = Stream.of(values)
                     .filter(Objects::nonNull)
-                    .map(value -> Values.convert(name, root, value, traversal.attribute.getJavaType()))
+                    .map(value -> Values.convert(name, root, value, traversal.attribute().getJavaType()))
                     .toArray();
             final boolean hasNullValues = nonNullValues.length < values.length;
             if (hasNullValues) {
@@ -94,9 +94,10 @@ public @interface InList {
         }
     }
 
-    public static class Filter {
+    public enum Filter {
+        INSTANCE;
 
-        public static String[] in(String... values) {
+        public String[] in(String... values) {
             return values;
         }
 

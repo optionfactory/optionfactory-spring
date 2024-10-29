@@ -87,11 +87,11 @@ public @interface TextCompare {
             final Operator operator = Operator.valueOf(values[0]);
             Filters.ensure((values.length == 3 && operator != Operator.BETWEEN) || (values.length == 4 && operator == Operator.BETWEEN), name, root, "expected operator,mode,value(s) got %s", Arrays.toString(values));
             Filters.ensure(operators.contains(operator), name, root, "operator %s not whitelisted (%s)", operator, operators);
-            final CaseSensitivity mode = CaseSensitivity.valueOf(values[1]);
-            Filters.ensure(caseSensitivity.contains(mode), name, root, "mode %s not whitelisted (%s)", mode, caseSensitivity);
+            final CaseSensitivity sensitivity = CaseSensitivity.valueOf(values[1]);
+            Filters.ensure(caseSensitivity.contains(sensitivity), name, root, "mode %s not whitelisted (%s)", sensitivity, caseSensitivity);
             final String value = values[2];
-            final Expression<String> lhs = mode == CaseSensitivity.CASE_SENSITIVE ? lpath : builder.lower(lpath);
-            final String rhs = mode == CaseSensitivity.CASE_SENSITIVE || value == null ? value : value.toLowerCase();
+            final Expression<String> lhs = sensitivity == CaseSensitivity.CASE_SENSITIVE ? lpath : builder.lower(lpath);
+            final String rhs = sensitivity == CaseSensitivity.CASE_SENSITIVE || value == null ? value : value.toLowerCase();
             return switch (operator) {
                 case EQ ->
                     rhs == null ? lhs.isNull() : builder.equal(lhs, rhs);
@@ -115,7 +115,7 @@ public @interface TextCompare {
                 }
                 case BETWEEN -> {
                     final String value2 = values[3];
-                    final String rhs2 = mode == CaseSensitivity.CASE_SENSITIVE || value2 == null ? null : value2.toLowerCase();
+                    final String rhs2 = sensitivity == CaseSensitivity.CASE_SENSITIVE || value2 == null ? null : value2.toLowerCase();
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
                     Filters.ensure(rhs2 != null, name, root, "value2 cannot be null for operator %s", operator);
                     final String[] sorted = Stream.of(rhs, rhs2).sorted().toArray((l) -> new String[l]);
@@ -154,85 +154,93 @@ public @interface TextCompare {
         }
     }
 
-    public static class Filter {
+    public enum Filter {
+        INSTANCE;
 
-        public static String[] eq(String value) {
+        public String[] of(Operator op, CaseSensitivity sensitivity, String... values) {
+            return Stream.concat(
+                    Stream.of(op.name(), sensitivity.name()),
+                    Stream.of(values)
+            ).toArray(i -> new String[i]);
+        }
+
+        public String[] eq(String value) {
             return new String[]{Operator.EQ.name(), CaseSensitivity.CASE_SENSITIVE.name(), value};
         }
 
-        public static String[] eq(CaseSensitivity sensitivity, String value) {
+        public String[] eq(CaseSensitivity sensitivity, String value) {
             return new String[]{Operator.EQ.name(), sensitivity.name(), value};
         }
 
-        public static String[] neq(String value) {
+        public String[] neq(String value) {
             return new String[]{Operator.NEQ.name(), CaseSensitivity.CASE_SENSITIVE.name(), value};
         }
 
-        public static String[] neq(CaseSensitivity sensitivity, String value) {
+        public String[] neq(CaseSensitivity sensitivity, String value) {
             return new String[]{Operator.NEQ.name(), sensitivity.name(), value};
         }
 
-        public static String[] lt(String value) {
+        public String[] lt(String value) {
             return new String[]{Operator.LT.name(), CaseSensitivity.CASE_SENSITIVE.name(), value};
         }
 
-        public static String[] lt(CaseSensitivity sensitivity, String value) {
+        public String[] lt(CaseSensitivity sensitivity, String value) {
             return new String[]{Operator.LT.name(), sensitivity.name(), value};
         }
 
-        public static String[] gt(String value) {
+        public String[] gt(String value) {
             return new String[]{Operator.GT.name(), CaseSensitivity.CASE_SENSITIVE.name(), value};
         }
 
-        public static String[] gt(CaseSensitivity sensitivity, String value) {
+        public String[] gt(CaseSensitivity sensitivity, String value) {
             return new String[]{Operator.GT.name(), sensitivity.name(), value};
         }
 
-        public static String[] lte(String value) {
+        public String[] lte(String value) {
             return new String[]{Operator.LTE.name(), CaseSensitivity.CASE_SENSITIVE.name(), value};
         }
 
-        public static String[] lte(CaseSensitivity sensitivity, String value) {
+        public String[] lte(CaseSensitivity sensitivity, String value) {
             return new String[]{Operator.LTE.name(), sensitivity.name(), value};
         }
 
-        public static String[] gte(String value) {
+        public String[] gte(String value) {
             return new String[]{Operator.GTE.name(), CaseSensitivity.CASE_SENSITIVE.name(), value};
         }
 
-        public static String[] gte(CaseSensitivity sensitivity, String value) {
+        public String[] gte(CaseSensitivity sensitivity, String value) {
             return new String[]{Operator.GTE.name(), sensitivity.name(), value};
         }
 
-        public static String[] between(String value1, String value2) {
+        public String[] between(String value1, String value2) {
             return new String[]{Operator.BETWEEN.name(), CaseSensitivity.CASE_SENSITIVE.name(), value1, value2};
         }
 
-        public static String[] between(CaseSensitivity sensitivity, String value1, String value2) {
+        public String[] between(CaseSensitivity sensitivity, String value1, String value2) {
             return new String[]{Operator.BETWEEN.name(), sensitivity.name(), value1, value2};
         }
 
-        public static String[] contains(String value) {
+        public String[] contains(String value) {
             return new String[]{Operator.CONTAINS.name(), CaseSensitivity.CASE_SENSITIVE.name(), value};
         }
 
-        public static String[] contains(CaseSensitivity sensitivity, String value) {
+        public String[] contains(CaseSensitivity sensitivity, String value) {
             return new String[]{Operator.CONTAINS.name(), sensitivity.name(), value};
         }
 
-        public static String[] startsWith(String value) {
+        public String[] startsWith(String value) {
             return new String[]{Operator.STARTS_WITH.name(), CaseSensitivity.CASE_SENSITIVE.name(), value};
         }
 
-        public static String[] startsWith(CaseSensitivity sensitivity, String value) {
+        public String[] startsWith(CaseSensitivity sensitivity, String value) {
             return new String[]{Operator.STARTS_WITH.name(), sensitivity.name(), value};
         }
 
-        public static String[] endsWith(String value) {
+        public String[] endsWith(String value) {
             return new String[]{Operator.ENDS_WITH.name(), CaseSensitivity.CASE_SENSITIVE.name(), value};
         }
 
-        public static String[] endsWith(CaseSensitivity sensitivity, String value) {
+        public String[] endsWith(CaseSensitivity sensitivity, String value) {
             return new String[]{Operator.ENDS_WITH.name(), sensitivity.name(), value};
         }
     }

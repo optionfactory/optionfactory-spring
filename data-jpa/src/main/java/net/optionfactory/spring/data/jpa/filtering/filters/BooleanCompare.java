@@ -107,17 +107,34 @@ public @interface BooleanCompare {
 
     }
 
-    public static class Filter {
+    public enum Filter {
+        INSTANCE;
 
-        private static String str(Boolean b) {
+        private String str(Boolean b) {
             return b == null ? null : b.toString();
         }
 
-        public static String[] eq(Boolean value) {
+        public String[] of(Operator op, String value) {
+            return new String[]{op.name(), value};
+        }
+
+        public String[] of(Operator op, Boolean value) {
+            return new String[]{op.name(), str(value)};
+        }
+
+        public String[] eq(String value) {
+            return new String[]{Operator.EQ.name(), value};
+        }
+
+        public String[] eq(Boolean value) {
             return new String[]{Operator.EQ.name(), str(value)};
         }
 
-        public static String[] neq(Boolean value) {
+        public String[] neq(String value) {
+            return new String[]{Operator.NEQ.name(), value};
+        }
+
+        public String[] neq(Boolean value) {
             return new String[]{Operator.NEQ.name(), str(value)};
         }
     }

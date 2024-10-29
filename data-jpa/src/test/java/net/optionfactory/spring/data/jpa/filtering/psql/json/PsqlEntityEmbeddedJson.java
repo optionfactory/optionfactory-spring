@@ -12,7 +12,7 @@ import org.hibernate.type.SqlTypes;
 @TextCompare(name = "a", path = "embedded.a")
 @TextCompare(name = "b", path = "embedded.b")
 @TextCompare(name = "c", path = "embedded.c")
-public class EntityWithEmbeddedJson {
+public class PsqlEntityEmbeddedJson {
 
     @Id
     @GeneratedValue

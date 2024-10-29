@@ -23,11 +23,11 @@ import org.testcontainers.containers.PostgreSQLContainer;
 
 @Configuration
 @EnableJpaWhitelistFilteringRepositories(
-        basePackageClasses = HibernateOnPostgresTestConfig.class,
+        basePackageClasses = HibernateOnPsqlTestConfig.class,
         entityManagerFactoryRef = "entityManagerFactory"
 )
 @PropertySource(value = "classpath:test.properties")
-public class HibernateOnPostgresTestConfig {
+public class HibernateOnPsqlTestConfig {
 
     @Bean
     public PostgreSQLContainer psql() {
@@ -48,9 +48,15 @@ public class HibernateOnPostgresTestConfig {
         return new HikariDataSource(config);
 
     }
+    @Bean
+    public ObjectMapper hibernateMapper(){
+        final ObjectMapper mapper = new ObjectMapper();
+        return mapper;
+    } 
+    
 
     @Bean
-    public SessionFactory entityManagerFactory(DataSource dataSource) {
+    public SessionFactory entityManagerFactory(ObjectMapper hibernateMapper, DataSource dataSource) {
         final var properties = new Properties();
         properties.put(AvailableSettings.HBM2DDL_AUTO, "update");
         properties.put(AvailableSettings.SHOW_SQL, true);
@@ -59,9 +65,9 @@ public class HibernateOnPostgresTestConfig {
         properties.put(AvailableSettings.GENERATE_STATISTICS, false);
         properties.put(AvailableSettings.USE_SECOND_LEVEL_CACHE, false);
         properties.put(AvailableSettings.USE_QUERY_CACHE, false);
-        properties.put(AvailableSettings.JSON_FORMAT_MAPPER, new JacksonJsonFormatMapper(new ObjectMapper()));
+        properties.put(AvailableSettings.JSON_FORMAT_MAPPER, new JacksonJsonFormatMapper(hibernateMapper));
         final var builder = new LocalSessionFactoryBuilder(dataSource);
-        builder.scanPackages(HibernateOnPostgresTestConfig.class.getPackage().getName());
+        builder.scanPackages(HibernateOnPsqlTestConfig.class.getPackage().getName());
         builder.setPhysicalNamingStrategy(new CamelCaseToUnderscoresNamingStrategy());
         builder.setImplicitNamingStrategy(new ImplicitNamingStrategyComponentPathImpl());
         builder.addProperties(properties);

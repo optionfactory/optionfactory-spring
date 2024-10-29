@@ -102,9 +102,10 @@ public @interface InEnum {
         }
     }
 
-    public static class Filter {
+    public enum Filter {
+        INSTANCE;
 
-        public static String[] in(Enum<?>... values) {
+        public String[] in(Enum<?>... values) {
             return Stream.of(values)
                     .map(ev -> ev == null ? null : ev.name())
                     .toArray(i -> new String[i]);

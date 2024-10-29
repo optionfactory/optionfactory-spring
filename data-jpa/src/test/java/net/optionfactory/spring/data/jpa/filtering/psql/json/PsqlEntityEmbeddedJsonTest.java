@@ -1,10 +1,8 @@
 package net.optionfactory.spring.data.jpa.filtering.psql.json;
 
-import net.optionfactory.spring.data.jpa.filtering.psql.HibernateOnPostgresTestConfig;
-import java.util.Map;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
-import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
-import net.optionfactory.spring.data.jpa.filtering.psql.json.EntityWithEmbeddedJson.EmbeddedRecord;
+import net.optionfactory.spring.data.jpa.filtering.psql.HibernateOnPsqlTestConfig;
+import net.optionfactory.spring.data.jpa.filtering.psql.json.PsqlEntityEmbeddedJson.EmbeddedRecord;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -14,27 +12,25 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 
 @RunWith(SpringRunner.class)
-@ContextConfiguration(classes = HibernateOnPostgresTestConfig.class)
-@Transactional
-public class EntityWithEmbeddedJsonTest {
+@ContextConfiguration(classes = HibernateOnPsqlTestConfig.class)
+public class PsqlEntityEmbeddedJsonTest {
 
     @Autowired
-    private EntityWithEmbeddedJsonRepository entities;
+    private PsqlEntityEmbeddedJsonRepository entities;
 
     @Test
+    @Transactional
     public void canFilterOnAnEmbeddableRecordSerializedAsJsonb() {
-        EntityWithEmbeddedJson e1 = new EntityWithEmbeddedJson();
+        final var e1 = new PsqlEntityEmbeddedJson();
         e1.embedded = new EmbeddedRecord("e1a", "e1b", "e1c");
-        EntityWithEmbeddedJson e2 = new EntityWithEmbeddedJson();
+        final var e2 = new PsqlEntityEmbeddedJson();
         e1.embedded = new EmbeddedRecord("e2a", "e2b", "e2c");
         entities.save(e1);
         entities.save(e2);
 
-        final var fr = FilterRequest.of(Map.of("a", new String[]{
-            TextCompare.Operator.EQ.toString(),
-            TextCompare.CaseSensitivity.CASE_SENSITIVE.toString(),
-            "e2a"
-        }));
+        final var fr = FilterRequest.builder()
+                .text("a", f -> f.eq("e2a"))
+                .build();
 
         final var found = entities.findAll(fr);
 

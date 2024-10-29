@@ -20,7 +20,7 @@ public interface TraversalFilter<T> extends Filter {
     @Override
     default Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
         final var mq = Filters.prepare(root, query, builder, mode());
-        final var path = Filters.<T>path(name(), mq.conditionRoot, traversal());
+        final var path = Filters.<T>path(name(), mq.conditionRoot(), traversal());
         final var condition = condition(root, path, builder, values);
         return Filters.apply(mq, condition);
     }
