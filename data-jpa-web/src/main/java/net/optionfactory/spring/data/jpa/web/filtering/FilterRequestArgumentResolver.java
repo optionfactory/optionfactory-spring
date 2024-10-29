@@ -49,7 +49,7 @@ public class FilterRequestArgumentResolver implements HandlerMethodArgumentResol
                 })
                 .reduce(Parameters::merge)
                 .orElseGet(Parameters::new);
-        return FilterRequest.of(parameters);
+        return new FilterRequest(parameters);
     }
 
     private static class Parameters extends HashMap<String, String[]> {
