@@ -1,8 +1,11 @@
 package net.optionfactory.spring.data.jpa.web.filtering;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import org.springframework.core.MethodParameter;
@@ -15,6 +18,9 @@ public class FilterRequestArgumentResolver implements HandlerMethodArgumentResol
 
     public static final String DEFAULT_PARAMETER_NAME = "filters";
 
+    private static final TypeReference<HashMap<String, String[]>> PARAMETERS_TYPE = new TypeReference<HashMap<String, String[]>>() {
+
+    };
     private final String parameterName;
     private final ObjectMapper mapper;
 
@@ -38,25 +44,17 @@ public class FilterRequestArgumentResolver implements HandlerMethodArgumentResol
         if (values == null || values.length == 0) {
             return FilterRequest.unfiltered();
         }
-        final Parameters parameters = Stream.of(values)
+        final var parameters = Stream.of(values)
                 .filter(value -> !value.isBlank())
-                .map(value -> {
+                .flatMap(value -> {
                     try {
-                        return mapper.readValue(value, Parameters.class);
+                        return mapper.readValue(value, PARAMETERS_TYPE).entrySet().stream();
                     } catch (JsonProcessingException exception) {
                         throw new IllegalArgumentException(exception);
                     }
                 })
-                .reduce(Parameters::merge)
-                .orElseGet(Parameters::new);
+                .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (a, b) -> b, HashMap::new));
         return new FilterRequest(parameters);
     }
 
-    private static class Parameters extends HashMap<String, String[]> {
-
-        public Parameters merge(Parameters other) {
-            putAll(other);
-            return this;
-        }
-    }
 }
