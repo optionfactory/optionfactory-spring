@@ -1,6 +1,5 @@
 package net.optionfactory.spring.data.jpa.filtering.h2.filters.spi.paths;
 
-import java.util.Map;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
 import org.junit.Assert;

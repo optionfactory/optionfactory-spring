@@ -19,6 +19,7 @@ import org.springframework.orm.hibernate5.HibernateTransactionManager;
 import org.springframework.orm.hibernate5.LocalSessionFactoryBuilder;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.testcontainers.containers.JdbcDatabaseContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 @Configuration
@@ -30,30 +31,30 @@ import org.testcontainers.containers.PostgreSQLContainer;
 public class HibernateOnPsqlTestConfig {
 
     @Bean
-    public PostgreSQLContainer psql() {
-        final var psql = new PostgreSQLContainer("postgres:17")
+    public JdbcDatabaseContainer<?> dbContainer() {
+        final var container = new PostgreSQLContainer("postgres:17")
                 .withDatabaseName("test")
                 .withUsername("test")
                 .withPassword("test");
-        psql.start();
-        return psql;
+        container.start();
+        return container;
     }
 
     @Bean
-    public DataSource dataSource(PostgreSQLContainer psql) throws PropertyVetoException {
+    public DataSource dataSource(JdbcDatabaseContainer<?> dbContainer) throws PropertyVetoException {
         final var config = new HikariConfig();
-        config.setJdbcUrl(psql.getJdbcUrl());
-        config.setUsername(psql.getUsername());
-        config.setPassword(psql.getPassword());
+        config.setJdbcUrl(dbContainer.getJdbcUrl());
+        config.setUsername(dbContainer.getUsername());
+        config.setPassword(dbContainer.getPassword());
         return new HikariDataSource(config);
 
     }
+
     @Bean
-    public ObjectMapper hibernateMapper(){
+    public ObjectMapper hibernateMapper() {
         final ObjectMapper mapper = new ObjectMapper();
         return mapper;
-    } 
-    
+    }
 
     @Bean
     public SessionFactory entityManagerFactory(ObjectMapper hibernateMapper, DataSource dataSource) {

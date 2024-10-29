@@ -2,10 +2,8 @@ package net.optionfactory.spring.data.jpa.filtering.h2.filters.localdate;
 
 import java.time.LocalDate;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.filters.LocalDateCompare;
 import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;

@@ -2,10 +2,8 @@ package net.optionfactory.spring.data.jpa.filtering.h2.filters.instant;
 
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.filters.InstantCompare;
 import net.optionfactory.spring.data.jpa.filtering.filters.InstantCompare.Operator;

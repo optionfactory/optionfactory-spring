@@ -1,9 +1,7 @@
 package net.optionfactory.spring.data.jpa.filtering.h2.specification;
 
 import java.util.List;
-import java.util.Map;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
-import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
 import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
 import org.junit.Assert;
 import org.junit.Before;
