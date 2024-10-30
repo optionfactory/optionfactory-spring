@@ -30,3 +30,16 @@ Configure the filter (possibly from user controlled data) when using the reposit
 
 https://github.com/optionfactory/optionfactory-spring/blob/6327185b5f4ea2620fc08fd8f5275474146ac952/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/examples/PetOwnerExampleTest.java#L52-L59
 
+
+TODO: document annotation options (operators, sensitivity, format)
+
+TODO: document `QueryMode.SUBSELECT`, `QueryMode.JOIN` and implicatations
+
+TODO: document Custom Filters
+
+TODO: document `Pageable`, `Sort`, `Specification`
+
+TODO: document `SessionPolicy` and eviction
+
+TODO: reference data-jpa-web
+
