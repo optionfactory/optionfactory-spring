@@ -16,12 +16,12 @@ Note: `net.optionfactory.spring:data-jpa` is a transitive dependency
 
 `FilterRequestArgumentResolver` can be configured in your `WebMvcConfigurer` to handle parsing of filter requests from requestParameters:
 
-https://github.com/optionfactory/optionfactory-spring/blob/9f8b936e1548dec9baafbc6baa1170f83056c1cf/data-jpa-web/src/test/java/net/optionfactory/spring/data/jpa/web/examples/DataJpaWebExampleTest.java#L69-L81
+https://github.com/optionfactory/optionfactory-spring/blob/master/data-jpa-web/src/test/java/net/optionfactory/spring/data/jpa/web/examples/DataJpaWebExampleTest.java#L69-L81
 
 
 `PageMixin` can be configured on the objectMapper to handle seralization of `Page`s in a simplified form:
 
-https://github.com/optionfactory/optionfactory-spring/blob/9f8b936e1548dec9baafbc6baa1170f83056c1cf/data-jpa-web/src/test/java/net/optionfactory/spring/data/jpa/web/examples/DataJpaWebExampleTest.java#L47-L56
+https://github.com/optionfactory/optionfactory-spring/blob/master/data-jpa-web/src/test/java/net/optionfactory/spring/data/jpa/web/examples/DataJpaWebExampleTest.java#L47-L56
 
 Page instances will be serialized as:
 
@@ -34,4 +34,4 @@ Page instances will be serialized as:
 
 See an example usage here:
 
-https://github.com/optionfactory/optionfactory-spring/blob/9f8b936e1548dec9baafbc6baa1170f83056c1cf/data-jpa-web/src/test/java/net/optionfactory/spring/data/jpa/web/examples/DataJpaWebExampleTest.java#L1-L200
+https://github.com/optionfactory/optionfactory-spring/blob/master/data-jpa-web/src/test/java/net/optionfactory/spring/data/jpa/web/examples/DataJpaWebExampleTest.java#L47-L135
