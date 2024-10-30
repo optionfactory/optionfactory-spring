@@ -1,6 +1,7 @@
 package net.optionfactory.spring.data.jpa.filtering.psql;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import java.beans.PropertyVetoException;
@@ -53,6 +54,7 @@ public class HibernateOnPsqlTestConfig {
     @Bean
     public ObjectMapper hibernateMapper() {
         final ObjectMapper mapper = new ObjectMapper();
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);        
         return mapper;
     }
 

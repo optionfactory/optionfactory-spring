@@ -1,6 +1,7 @@
 package net.optionfactory.spring.data.jpa.filtering.h2;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import java.beans.PropertyVetoException;
@@ -21,15 +22,19 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @Configuration
-@EnableJpaWhitelistFilteringRepositories(
-        basePackageClasses = HibernateOnH2TestConfig.class,
-        entityManagerFactoryRef = "entityManagerFactory"
-)
+@EnableJpaWhitelistFilteringRepositories(basePackageClasses = HibernateOnH2TestConfig.class)
 @PropertySource(value = "classpath:test.properties")
 public class HibernateOnH2TestConfig {
 
     @Bean
-    public SessionFactory entityManagerFactory(DataSource dataSource) {
+    public ObjectMapper hibernateMapper() {
+        final var mapper = new ObjectMapper();
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        return mapper;
+    }
+    
+    @Bean
+    public SessionFactory entityManagerFactory(DataSource dataSource, ObjectMapper hibernateMapper) {
         final var properties = new Properties();
         properties.put(AvailableSettings.HBM2DDL_AUTO, "update");
         properties.put(AvailableSettings.SHOW_SQL, false);
@@ -38,7 +43,7 @@ public class HibernateOnH2TestConfig {
         properties.put(AvailableSettings.GENERATE_STATISTICS, false);
         properties.put(AvailableSettings.USE_SECOND_LEVEL_CACHE, false);
         properties.put(AvailableSettings.USE_QUERY_CACHE, false);
-        properties.put(AvailableSettings.JSON_FORMAT_MAPPER, new JacksonJsonFormatMapper(new ObjectMapper()));
+        properties.put(AvailableSettings.JSON_FORMAT_MAPPER, new JacksonJsonFormatMapper(hibernateMapper));
         final var builder = new LocalSessionFactoryBuilder(dataSource);
         builder.scanPackages(HibernateOnH2TestConfig.class.getPackage().getName());
         builder.setPhysicalNamingStrategy(new CamelCaseToUnderscoresNamingStrategy());

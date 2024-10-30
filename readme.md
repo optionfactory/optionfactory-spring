@@ -12,11 +12,11 @@ Jackson modules and adapters. Notably, the Quirks module handles per-`ObjectMapp
 
 Declarative whitelisted filters on `@Entity` types.
 
-## [`context`](context/readme.md) [`context-web`](context-web/readme.md)
+## [`context`](context/readme.md), [`context-web`](context-web/readme.md)
 
 Property source configuration, conditional beans and WebMvc direct field access configuration.
 
-## [`problems`](problems/readme.md) ## [`problems-web`](problems-web/readme.md)
+## [`problems`](problems/readme.md), [`problems-web`](problems-web/readme.md)
 
 REST exception resolver for reporting errors in API responses (e.g.: validation).
 
