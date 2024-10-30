@@ -1,7 +1,6 @@
 package net.optionfactory.spring.upstream.errors;
 
 import net.optionfactory.spring.upstream.UpstreamBuilder;
-import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
 import net.optionfactory.spring.upstream.soap.Schemas;
 import net.optionfactory.spring.upstream.soap.SoapHeaderWriter;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter;

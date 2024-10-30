@@ -20,8 +20,8 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import net.optionfactory.spring.pem.PemException;
-import net.optionfactory.spring.pem.parsing.PemEntry;
 import net.optionfactory.spring.pem.parsing.KeyAndCertificates;
+import net.optionfactory.spring.pem.parsing.PemEntry;
 import net.optionfactory.spring.pem.parsing.PemParser;
 
 public class PemKeyStore extends KeyStoreSpi {

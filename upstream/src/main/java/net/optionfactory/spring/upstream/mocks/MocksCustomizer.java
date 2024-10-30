@@ -2,16 +2,16 @@ package net.optionfactory.spring.upstream.mocks;
 
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicReference;
-import net.optionfactory.spring.upstream.mocks.rendering.ThymeleafRenderer;
-import org.springframework.http.client.ClientHttpResponse;
-import org.thymeleaf.dialect.IDialect;
 import net.optionfactory.spring.upstream.mocks.rendering.MocksRenderer;
+import net.optionfactory.spring.upstream.mocks.rendering.ThymeleafRenderer;
 import org.springframework.context.MessageSource;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.lang.Nullable;
+import org.thymeleaf.dialect.IDialect;
 
 public class MocksCustomizer {
 

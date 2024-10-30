@@ -1,6 +1,5 @@
 package net.optionfactory.spring.upstream.mocks;
 
-import net.optionfactory.spring.upstream.mocks.rendering.ThymeleafRenderer;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -18,6 +17,7 @@ import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.expressions.StringExpression;
+import net.optionfactory.spring.upstream.mocks.rendering.MocksRenderer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -28,7 +28,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.RestClientException;
-import net.optionfactory.spring.upstream.mocks.rendering.MocksRenderer;
 
 public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpResponseFactory {
 

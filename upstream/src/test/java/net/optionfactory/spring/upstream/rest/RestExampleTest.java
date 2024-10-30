@@ -1,12 +1,8 @@
 package net.optionfactory.spring.upstream.rest;
 
-import java.nio.charset.StandardCharsets;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
-import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
 import org.junit.Assert;
 import org.junit.Test;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.HttpClientErrorException;

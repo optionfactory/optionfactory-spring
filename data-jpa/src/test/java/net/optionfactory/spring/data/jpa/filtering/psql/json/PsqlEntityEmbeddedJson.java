@@ -27,12 +27,13 @@ public class PsqlEntityEmbeddedJson {
     /**
      * Only PSQL, ORACLE and DB2 dialects support querying inside a json column.
      *
-     * @Embeddable must be present on the embedded record/class. An
-     * UnsupportedException will be thrown "Dialect does not support
-     * aggregateComponentAssignmentExpression:
+     * @Embeddable must be present on the embedded record/class IF fields are
+     * used in queries. An UnsupportedException will be thrown "Dialect does not
+     * support aggregateComponentAssignmentExpression:
      * org.hibernate.dialect.aggregate.AggregateSupportImpl" when using other
      * dialects.
-     * @JdbcTypeCode(SqlTypes.JSON) can still be used with other dialects.
+     * @JdbcTypeCode(SqlTypes.JSON) without @Embeddable can still be used with
+     * other dialects.
      */
     @Embeddable
     public record EmbeddedRecord(String a, String b, String c) {

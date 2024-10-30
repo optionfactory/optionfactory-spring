@@ -1,6 +1,5 @@
 package net.optionfactory.spring.marshaling.jaxb.money;
 
-import net.optionfactory.spring.marshaling.jaxb.money.XsdDecimalToLongCents;
 import org.junit.Assert;
 import org.junit.experimental.theories.DataPoints;
 import org.junit.experimental.theories.FromDataPoints;

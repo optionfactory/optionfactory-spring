@@ -1,6 +1,5 @@
 package net.optionfactory.spring.marshaling.jaxb.time;
 
-import net.optionfactory.spring.marshaling.jaxb.time.XsdDateToLocalDate;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.annotation.XmlRootElement;
 import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;

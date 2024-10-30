@@ -1,8 +1,18 @@
-# data-jpa
+# optionfactory-spring/data-jpa
 
-Define filters directly on `@Entity` types.
+Declarative whitelisted filters on `@Entity`.
 
-## Filter values
+## Maven
+
+```xml
+        <dependency>
+            <groupId>net.optionfactory.spring</groupId>
+            <artifactId>data-jpa</artifactId>
+        </dependency>
+```
+
+
+## Usage
 
 - `@BooleanCompare`: `true | false`  or the configured string for boolean values
 

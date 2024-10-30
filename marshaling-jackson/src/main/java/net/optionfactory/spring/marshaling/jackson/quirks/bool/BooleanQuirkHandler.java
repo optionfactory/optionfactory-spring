@@ -11,8 +11,8 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.SettableBeanProperty;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
 import java.io.IOException;
-import net.optionfactory.spring.marshaling.jackson.quirks.Quirks;
 import net.optionfactory.spring.marshaling.jackson.quirks.QuirkHandler;
+import net.optionfactory.spring.marshaling.jackson.quirks.Quirks;
 
 public class BooleanQuirkHandler implements QuirkHandler<Quirks.Bool> {
 

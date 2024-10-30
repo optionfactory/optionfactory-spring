@@ -2,13 +2,9 @@ package net.optionfactory.spring.upstream.mocks;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
-import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
 
 public class MockClientHttpResponse implements ClientHttpResponse {

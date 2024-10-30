@@ -40,15 +40,7 @@ public class StaticBearerTokenAuthenticationProvider implements AuthenticationPr
         return new StaticBearerTokenAuthenticationProvider(Map.of(token, new PrincipalAndAuthorities(principal, authorities)));
     }
 
-    public static class PrincipalAndAuthorities {
-
-        public final Object principal;
-        public final List<GrantedAuthority> authorities;
-
-        public PrincipalAndAuthorities(Object principal, List<GrantedAuthority> authorities) {
-            this.principal = principal;
-            this.authorities = authorities;
-        }
+    public record PrincipalAndAuthorities(Object principal, List<GrantedAuthority> authorities) {
 
     }
 }

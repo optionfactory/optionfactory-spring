@@ -21,7 +21,6 @@ import java.util.stream.StreamSupport;
 import net.optionfactory.spring.problems.Failure;
 import net.optionfactory.spring.problems.Problem;
 import org.springframework.core.annotation.AnnotatedElementUtils;
-import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;

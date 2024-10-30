@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.Upstream.HttpComponents;
+import net.optionfactory.spring.upstream.UpstreamBuilder.RequestFactoryProvider;
 import net.optionfactory.spring.upstream.annotations.Annotations;
 import org.apache.hc.client5.http.AuthenticationStrategy;
 import org.apache.hc.client5.http.config.ConnectionConfig;
@@ -23,7 +24,6 @@ import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.lang.Nullable;
-import net.optionfactory.spring.upstream.UpstreamBuilder.RequestFactoryProvider;
 
 public class HcRequestFactories {
 

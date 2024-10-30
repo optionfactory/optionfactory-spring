@@ -16,8 +16,8 @@ import net.optionfactory.spring.upstream.contexts.ExceptionContext;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
-import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.expressions.BooleanExpression;
+import net.optionfactory.spring.upstream.expressions.Expressions;
 import org.springframework.context.ApplicationEventPublisher;
 
 public class UpstreamFaultInterceptor implements UpstreamHttpInterceptor {

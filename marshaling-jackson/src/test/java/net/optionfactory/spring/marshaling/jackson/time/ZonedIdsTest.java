@@ -1,6 +1,5 @@
 package net.optionfactory.spring.marshaling.jackson.time;
 
-import net.optionfactory.spring.marshaling.jackson.time.TimeModule;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.ZoneId;

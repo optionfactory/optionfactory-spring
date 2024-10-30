@@ -5,7 +5,6 @@ import java.lang.reflect.Method;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
