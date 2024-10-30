@@ -24,10 +24,7 @@ import org.testcontainers.containers.JdbcDatabaseContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 @Configuration
-@EnableJpaWhitelistFilteringRepositories(
-        basePackageClasses = HibernateOnPsqlTestConfig.class,
-        entityManagerFactoryRef = "entityManagerFactory"
-)
+@EnableJpaWhitelistFilteringRepositories(basePackageClasses = HibernateOnPsqlTestConfig.class)
 @PropertySource(value = "classpath:test.properties")
 public class HibernateOnPsqlTestConfig {
 
@@ -54,7 +51,7 @@ public class HibernateOnPsqlTestConfig {
     @Bean
     public ObjectMapper hibernateMapper() {
         final ObjectMapper mapper = new ObjectMapper();
-        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);        
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         return mapper;
     }
 
