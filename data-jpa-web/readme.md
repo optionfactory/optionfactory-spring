@@ -34,4 +34,4 @@ Page instances will be serialized as:
 
 See an example usage here:
 
-https://github.com/optionfactory/optionfactory-spring/blob/88478051ee362442aad58ccab3943b846dc19d7d/data-jpa-web/src/test/java/net/optionfactory/spring/data/jpa/web/examples/DataJpaWebExampleTest.java#L47-L135
+https://github.com/optionfactory/optionfactory-spring/blob/88478051ee362442aad58ccab3943b846dc19d7d/data-jpa-web/src/test/java/net/optionfactory/spring/data/jpa/web/examples/DataJpaWebExampleTest.java#L1-L135
