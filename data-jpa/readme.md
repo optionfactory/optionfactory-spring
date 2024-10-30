@@ -14,14 +14,19 @@ Declarative whitelisted filters on `@Entity`.
 
 ## Usage
 
-- `@BooleanCompare`: `true | false`  or the configured string for boolean values
+Enable by using `@EnableJpaWhitelistFilteringRepositories` instead of `@EnableJpaRepositories`:
 
-- `@TextCompare`: `EQUALS | CONTAINS | STARTS_WITH | ENDS_WITH`, `CASE_SENSITIVE | IGNORE_CASE`, _text_
+https://github.com/optionfactory/optionfactory-spring/blob/6327185b5f4ea2620fc08fd8f5275474146ac952/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/HibernateOnPsqlTestConfig.java#L25-L29
 
-- `@NumberCompare`: `LT | LTE | EQ | GTE | GT`, _number_
+Create a repository extending `WhitelistFilteringRepository<T>`:
 
-- `@LocalDateCompare`: `EQ | LT | GT | LTE | GTE | BETWEEN`, _date_ , _end date_ when the operator is `BETWEEN`
+https://github.com/optionfactory/optionfactory-spring/blob/6327185b5f4ea2620fc08fd8f5275474146ac952/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/examples/PetOwnersRepository.java#L1-L8
 
-- `@InEnum`: _values..._ list
+Annotate the root entity to configure the filters you want to allow:
 
-- `@InList`: _values..._ list which can contain a null value to match null fields too
+https://github.com/optionfactory/optionfactory-spring/blob/6327185b5f4ea2620fc08fd8f5275474146ac952/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/examples/PetOwner.java#L17-L24
+
+Configure the filter (possibly from user controlled data) when using the repository:
+
+https://github.com/optionfactory/optionfactory-spring/blob/6327185b5f4ea2620fc08fd8f5275474146ac952/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/examples/PetOwnerExampleTest.java#L52-L59
+
