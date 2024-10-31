@@ -62,7 +62,7 @@
         <module>upstream</module>
         <module>upstream-interceptor-jjwt</module>
         <module>upstream-interceptor-spring-oauth2</module>
-        <module>upstream-email-alerts</module>
+        <module>upstream-alerts-email</module>
         <module>validators</module>
         <module>thymeleaf</module>
         <module>localized-enums</module>

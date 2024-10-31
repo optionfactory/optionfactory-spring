@@ -6,7 +6,7 @@
         <artifactId>optionfactory-spring</artifactId>
         <version>19.11-SNAPSHOT</version>
     </parent>
-    <artifactId>upstream-email-alerts</artifactId>
+    <artifactId>upstream-alerts-emails</artifactId>
     <description>optionfactory-spring email alerting</description>
     <name>${project.groupId}:${project.artifactId}</name>
     <packaging>jar</packaging>

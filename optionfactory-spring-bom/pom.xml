@@ -103,7 +103,7 @@
             </dependency>
             <dependency>
                 <groupId>net.optionfactory.spring</groupId>
-                <artifactId>upstream-email-alerts</artifactId>
+                <artifactId>upstream-alerts-email</artifactId>
                 <version>${opfa-spring.version}</version>
             </dependency>
             <dependency>
