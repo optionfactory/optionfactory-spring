@@ -22,8 +22,22 @@ public class StrictContentSecurityPolicyNonceFilter extends OncePerRequestFilter
         final byte[] nonce = new byte[16];
         sr.nextBytes(nonce);
         final String hexNonce = new String(Hex.encode(nonce));
-        request.setAttribute("cspnonce", hexNonce);
+        request.setAttribute("csp", new Csp(hexNonce));
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * We are using a record instead of just the value when setting the nonce as
+     * a request attribute/model attribute to always prevent the value to be
+     * exposed as a query parameter during redirects. This behaviour is defined
+     * by {@code RedirectView}s configured with {@code exposeModelAttributes}
+     * and {@code RequestMappingHandlerAdapter} configured without
+     * {@code ignoreDefaultModelOnRedirect}. Wrapping the value in a record
+     * makes it ineligible for forwarding as per the implementation in
+     * {@code RedirectView.isEligibleValue}
+     */
+    public record Csp(String nonce) {
+
     }
 
 }
