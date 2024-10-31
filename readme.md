@@ -66,7 +66,7 @@ A `io.jsonwebtoken:jjwt` based JWS/JWT interceptor for upstream clients.
 
 An [`OAuth2AuthorizedClientManager`](https://docs.spring.io/spring-security/site/docs/current/api/org/springframework/security/oauth2/client/OAuth2AuthorizedClientManager.html) based interceptor for upstream clients.
 
-## [`upstream-email-alerts`](upstream-email-alerts/readme.md)
+## [`upstream-alerts-email`](upstream-alerts-email/readme.md)
 
 An upstream interceptor buffering and sending emails when alerts are generated.
 
@@ -76,13 +76,15 @@ An upstream interceptor buffering and sending emails when alerts are generated.
 
 ## [`thymeleaf`](thymeleaf/readme.md)
 
+SingletonDialect for thymeleaf
 
 ## [`localized-enums`](localized-enums/readme.md)
 
+Declarative, annotation + resource bundle based enum localization support.
 
 ## [`pdf`](pdf/readme.md)
 
-Simplified PDF generations with [Thymeleaf]() + [openhtmltopdf](https://github.com/openhtmltopdf/openhtmltopdf) + [pdfbox](https://pdfbox.apache.org/)
+Simplified PDF generations with [Thymeleaf](https://www.thymeleaf.org/) + [openhtmltopdf](https://github.com/openhtmltopdf/openhtmltopdf) + [pdfbox](https://pdfbox.apache.org/)
 
 
 ## [`pdf-signing`](pdf-signing/readme.md)
