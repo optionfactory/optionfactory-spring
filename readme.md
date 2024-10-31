@@ -66,7 +66,7 @@ A `io.jsonwebtoken:jjwt` based JWS/JWT interceptor for upstream clients.
 
 An [`OAuth2AuthorizedClientManager`](https://docs.spring.io/spring-security/site/docs/current/api/org/springframework/security/oauth2/client/OAuth2AuthorizedClientManager.html) based interceptor for upstream clients.
 
-## [`upstream-email-faults`](upstream-email-faults/readme.md)
+## [`upstream-email-alerts`](upstream-email-alerts/readme.md)
 
 An upstream interceptor buffering and sending emails when alerts are generated.
 
