@@ -8,7 +8,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.service.annotation.PostExchange;
 
 @Upstream("digest-auth-client")
-@Upstream.FaultOnRemotingError
+@Upstream.AlertOnRemotingError
 public interface DigestAuthClient {
 
     @PostExchange

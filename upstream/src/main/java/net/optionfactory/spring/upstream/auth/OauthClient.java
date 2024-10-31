@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import net.optionfactory.spring.upstream.Upstream;
-import static net.optionfactory.spring.upstream.Upstream.FaultOnResponse.STATUS_IS_ERROR;
+import static net.optionfactory.spring.upstream.Upstream.AlertOnResponse.STATUS_IS_ERROR;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.util.MultiValueMap;
@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.PostExchange;
 
 @Upstream("oauth-client")
-@Upstream.FaultOnRemotingError
-@Upstream.FaultOnResponse(STATUS_IS_ERROR)
+@Upstream.AlertOnRemotingError
+@Upstream.AlertOnResponse(STATUS_IS_ERROR)
 @Upstream.Mock.DefaultContentType("application/json")
 public interface OauthClient {
 

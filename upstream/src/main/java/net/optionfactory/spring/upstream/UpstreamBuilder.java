@@ -25,7 +25,7 @@ import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext.HttpMessageConverters;
 import net.optionfactory.spring.upstream.errors.UpstreamErrorOnReponseHandler;
 import net.optionfactory.spring.upstream.expressions.Expressions;
-import net.optionfactory.spring.upstream.faults.UpstreamFaultInterceptor;
+import net.optionfactory.spring.upstream.alerts.UpstreamAlertInterceptor;
 import net.optionfactory.spring.upstream.hc5.HcRequestFactories;
 import net.optionfactory.spring.upstream.hc5.HcRequestFactories.Builder.Buffering;
 import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
@@ -536,7 +536,7 @@ public class UpstreamBuilder<T> {
 
     /**
      * Configures an ObservationRegistry that will be used to publish client and
-     * fault events metrics.
+     * alert events metrics.
      *
      * @param observations the observation registry
      * @return this builder
@@ -559,7 +559,7 @@ public class UpstreamBuilder<T> {
 
     /**
      * Configures an ApplicationEventPublisher. The publisher will be used to
-     * notify fault events.
+     * notify alert events.
      *
      * @param publisher
      * @return this builder
@@ -619,12 +619,11 @@ public class UpstreamBuilder<T> {
                 .forEach(rcb::requestInitializer);
 
         final var initializedInterceptors = Stream.concat(interceptors.stream(),
-                Stream.of(
-                        new UpstreamAnnotatedHeadersInterceptor(),
+                Stream.of(new UpstreamAnnotatedHeadersInterceptor(),
                         new UpstreamAnnotatedCookiesInterceptor(),
                         new UpstreamAnnotatedQueryParamsInterceptor(),
                         new UpstreamLoggingInterceptor(loggingOverrides),
-                        new UpstreamFaultInterceptor(pub, obs)
+                        new UpstreamAlertInterceptor(pub, obs)
                 ))
                 .peek(i -> i.preprocess(klass, expressions, endpoints))
                 .toList();

@@ -1,4 +1,4 @@
-package net.optionfactory.spring.upstream.faults.spooler;
+package net.optionfactory.spring.upstream.alerts.spooler;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -23,8 +23,8 @@ import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
 import net.optionfactory.spring.upstream.expressions.Expressions;
-import net.optionfactory.spring.upstream.faults.UpstreamFaultEvent;
-import net.optionfactory.spring.upstream.faults.spooler.FaultsEmailsSpoolerTest.Conf;
+import net.optionfactory.spring.upstream.alerts.UpstreamAlertEvent;
+import net.optionfactory.spring.upstream.alerts.spooler.AlertsEmailsSpoolerTest.Conf;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -44,7 +44,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = Conf.class)
-public class FaultsEmailsSpoolerTest {
+public class AlertsEmailsSpoolerTest {
 
     @EnableScheduling
     @EnableAsync
@@ -75,16 +75,16 @@ public class FaultsEmailsSpoolerTest {
         }
 
         @Bean
-        public BufferedScheduledSpooler<UpstreamFaultEvent> faultsSpooler(EmailPaths paths, ConfigurableApplicationContext ac, TaskScheduler ts) throws IOException {
+        public BufferedScheduledSpooler<UpstreamAlertEvent> alertsSpooler(EmailPaths paths, ConfigurableApplicationContext ac, TaskScheduler ts) throws IOException {
             final var messagePrototype = EmailMessage.builder()
                     .sender("test@example.com", null)
                     .recipient("recipient@example.com")
                     .subject("Subject")
-                    .htmlBodyEngine("/email/", new SingletonDialect("bodies", new FaultBodiesFunctions()))
-                    .htmlBodyTemplate("example-email.faults.inlined.html")
+                    .htmlBodyEngine("/email/", new SingletonDialect("bodies", new AlertBodiesFunctions()))
+                    .htmlBodyTemplate("example-email.alerts.inlined.html")
                     .prototype();
 
-            return FaultsEmailsSpooler.bufferedScheduled(
+            return AlertsEmailsSpooler.bufferedScheduled(
                     paths,
                     messagePrototype,
                     ac,
@@ -110,7 +110,7 @@ public class FaultsEmailsSpoolerTest {
 
         final Object principal = null;
 
-        final var event = new UpstreamFaultEvent(
+        final var event = new UpstreamAlertEvent(
                 new InvocationContext(
                         new Expressions(null),
                         new InvocationContext.HttpMessageConverters(List.of()),

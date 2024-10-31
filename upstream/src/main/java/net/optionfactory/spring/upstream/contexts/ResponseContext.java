@@ -16,13 +16,13 @@ public record ResponseContext(
         String statusText,
         HttpHeaders headers,
         BodySource body,
-        boolean faulted) {
+        boolean alert) {
 
     public ResponseContext detached() {
-        return new ResponseContext(at, status, statusText, headers, body.detached(), faulted);
+        return new ResponseContext(at, status, statusText, headers, body.detached(), alert);
     }
 
-    public ResponseContext witFault() {
+    public ResponseContext witAlert() {
         return new ResponseContext(at, status, statusText, headers, body, true);
     }
 

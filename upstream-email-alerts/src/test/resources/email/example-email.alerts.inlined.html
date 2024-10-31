@@ -2,7 +2,7 @@
 <html>
     <head>
         <meta charset="UTF-8">
-        <title>Faults</title>
+        <title>Alerts</title>
     </head>
     <body>
         <style type="text/css">
@@ -46,17 +46,17 @@
             }
         </style>
         <table class="heading">
-            <tr><td><h1 style="color: white">Test Fault</h1></td></tr>
+            <tr><td><h1 style="color: white">Test Alert</h1></td></tr>
             <tr><td>Sono stati rilevati i seguenti errori con le integrazioni esterne:</td></tr>
         </table>
-        <table data-th-each="fault: ${faults}" class="alert">
+        <table data-th-each="alert: ${alerts}" class="alert">
             <tr>
                 <td colspan="2">
-                    <h1>REQUEST [[${fault.invocation.boot}]].[[${fault.invocation.id}]]</h1>            
-                    <h1>Upstream [[${fault.invocation.endpoint.upstream}]]</h1>            
+                    <h1>REQUEST [[${alert.invocation.boot}]].[[${alert.invocation.id}]]</h1>            
+                    <h1>Upstream [[${alert.invocation.endpoint.upstream}]]</h1>            
                 </td>
             </tr>
-            <tbody data-th-remove="tag" data-th-if="${fault.invocation.principal != null}" data-th-with="u=${fault.invocation.principal}">
+            <tbody data-th-remove="tag" data-th-if="${alert.invocation.principal != null}" data-th-with="u=${alert.invocation.principal}">
                 <tr><td colspan="2"><h2>USER</h2></td></tr>
                 <tr>
                     <td class="key" width="250">Id:</td>
@@ -119,7 +119,7 @@
                     <td>[[${u.fake}]]</td>
                 </tr>
             </tbody>
-            <tbody data-th-remove="tag" data-th-if="${fault.invocation.principal != null && fault.invocation.principal.impersonator != null}" data-th-with="u=${fault.principal.impersonator}">
+            <tbody data-th-remove="tag" data-th-if="${alert.invocation.principal != null && alert.invocation.principal.impersonator != null}" data-th-with="u=${alert.principal.impersonator}">
                 <tr><td colspan="2"><h2>IMPERSONATOR</h2></td></tr>            
                 <tr>
                     <td class="key" width="250">Id:</td>
@@ -185,11 +185,11 @@
             <tr><td colspan="2"><h2>REQUEST</h2></td></tr>
             <tr>
                 <td class="key">REQUEST URI:</td>
-                <td>[[${fault.request.uri}]]</td>
+                <td>[[${alert.request.uri}]]</td>
             </tr>
             <tr>
                 <td class="key">SENT AT:</td>
-                <td>[[${fault.request.at}]]</td>
+                <td>[[${alert.request.at}]]</td>
             </tr>
             <tr>
                 <td class="key">REQUEST BODY:</td>
@@ -197,10 +197,10 @@
             </tr>
             <tr>
                 <td colspan="2">
-                    <pre>[[${#bodies.abbreviated(fault.request.body, 2048)}]]</pre>
+                    <pre>[[${#bodies.abbreviated(alert.request.body, 2048)}]]</pre>
                 </td>
             </tr>
-            <tbody data-th-remove="tag" data-th-if="${fault.response != null}" data-th-with="response=${fault.response}">
+            <tbody data-th-remove="tag" data-th-if="${alert.response != null}" data-th-with="response=${alert.response}">
 
                 <tr><td colspan="2"><h2>RESPONSE</h2></td></tr>
                 <tr data-th-if="${response.status != null}">
@@ -221,11 +221,11 @@
                 </tr>            
                 <tr data-th-if="${response.body != null}">
                     <td colspan="2">
-                        <pre>[[${#bodies.abbreviated(fault.response.body, 2048)}]]</pre>
+                        <pre>[[${#bodies.abbreviated(alert.response.body, 2048)}]]</pre>
                     </td>
                 </tr>
             </tbody>
-            <tbody data-th-remove="tag" data-th-if="${fault.exception != null}" data-th-with="exception=${fault.exception}">
+            <tbody data-th-remove="tag" data-th-if="${alert.exception != null}" data-th-with="exception=${alert.exception}">
                 <tr>
                     <td class="key">EXCEPTION AT:</td>
                     <td>[[${exception.at}]]</td>

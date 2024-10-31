@@ -401,11 +401,11 @@ public @interface Upstream {
     }
 
     /**
-     * Annotated method or any method in the annotated type will generate a
-     * fault when the configured condition matches. The configured condition is
+     * Annotated method or any method in the annotated type will generate an
+     * alert when the configured condition matches. The configured condition is
      * usually evaluated against the received response.
      *
-     * @see FaultOnRemotingError for generating faults on remoting errors.<br>
+     * @see AlertOnRemotingError for generating alert events on remoting errors.<br>
      * @see InvocationContext exposed as {@code #invocation}<br>
      * @see RequestContext exposed as {@code #request}<br>
      * @see ResponseContext exposed as {@code #response}<br>
@@ -416,7 +416,7 @@ public @interface Upstream {
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.METHOD, ElementType.TYPE})
     @Documented
-    public @interface FaultOnResponse {
+    public @interface AlertOnResponse {
 
         public static final String STATUS_IS_ERROR = "#response.status().isError()";
 
@@ -428,10 +428,10 @@ public @interface Upstream {
     }
 
     /**
-     * Annotated method or any method in the annotated type will generate a
-     * fault when a remoting error occurs.
+     * Annotated method or any method in the annotated type will generate an
+     * alert event when a remoting error occurs.
      *
-     * @see FaultOnResponse for generating faults when a response is
+     * @see AlertOnResponse for generating alert events when a response is
      * received<br>
      * @see InvocationContext exposed as {@code #invocation}<br>
      * @see RequestContext exposed as {@code #request}<br>
@@ -443,7 +443,7 @@ public @interface Upstream {
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.METHOD, ElementType.TYPE})
     @Documented
-    public @interface FaultOnRemotingError {
+    public @interface AlertOnRemotingError {
 
         public static final String ALWAYS = "true";
 

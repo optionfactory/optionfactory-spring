@@ -52,7 +52,7 @@ public class ThreadLocalScopeHandler implements ScopeHandler {
 
     @Override
     public MethodInterceptor interceptor(HttpMessageConverters converters) {
-        return new UpstreamethodInterceptor(endpoints, invocations, principal, expressions, converters, observations, requests::get, responses::get, clock, publisher);
+        return new UpstreamMethodInterceptor(endpoints, invocations, principal, expressions, converters, observations, requests::get, responses::get, clock, publisher);
     }
 
     @Override

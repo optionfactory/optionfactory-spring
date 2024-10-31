@@ -16,7 +16,7 @@ import net.optionfactory.spring.upstream.contexts.InvocationContext.HttpMessageC
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
-import net.optionfactory.spring.upstream.faults.UpstreamFaultEvent;
+import net.optionfactory.spring.upstream.alerts.UpstreamAlertEvent;
 import static net.optionfactory.spring.upstream.scopes.ScopeHandler.BOOT_ID;
 import static net.optionfactory.spring.upstream.scopes.ScopeHandler.INVOCATION_COUNTER;
 import org.aopalliance.intercept.MethodInterceptor;
@@ -27,7 +27,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.UnknownContentTypeException;
 
-public class UpstreamethodInterceptor implements MethodInterceptor {
+public class UpstreamMethodInterceptor implements MethodInterceptor {
 
     private final Map<Method, EndpointDescriptor> endpoints;
     private final ThreadLocal<InvocationContext> invocations;
@@ -40,7 +40,7 @@ public class UpstreamethodInterceptor implements MethodInterceptor {
     private final InstantSource clock;
     private final ApplicationEventPublisher publisher;
 
-    public UpstreamethodInterceptor(Map<Method, EndpointDescriptor> endpoints, ThreadLocal<InvocationContext> invocations, Supplier<Object> principal, Expressions expressions, HttpMessageConverters converters, ObservationRegistry observations,
+    public UpstreamMethodInterceptor(Map<Method, EndpointDescriptor> endpoints, ThreadLocal<InvocationContext> invocations, Supplier<Object> principal, Expressions expressions, HttpMessageConverters converters, ObservationRegistry observations,
             Supplier<RequestContext> requests,
             Supplier<ResponseContext> responses,
             InstantSource clock,
@@ -77,13 +77,13 @@ public class UpstreamethodInterceptor implements MethodInterceptor {
         final var obs = Observation.createNotStarted("upstream", observations)
                 .lowCardinalityKeyValue("upstream", invocation.endpoint().upstream())
                 .lowCardinalityKeyValue("endpoint", invocation.endpoint().name())
-                .lowCardinalityKeyValue("fault", "none")
+                .lowCardinalityKeyValue("alert", "none")
                 .start();
         try (final var scope = obs.openScope()) {
             try {
                 return mi.proceed();
             } catch (RestClientException ex) {
-                reportMappingFaults(ex, invocation, scope);
+                reportMappingAlerts(ex, invocation, scope);
                 throw ex;
             }
         } catch (Exception ex) {
@@ -96,24 +96,24 @@ public class UpstreamethodInterceptor implements MethodInterceptor {
 
     }
 
-    private void reportMappingFaults(RestClientException ex, InvocationContext invocation, Scope scope) {
+    private void reportMappingAlerts(RestClientException ex, InvocationContext invocation, Scope scope) {
 
         if (ex.getCause() instanceof HttpMessageNotReadableException == false && ex instanceof UnknownContentTypeException == false) {
             return;
         }
         final ResponseContext response = responses.get();
-        if (response != null && response.faulted()) {
+        if (response != null && response.alert()) {
             //already reported
             return;
         }
         final var obs = scope.getCurrentObservation();
-        final var kv = obs.getContext().getLowCardinalityKeyValue("fault");
+        final var kv = obs.getContext().getLowCardinalityKeyValue("alert");
         if (kv != null && "none".equals(kv.getValue())) {
-            obs.lowCardinalityKeyValue("fault", "mapping");
+            obs.lowCardinalityKeyValue("alert", "mapping");
         }
         final var request = requests.get();
         final var exc = new ExceptionContext(clock.instant(), ex.getCause() != null ? ex.getCause().getMessage(): ex.getMessage());
-        publisher.publishEvent(new UpstreamFaultEvent(invocation, request, response == null ? null : response.detached(), exc));
+        publisher.publishEvent(new UpstreamAlertEvent(invocation, request, response == null ? null : response.detached(), exc));
 
     }
 }
