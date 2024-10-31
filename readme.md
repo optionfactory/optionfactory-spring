@@ -34,6 +34,8 @@ JWS token `AuthenticationProvider` for Spring Security using `io.jsonwebtoken:jj
 
 ## [`oidc-authorization-code`](oidc-authorization-code/readme.md)
 
+Support for overriding RestOperations used in org.springframework.security.oauth2.client, implementation of OidcRelyingPartyInitiatedLogoutHandler
+
 ## [`content-security-policies`](content-security-policies/readme.md)
 
 Nonce Based [Strict Content Security Policy](https://web.dev/articles/strict-csp) for Spring Security.
