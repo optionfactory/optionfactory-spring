@@ -9,8 +9,8 @@ public interface UpstreamParamClient {
     @GetExchange("/endpoint/{parb}/{b}")
     @Upstream.Endpoint("endpoint")
     @Upstream.Mock("mock.json")
-    Map<String, String> testEndpoint(
-            @Upstream.PathVariable(key = "parb", value = "#parameter")
-            @Upstream.PathVariable(key = "b", value = "#{#parameter}", valueType = Expressions.Type.TEMPLATED) String parameter);
+    @Upstream.PathVariable(key = "parb", value = "#parameter")
+    @Upstream.PathVariable(key = "b", value = "#{#parameter}", valueType = Expressions.Type.TEMPLATED)
+    Map<String, String> testEndpoint(@Upstream.Context String parameter);
 
 }

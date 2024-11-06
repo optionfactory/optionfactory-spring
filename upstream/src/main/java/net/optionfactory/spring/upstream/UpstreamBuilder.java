@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -36,17 +35,19 @@ import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpResponseFactory;
 import net.optionfactory.spring.upstream.mocks.rendering.MocksRenderer;
 import net.optionfactory.spring.upstream.mocks.rendering.StaticRenderer;
-import net.optionfactory.spring.upstream.params.UpstreamAnnotatedCookiesInterceptor;
-import net.optionfactory.spring.upstream.params.UpstreamAnnotatedHeadersInterceptor;
-import net.optionfactory.spring.upstream.params.UpstreamAnnotatedQueryParamsInterceptor;
+import net.optionfactory.spring.upstream.values.UpstreamAnnotatedCookiesInterceptor;
+import net.optionfactory.spring.upstream.values.UpstreamAnnotatedHeadersInterceptor;
+import net.optionfactory.spring.upstream.values.UpstreamAnnotatedQueryParamsInterceptor;
 import net.optionfactory.spring.upstream.scopes.ScopeHandler;
 import net.optionfactory.spring.upstream.scopes.ThreadLocalScopeHandler;
 import net.optionfactory.spring.upstream.scopes.UpstreamHttpExchangeAdapter;
+import net.optionfactory.spring.upstream.scopes.UpstreamHttpExchangeAdapter.HttpRequestValuesTransformer;
 import net.optionfactory.spring.upstream.soap.SoapHeaderWriter;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
 import net.optionfactory.spring.upstream.soap.SoapMessageHttpMessageConverter;
 import net.optionfactory.spring.upstream.soap.UpstreamSoapActionIninitializer;
+import net.optionfactory.spring.upstream.values.UpstreamAnnotatedPathVariableTransformer;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -64,7 +65,6 @@ import org.springframework.util.Assert;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.annotation.HttpExchange;
-import org.springframework.web.service.invoker.HttpExchangeAdapter;
 import org.springframework.web.service.invoker.HttpServiceArgumentResolver;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
@@ -78,6 +78,7 @@ public class UpstreamBuilder<T> {
     protected final List<HttpServiceArgumentResolver> argumentResolvers = new ArrayList<>();
     protected final Map<Method, Upstream.Logging.Conf> loggingOverrides = new HashMap<>();
 
+    protected List<HttpRequestValuesTransformer> requestValuesTransformers = new ArrayList<>();
     protected final Class<?> klass;
     protected final String upstreamId;
     protected final Map<Method, EndpointDescriptor> endpoints;
@@ -89,7 +90,6 @@ public class UpstreamBuilder<T> {
     protected ObservationRegistry observations;
     protected ConfigurableBeanFactory beanFactory;
     protected ApplicationEventPublisher publisher;
-    protected Function<HttpExchangeAdapter, UpstreamHttpExchangeAdapter> exchangeAdapterFactory;
 
     /**
      * Creates an upstream builder. You can use {@code #create} or
@@ -457,14 +457,13 @@ public class UpstreamBuilder<T> {
         return this;
     }
 
-    /**
-     * Configures the exchange adapter factory.
-     *
-     * @param af the factory
-     * @return this builder
-     */
-    public UpstreamBuilder<T> exchangeAdapter(@Nullable Function<HttpExchangeAdapter, UpstreamHttpExchangeAdapter> af) {
-        this.exchangeAdapterFactory = af;
+    public UpstreamBuilder<T> requestValuesTransformers(Consumer<List<HttpRequestValuesTransformer>> customizer) {
+        customizer.accept(requestValuesTransformers);
+        return this;
+    }
+
+    public UpstreamBuilder<T> requestValuesTransformer(HttpRequestValuesTransformer rvt) {
+        this.requestValuesTransformers.add(rvt);
         return this;
     }
 
@@ -643,17 +642,19 @@ public class UpstreamBuilder<T> {
         });
 
         final var innerExchangeAdapter = RestClientAdapter.create(rcb.build());
-        final HttpExchangeAdapter httpExchangeAdapter;
-        if (exchangeAdapterFactory == null) {
-            httpExchangeAdapter = innerExchangeAdapter;
-        } else {
-            final var a = exchangeAdapterFactory.apply(innerExchangeAdapter);
-            a.preprocess(klass, expressions, endpoints);
-            httpExchangeAdapter = scopeHandler.adapt(a);
-        }
+
+        final var presetTransformers = List.of(new UpstreamAnnotatedPathVariableTransformer()
+        );
+
+        final var allTransformers = Stream.concat(presetTransformers.stream(), requestValuesTransformers.stream()).toList();
+
+        final var exchangeAdapterChain = new UpstreamHttpExchangeAdapter.Chain(innerExchangeAdapter, allTransformers);
+        exchangeAdapterChain.preprocess(klass, expressions, endpoints);
+        final var httpExchangeAdapter = scopeHandler.adapt(exchangeAdapterChain);
 
         final var serviceProxyFactoryBuilder = HttpServiceProxyFactory.builderFor(httpExchangeAdapter);
-        serviceProxyFactoryBuilder.customArgumentResolver(new Upstream.ArgumentResolver(expressions));
+        serviceProxyFactoryBuilder.customArgumentResolver(new Upstream.ContextArgumentResolver());
+
         serviceProxyCustomizers.forEach(c -> c.accept(serviceProxyFactoryBuilder));
         for (HttpServiceArgumentResolver argumentResolver : argumentResolvers) {
             serviceProxyFactoryBuilder.customArgumentResolver(argumentResolver);

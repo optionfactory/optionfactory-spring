@@ -1,19 +1,20 @@
 package net.optionfactory.spring.upstream.scopes;
 
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
+import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
+import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.scopes.ExchangeAdapterClient.Wrapper;
 import org.junit.Assert;
 import org.junit.Test;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.service.invoker.HttpExchangeAdapter;
 import org.springframework.web.service.invoker.HttpRequestValues;
+import net.optionfactory.spring.upstream.scopes.UpstreamHttpExchangeAdapter.HttpRequestValuesTransformer;
 
 public class UpstreamHttpExchangeAdapterTest {
 
@@ -28,7 +29,7 @@ public class UpstreamHttpExchangeAdapterTest {
                     capturedBody.set(new String(request.body(), StandardCharsets.UTF_8));
                     return execution.execute(invocation, request);
                 })
-                .exchangeAdapter((inner) -> new AddWrapperToRequest(inner))
+                .requestValuesTransformer(new AddWrapperToRequest())
                 .requestFactoryMock(c -> {
                     c.response(HttpStatus.OK, MediaType.APPLICATION_JSON, "");
                 })
@@ -56,48 +57,18 @@ public class UpstreamHttpExchangeAdapterTest {
 
     }
 
-    public static class AddWrapperToRequest implements UpstreamHttpExchangeAdapter {
+    public static class AddWrapperToRequest implements HttpRequestValuesTransformer {
 
-        private final HttpExchangeAdapter inner;
-
-        public AddWrapperToRequest(HttpExchangeAdapter inner) {
-            this.inner = inner;
+        @Override
+        public void preprocess(Class<?> k, Expressions expressions, Map<Method, EndpointDescriptor> endpoints) {
         }
 
         @Override
-        public boolean supportsRequestAttributes(InvocationContext invocation) {
-            return inner.supportsRequestAttributes();
-        }
-
-        private HttpRequestValues adaptValues(HttpRequestValues rv) {
-            final var builder = UpstreamHttpExchangeAdapter.valuesBuilder(rv);
+        public HttpRequestValues transform(InvocationContext invocation, HttpRequestValues rv) {
+            final var builder = HttpRequestValuesTransformer.valuesBuilder(rv);
             builder.setBodyValue(new Wrapper<>(rv.getBodyValue()));
             return builder.build();
         }
 
-        @Override
-        public void exchange(InvocationContext invocation, HttpRequestValues rv) {
-            inner.exchange(adaptValues(rv));
-        }
-
-        @Override
-        public HttpHeaders exchangeForHeaders(InvocationContext invocation, HttpRequestValues values) {
-            return inner.exchangeForHeaders(adaptValues(values));
-        }
-
-        @Override
-        public <T> T exchangeForBody(InvocationContext invocation, HttpRequestValues values, ParameterizedTypeReference<T> bodyType) {
-            return inner.exchangeForBody(adaptValues(values), bodyType);
-        }
-
-        @Override
-        public ResponseEntity<Void> exchangeForBodilessEntity(InvocationContext invocation, HttpRequestValues values) {
-            return inner.exchangeForBodilessEntity(adaptValues(values));
-        }
-
-        @Override
-        public <T> ResponseEntity<T> exchangeForEntity(InvocationContext invocation, HttpRequestValues values, ParameterizedTypeReference<T> bodyType) {
-            return inner.exchangeForEntity(adaptValues(values), bodyType);
-        }
     }
 }

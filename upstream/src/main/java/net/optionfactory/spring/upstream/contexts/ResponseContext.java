@@ -17,7 +17,11 @@ public record ResponseContext(
         HttpHeaders headers,
         BodySource body,
         boolean alert) {
-
+    
+    
+    public BodySource body(){
+        return body;
+    }
     public ResponseContext detached() {
         return new ResponseContext(at, status, statusText, headers, body.detached(), alert);
     }

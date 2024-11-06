@@ -10,7 +10,6 @@ import net.optionfactory.spring.upstream.contexts.ExceptionContext;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
-import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.expressions.Expressions.Type;
 import net.optionfactory.spring.upstream.rendering.BodyRendering.HeadersStrategy;
 import net.optionfactory.spring.upstream.rendering.BodyRendering.Strategy;
@@ -335,12 +334,12 @@ public @interface Upstream {
 
     /**
      * An expression based path variable.
-     * <strong>discovery</strong>: parameter<br>
+     * <strong>discovery</strong>: method<br>
      * <strong>meta</strong>: no<br>
      * <strong>merging</strong>: no<br>
      */
     @Retention(value = RetentionPolicy.RUNTIME)
-    @Target(value = ElementType.PARAMETER)
+    @Target(value = ElementType.METHOD)
     @Repeatable(PathVariable.List.class)
     public @interface PathVariable {
 
@@ -365,7 +364,7 @@ public @interface Upstream {
 
         public Type valueType() default Type.EXPRESSION;
 
-        @Target({ElementType.PARAMETER})
+        @Target({ElementType.METHOD})
         @Retention(RetentionPolicy.RUNTIME)
         @Documented
         public @interface List {
@@ -405,7 +404,8 @@ public @interface Upstream {
      * alert when the configured condition matches. The configured condition is
      * usually evaluated against the received response.
      *
-     * @see AlertOnRemotingError for generating alert events on remoting errors.<br>
+     * @see AlertOnRemotingError for generating alert events on remoting
+     * errors.<br>
      * @see InvocationContext exposed as {@code #invocation}<br>
      * @see RequestContext exposed as {@code #request}<br>
      * @see ResponseContext exposed as {@code #response}<br>
@@ -501,30 +501,14 @@ public @interface Upstream {
         }
     }
 
-    public static class ArgumentResolver implements HttpServiceArgumentResolver {
-
-        private final Expressions expressions;
-
-        public ArgumentResolver(Expressions expressions) {
-            this.expressions = expressions;
-        }
+    public static class ContextArgumentResolver implements HttpServiceArgumentResolver {
 
         @Override
         public boolean resolve(Object argument, MethodParameter parameter, HttpRequestValues.Builder requestValues) {
-            final var uvs = parameter.getParameter().getAnnotationsByType(PathVariable.class);
-            for (PathVariable uv : uvs) {
-                final var ctx = expressions.context();
-                ctx.setVariable(parameter.getParameterName(), argument);
-                final var key = expressions.string(uv.key(), uv.keyType()).evaluate(ctx);
-                final var value = expressions.string(uv.value(), uv.valueType()).evaluate(ctx);
-                requestValues.setUriVariable(key, value);
-            }
-            return uvs.length != 0
-                    || parameter.hasParameterAnnotation(Context.class)
+            return parameter.hasParameterAnnotation(Context.class)
                     || parameter.getParameterType().isAnnotationPresent(Context.class)
                     || parameter.hasParameterAnnotation(Principal.class)
                     || parameter.getParameterType().isAnnotationPresent(Principal.class);
-
         }
 
     }
