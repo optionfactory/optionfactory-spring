@@ -112,7 +112,7 @@ public class AlertsEmailsSpoolerTest {
 
         final var event = new UpstreamAlertEvent(
                 new InvocationContext(
-                        new Expressions(null),
+                        new Expressions(null, null),
                         new InvocationContext.HttpMessageConverters(List.of()),
                         new EndpointDescriptor("upstream", "endpoint", Object.class.getMethod("toString"), null),
                         new Object[0],
