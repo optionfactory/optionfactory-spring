@@ -664,13 +664,11 @@ public class UpstreamBuilder<T> {
         });
 
         final var innerExchangeAdapter = RestClientAdapter.create(rcb.build());
-
-        final var presetTransformers = List.of(new UpstreamAnnotatedPathVariableTransformer()
+        
+        final var exchangeAdapterChain = new UpstreamHttpExchangeAdapter.Chain(innerExchangeAdapter, Stream.concat(
+                Stream.of(new UpstreamAnnotatedPathVariableTransformer()), 
+                requestValuesTransformers.stream()).toList()
         );
-
-        final var allTransformers = Stream.concat(presetTransformers.stream(), requestValuesTransformers.stream()).toList();
-
-        final var exchangeAdapterChain = new UpstreamHttpExchangeAdapter.Chain(innerExchangeAdapter, allTransformers);
         exchangeAdapterChain.preprocess(klass, expressions, endpoints);
         final var httpExchangeAdapter = scopeHandler.adapt(exchangeAdapterChain);
 
