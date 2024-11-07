@@ -77,6 +77,7 @@ public class UpstreamBuilder<T> {
     protected final List<Consumer<HttpServiceProxyFactory.Builder>> serviceProxyCustomizers = new ArrayList<>();
     protected final List<HttpServiceArgumentResolver> argumentResolvers = new ArrayList<>();
     protected final Map<Method, Upstream.Logging.Conf> loggingOverrides = new HashMap<>();
+    protected final Map<String, Object> expressionVars = new HashMap<>();
 
     protected List<HttpRequestValuesTransformer> requestValuesTransformers = new ArrayList<>();
     protected final Class<?> klass;
@@ -386,6 +387,17 @@ public class UpstreamBuilder<T> {
     }
 
     /**
+     * Binds an expression variable to be used by Expressions.
+     * @param key the key
+     * @param value the value
+     * @return this builder
+     */
+    public UpstreamBuilder<T> var(String key, Object value) {
+        expressionVars.put(key, value);
+        return this;
+    }
+
+    /**
      * Configures a base URL.
      *
      * @param baseUri
@@ -457,11 +469,21 @@ public class UpstreamBuilder<T> {
         return this;
     }
 
+    /**
+     * Customizes the RequestValues transformers.
+     * @param customizer the customizer
+     * @return this builder
+     */
     public UpstreamBuilder<T> requestValuesTransformers(Consumer<List<HttpRequestValuesTransformer>> customizer) {
         customizer.accept(requestValuesTransformers);
         return this;
     }
 
+    /**
+     * Adds a RequestValues transformer.
+     * @param rvt the RequestValues transformer
+     * @return this builder
+     */
     public UpstreamBuilder<T> requestValuesTransformer(HttpRequestValuesTransformer rvt) {
         this.requestValuesTransformers.add(rvt);
         return this;
@@ -603,7 +625,7 @@ public class UpstreamBuilder<T> {
                 return null;
             }
         };
-        final var expressions = new Expressions(beanFactory);
+        final var expressions = new Expressions(beanFactory, expressionVars);
 
         final var scopeHandler = new ThreadLocalScopeHandler(principalOrDefault, clockOrDefault, endpoints, expressions, obs, pub);
 

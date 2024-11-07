@@ -1,5 +1,7 @@
 package net.optionfactory.spring.upstream.expressions;
 
+import com.sun.istack.NotNull;
+import java.util.Map;
 import net.optionfactory.spring.upstream.contexts.ExceptionContext;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
@@ -29,6 +31,7 @@ public class Expressions {
     private final SpelExpressionParser parser = new SpelExpressionParser();
     private final TemplateParserContext templateContext = new TemplateParserContext();
     private final ConfigurableBeanFactory beanFactory;
+    private final Map<String, Object> vars;
 
     public enum Type {
         TEMPLATED, EXPRESSION, STATIC;
@@ -94,8 +97,9 @@ public class Expressions {
 
     }
 
-    public Expressions(@Nullable ConfigurableBeanFactory beanFactory) {
+    public Expressions(@Nullable ConfigurableBeanFactory beanFactory, @Nullable Map<String, Object> vars) {
         this.beanFactory = beanFactory;
+        this.vars = vars == null ? Map.of() : vars;
     }
 
     public StringExpression string(String value, Type type) {
@@ -112,83 +116,80 @@ public class Expressions {
     public BooleanExpression bool(String value) {
         return new SpelBooleanExpression(parser.parseExpression(value));
     }
-    
+
     public IntExpression integer(String value) {
         return new SpelIntExpression(parser.parseExpression(value));
     }
+    
+    private static void bindArgs(StandardEvaluationContext ctx, InvocationContext invocation) {
+        final var params = invocation.endpoint().method().getParameters();
+        final var args = invocation.arguments();
+        ctx.setVariable("args", args);
+        for (int i = 0; i != params.length; ++i) {
+            ctx.setVariable(params[i].getName(), args[i]);
+        }
+    }
 
     public StandardEvaluationContext context() {
-        final var sec = new StandardEvaluationContext(beanFactory == null ? null : new BeanExpressionContext(beanFactory, null));
-        sec.addPropertyAccessor(new BeanExpressionContextAccessor());
-        sec.addPropertyAccessor(new BeanFactoryAccessor());
-        sec.addPropertyAccessor(new MapAccessor());
-        sec.addPropertyAccessor(new EnvironmentAccessor());
+        final var ctx = new StandardEvaluationContext(beanFactory == null ? null : new BeanExpressionContext(beanFactory, null));
+        ctx.addPropertyAccessor(new BeanExpressionContextAccessor());
+        ctx.addPropertyAccessor(new BeanFactoryAccessor());
+        ctx.addPropertyAccessor(new MapAccessor());
+        ctx.addPropertyAccessor(new EnvironmentAccessor());
         if (beanFactory != null) {
-            sec.setBeanResolver(new BeanFactoryResolver(beanFactory));
+            ctx.setBeanResolver(new BeanFactoryResolver(beanFactory));
         }
-        sec.setTypeLocator(new StandardTypeLocator(beanFactory != null ? beanFactory.getBeanClassLoader() : null));
-        sec.setTypeConverter(new StandardTypeConverter(() -> {
+        ctx.setTypeLocator(new StandardTypeLocator(beanFactory != null ? beanFactory.getBeanClassLoader() : null));
+        ctx.setTypeConverter(new StandardTypeConverter(() -> {
             ConversionService cs = beanFactory != null ? beanFactory.getConversionService() : null;
             return (cs != null ? cs : DefaultConversionService.getSharedInstance());
         }));
-        return sec;
-    }
-
-    public EvaluationContext context(InvocationContext invocation, RequestContext request) {
-        final var ctx = context();
-        ctx.setVariable("invocation", invocation);
-        ctx.setVariable("request", request);
-        final var params = invocation.endpoint().method().getParameters();
-        final var args = invocation.arguments();
-        ctx.setVariable("args", args);
-        for (int i = 0; i != params.length; ++i) {
-            ctx.setVariable(params[i].getName(), args[i]);
-        }
+        ctx.setVariables(vars);
         return ctx;
     }
 
-    public EvaluationContext context(InvocationContext invocation, RequestContext request, ResponseContext response) {
-        final var ctx = context();
-        ctx.setVariable("invocation", invocation);
-        ctx.setVariable("request", request);
-        ctx.setVariable("response", response);
-
-        final var params = invocation.endpoint().method().getParameters();
-        final var args = invocation.arguments();
-        ctx.setVariable("args", args);
-        for (int i = 0; i != params.length; ++i) {
-            ctx.setVariable(params[i].getName(), args[i]);
-        }
-        ctx.registerFunction("json_path", JsonPath.boundMethodHandle(invocation.converters(), response));
-        ctx.registerFunction("xpath_bool", XmlPath.xpathBooleanBoundMethodHandle(response));
-        return ctx;
-    }
-
-    public EvaluationContext context(InvocationContext invocation, RequestContext request, ExceptionContext exception) {
-        final var ctx = context();
-        ctx.setVariable("invocation", invocation);
-        ctx.setVariable("request", request);
-        ctx.setVariable("exception", exception);
-        final var params = invocation.endpoint().method().getParameters();
-        final var args = invocation.arguments();
-        ctx.setVariable("args", args);
-        for (int i = 0; i != params.length; ++i) {
-            ctx.setVariable(params[i].getName(), args[i]);
-        }
-        return ctx;
-    }
-
-    public EvaluationContext context(InvocationContext invocation) {
+    public StandardEvaluationContext context(InvocationContext invocation) {
         final var ctx = context();
         ctx.setVariable("invocation", invocation);
         ctx.setVariable("upstream", invocation.endpoint().upstream());
         ctx.setVariable("endpoint", invocation.endpoint().name());
-        final var params = invocation.endpoint().method().getParameters();
-        final var args = invocation.arguments();
-        ctx.setVariable("args", args);
-        for (int i = 0; i != params.length; ++i) {
-            ctx.setVariable(params[i].getName(), args[i]);
-        }
+        bindArgs(ctx, invocation);
         return ctx;
     }
+    
+    public StandardEvaluationContext context(InvocationContext invocation, RequestContext request) {
+        final var ctx = context();
+        ctx.setVariable("invocation", invocation);
+        ctx.setVariable("upstream", invocation.endpoint().upstream());
+        ctx.setVariable("endpoint", invocation.endpoint().name());
+        ctx.setVariable("request", request);
+        
+        bindArgs(ctx, invocation);
+        return ctx;
+    }
+
+    public StandardEvaluationContext context(InvocationContext invocation, RequestContext request, ResponseContext response) {
+        final var ctx = context();
+        ctx.setVariable("invocation", invocation);
+        ctx.setVariable("upstream", invocation.endpoint().upstream());
+        ctx.setVariable("endpoint", invocation.endpoint().name());        
+        ctx.setVariable("request", request);
+        ctx.setVariable("response", response);
+        ctx.registerFunction("json_path", JsonPath.boundMethodHandle(invocation.converters(), response));
+        ctx.registerFunction("xpath_bool", XmlPath.xpathBooleanBoundMethodHandle(response));
+        bindArgs(ctx, invocation);
+        return ctx;
+    }
+
+    public StandardEvaluationContext context(InvocationContext invocation, RequestContext request, ExceptionContext exception) {
+        final var ctx = context();
+        ctx.setVariable("invocation", invocation);
+        ctx.setVariable("upstream", invocation.endpoint().upstream());
+        ctx.setVariable("endpoint", invocation.endpoint().name());        
+        ctx.setVariable("request", request);
+        ctx.setVariable("exception", exception);
+        bindArgs(ctx, invocation);
+        return ctx;
+    }
+
 }

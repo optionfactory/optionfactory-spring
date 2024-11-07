@@ -1,5 +1,6 @@
 package net.optionfactory.spring.upstream.expressions;
 
+import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -17,7 +18,7 @@ public class ExpressionsTest {
     @Test
     public void canEvaluateEnvironmentProperty() {
         final var ac = new AnnotationConfigApplicationContext(Config.class);
-        final var e = new Expressions(ac.getBeanFactory());
+        final var e = new Expressions(ac.getBeanFactory(), Map.of());
         final var got = e.string("@environment.getProperty('test.value')", Expressions.Type.EXPRESSION).evaluate(e.context());
         Assert.assertEquals("my value", got);
     }
@@ -25,8 +26,16 @@ public class ExpressionsTest {
     @Test
     public void canAccessEnvironmentProperties() {
         final var ac = new AnnotationConfigApplicationContext(Config.class);
-        final var e = new Expressions(ac.getBeanFactory());
+        final var e = new Expressions(ac.getBeanFactory(), Map.of());
         final var got = e.string("@environment['test.value']", Expressions.Type.EXPRESSION).evaluate(e.context());
+        Assert.assertEquals("my value", got);
+    }
+
+    @Test
+    public void canAccessBoundVarialbe() {
+        final var ac = new AnnotationConfigApplicationContext(Config.class);
+        final var e = new Expressions(ac.getBeanFactory(), Map.of("test", "my value"));
+        final var got = e.string("#test", Expressions.Type.EXPRESSION).evaluate(e.context());
         Assert.assertEquals("my value", got);
     }
 }
