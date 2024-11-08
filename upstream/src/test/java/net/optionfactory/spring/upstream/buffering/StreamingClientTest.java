@@ -52,4 +52,12 @@ public class StreamingClientTest {
         }
     }
 
+    @Test(expected = IllegalStateException.class)
+    public void readingTwiceFromInputStreamResourceThrows() throws IOException {
+        final var got = client.fetch();
+        try (final var is = got.getBody().getInputStream()) {
+        }
+        try (final var is = got.getBody().getInputStream()) {
+        }
+    }
 }
