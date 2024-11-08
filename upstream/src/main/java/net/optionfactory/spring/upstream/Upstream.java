@@ -13,10 +13,7 @@ import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.expressions.Expressions.Type;
 import net.optionfactory.spring.upstream.rendering.BodyRendering.HeadersStrategy;
 import net.optionfactory.spring.upstream.rendering.BodyRendering.Strategy;
-import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.service.invoker.HttpRequestValues;
-import org.springframework.web.service.invoker.HttpServiceArgumentResolver;
 
 /**
  *
@@ -344,8 +341,7 @@ public @interface Upstream {
     public @interface PathVariable {
 
         /**
-         * <strong>context</strong>: the annotated argument with method
-         * parameter name.
+         * The path variable name.
          *
          * @return the key
          */
@@ -354,8 +350,7 @@ public @interface Upstream {
         public Type keyType() default Type.STATIC;
 
         /**
-         * <strong>context</strong>: the annotated argument with method
-         * parameter name.
+         * The path variable value.
          *
          * @return the value of the path variable
          *
@@ -499,18 +494,6 @@ public @interface Upstream {
 
             ErrorOnResponse[] value();
         }
-    }
-
-    public static class ContextArgumentResolver implements HttpServiceArgumentResolver {
-
-        @Override
-        public boolean resolve(Object argument, MethodParameter parameter, HttpRequestValues.Builder requestValues) {
-            return parameter.hasParameterAnnotation(Context.class)
-                    || parameter.getParameterType().isAnnotationPresent(Context.class)
-                    || parameter.hasParameterAnnotation(Principal.class)
-                    || parameter.getParameterType().isAnnotationPresent(Principal.class);
-        }
-
     }
 
 }

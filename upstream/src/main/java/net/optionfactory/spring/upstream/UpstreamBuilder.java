@@ -19,6 +19,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.xml.validation.Schema;
+import net.optionfactory.spring.upstream.Upstream.Context;
+import net.optionfactory.spring.upstream.Upstream.Principal;
 import net.optionfactory.spring.upstream.annotations.Annotations;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext.HttpMessageConverters;
@@ -53,6 +55,7 @@ import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
@@ -66,6 +69,7 @@ import org.springframework.util.Assert;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.annotation.HttpExchange;
+import org.springframework.web.service.invoker.HttpRequestValues;
 import org.springframework.web.service.invoker.HttpServiceArgumentResolver;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
@@ -680,7 +684,7 @@ public class UpstreamBuilder<T> {
         final var httpExchangeAdapter = scopeHandler.adapt(exchangeAdapterChain);
 
         final var serviceProxyFactoryBuilder = HttpServiceProxyFactory.builderFor(httpExchangeAdapter);
-        serviceProxyFactoryBuilder.customArgumentResolver(new Upstream.ContextArgumentResolver());
+        serviceProxyFactoryBuilder.customArgumentResolver(new ContextArgumentResolver());
 
         serviceProxyCustomizers.forEach(c -> c.accept(serviceProxyFactoryBuilder));
         for (HttpServiceArgumentResolver argumentResolver : argumentResolvers) {
@@ -694,6 +698,18 @@ public class UpstreamBuilder<T> {
         @SuppressWarnings("unchecked")
         final var r = (T) p.getProxy();
         return r;
+    }
+
+    public static class ContextArgumentResolver implements HttpServiceArgumentResolver {
+
+        @Override
+        public boolean resolve(Object argument, MethodParameter parameter, HttpRequestValues.Builder requestValues) {
+            return parameter.hasParameterAnnotation(Context.class)
+                    || parameter.getParameterType().isAnnotationPresent(Context.class)
+                    || parameter.hasParameterAnnotation(Principal.class)
+                    || parameter.getParameterType().isAnnotationPresent(Principal.class);
+        }
+
     }
 
 }
