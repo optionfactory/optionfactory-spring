@@ -81,7 +81,7 @@ public class InterceptorChainAdapter implements ClientHttpRequestInterceptor {
                     response.getStatusCode(),
                     response.getStatusText(),
                     response.getHeaders(),
-                    BodySource.of(response),
+                    BodySource.of(response, invocation.buffering()),
                     false
             );
             return rctx;

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
+import net.optionfactory.spring.upstream.buffering.Buffering;
 import net.optionfactory.spring.upstream.expressions.Expressions;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpInputMessage;
@@ -20,7 +21,8 @@ public record InvocationContext(
         Object[] arguments,
         String boot,
         long id,
-        Object principal) {
+        Object principal, 
+        Buffering buffering) {
 
     public record HttpMessageConverters(List<HttpMessageConverter<?>> all) {
 

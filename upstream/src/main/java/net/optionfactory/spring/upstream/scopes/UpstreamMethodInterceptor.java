@@ -17,6 +17,7 @@ import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.alerts.UpstreamAlertEvent;
+import net.optionfactory.spring.upstream.buffering.Buffering;
 import static net.optionfactory.spring.upstream.scopes.ScopeHandler.BOOT_ID;
 import static net.optionfactory.spring.upstream.scopes.ScopeHandler.INVOCATION_COUNTER;
 import org.aopalliance.intercept.MethodInterceptor;
@@ -72,7 +73,8 @@ public class UpstreamMethodInterceptor implements MethodInterceptor {
                 .map(i -> mi.getArguments()[i])
                 .or(() -> Optional.ofNullable(principal.get()))
                 .orElse(null);
-        final InvocationContext invocation = new InvocationContext(expressions, converters, endpoint, mi.getArguments(), BOOT_ID, INVOCATION_COUNTER.incrementAndGet(), eprincipal);
+        final var buffering = Buffering.fromMethod(method);
+        final InvocationContext invocation = new InvocationContext(expressions, converters, endpoint, mi.getArguments(), BOOT_ID, INVOCATION_COUNTER.incrementAndGet(), eprincipal, buffering);
         invocations.set(invocation);
         final var obs = Observation.createNotStarted("upstream", observations)
                 .lowCardinalityKeyValue("upstream", invocation.endpoint().upstream())

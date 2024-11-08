@@ -22,7 +22,7 @@ public class JsonPath {
 
     public JsonNode path(String path) {
         try {
-            return converters.convert(response.body().bytes(), JsonNode.class, response.headers().getContentType()).findPath(path);
+            return converters.convert(response.body().forInspection(true).bytes(), JsonNode.class, response.headers().getContentType()).findPath(path);
         } catch (IOException | RuntimeException ex) {
             return MissingNode.getInstance();
         }

@@ -25,6 +25,7 @@ import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
 import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.alerts.UpstreamAlertEvent;
 import net.optionfactory.spring.upstream.alerts.spooler.AlertsEmailsSpoolerTest.Conf;
+import net.optionfactory.spring.upstream.buffering.Buffering;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -118,7 +119,8 @@ public class AlertsEmailsSpoolerTest {
                         new Object[0],
                         "boot-id",
                         1,
-                        principal
+                        principal,
+                        Buffering.BUFFERED
                 ),
                 new RequestContext(
                         Instant.now(),

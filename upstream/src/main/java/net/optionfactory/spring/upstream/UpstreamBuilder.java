@@ -25,8 +25,9 @@ import net.optionfactory.spring.upstream.contexts.InvocationContext.HttpMessageC
 import net.optionfactory.spring.upstream.errors.UpstreamErrorOnReponseHandler;
 import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.alerts.UpstreamAlertInterceptor;
+import net.optionfactory.spring.upstream.buffering.Buffering;
+import net.optionfactory.spring.upstream.buffering.BufferingUpstreamHttpRequestFactory;
 import net.optionfactory.spring.upstream.hc5.HcRequestFactories;
-import net.optionfactory.spring.upstream.hc5.HcRequestFactories.Builder.Buffering;
 import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
 import net.optionfactory.spring.upstream.mocks.MockResourcesUpstreamHttpResponseFactory;
 import net.optionfactory.spring.upstream.mocks.MockUpstreamRequestFactory;
@@ -240,7 +241,10 @@ public class UpstreamBuilder<T> {
                     : new MockResourcesUpstreamHttpResponseFactory(renderer != null ? renderer : new StaticRenderer());
             final var hrf = new MockUpstreamRequestFactory(rf);
             hrf.preprocess(k, expressions, eps);
-            return scopeHandler.adapt(hrf);
+            final var unbuffered = scopeHandler.adapt(hrf);
+            final var buffered = new BufferingUpstreamHttpRequestFactory(unbuffered);
+            buffered.preprocess(k, expressions, eps);
+            return scopeHandler.adapt(buffered);
         };
         return this;
     }
@@ -367,7 +371,7 @@ public class UpstreamBuilder<T> {
                 }
                 c.add(new ByteArrayHttpMessageConverter());
                 c.add(new StringHttpMessageConverter());
-                c.add(new ResourceHttpMessageConverter(false));
+                c.add(new ResourceHttpMessageConverter(true));
                 c.add(multipart);
                 c.add(new MappingJackson2HttpMessageConverter(objectMapper));
             });
@@ -388,6 +392,7 @@ public class UpstreamBuilder<T> {
 
     /**
      * Binds an expression variable to be used by Expressions.
+     *
      * @param key the key
      * @param value the value
      * @return this builder
@@ -471,6 +476,7 @@ public class UpstreamBuilder<T> {
 
     /**
      * Customizes the RequestValues transformers.
+     *
      * @param customizer the customizer
      * @return this builder
      */
@@ -481,6 +487,7 @@ public class UpstreamBuilder<T> {
 
     /**
      * Adds a RequestValues transformer.
+     *
      * @param rvt the RequestValues transformer
      * @return this builder
      */
@@ -664,9 +671,9 @@ public class UpstreamBuilder<T> {
         });
 
         final var innerExchangeAdapter = RestClientAdapter.create(rcb.build());
-        
+
         final var exchangeAdapterChain = new UpstreamHttpExchangeAdapter.Chain(innerExchangeAdapter, Stream.concat(
-                Stream.of(new UpstreamAnnotatedPathVariableTransformer()), 
+                Stream.of(new UpstreamAnnotatedPathVariableTransformer()),
                 requestValuesTransformers.stream()).toList()
         );
         exchangeAdapterChain.preprocess(klass, expressions, endpoints);

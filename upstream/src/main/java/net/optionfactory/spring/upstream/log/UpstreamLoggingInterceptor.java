@@ -63,7 +63,7 @@ public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
                 logger.info("{}[t:ih][ms:{}] headers: {}", prefix, elapsed, response.headers());
             }
             if (conf.response() != BodyRendering.Strategy.SKIP) {
-                final var responseBody = response.headers().getContentLength() == 0 ? "" : String.format(" type:%s body: %s", response.headers().getContentType(), BodyRendering.render(conf.response(), response.headers().getContentLength(), response.headers().getContentType(), response.body(), conf.infix(), conf.responseMaxSize()));
+                final var responseBody = response.headers().getContentLength() == 0 ? "" : String.format(" type:%s body: %s", response.headers().getContentType(), BodyRendering.render(conf.response(), response.headers().getContentLength(), response.headers().getContentType(), response.body().forInspection(false), conf.infix(), conf.responseMaxSize()));
                 logger.info("{}[t:ib][ms:{}] status: {}{}", prefix, elapsed, response.status(), responseBody);
             }
             return response;

@@ -11,6 +11,8 @@ import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.Upstream.HttpComponents;
 import net.optionfactory.spring.upstream.UpstreamBuilder.RequestFactoryProvider;
 import net.optionfactory.spring.upstream.annotations.Annotations;
+import net.optionfactory.spring.upstream.buffering.Buffering;
+import net.optionfactory.spring.upstream.buffering.BufferingUpstreamHttpRequestFactory;
 import org.apache.hc.client5.http.AuthenticationStrategy;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
@@ -154,9 +156,6 @@ public class HcRequestFactories {
             return clientBuilder(c -> c.disableRedirectHandling());
         }
 
-        public enum Buffering {
-            BUFFERED, UNBUFFERED;
-        }
 
         public ClientHttpRequestFactory build(Buffering buffering) {
             final var defaults = AnnotationUtils.synthesizeAnnotation(HttpComponents.class);
@@ -256,7 +255,12 @@ public class HcRequestFactories {
                     clientBuilderCustomizer.accept(clientBuilder);
                 }
                 final var f = new HttpComponentsClientHttpRequestFactory(clientBuilder.build());
-                return buffering == Buffering.BUFFERED ? new BufferingClientHttpRequestFactory(f) : f;
+                if (buffering == Buffering.UNBUFFERED) {
+                    return f;
+                }
+                final var buffered = new BufferingUpstreamHttpRequestFactory(f);
+                buffered.preprocess(klass, expressions, endpoints);
+                return scopeHandler.adapt(buffered);
             };
         }
     }
