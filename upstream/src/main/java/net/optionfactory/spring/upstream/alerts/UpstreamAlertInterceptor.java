@@ -56,7 +56,7 @@ public class UpstreamAlertInterceptor implements UpstreamHttpInterceptor {
             final var ectx = invocation.expressions().context(invocation, request, response);
             if (expression.evaluate(ectx)) {
                 publish(invocation, request, response, null);
-                return response.witAlert();
+                return response.withAlert();
             }
             return response;
 

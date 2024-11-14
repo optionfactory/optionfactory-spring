@@ -28,7 +28,7 @@ public record ResponseContext(
         return new ResponseContext(at, status, statusText, headers, body.detached(), alert);
     }
 
-    public ResponseContext witAlert() {
+    public ResponseContext withAlert() {
         return new ResponseContext(at, status, statusText, headers, body, true);
     }
 
