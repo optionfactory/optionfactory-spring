@@ -3,6 +3,8 @@ package net.optionfactory.spring.upstream.mocks;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -16,6 +18,7 @@ public class MockClientHttpRequest implements ClientHttpRequest {
     private final HttpHeaders headers = new HttpHeaders();
     private final UpstreamHttpResponseFactory strategy;
     private final InvocationContext invocation;
+    private final Map<String, Object> attributes = new HashMap<>();
 
     public MockClientHttpRequest(URI uri, HttpMethod method, UpstreamHttpResponseFactory strategy, InvocationContext invocation) {
         this.uri = uri;
@@ -37,6 +40,11 @@ public class MockClientHttpRequest implements ClientHttpRequest {
     @Override
     public URI getURI() {
         return uri;
+    }
+
+    @Override
+    public Map<String, Object> getAttributes() {
+        return attributes;
     }
 
     @Override

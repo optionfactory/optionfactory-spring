@@ -1,6 +1,7 @@
 package net.optionfactory.spring.upstream.scopes;
 
 import java.net.URI;
+import java.util.Map;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -27,6 +28,11 @@ public class RequestAdapter implements HttpRequest {
     @Override
     public HttpHeaders getHeaders() {
         return request.headers();
+    }
+
+    @Override
+    public Map<String, Object> getAttributes() {
+        return request.attributes();
     }
 
 }

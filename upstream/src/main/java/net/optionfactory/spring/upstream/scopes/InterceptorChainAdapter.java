@@ -46,7 +46,7 @@ public class InterceptorChainAdapter implements ClientHttpRequestInterceptor {
         final AtomicReference<ClientHttpResponse> originalResponse = new AtomicReference<>();
         final InvocationContext ictx = invocations.get();
         final var chain = new InterceptorChain(interceptors.iterator(), execution, clock, requests, originalResponse);
-        final var reqCtx = new RequestContext(clock.instant(), request.getMethod(), request.getURI(), request.getHeaders(), body);
+        final var reqCtx = new RequestContext(clock.instant(), request.getMethod(), request.getURI(), request.getHeaders(), request.getAttributes(), body);
         final var respCtx = chain.execute(ictx, reqCtx);
         responses.accept(respCtx);
         return new ResponseAdapter(ictx, reqCtx, respCtx, originalResponse.get());

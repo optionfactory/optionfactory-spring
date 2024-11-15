@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Stream;
 import net.optionfactory.spring.email.EmailMessage;
@@ -127,6 +128,7 @@ public class AlertsEmailsSpoolerTest {
                         HttpMethod.PATCH,
                         URI.create("https://example.com"),
                         new HttpHeaders(),
+                        new HashMap<>(),
                         "request_body".repeat(1000).getBytes(StandardCharsets.UTF_8)
                 ),
                 new ResponseContext(

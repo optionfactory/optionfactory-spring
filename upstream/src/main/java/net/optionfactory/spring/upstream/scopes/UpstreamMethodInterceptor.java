@@ -32,18 +32,18 @@ public class UpstreamMethodInterceptor implements MethodInterceptor {
 
     private final Map<Method, EndpointDescriptor> endpoints;
     private final ThreadLocal<InvocationContext> invocations;
+    private final ThreadLocal<RequestContext> requests;
+    private final ThreadLocal<ResponseContext> responses;
     private final Supplier<Object> principal;
     private final Expressions expressions;
     private final HttpMessageConverters converters;
     private final ObservationRegistry observations;
-    private final Supplier<RequestContext> requests;
-    private final Supplier<ResponseContext> responses;
     private final InstantSource clock;
     private final ApplicationEventPublisher publisher;
 
     public UpstreamMethodInterceptor(Map<Method, EndpointDescriptor> endpoints, ThreadLocal<InvocationContext> invocations, Supplier<Object> principal, Expressions expressions, HttpMessageConverters converters, ObservationRegistry observations,
-            Supplier<RequestContext> requests,
-            Supplier<ResponseContext> responses,
+            ThreadLocal<RequestContext> requests,
+            ThreadLocal<ResponseContext> responses,
             InstantSource clock,
             ApplicationEventPublisher publisher) {
         this.endpoints = endpoints;
@@ -93,6 +93,8 @@ public class UpstreamMethodInterceptor implements MethodInterceptor {
             throw ex;
         } finally {
             obs.stop();
+            responses.remove();
+            requests.remove();
             invocations.remove();
         }
 
@@ -114,7 +116,7 @@ public class UpstreamMethodInterceptor implements MethodInterceptor {
             obs.lowCardinalityKeyValue("alert", "mapping");
         }
         final var request = requests.get();
-        final var exc = new ExceptionContext(clock.instant(), ex.getCause() != null ? ex.getCause().getMessage(): ex.getMessage());
+        final var exc = new ExceptionContext(clock.instant(), ex.getCause() != null ? ex.getCause().getMessage() : ex.getMessage());
         publisher.publishEvent(new UpstreamAlertEvent(invocation, request, response == null ? null : response.detached(), exc));
 
     }

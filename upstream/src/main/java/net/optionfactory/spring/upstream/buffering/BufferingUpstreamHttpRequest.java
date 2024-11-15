@@ -3,6 +3,7 @@ package net.optionfactory.spring.upstream.buffering;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.util.Map;
 import javax.annotation.Nullable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -73,6 +74,11 @@ public class BufferingUpstreamHttpRequest implements ClientHttpRequest {
     @Override
     public URI getURI() {
         return inner.getURI();
+    }
+
+    @Override
+    public Map<String, Object> getAttributes() {
+        return inner.getAttributes();
     }
 
     @Override
