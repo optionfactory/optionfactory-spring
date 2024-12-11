@@ -4,12 +4,11 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
-import org.springframework.context.MessageSource;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.lang.Nullable;
 import org.thymeleaf.TemplateSpec;
-import org.thymeleaf.context.Context;
 import org.thymeleaf.dialect.IDialect;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 import org.thymeleaf.templateresolver.StringTemplateResolver;
@@ -19,38 +18,35 @@ public class ThymeleafRenderer implements MocksRenderer {
 
     private final String templateSuffix;
     private final SpringTemplateEngine engine;
+    private final ConfigurableApplicationContext ac;
 
-    public ThymeleafRenderer(String templateSuffix, @Nullable MessageSource ms, IDialect[] dialects) {
+    public ThymeleafRenderer(String templateSuffix, @Nullable ConfigurableApplicationContext ac, IDialect[] dialects) {
         final var e = new SpringTemplateEngine();
-        e.setMessageSource(ms);
         e.setTemplateResolver(new StringTemplateResolver());
         for (IDialect dialect : dialects) {
             e.addDialect(dialect);
         }
         this.templateSuffix = templateSuffix;
         this.engine = e;
+        this.ac = ac;
+    }
+
+    @Override
+    public boolean canRender(Resource source) {
+        final var filename = source.getFilename();
+        return filename != null && filename.endsWith(templateSuffix);
     }
 
     @Override
     public Resource render(Resource source, InvocationContext invocation) {
         final var filename = source.getFilename();
-        if (filename == null || !filename.endsWith(templateSuffix)) {
-            return source;
-        }
-        final var context = new Context();
-        context.setVariable("invocation", invocation);
-        final var params = invocation.endpoint().method().getParameters();
-        final var args = invocation.arguments();
-        context.setVariable("args", args);
-        for (int i = 0; i != params.length; ++i) {
-            context.setVariable(params[i].getName(), args[i]);
-        }
+
         final var filenameWithoutSuffix = filename.substring(0, filename.lastIndexOf(templateSuffix));
         final var templateMode = ContentTypeUtils.computeTemplateModeForTemplateName(filenameWithoutSuffix);
         try {
             final var sourceAsString = source.getContentAsString(StandardCharsets.UTF_8);
             final var spec = new TemplateSpec(sourceAsString, templateMode);
-            final var out = engine.process(spec, context);
+            final var out = engine.process(spec, invocation.expressions().thymeleafContext(invocation, ac));
             return new ByteArrayResource(out.getBytes(StandardCharsets.UTF_8));
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);

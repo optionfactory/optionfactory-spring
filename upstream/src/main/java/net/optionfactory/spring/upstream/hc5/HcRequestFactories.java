@@ -202,8 +202,8 @@ public class HcRequestFactories {
                 final var conf = Annotations.closest(klass, Upstream.HttpComponents.class).orElseGet(() -> AnnotationUtils.synthesizeAnnotation(HttpComponents.class));
                 final var connTimeout = Duration.parse(expressions.string(conf.connectionTimeout(), conf.connectionTimeoutType()).evaluate(expressions.context()));
                 final var sockTimeout = Duration.parse(expressions.string(conf.socketTimeout(), conf.socketTimeoutType()).evaluate(expressions.context()));
-                final var maxConnections = expressions.integer(conf.maxConnections()).evaluate(expressions.context());
-                final var maxConnectionsPerRoute = expressions.integer(conf.maxConnectionsPerRoute()).evaluate(expressions.context());
+                final var maxConnections = expressions.parse(conf.maxConnections()).getValue(expressions.context(), int.class);
+                final var maxConnectionsPerRoute = expressions.parse(conf.maxConnectionsPerRoute()).getValue(expressions.context(), int.class);
 
                 final var socketConfigBuilder = SocketConfig.custom().setSoKeepAlive(true);
 

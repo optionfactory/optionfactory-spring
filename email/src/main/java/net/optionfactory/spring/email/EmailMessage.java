@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.UUID;
 import net.optionfactory.spring.email.EmailMarshaller.EmailMarshallingException;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -20,6 +21,7 @@ import org.thymeleaf.ITemplateEngine;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.dialect.IDialect;
 import org.thymeleaf.spring6.SpringTemplateEngine;
+import org.thymeleaf.spring6.expression.ThymeleafEvaluationContext;
 import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
@@ -87,7 +89,10 @@ public record EmailMessage(
 
         private List<AttachmentSource> attachments = new ArrayList<>();
         private List<CidSource> cids = new ArrayList<>();
+        private ConfigurableApplicationContext applicationContext;
+
         private Map<String, Object> variables = new HashMap<>();
+
         private Spooling spooling;
 
         public Builder messageId(String messageId) {
@@ -224,6 +229,22 @@ public record EmailMessage(
             return this;
         }
 
+        /**
+         * When Application context is set, a ThymeleafEvaluationContext is
+         * configured, and beans can be referenced from Spel expressions in
+         * Thymeleaf.
+         *
+         * I.e.:
+         * <pre>[[${@environment.getProperty('my.configuration')}]]</pre>
+         *
+         * @param applicationContext the application context
+         * @return this builder
+         */
+        public Builder applicationContext(@Nullable ConfigurableApplicationContext applicationContext) {
+            this.applicationContext = applicationContext;
+            return this;
+        }
+
         public Builder spooling(EmailPaths paths, String prefix, ApplicationEventPublisher publisher) {
             Assert.notNull(paths, "paths must be non null");
             this.spooling = new Spooling(paths, prefix, publisher);
@@ -258,12 +279,16 @@ public record EmailMessage(
             builder.attachments = new ArrayList<>(attachments);
             builder.cids = new ArrayList<>(cids);
             builder.variables = new HashMap<>(variables);
+            builder.applicationContext = applicationContext;
             builder.spooling = spooling;
             return builder;
         }
 
-        private static Context makeContext(Map<String, Object> variables) {
+        private static Context makeContext(ConfigurableApplicationContext ac, Map<String, Object> variables) {
             final var ctx = new Context();
+            if (ac != null) {
+                ctx.setVariable(ThymeleafEvaluationContext.THYMELEAF_EVALUATION_CONTEXT_CONTEXT_VARIABLE_NAME, new ThymeleafEvaluationContext(ac, ac.getBeanFactory().getConversionService()));
+            }
             variables.forEach((k, v) -> ctx.setVariable(k, v));
             return ctx;
         }
@@ -314,7 +339,7 @@ public record EmailMessage(
 
             final var templated = htmlBodyTemplateConfigured || textBodyTemplateConfigured;
 
-            final var context = templated ? makeContext(variables) : null;
+            final var context = templated ? makeContext(applicationContext, variables) : null;
             final var htmlBody = htmlBodyTemplateConfigured ? htmlBodyEngine.process(htmlBodyTemplate, context) : htmlBodyLiteral;
             final var postprocessedHtmlBody = htmlBodyPostprocessor != null ? htmlBodyPostprocessor.postprocess(htmlBody) : htmlBody;
             final var textBody = textBodyTemplateConfigured ? textBodyEngine.process(textBodyTemplate, context) : textBodyLiteral;

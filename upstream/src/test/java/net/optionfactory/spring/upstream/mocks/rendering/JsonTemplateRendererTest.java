@@ -5,13 +5,13 @@ import net.optionfactory.spring.upstream.UpstreamBuilder;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class ThymeleafRendererTest {
+public class JsonTemplateRendererTest {
 
     @Test
-    public void canRenderMockResourcesWithThymeleaf() {
+    public void canRenderMockResourcesWithJsonTemplate() {
 
-        final var client = UpstreamBuilder.create(ThymeleafClient.class)
-                .requestFactoryMock(c -> c.thymeleaf())
+        final var client = UpstreamBuilder.create(JsonTemplateClient.class)
+                .requestFactoryMock(c -> c.jsont())
                 .restClient(r -> r.baseUrl("http://example.com"))
                 .build();
 

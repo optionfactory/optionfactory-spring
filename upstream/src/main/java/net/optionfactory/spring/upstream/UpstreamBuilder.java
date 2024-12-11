@@ -234,15 +234,14 @@ public class UpstreamBuilder<T> {
         Assert.notNull(customizer, "customizer must not be null");
         Assert.isNull(this.rfp, "request factory is already configured");
         final var responseFactoryRef = new AtomicReference<UpstreamHttpResponseFactory>();
-        final var rendererRef = new AtomicReference<MocksRenderer>();
-        final var mc = new MocksCustomizer(responseFactoryRef, rendererRef);
+        final var renderers = new ArrayList<MocksRenderer>();
+        final var mc = new MocksCustomizer(responseFactoryRef, renderers);
         customizer.accept(mc);
         final var responseFactory = responseFactoryRef.get();
-        final var renderer = rendererRef.get();
         this.rfp = (scopeHandler, k, expressions, eps) -> {
             final var rf = responseFactory != null
                     ? responseFactory
-                    : new MockResourcesUpstreamHttpResponseFactory(renderer != null ? renderer : new StaticRenderer());
+                    : new MockResourcesUpstreamHttpResponseFactory(renderers);
             final var hrf = new MockUpstreamRequestFactory(rf);
             hrf.preprocess(k, expressions, eps);
             final var unbuffered = scopeHandler.adapt(hrf);

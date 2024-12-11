@@ -18,6 +18,7 @@ import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.expressions.StringExpression;
 import net.optionfactory.spring.upstream.mocks.rendering.MocksRenderer;
+import net.optionfactory.spring.upstream.mocks.rendering.StaticRenderer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -32,14 +33,16 @@ import org.springframework.web.client.RestClientException;
 public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpResponseFactory {
 
     private final Map<Method, List<MockConfiguration>> methodToMockConfigurations = new ConcurrentHashMap<>();
-    private final MocksRenderer renderer;
-
+    private final List<MocksRenderer> renderers;
+    private final StaticRenderer fallbackRenderer;
+    
     private record MockConfiguration(HttpStatus status, Optional<MediaType> defaultMediaType, StringExpression[] headers, StringExpression bodyPath) {
 
     }
 
-    public MockResourcesUpstreamHttpResponseFactory(MocksRenderer renderer) {
-        this.renderer = renderer;
+    public MockResourcesUpstreamHttpResponseFactory(List<MocksRenderer> renderers) {
+        this.renderers = renderers;
+        this.fallbackRenderer = new StaticRenderer();
     }
 
     private final Logger logger = LoggerFactory.getLogger(MockResourcesUpstreamHttpResponseFactory.class);
@@ -94,6 +97,11 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
                     .map(MockResourcesUpstreamHttpResponseFactory::headerFromLine)
                     .map(kv -> new String[]{kv[0].trim(), kv[1].trim()})
                     .forEach(kv -> responseHeaders.add(kv[0], kv[1]));
+
+            final var renderer = renderers.stream().
+                    filter(mr -> mr.canRender(resource))
+                    .findFirst()
+                    .orElse(fallbackRenderer);
 
             return new MockClientHttpResponse(mc.status(), mc.status().getReasonPhrase(), responseHeaders, renderer.render(resource, invocation));
         }

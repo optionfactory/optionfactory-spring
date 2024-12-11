@@ -5,6 +5,8 @@ import org.springframework.core.io.Resource;
 
 public interface MocksRenderer {
 
+    boolean canRender(Resource source);
+
     Resource render(Resource source, InvocationContext ctx);
 
 }

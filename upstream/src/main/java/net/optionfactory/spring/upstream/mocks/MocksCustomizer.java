@@ -1,9 +1,13 @@
 package net.optionfactory.spring.upstream.mocks;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import net.optionfactory.spring.upstream.mocks.rendering.JsonTemplateRenderer;
 import net.optionfactory.spring.upstream.mocks.rendering.MocksRenderer;
 import net.optionfactory.spring.upstream.mocks.rendering.ThymeleafRenderer;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.MessageSource;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
@@ -15,12 +19,12 @@ import org.thymeleaf.dialect.IDialect;
 
 public class MocksCustomizer {
 
-    private AtomicReference<UpstreamHttpResponseFactory> responseFactory;
-    private AtomicReference<MocksRenderer> renderer;
+    private final AtomicReference<UpstreamHttpResponseFactory> responseFactory;
+    private final List<MocksRenderer> renderers;
 
-    public MocksCustomizer(AtomicReference<UpstreamHttpResponseFactory> responseFactory, AtomicReference<MocksRenderer> renderer) {
+    public MocksCustomizer(AtomicReference<UpstreamHttpResponseFactory> responseFactory, List<MocksRenderer> renderers) {
         this.responseFactory = responseFactory;
-        this.renderer = renderer;
+        this.renderers = renderers;
     }
 
     public MocksCustomizer responseFactory(UpstreamHttpResponseFactory responseFactory) {
@@ -29,18 +33,34 @@ public class MocksCustomizer {
     }
 
     public MocksCustomizer renderer(MocksRenderer renderer) {
-        this.renderer.set(renderer);
+        this.renderers.add(renderer);
         return this;
     }
 
-    public MocksCustomizer thymeleaf(@Nullable MessageSource ms, IDialect... dialects) {
-        this.renderer.set(new ThymeleafRenderer(".template", ms, dialects));
+    public MocksCustomizer jsont(String templateSuffix, ObjectMapper mapper) {
+        this.renderers.add(new JsonTemplateRenderer(templateSuffix, mapper));
         return this;
     }
 
-    public MocksCustomizer thymeleaf(String templateSuffix, @Nullable MessageSource ms, IDialect... dialects) {
-        this.renderer.set(new ThymeleafRenderer(templateSuffix, ms, dialects));
+    public MocksCustomizer jsont(ObjectMapper mapper) {
+        return jsont(".tpl.json", mapper);
+    }
+
+    public MocksCustomizer jsont() {
+        return jsont(".tpl.json", new ObjectMapper());
+    }
+
+    public MocksCustomizer thymeleaf(String templateSuffix, @Nullable ConfigurableApplicationContext ac, IDialect... dialects) {
+        this.renderers.add(new ThymeleafRenderer(templateSuffix, ac, dialects));
         return this;
+    }
+
+    public MocksCustomizer thymeleaf(@Nullable ConfigurableApplicationContext ac, IDialect... dialects) {
+        return thymeleaf(".template", ac, dialects);
+    }
+
+    public MocksCustomizer thymeleaf(IDialect... dialects) {
+        return thymeleaf(".template", null, dialects);
     }
 
     public MocksCustomizer response(ClientHttpResponse o) {

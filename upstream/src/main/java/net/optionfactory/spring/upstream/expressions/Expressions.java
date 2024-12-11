@@ -1,6 +1,5 @@
 package net.optionfactory.spring.upstream.expressions;
 
-import com.sun.istack.NotNull;
 import java.util.Map;
 import net.optionfactory.spring.upstream.contexts.ExceptionContext;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
@@ -8,23 +7,15 @@ import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.paths.JsonPath;
 import net.optionfactory.spring.upstream.paths.XmlPath;
-import org.springframework.beans.factory.config.BeanExpressionContext;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.expression.BeanExpressionContextAccessor;
-import org.springframework.context.expression.BeanFactoryAccessor;
-import org.springframework.context.expression.BeanFactoryResolver;
-import org.springframework.context.expression.EnvironmentAccessor;
-import org.springframework.context.expression.MapAccessor;
-import org.springframework.core.convert.ConversionService;
-import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.common.TemplateParserContext;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
-import org.springframework.expression.spel.support.StandardTypeConverter;
-import org.springframework.expression.spel.support.StandardTypeLocator;
 import org.springframework.lang.Nullable;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring6.expression.ThymeleafEvaluationContext;
 
 public class Expressions {
 
@@ -37,91 +28,31 @@ public class Expressions {
         TEMPLATED, EXPRESSION, STATIC;
     }
 
-    public static class StaticExpression implements StringExpression {
-
-        final String value;
-
-        public StaticExpression(String value) {
-            this.value = value;
-        }
-
-        @Override
-        public String evaluate(EvaluationContext context) {
-            return value;
-        }
-
-    }
-
-    public static class SpelStringExpression implements StringExpression {
-
-        final Expression e;
-
-        public SpelStringExpression(Expression e) {
-            this.e = e;
-        }
-
-        @Override
-        public String evaluate(EvaluationContext context) {
-            return e.getValue(context, String.class);
-        }
-
-    }
-
-    public static class SpelBooleanExpression implements BooleanExpression {
-
-        final Expression e;
-
-        public SpelBooleanExpression(Expression e) {
-            this.e = e;
-        }
-
-        @Override
-        public boolean evaluate(EvaluationContext context) {
-            return e.getValue(context, boolean.class);
-        }
-
-    }
-
-    public static class SpelIntExpression implements IntExpression {
-
-        final Expression e;
-
-        public SpelIntExpression(Expression e) {
-            this.e = e;
-        }
-
-        @Override
-        public int evaluate(EvaluationContext context) {
-            return e.getValue(context, int.class);
-        }
-
-    }
-
     public Expressions(@Nullable ConfigurableBeanFactory beanFactory, @Nullable Map<String, Object> vars) {
         this.beanFactory = beanFactory;
         this.vars = vars == null ? Map.of() : vars;
     }
 
     public StringExpression string(String value, Type type) {
-        return switch (type) {
-            case Type.TEMPLATED ->
-                new SpelStringExpression(parser.parseExpression(value, templateContext));
-            case Type.EXPRESSION ->
-                new SpelStringExpression(parser.parseExpression(value));
-            case Type.STATIC ->
-                new StaticExpression(value);
-        };
+        final var tctx = type == Type.TEMPLATED ? templateContext : null;
+        final var expr = type == Type.STATIC ? null : parser.parseExpression(value, tctx);
+        final var svalue = type == Type.STATIC ? value : null;
+        return new StringExpression(expr, svalue);
     }
 
     public BooleanExpression bool(String value) {
-        return new SpelBooleanExpression(parser.parseExpression(value));
+        return new BooleanExpression(parser.parseExpression(value));
     }
 
-    public IntExpression integer(String value) {
-        return new SpelIntExpression(parser.parseExpression(value));
+    public Expression parse(String value) {
+        return parser.parseExpression(value);
     }
-    
-    private static void bindArgs(StandardEvaluationContext ctx, InvocationContext invocation) {
+
+    public Expression parseTemplated(String value) {
+        return parser.parseExpression(value, templateContext);
+    }
+
+    private static void bindArgs(EvaluationContext ctx, InvocationContext invocation) {
         final var params = invocation.endpoint().method().getParameters();
         final var args = invocation.arguments();
         ctx.setVariable("args", args);
@@ -130,25 +61,13 @@ public class Expressions {
         }
     }
 
-    public StandardEvaluationContext context() {
-        final var ctx = new StandardEvaluationContext(beanFactory == null ? null : new BeanExpressionContext(beanFactory, null));
-        ctx.addPropertyAccessor(new BeanExpressionContextAccessor());
-        ctx.addPropertyAccessor(new BeanFactoryAccessor());
-        ctx.addPropertyAccessor(new MapAccessor());
-        ctx.addPropertyAccessor(new EnvironmentAccessor());
-        if (beanFactory != null) {
-            ctx.setBeanResolver(new BeanFactoryResolver(beanFactory));
-        }
-        ctx.setTypeLocator(new StandardTypeLocator(beanFactory != null ? beanFactory.getBeanClassLoader() : null));
-        ctx.setTypeConverter(new StandardTypeConverter(() -> {
-            ConversionService cs = beanFactory != null ? beanFactory.getConversionService() : null;
-            return (cs != null ? cs : DefaultConversionService.getSharedInstance());
-        }));
+    public OverlayEvaluationContext context() {
+        final var ctx = new OverlayEvaluationContext(beanFactory);
         ctx.setVariables(vars);
         return ctx;
     }
 
-    public StandardEvaluationContext context(InvocationContext invocation) {
+    public OverlayEvaluationContext context(InvocationContext invocation) {
         final var ctx = context();
         ctx.setVariable("invocation", invocation);
         ctx.setVariable("upstream", invocation.endpoint().upstream());
@@ -156,39 +75,57 @@ public class Expressions {
         bindArgs(ctx, invocation);
         return ctx;
     }
-    
-    public StandardEvaluationContext context(InvocationContext invocation, RequestContext request) {
+
+    public OverlayEvaluationContext context(InvocationContext invocation, RequestContext request) {
         final var ctx = context();
         ctx.setVariable("invocation", invocation);
         ctx.setVariable("upstream", invocation.endpoint().upstream());
         ctx.setVariable("endpoint", invocation.endpoint().name());
         ctx.setVariable("request", request);
-        
+
         bindArgs(ctx, invocation);
         return ctx;
     }
 
-    public StandardEvaluationContext context(InvocationContext invocation, RequestContext request, ResponseContext response) {
+    public OverlayEvaluationContext context(InvocationContext invocation, RequestContext request, ResponseContext response) {
         final var ctx = context();
         ctx.setVariable("invocation", invocation);
         ctx.setVariable("upstream", invocation.endpoint().upstream());
-        ctx.setVariable("endpoint", invocation.endpoint().name());        
+        ctx.setVariable("endpoint", invocation.endpoint().name());
         ctx.setVariable("request", request);
         ctx.setVariable("response", response);
-        ctx.registerFunction("json_path", JsonPath.boundMethodHandle(invocation.converters(), response));
-        ctx.registerFunction("xpath_bool", XmlPath.xpathBooleanBoundMethodHandle(response));
+        ctx.setVariable("json_path", JsonPath.boundMethodHandle(invocation.converters(), response));
+        ctx.setVariable("xpath_bool", XmlPath.xpathBooleanBoundMethodHandle(response));
         bindArgs(ctx, invocation);
         return ctx;
     }
 
-    public StandardEvaluationContext context(InvocationContext invocation, RequestContext request, ExceptionContext exception) {
+    public OverlayEvaluationContext context(InvocationContext invocation, RequestContext request, ExceptionContext exception) {
         final var ctx = context();
         ctx.setVariable("invocation", invocation);
         ctx.setVariable("upstream", invocation.endpoint().upstream());
-        ctx.setVariable("endpoint", invocation.endpoint().name());        
+        ctx.setVariable("endpoint", invocation.endpoint().name());
         ctx.setVariable("request", request);
         ctx.setVariable("exception", exception);
         bindArgs(ctx, invocation);
+        return ctx;
+    }
+
+    public Context thymeleafContext(InvocationContext invocation, ConfigurableApplicationContext ac) {
+        final var ctx = new Context();
+        if (ac != null) {
+            ctx.setVariable(ThymeleafEvaluationContext.THYMELEAF_EVALUATION_CONTEXT_CONTEXT_VARIABLE_NAME, new ThymeleafEvaluationContext(ac, ac.getBeanFactory().getConversionService()));
+        }
+        ctx.setVariable("invocation", invocation);
+        ctx.setVariable("upstream", invocation.endpoint().upstream());
+        ctx.setVariable("endpoint", invocation.endpoint().name());
+
+        final var params = invocation.endpoint().method().getParameters();
+        final var args = invocation.arguments();
+        ctx.setVariable("args", args);
+        for (int i = 0; i != params.length; ++i) {
+            ctx.setVariable(params[i].getName(), args[i]);
+        }
         return ctx;
     }
 

@@ -2,7 +2,6 @@ package net.optionfactory.spring.upstream.examples;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.ObservationRegistry;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
 import net.optionfactory.spring.upstream.Upstream;
@@ -20,7 +19,6 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.Resource;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
