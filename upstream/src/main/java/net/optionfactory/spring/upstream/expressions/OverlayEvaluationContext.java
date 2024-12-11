@@ -27,6 +27,7 @@ import org.springframework.expression.TypeLocator;
 import org.springframework.expression.TypedValue;
 import org.springframework.expression.spel.support.ReflectiveConstructorResolver;
 import org.springframework.expression.spel.support.ReflectiveMethodResolver;
+import org.springframework.expression.spel.support.ReflectivePropertyAccessor;
 import org.springframework.expression.spel.support.StandardOperatorOverloader;
 import org.springframework.expression.spel.support.StandardTypeComparator;
 import org.springframework.expression.spel.support.StandardTypeConverter;
@@ -38,7 +39,8 @@ public class OverlayEvaluationContext implements EvaluationContext {
             new BeanExpressionContextAccessor(),
             new BeanFactoryAccessor(),
             new MapAccessor(),
-            new EnvironmentAccessor()
+            new EnvironmentAccessor(),
+            new ReflectivePropertyAccessor()
     );
     private static final List<IndexAccessor> INDEX_ACCESSORS = List.of(
     
