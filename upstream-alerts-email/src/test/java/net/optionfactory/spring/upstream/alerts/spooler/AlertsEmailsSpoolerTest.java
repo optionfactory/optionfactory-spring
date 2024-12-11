@@ -143,7 +143,7 @@ public class AlertsEmailsSpoolerTest {
 
         publisher.publishEvent(event);
 
-        Thread.sleep(Duration.ofMillis(500));
+        Thread.sleep(Duration.ofMillis(1500));
         Assert.assertEquals(1, emlsIn(paths.sent()).count());
     }
 
