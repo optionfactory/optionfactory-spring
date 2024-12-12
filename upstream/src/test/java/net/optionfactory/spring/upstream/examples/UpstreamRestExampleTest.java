@@ -15,8 +15,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
@@ -43,8 +42,7 @@ public class UpstreamRestExampleTest {
                 @Value("${myclient.client.id}") String clientId,
                 @Value("${myclient.client.secret}") String clientSecret,
                 Optional<ObservationRegistry> observations,
-                ConfigurableBeanFactory beanFactory,
-                ApplicationEventPublisher publisher
+                ConfigurableApplicationContext ac
         ) {
             final boolean isMock = "mock".equals(type);
 
@@ -64,9 +62,9 @@ public class UpstreamRestExampleTest {
                     .observations(observations.orElse(null))
                     //cofigures the beanFactory so you can reference beans
                     //in annotations' SpEl expressions
-                    .beanFactory(beanFactory)
+                    .expressions(ac)
                     //configures where events (e.g: Alerts) are published
-                    .publisher(publisher)
+                    .publisher(ac)
                     .baseUri("https://hub.dummyapis.com/auth/")
                     .build();
 
@@ -91,9 +89,9 @@ public class UpstreamRestExampleTest {
                     .observations(observations.orElse(null))
                     //cofigures the beanFactory so you can reference beans
                     //in annotations' SpEl expressions
-                    .beanFactory(beanFactory)
+                    .expressions(ac)
                     //configures where events (e.g: Alerts) are published
-                    .publisher(publisher)
+                    .publisher(ac)
                     .baseUri("https://hub.dummyapis.com/statuscode/")
                     .build();
 

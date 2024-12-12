@@ -7,14 +7,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import net.optionfactory.spring.upstream.mocks.rendering.JsonTemplateRenderer;
 import net.optionfactory.spring.upstream.mocks.rendering.MocksRenderer;
 import net.optionfactory.spring.upstream.mocks.rendering.ThymeleafRenderer;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.MessageSource;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.lang.Nullable;
 import org.thymeleaf.dialect.IDialect;
 
 public class MocksCustomizer {
@@ -37,6 +34,10 @@ public class MocksCustomizer {
         return this;
     }
 
+    public MocksCustomizer defaults() {
+        return jsont().thymeleaf();
+    }
+
     public MocksCustomizer jsont(String templateSuffix, ObjectMapper mapper) {
         this.renderers.add(new JsonTemplateRenderer(templateSuffix, mapper));
         return this;
@@ -50,17 +51,13 @@ public class MocksCustomizer {
         return jsont(".tpl.json", new ObjectMapper());
     }
 
-    public MocksCustomizer thymeleaf(String templateSuffix, @Nullable ConfigurableApplicationContext ac, IDialect... dialects) {
-        this.renderers.add(new ThymeleafRenderer(templateSuffix, ac, dialects));
+    public MocksCustomizer thymeleaf(String templateSuffix, IDialect... dialects) {
+        this.renderers.add(new ThymeleafRenderer(templateSuffix, dialects));
         return this;
     }
 
-    public MocksCustomizer thymeleaf(@Nullable ConfigurableApplicationContext ac, IDialect... dialects) {
-        return thymeleaf(".template", ac, dialects);
-    }
-
     public MocksCustomizer thymeleaf(IDialect... dialects) {
-        return thymeleaf(".template", null, dialects);
+        return thymeleaf(".template", dialects);
     }
 
     public MocksCustomizer response(ClientHttpResponse o) {

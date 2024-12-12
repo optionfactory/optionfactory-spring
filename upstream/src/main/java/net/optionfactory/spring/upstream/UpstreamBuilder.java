@@ -37,7 +37,6 @@ import net.optionfactory.spring.upstream.mocks.MocksCustomizer;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpResponseFactory;
 import net.optionfactory.spring.upstream.mocks.rendering.MocksRenderer;
-import net.optionfactory.spring.upstream.mocks.rendering.StaticRenderer;
 import net.optionfactory.spring.upstream.values.UpstreamAnnotatedCookiesInterceptor;
 import net.optionfactory.spring.upstream.values.UpstreamAnnotatedHeadersInterceptor;
 import net.optionfactory.spring.upstream.values.UpstreamAnnotatedQueryParamsInterceptor;
@@ -52,7 +51,6 @@ import net.optionfactory.spring.upstream.soap.SoapMessageHttpMessageConverter;
 import net.optionfactory.spring.upstream.soap.UpstreamSoapActionIninitializer;
 import net.optionfactory.spring.upstream.values.UpstreamAnnotatedPathVariableTransformer;
 import org.springframework.aop.framework.ProxyFactory;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.MethodParameter;
@@ -94,7 +92,7 @@ public class UpstreamBuilder<T> {
     protected InstantSource clock;
 
     protected ObservationRegistry observations;
-    protected ConfigurableBeanFactory beanFactory;
+    protected ConfigurableApplicationContext expressionsApplicationContext;
     protected ApplicationEventPublisher publisher;
 
     /**
@@ -578,13 +576,14 @@ public class UpstreamBuilder<T> {
     }
 
     /**
-     * Configures a BeanFactory that will be made available to expressions.
+     * Configures an application context that will be made available to
+     * expressions.
      *
-     * @param beanFactory
+     * @param ac the application context
      * @return this builder
      */
-    public UpstreamBuilder<T> beanFactory(@Nullable ConfigurableBeanFactory beanFactory) {
-        this.beanFactory = beanFactory;
+    public UpstreamBuilder<T> expressions(@Nullable ConfigurableApplicationContext ac) {
+        this.expressionsApplicationContext = ac;
         return this;
     }
 
@@ -601,14 +600,14 @@ public class UpstreamBuilder<T> {
     }
 
     /**
-     * Configures both an ApplicationEventPublisher and a BeanFactory from a
-     * ConfigurableApplicationContext.
+     * Configures both an ApplicationEventPublisher the expressions
+     * ApplicationContext.
      *
      * @param ac the application context
      * @return this builder
      */
     public UpstreamBuilder<T> applicationContext(@Nullable ConfigurableApplicationContext ac) {
-        this.beanFactory = ac == null ? null : ac.getBeanFactory();
+        this.expressionsApplicationContext = ac;
         this.publisher = ac;
         return this;
     }
@@ -635,7 +634,7 @@ public class UpstreamBuilder<T> {
                 return null;
             }
         };
-        final var expressions = new Expressions(beanFactory, expressionVars);
+        final var expressions = new Expressions(expressionsApplicationContext, expressionVars);
 
         final var scopeHandler = new ThreadLocalScopeHandler(principalOrDefault, clockOrDefault, endpoints, expressions, obs, pub);
 

@@ -38,7 +38,7 @@ public class MocksReferencingBeansTest {
             final ObjectMapper mapper = new ObjectMapper();
 
             return UpstreamBuilder.create(ExampleMockClient.class)
-                    .requestFactoryMock(c -> c.jsont().thymeleaf(ac))
+                    .requestFactoryMock(c -> c.jsont().thymeleaf())
                     .json(mapper)
                     .applicationContext(ac)
                     .baseUri("https://hub.dummyapis.com/statuscode/")

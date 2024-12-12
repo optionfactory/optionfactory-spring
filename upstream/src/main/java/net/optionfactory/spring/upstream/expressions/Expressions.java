@@ -7,7 +7,6 @@ import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.paths.JsonPath;
 import net.optionfactory.spring.upstream.paths.XmlPath;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
@@ -21,15 +20,15 @@ public class Expressions {
 
     private final SpelExpressionParser parser = new SpelExpressionParser();
     private final TemplateParserContext templateContext = new TemplateParserContext();
-    private final ConfigurableBeanFactory beanFactory;
+    private final ConfigurableApplicationContext ac;
     private final Map<String, Object> vars;
 
     public enum Type {
         TEMPLATED, EXPRESSION, STATIC;
     }
 
-    public Expressions(@Nullable ConfigurableBeanFactory beanFactory, @Nullable Map<String, Object> vars) {
-        this.beanFactory = beanFactory;
+    public Expressions(@Nullable ConfigurableApplicationContext ac, @Nullable Map<String, Object> vars) {
+        this.ac = ac;
         this.vars = vars == null ? Map.of() : vars;
     }
 
@@ -62,7 +61,7 @@ public class Expressions {
     }
 
     public OverlayEvaluationContext context() {
-        final var ctx = new OverlayEvaluationContext(beanFactory);
+        final var ctx = new OverlayEvaluationContext(ac == null ? null : ac.getBeanFactory());
         ctx.setVariables(vars);
         return ctx;
     }
@@ -111,7 +110,7 @@ public class Expressions {
         return ctx;
     }
 
-    public Context thymeleafContext(InvocationContext invocation, ConfigurableApplicationContext ac) {
+    public Context thymeleafContext(InvocationContext invocation) {
         final var ctx = new Context();
         if (ac != null) {
             ctx.setVariable(ThymeleafEvaluationContext.THYMELEAF_EVALUATION_CONTEXT_CONTEXT_VARIABLE_NAME, new ThymeleafEvaluationContext(ac, ac.getBeanFactory().getConversionService()));

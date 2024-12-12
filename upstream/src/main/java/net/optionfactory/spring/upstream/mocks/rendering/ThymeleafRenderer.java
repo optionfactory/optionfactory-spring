@@ -18,9 +18,8 @@ public class ThymeleafRenderer implements MocksRenderer {
 
     private final String templateSuffix;
     private final SpringTemplateEngine engine;
-    private final ConfigurableApplicationContext ac;
 
-    public ThymeleafRenderer(String templateSuffix, @Nullable ConfigurableApplicationContext ac, IDialect[] dialects) {
+    public ThymeleafRenderer(String templateSuffix, IDialect[] dialects) {
         final var e = new SpringTemplateEngine();
         e.setTemplateResolver(new StringTemplateResolver());
         for (IDialect dialect : dialects) {
@@ -28,7 +27,6 @@ public class ThymeleafRenderer implements MocksRenderer {
         }
         this.templateSuffix = templateSuffix;
         this.engine = e;
-        this.ac = ac;
     }
 
     @Override
@@ -46,7 +44,7 @@ public class ThymeleafRenderer implements MocksRenderer {
         try {
             final var sourceAsString = source.getContentAsString(StandardCharsets.UTF_8);
             final var spec = new TemplateSpec(sourceAsString, templateMode);
-            final var out = engine.process(spec, invocation.expressions().thymeleafContext(invocation, ac));
+            final var out = engine.process(spec, invocation.expressions().thymeleafContext(invocation));
             return new ByteArrayResource(out.getBytes(StandardCharsets.UTF_8));
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);

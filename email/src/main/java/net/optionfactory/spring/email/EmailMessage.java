@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import net.optionfactory.spring.email.EmailMarshaller.EmailMarshallingException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -24,6 +25,7 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 import org.thymeleaf.spring6.expression.ThymeleafEvaluationContext;
 import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
+import org.thymeleaf.templateresolver.StringTemplateResolver;
 
 public record EmailMessage(
         @NonNull
@@ -67,6 +69,76 @@ public record EmailMessage(
     public interface Prototype {
 
         Builder builder();
+    }
+
+    public enum TemplateEngineFactory {
+        INSTANCE;
+
+        /**
+         * Creates a TemplateEngine using a StringTemplateResolver.
+         *
+         * @param mode the template mode to be used
+         * @param dialects the dialects to be registered
+         * @return the template engine
+         */
+        public SpringTemplateEngine string(TemplateMode mode, IDialect... dialects) {
+            final var resolver = new StringTemplateResolver();
+            resolver.setOrder(1);
+            resolver.setTemplateMode(mode);
+            resolver.setCacheable(true);
+            final var engine = new SpringTemplateEngine();
+            engine.addTemplateResolver(resolver);
+            return engine;
+        }
+
+        /**
+         * Creates a TEXT TemplateEngine using a ClassLoaderTemplateResolver.
+         *
+         * @param prefix the template resources prefix
+         * @param dialects the dialects to be registered
+         * @return the template engine
+         */
+        public SpringTemplateEngine text(String prefix, IDialect... dialects) {
+            final var resolver = new ClassLoaderTemplateResolver();
+            resolver.setOrder(1);
+            resolver.setResolvablePatterns(Set.of("*.txt"));
+            resolver.setPrefix(prefix);
+            resolver.setTemplateMode(TemplateMode.TEXT);
+            resolver.setCharacterEncoding("utf-8");
+            resolver.setCacheable(true);
+
+            final var engine = new SpringTemplateEngine();
+            engine.addTemplateResolver(resolver);
+            for (IDialect dialect : dialects) {
+                engine.addDialect(dialect);
+            }
+            return engine;
+        }
+
+        /**
+         * Creates an HTML TemplateEngine using a ClassLoaderTemplateResolver.
+         *
+         * @param prefix the template resources prefix
+         * @param dialects the dialects to be registered
+         * @return the template engine
+         */
+        public SpringTemplateEngine html(String prefix, IDialect... dialects) {
+            final var resolver = new ClassLoaderTemplateResolver();
+            resolver.setOrder(1);
+            resolver.setResolvablePatterns(Set.of("*.html"));
+            resolver.setPrefix(prefix);
+            resolver.setTemplateMode(TemplateMode.HTML);
+            resolver.setCharacterEncoding("utf-8");
+            resolver.setCacheable(true);
+
+            final var engine = new SpringTemplateEngine();
+            engine.addTemplateResolver(resolver);
+            for (IDialect dialect : dialects) {
+                engine.addDialect(dialect);
+            }
+            return engine;
+        }
+
     }
 
     public static class Builder implements Prototype {
@@ -154,8 +226,8 @@ public record EmailMessage(
             return this;
         }
 
-        public Builder textBodyEngine(String prefix, IDialect... dialects) {
-            this.textBodyEngine = createTextEngine(prefix, dialects);
+        public Builder textBodyEngine(Function<TemplateEngineFactory, ITemplateEngine> customizer) {
+            this.textBodyEngine = customizer.apply(TemplateEngineFactory.INSTANCE);
             return this;
         }
 
@@ -174,8 +246,8 @@ public record EmailMessage(
             return this;
         }
 
-        public Builder htmlBodyEngine(String prefix, IDialect... dialects) {
-            this.htmlBodyEngine = createHtmlEngine(prefix, dialects);
+        public Builder htmlBodyEngine(Function<TemplateEngineFactory, ITemplateEngine> customizer) {
+            this.textBodyEngine = customizer.apply(TemplateEngineFactory.INSTANCE);
             return this;
         }
 
@@ -230,9 +302,8 @@ public record EmailMessage(
         }
 
         /**
-         * When Application context is set, a ThymeleafEvaluationContext is
-         * configured, and beans can be referenced from Spel expressions in
-         * Thymeleaf.
+         * Configure the application context available to Spel expressions, so
+         * that ac beans can be referenced from Thymeleaf templates.
          *
          * I.e.:
          * <pre>[[${@environment.getProperty('my.configuration')}]]</pre>
@@ -240,7 +311,7 @@ public record EmailMessage(
          * @param applicationContext the application context
          * @return this builder
          */
-        public Builder applicationContext(@Nullable ConfigurableApplicationContext applicationContext) {
+        public Builder expressions(@Nullable ConfigurableApplicationContext applicationContext) {
             this.applicationContext = applicationContext;
             return this;
         }
@@ -291,40 +362,6 @@ public record EmailMessage(
             }
             variables.forEach((k, v) -> ctx.setVariable(k, v));
             return ctx;
-        }
-
-        public static SpringTemplateEngine createTextEngine(String prefix, IDialect... dialects) {
-            final var resolver = new ClassLoaderTemplateResolver();
-            resolver.setOrder(1);
-            resolver.setResolvablePatterns(Set.of("*.txt"));
-            resolver.setPrefix(prefix);
-            resolver.setTemplateMode(TemplateMode.TEXT);
-            resolver.setCharacterEncoding("utf-8");
-            resolver.setCacheable(true);
-
-            final var engine = new SpringTemplateEngine();
-            engine.addTemplateResolver(resolver);
-            for (IDialect dialect : dialects) {
-                engine.addDialect(dialect);
-            }
-            return engine;
-        }
-
-        public static SpringTemplateEngine createHtmlEngine(String prefix, IDialect... dialects) {
-            final var resolver = new ClassLoaderTemplateResolver();
-            resolver.setOrder(1);
-            resolver.setResolvablePatterns(Set.of("*.html"));
-            resolver.setPrefix(prefix);
-            resolver.setTemplateMode(TemplateMode.HTML);
-            resolver.setCharacterEncoding("utf-8");
-            resolver.setCacheable(true);
-
-            final var engine = new SpringTemplateEngine();
-            engine.addTemplateResolver(resolver);
-            for (IDialect dialect : dialects) {
-                engine.addDialect(dialect);
-            }
-            return engine;
         }
 
         public EmailMessage build() {
