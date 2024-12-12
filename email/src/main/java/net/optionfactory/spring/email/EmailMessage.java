@@ -247,7 +247,7 @@ public record EmailMessage(
         }
 
         public Builder htmlBodyEngine(Function<TemplateEngineFactory, ITemplateEngine> customizer) {
-            this.textBodyEngine = customizer.apply(TemplateEngineFactory.INSTANCE);
+            this.htmlBodyEngine = customizer.apply(TemplateEngineFactory.INSTANCE);
             return this;
         }
 

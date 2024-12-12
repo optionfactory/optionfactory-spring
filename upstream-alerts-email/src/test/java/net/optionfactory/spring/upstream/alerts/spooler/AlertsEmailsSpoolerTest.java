@@ -82,7 +82,7 @@ public class AlertsEmailsSpoolerTest {
                     .sender("test@example.com", null)
                     .recipient("recipient@example.com")
                     .subject("Subject")
-                    .htmlBodyEngine("/email/", new SingletonDialect("bodies", new AlertBodiesFunctions()))
+                    .htmlBodyEngine(f -> f.html("/email/",  new SingletonDialect("bodies", new AlertBodiesFunctions())))
                     .htmlBodyTemplate("example-email.alerts.inlined.html")
                     .prototype();
 
