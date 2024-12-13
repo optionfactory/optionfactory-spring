@@ -9,11 +9,10 @@ public class StaticRenderer implements MocksRenderer {
     public boolean canRender(Resource source) {
         return true;
     }
-    
+
     @Override
     public Resource render(Resource source, InvocationContext ctx) {
         return source;
     }
-
 
 }

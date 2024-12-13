@@ -18,11 +18,12 @@ import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.expressions.OverlayEvaluationContext;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.springframework.expression.EvaluationException;
 
 public class JsonTemplateRenderer implements MocksRenderer {
 
-    private final ObjectMapper om;
     private final String templateSuffix;
+    private final ObjectMapper om;
 
     public JsonTemplateRenderer(String templateSuffix, ObjectMapper om) {
         this.templateSuffix = templateSuffix;
@@ -40,71 +41,81 @@ public class JsonTemplateRenderer implements MocksRenderer {
         final OverlayEvaluationContext oec = ctx.expressions().context(ctx);
         try (var is = source.getInputStream()) {
             final var input = om.readValue(is, JsonNode.class);
-            final var output = process(om.getNodeFactory(), ctx.expressions(), oec, input);
+            final var output = process(input, ctx.expressions(), oec, om.getNodeFactory());
             return new ByteArrayResource(om.writeValueAsBytes(output.node()));
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
         }
     }
 
-    private static FragmentOrNode process(JsonNodeFactory jnf, Expressions expressions, OverlayEvaluationContext ctx, JsonNode input) {
+    private static FragmentOrNode process(JsonNode input, Expressions expressions, OverlayEvaluationContext ctx, JsonNodeFactory jnf) {
         if (input.isArray()) {
-            final var els = StreamSupport.stream(input.spliterator(), false)
-                    .map(n -> process(jnf, expressions, ctx, n))
-                    .filter(fn -> fn != null)
-                    .flatMap(fn -> fn.nodes != null ? fn.nodes().stream() : Stream.of(fn.node()))
-                    .filter(n -> n != null)
-                    .toList();
-            return FragmentOrNode.array(jnf, els);
+            return array(input, expressions, ctx, jnf);
         }
         if (input.isObject()) {
-            final var fields = StreamSupport.stream(Spliterators.spliteratorUnknownSize(input.fieldNames(), 0), false)
-                    .toList();
-
-            final var firstField = fields.isEmpty() ? null : fields.get(0);
-            if (firstField != null && firstField.startsWith("#if")) {
-                final var condition = expressions.parse(input.get(firstField).textValue()).getValue(ctx, boolean.class);
-                if (!condition) {
-                    return null;
-                }
-                final var remainingFields = new LinkedHashMap<String, JsonNode>();
-                for (String remainingProcField : fields.subList(1, fields.size())) {
-                    remainingFields.put(remainingProcField, input.get(remainingProcField));
-                }
-                return FragmentOrNode.object(jnf, remainingFields);
-            }
-            if (firstField != null && firstField.startsWith("#each ")) {
-                //needs to be expanded
-                final var varName = firstField.substring("#each ".length());
-                final var varValues = expressions.parse(input.get(firstField).textValue()).getValue(ctx, Iterable.class);
-                final var otherFields = fields.subList(1, fields.size());
-                final var fragmentEls = new ArrayList<JsonNode>();
-                for (Object value : varValues) {
-                    final var remainingFields = new LinkedHashMap<String, JsonNode>();
-                    for (String remainingProcField : otherFields) {
-                        remainingFields.put(remainingProcField, input.get(remainingProcField));
-                    }
-                    fragmentEls.add(process(jnf, expressions, ctx.createOverlay(varName, value), new ObjectNode(jnf, remainingFields)).node());
-                }
-                return FragmentOrNode.fragment(fragmentEls);
-            }
-            //already expanded
-            final var children = new LinkedHashMap<String, JsonNode>();
-            for (var field : fields) {
-                final var k = expressions.parseTemplated(field).getValue(ctx, String.class);
-                if (k == null) {
-                    continue;
-                }
-                final var v = input.get(field);
-                final var pv = process(jnf, expressions, ctx, v);
-                children.put(k, pv.node());
-            }
-            return FragmentOrNode.object(jnf, children);
-
+            return object(input, expressions, ctx, jnf);
         }
-        return FragmentOrNode.literal(input.isTextual() ? jnf.pojoNode(expressions.parseTemplated(input.asText()).getValue(ctx)) : input.deepCopy());
+        return FragmentOrNode.literal(input.isTextual()
+                ? jnf.pojoNode(expressions.parseTemplated(input.asText()).getValue(ctx))
+                : input.deepCopy()
+        );
     }
 
+    private static FragmentOrNode object(JsonNode input, Expressions expressions, OverlayEvaluationContext ctx, JsonNodeFactory jnf) throws EvaluationException {
+        final var fields = StreamSupport.stream(Spliterators.spliteratorUnknownSize(input.fieldNames(), 0), false)
+                .toList();
+
+        final var firstField = fields.isEmpty() ? null : fields.get(0);
+        if (firstField != null && firstField.startsWith("#if")) {
+            final var condition = expressions.parse(input.get(firstField).textValue()).getValue(ctx, boolean.class);
+            if (!condition) {
+                return null;
+            }
+            final var remainingFields = new LinkedHashMap<String, JsonNode>();
+            for (String remainingProcField : fields.subList(1, fields.size())) {
+                remainingFields.put(remainingProcField, input.get(remainingProcField));
+            }
+            return FragmentOrNode.object(jnf, remainingFields);
+        }
+        if (firstField != null && firstField.startsWith("#each ")) {
+            //needs to be expanded
+            final var varName = firstField.substring("#each ".length());
+            final var varValues = expressions.parse(input.get(firstField).textValue()).getValue(ctx, Iterable.class);
+            final var otherFields = fields.subList(1, fields.size());
+            final var fragmentEls = new ArrayList<JsonNode>();
+            for (var value : varValues) {
+                final var remainingFields = new LinkedHashMap<String, JsonNode>();
+                for (String remainingProcField : otherFields) {
+                    remainingFields.put(remainingProcField, input.get(remainingProcField));
+                }
+                fragmentEls.add(process(new ObjectNode(jnf, remainingFields), expressions, ctx.createOverlay(varName, value), jnf).node());
+            }
+            return FragmentOrNode.fragment(fragmentEls);
+        }
+        //already expanded
+        final var children = new LinkedHashMap<String, JsonNode>();
+        for (var field : fields) {
+            final var k = expressions.parseTemplated(field).getValue(ctx, String.class);
+            if (k == null) {
+                continue;
+            }
+            final var v = input.get(field);
+            final var pv = process(v, expressions, ctx, jnf);
+            children.put(k, pv.node());
+        }
+        return FragmentOrNode.object(jnf, children);
+    }
+
+    private static FragmentOrNode array(JsonNode input, Expressions expressions, OverlayEvaluationContext ctx, JsonNodeFactory jnf) {
+        final var els = StreamSupport.stream(input.spliterator(), false)
+                .map(n -> process(n, expressions, ctx, jnf))
+                .filter(fn -> fn != null)
+                .flatMap(fn -> fn.nodes != null ? fn.nodes().stream() : Stream.of(fn.node()))
+                .filter(n -> n != null)
+                .toList();
+        return FragmentOrNode.array(jnf, els);
+    }
+    
     public record FragmentOrNode(JsonNode node, List<JsonNode> nodes) {
 
         public static FragmentOrNode array(JsonNodeFactory jnf, List<JsonNode> nodes) {
