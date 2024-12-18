@@ -16,6 +16,7 @@ import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
+import net.optionfactory.spring.upstream.rendering.BodyRendering;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.client.ClientHttpRequestFactory;
@@ -33,14 +34,16 @@ public class ThreadLocalScopeHandler implements ScopeHandler {
     private final InstantSource clock;
     private final Map<Method, EndpointDescriptor> endpoints;
     private final Expressions expressions;
+    private final BodyRendering rendering;
     private final ObservationRegistry observations;
     private final ApplicationEventPublisher publisher;
 
-    public ThreadLocalScopeHandler(Supplier<Object> principal, InstantSource clock, Map<Method, EndpointDescriptor> endpoints, Expressions expressions, ObservationRegistry observations, ApplicationEventPublisher publisher) {
+    public ThreadLocalScopeHandler(Supplier<Object> principal, InstantSource clock, Map<Method, EndpointDescriptor> endpoints, Expressions expressions, BodyRendering rendering, ObservationRegistry observations, ApplicationEventPublisher publisher) {
         this.principal = principal;
         this.clock = clock;
         this.endpoints = endpoints;
         this.expressions = expressions;
+        this.rendering = rendering;
         this.observations = observations;
         this.publisher = publisher;
     }
@@ -52,7 +55,7 @@ public class ThreadLocalScopeHandler implements ScopeHandler {
 
     @Override
     public MethodInterceptor interceptor(HttpMessageConverters converters) {
-        return new UpstreamMethodInterceptor(endpoints, invocations, principal, expressions, converters, observations, requests, responses, clock, publisher);
+        return new UpstreamMethodInterceptor(endpoints, invocations, principal, expressions, rendering, converters, observations, requests, responses, clock, publisher);
     }
 
     @Override

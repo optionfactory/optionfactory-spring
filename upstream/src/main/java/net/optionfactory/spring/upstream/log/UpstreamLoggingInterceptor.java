@@ -53,7 +53,7 @@ public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
             logger.info("{}[t:oh] headers: {}", prefix, request.headers());
         }
         if (conf.request() != BodyRendering.Strategy.SKIP) {
-            final var requestBody = request.body() == null || request.body().length == 0 ? "" : String.format(" body: %s", BodyRendering.render(conf.request(), request.headers().getContentLength(), request.headers().getContentType(), BodySource.of(request.body()), conf.infix(), conf.requestMaxSize()));
+            final var requestBody = request.body() == null || request.body().length == 0 ? "" : String.format(" body: %s", invocation.rendering().render(conf.request(), request.headers().getContentLength(), request.headers().getContentType(), BodySource.of(request.body()), conf.infix(), conf.requestMaxSize()));
             logger.info("{}[t:ob] method: {} url: {}{}", prefix, request.method(), request.uri(), requestBody);
         }
         try {
@@ -63,7 +63,7 @@ public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
                 logger.info("{}[t:ih][ms:{}] headers: {}", prefix, elapsed, response.headers());
             }
             if (conf.response() != BodyRendering.Strategy.SKIP) {
-                final var responseBody = response.headers().getContentLength() == 0 ? "" : String.format(" type:%s body: %s", response.headers().getContentType(), BodyRendering.render(conf.response(), response.headers().getContentLength(), response.headers().getContentType(), response.body().forInspection(false), conf.infix(), conf.responseMaxSize()));
+                final var responseBody = response.headers().getContentLength() == 0 ? "" : String.format(" type:%s body: %s", response.headers().getContentType(), invocation.rendering().render(conf.response(), response.headers().getContentLength(), response.headers().getContentType(), response.body().forInspection(false), conf.infix(), conf.responseMaxSize()));
                 logger.info("{}[t:ib][ms:{}] status: {}{}", prefix, elapsed, response.status(), responseBody);
             }
             return response;

@@ -32,7 +32,7 @@ public record ResponseAdapter(
 
     @Override
     public InputStream getBody() throws IOException {
-        return response.body().inputStream();
+        return response.body().getInputStream();
     }
 
     @Override

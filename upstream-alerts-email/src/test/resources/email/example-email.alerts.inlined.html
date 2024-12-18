@@ -197,7 +197,7 @@
             </tr>
             <tr>
                 <td colspan="2">
-                    <pre>[[${#bodies.abbreviated(alert.request.body, 2048)}]]</pre>
+                    <pre>[[${#bodies.abbreviated(alert.invocation, alert.request, 2048)}]]</pre>
                 </td>
             </tr>
             <tbody data-th-remove="tag" data-th-if="${alert.response != null}" data-th-with="response=${alert.response}">
@@ -221,7 +221,7 @@
                 </tr>            
                 <tr data-th-if="${response.body != null}">
                     <td colspan="2">
-                        <pre>[[${#bodies.abbreviated(alert.response.body, 2048)}]]</pre>
+                        <pre>[[${#bodies.abbreviated(alert.invocation, alert.response, 2048)}]]</pre>
                     </td>
                 </tr>
             </tbody>

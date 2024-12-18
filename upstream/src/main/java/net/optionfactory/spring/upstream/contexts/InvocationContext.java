@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.util.List;
 import net.optionfactory.spring.upstream.buffering.Buffering;
 import net.optionfactory.spring.upstream.expressions.Expressions;
+import net.optionfactory.spring.upstream.rendering.BodyRendering;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpOutputMessage;
@@ -16,6 +17,7 @@ import org.springframework.util.FastByteArrayOutputStream;
 
 public record InvocationContext(
         Expressions expressions,
+        BodyRendering rendering,
         HttpMessageConverters converters,
         EndpointDescriptor endpoint,
         Object[] arguments,

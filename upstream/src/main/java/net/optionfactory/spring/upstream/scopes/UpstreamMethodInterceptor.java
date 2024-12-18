@@ -18,6 +18,7 @@ import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.alerts.UpstreamAlertEvent;
 import net.optionfactory.spring.upstream.buffering.Buffering;
+import net.optionfactory.spring.upstream.rendering.BodyRendering;
 import static net.optionfactory.spring.upstream.scopes.ScopeHandler.BOOT_ID;
 import static net.optionfactory.spring.upstream.scopes.ScopeHandler.INVOCATION_COUNTER;
 import org.aopalliance.intercept.MethodInterceptor;
@@ -36,12 +37,13 @@ public class UpstreamMethodInterceptor implements MethodInterceptor {
     private final ThreadLocal<ResponseContext> responses;
     private final Supplier<Object> principal;
     private final Expressions expressions;
+    private final BodyRendering rendering;
     private final HttpMessageConverters converters;
     private final ObservationRegistry observations;
     private final InstantSource clock;
     private final ApplicationEventPublisher publisher;
 
-    public UpstreamMethodInterceptor(Map<Method, EndpointDescriptor> endpoints, ThreadLocal<InvocationContext> invocations, Supplier<Object> principal, Expressions expressions, HttpMessageConverters converters, ObservationRegistry observations,
+    public UpstreamMethodInterceptor(Map<Method, EndpointDescriptor> endpoints, ThreadLocal<InvocationContext> invocations, Supplier<Object> principal, Expressions expressions, BodyRendering rendering, HttpMessageConverters converters, ObservationRegistry observations,
             ThreadLocal<RequestContext> requests,
             ThreadLocal<ResponseContext> responses,
             InstantSource clock,
@@ -50,6 +52,7 @@ public class UpstreamMethodInterceptor implements MethodInterceptor {
         this.invocations = invocations;
         this.principal = principal;
         this.expressions = expressions;
+        this.rendering = rendering;
         this.converters = converters;
         this.observations = observations;
         this.requests = requests;
@@ -74,7 +77,7 @@ public class UpstreamMethodInterceptor implements MethodInterceptor {
                 .or(() -> Optional.ofNullable(principal.get()))
                 .orElse(null);
         final var buffering = Buffering.fromMethod(method);
-        final InvocationContext invocation = new InvocationContext(expressions, converters, endpoint, mi.getArguments(), BOOT_ID, INVOCATION_COUNTER.incrementAndGet(), eprincipal, buffering);
+        final InvocationContext invocation = new InvocationContext(expressions, rendering, converters, endpoint, mi.getArguments(), BOOT_ID, INVOCATION_COUNTER.incrementAndGet(), eprincipal, buffering);
         invocations.set(invocation);
         final var obs = Observation.createNotStarted("upstream", observations)
                 .lowCardinalityKeyValue("upstream", invocation.endpoint().upstream())

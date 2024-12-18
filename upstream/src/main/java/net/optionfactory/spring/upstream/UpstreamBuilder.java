@@ -1,5 +1,7 @@
 package net.optionfactory.spring.upstream;
 
+import com.fasterxml.jackson.core.JsonPointer;
+import net.optionfactory.spring.upstream.rendering.RedactConfigurer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.ObservationRegistry;
 import jakarta.xml.bind.JAXBContext;
@@ -37,6 +39,7 @@ import net.optionfactory.spring.upstream.mocks.MocksCustomizer;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpResponseFactory;
 import net.optionfactory.spring.upstream.mocks.rendering.MocksRenderer;
+import net.optionfactory.spring.upstream.rendering.BodyRendering;
 import net.optionfactory.spring.upstream.values.UpstreamAnnotatedCookiesInterceptor;
 import net.optionfactory.spring.upstream.values.UpstreamAnnotatedHeadersInterceptor;
 import net.optionfactory.spring.upstream.values.UpstreamAnnotatedQueryParamsInterceptor;
@@ -90,6 +93,8 @@ public class UpstreamBuilder<T> {
     protected RequestFactoryProvider rfp;
     protected Supplier<Object> principal;
     protected InstantSource clock;
+
+    protected BodyRendering rendering;
 
     protected ObservationRegistry observations;
     protected ConfigurableApplicationContext expressionsApplicationContext;
@@ -587,6 +592,16 @@ public class UpstreamBuilder<T> {
         return this;
     }
 
+    public UpstreamBuilder<T> redact(Consumer<RedactConfigurer> customizer) {
+        final var namespaces = new HashMap<String, String>();
+        final var tags = new ArrayList<String>();
+        final var attributes = new ArrayList<String>();
+        final var jsonPtrs = new ArrayList<JsonPointer>();
+        customizer.accept(new RedactConfigurer(namespaces, tags, attributes, jsonPtrs));
+        this.rendering = new BodyRendering(namespaces, attributes, tags, jsonPtrs);
+        return this;
+    }
+
     /**
      * Configures an ApplicationEventPublisher. The publisher will be used to
      * notify alert events.
@@ -636,7 +651,8 @@ public class UpstreamBuilder<T> {
         };
         final var expressions = new Expressions(expressionsApplicationContext, expressionVars);
 
-        final var scopeHandler = new ThreadLocalScopeHandler(principalOrDefault, clockOrDefault, endpoints, expressions, obs, pub);
+        final var br = rendering == null ? new BodyRendering(Map.of(), List.of(), List.of(), List.of()) : rendering;
+        final var scopeHandler = new ThreadLocalScopeHandler(principalOrDefault, clockOrDefault, endpoints, expressions, br, obs, pub);
 
         final var requestFactory = this.rfp.configure(scopeHandler, klass, expressions, endpoints);
 

@@ -8,6 +8,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import net.optionfactory.spring.upstream.buffering.Buffering;
+import org.springframework.core.io.InputStreamSource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.ClientHttpResponse;
@@ -32,9 +33,10 @@ public record ResponseContext(
         return new ResponseContext(at, status, statusText, headers, body, true);
     }
 
-    public interface BodySource {
+    public interface BodySource extends InputStreamSource {
 
-        InputStream inputStream();
+        @Override
+        InputStream getInputStream();
 
         BodySource detached();
 
@@ -66,7 +68,7 @@ public record ResponseContext(
         }
 
         @Override
-        public InputStream inputStream() {
+        public InputStream getInputStream() {
             try {
                 return chr.getBody();
             } catch (IOException ex) {
@@ -99,7 +101,7 @@ public record ResponseContext(
 
         @Override
         public byte[] bytes() {
-            final var in = inputStream();
+            final var in = getInputStream();
             if (in == null) {
                 return new byte[0];
             }
@@ -121,7 +123,7 @@ public record ResponseContext(
         }
 
         @Override
-        public InputStream inputStream() {
+        public InputStream getInputStream() {
             return new ByteArrayInputStream(data);
         }
 

@@ -10,6 +10,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import net.optionfactory.spring.email.EmailMessage;
 import net.optionfactory.spring.email.EmailPaths;
@@ -27,6 +28,7 @@ import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.alerts.UpstreamAlertEvent;
 import net.optionfactory.spring.upstream.alerts.spooler.AlertsEmailsSpoolerTest.Conf;
 import net.optionfactory.spring.upstream.buffering.Buffering;
+import net.optionfactory.spring.upstream.rendering.BodyRendering;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -115,6 +117,7 @@ public class AlertsEmailsSpoolerTest {
         final var event = new UpstreamAlertEvent(
                 new InvocationContext(
                         new Expressions(null, null),
+                        new BodyRendering(Map.of(), List.of(), List.of(), List.of()),
                         new InvocationContext.HttpMessageConverters(List.of()),
                         new EndpointDescriptor("upstream", "endpoint", Object.class.getMethod("toString"), null),
                         new Object[0],

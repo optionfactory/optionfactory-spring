@@ -135,13 +135,13 @@ public @interface Upstream {
         public static final String INFIX_SCISSORS = "✂️";
         public static final int DEFAULT_MAX_SIZE = 8 * 1024;
 
-        Strategy request() default Strategy.ABBREVIATED_COMPACT;
+        Strategy request() default Strategy.ABBREVIATED_REDACTED;
 
         int requestMaxSize() default DEFAULT_MAX_SIZE;
 
         HeadersStrategy requestHeaders() default HeadersStrategy.SKIP;
 
-        Strategy response() default Strategy.ABBREVIATED_COMPACT;
+        Strategy response() default Strategy.ABBREVIATED_REDACTED;
 
         int responseMaxSize() default DEFAULT_MAX_SIZE;
 
@@ -159,7 +159,7 @@ public @interface Upstream {
                 String infix) {
 
             public static Conf defaults() {
-                return new Conf(Strategy.ABBREVIATED_COMPACT, DEFAULT_MAX_SIZE, HeadersStrategy.SKIP, Strategy.ABBREVIATED_COMPACT, DEFAULT_MAX_SIZE, HeadersStrategy.SKIP, INFIX_SCISSORS);
+                return new Conf(Strategy.ABBREVIATED_REDACTED, DEFAULT_MAX_SIZE, HeadersStrategy.SKIP, Strategy.ABBREVIATED_REDACTED, DEFAULT_MAX_SIZE, HeadersStrategy.SKIP, INFIX_SCISSORS);
             }
         }
 
