@@ -3,6 +3,8 @@ package net.optionfactory.spring.upstream.rendering;
 import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
@@ -93,6 +95,42 @@ public class BodyRendering {
         final var prefix = new String(bytes, 0, abbreviatedSize, StandardCharsets.UTF_8);
         final var suffix = new String(bytes, bytes.length - abbreviatedSize, abbreviatedSize, StandardCharsets.UTF_8);
         return prefix + infix + suffix;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final Map<String, String> namespaces = new HashMap<>();
+        private final List<String> tags = new ArrayList<>();
+        private final List<String> attributes = new ArrayList<>();
+        private final List<JsonPointer> jsonPtrs = new ArrayList<>();
+
+        public Builder namespace(String prefix, String uri) {
+            this.namespaces.put(prefix, uri);
+            return this;
+        }
+
+        public Builder tag(String tag) {
+            this.tags.add(tag);
+            return this;
+        }
+
+        public Builder attr(String attribute) {
+            this.attributes.add(attribute);
+            return this;
+        }
+
+        public Builder jsonPtr(String expression) {
+            this.jsonPtrs.add(JsonPointer.valueOf(expression));
+            return this;
+        }
+
+        public BodyRendering build() {
+            return new BodyRendering(namespaces, attributes, tags, jsonPtrs);
+        }
     }
 
 }

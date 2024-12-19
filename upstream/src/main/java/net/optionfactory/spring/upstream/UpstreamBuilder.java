@@ -1,7 +1,5 @@
 package net.optionfactory.spring.upstream;
 
-import com.fasterxml.jackson.core.JsonPointer;
-import net.optionfactory.spring.upstream.rendering.RedactConfigurer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.ObservationRegistry;
 import jakarta.xml.bind.JAXBContext;
@@ -16,6 +14,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -592,13 +591,8 @@ public class UpstreamBuilder<T> {
         return this;
     }
 
-    public UpstreamBuilder<T> redact(Consumer<RedactConfigurer> customizer) {
-        final var namespaces = new HashMap<String, String>();
-        final var tags = new ArrayList<String>();
-        final var attributes = new ArrayList<String>();
-        final var jsonPtrs = new ArrayList<JsonPointer>();
-        customizer.accept(new RedactConfigurer(namespaces, tags, attributes, jsonPtrs));
-        this.rendering = new BodyRendering(namespaces, attributes, tags, jsonPtrs);
+    public UpstreamBuilder<T> redact(Function<BodyRendering.Builder, BodyRendering> customizer) {
+        this.rendering = customizer.apply(BodyRendering.builder());
         return this;
     }
 
@@ -651,8 +645,8 @@ public class UpstreamBuilder<T> {
         };
         final var expressions = new Expressions(expressionsApplicationContext, expressionVars);
 
-        final var br = rendering == null ? new BodyRendering(Map.of(), List.of(), List.of(), List.of()) : rendering;
-        final var scopeHandler = new ThreadLocalScopeHandler(principalOrDefault, clockOrDefault, endpoints, expressions, br, obs, pub);
+        final var renderingOrDefault = rendering != null ? rendering : BodyRendering.builder().build();
+        final var scopeHandler = new ThreadLocalScopeHandler(principalOrDefault, clockOrDefault, endpoints, expressions, renderingOrDefault, obs, pub);
 
         final var requestFactory = this.rfp.configure(scopeHandler, klass, expressions, endpoints);
 
