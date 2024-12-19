@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.Upstream.HttpComponents;
 import net.optionfactory.spring.upstream.UpstreamBuilder.RequestFactoryProvider;
@@ -42,6 +43,11 @@ public class HcRequestFactories {
 
         public Builder connectionManager(Consumer<PoolingHttpClientConnectionManagerBuilder> c) {
             this.connectionManagerCustomizers.add(c);
+            return this;
+        }
+
+        public Builder tlsSocketStrategy(Function<HcSocketStrategies.Builder, TlsSocketStrategy> customizer) {
+            connectionManager(c -> c.setTlsSocketStrategy(customizer.apply(HcSocketStrategies.builder())));
             return this;
         }
 
@@ -155,7 +161,6 @@ public class HcRequestFactories {
         public Builder disableRedirectHandling() {
             return clientBuilder(c -> c.disableRedirectHandling());
         }
-
 
         public ClientHttpRequestFactory build(Buffering buffering) {
             final var defaults = AnnotationUtils.synthesizeAnnotation(HttpComponents.class);
