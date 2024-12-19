@@ -17,7 +17,7 @@ import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.apache.hc.core5.ssl.TrustStrategy;
 import org.springframework.lang.Nullable;
 
-public class HcSocketFactories {
+public class HcSocketStrategies {
 
     public static TlsSocketStrategy trusting(KeyStore keystore, TrustStrategy strategy, HostnameVerificationPolicy policy, HostnameVerifier verifier) {
         try {

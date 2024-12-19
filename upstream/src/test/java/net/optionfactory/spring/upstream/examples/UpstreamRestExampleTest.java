@@ -9,7 +9,7 @@ import net.optionfactory.spring.upstream.UpstreamBuilder;
 import net.optionfactory.spring.upstream.auth.OauthClient;
 import net.optionfactory.spring.upstream.auth.OauthClientCredentialsAuthenticator;
 import net.optionfactory.spring.upstream.examples.UpstreamRestExampleTest.ClientConfig;
-import net.optionfactory.spring.upstream.hc5.HcSocketFactories;
+import net.optionfactory.spring.upstream.hc5.HcSocketStrategies;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,7 +55,7 @@ public class UpstreamRestExampleTest {
                     .requestFactoryHttpComponentsIf(!isMock, c -> {
                         //http components configuration can be customized here
                         //e.g: TLS configuration, retries, timeouts                        
-                        c.tlsSocketStrategy(HcSocketFactories.system());
+                        c.tlsSocketStrategy(HcSocketStrategies.system());
                     })
                     //Configures the client for JSON/HTTP 
                     .json(mapper)
