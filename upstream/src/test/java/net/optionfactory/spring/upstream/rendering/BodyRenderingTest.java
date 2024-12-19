@@ -1,8 +1,6 @@
 package net.optionfactory.spring.upstream.rendering;
 
 import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
 import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
 import net.optionfactory.spring.upstream.rendering.BodyRendering.Strategy;
 import org.junit.Assert;
@@ -11,7 +9,7 @@ import org.springframework.http.MediaType;
 
 public class BodyRenderingTest {
 
-    private final BodyRendering br = new BodyRendering(Map.of(), List.of(), List.of(), List.of());
+    private final BodyRendering br = BodyRendering.builder().build();
 
     @Test
     public void canAbbreviateString() {

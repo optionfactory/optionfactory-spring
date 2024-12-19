@@ -591,6 +591,12 @@ public class UpstreamBuilder<T> {
         return this;
     }
 
+    /**
+     * Configures BodyRendering used to generate logs and alerts.
+     *
+     * @param customizer the customizer
+     * @return this builder
+     */
     public UpstreamBuilder<T> redact(Function<BodyRendering.Builder, BodyRendering> customizer) {
         this.rendering = customizer.apply(BodyRendering.builder());
         return this;

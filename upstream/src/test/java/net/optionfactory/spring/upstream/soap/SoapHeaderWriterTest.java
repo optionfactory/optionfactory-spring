@@ -29,7 +29,7 @@ public class SoapHeaderWriterTest {
         soapMessage.saveChanges();
         soapMessage.writeTo(baos);
 
-        final var bodyRendering = new BodyRendering(Map.of(), List.of(), List.of(), List.of());
+        final var bodyRendering = BodyRendering.builder().build();
 
         final var bodySource = BodySource.of(
                 """

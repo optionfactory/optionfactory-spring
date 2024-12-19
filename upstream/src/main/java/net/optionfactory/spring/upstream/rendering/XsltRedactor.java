@@ -61,7 +61,7 @@ public class XsltRedactor {
         """;
         public static final String XSL_NS_URI = "http://www.w3.org/1999/XSL/Transform";
 
-        public XsltRedactor create(Map<String, String> namespaces, List<String> attributes, List<String> tags) {
+        public XsltRedactor create(Map<String, String> namespaces, Map<String, String> attributes, Map<String, String> tags) {
             final var factory = DocumentBuilderFactory.newInstance();
             factory.setNamespaceAware(true);
             final Document document;
@@ -71,26 +71,26 @@ public class XsltRedactor {
                 throw new IllegalStateException(ex);
             }
             final var stylesheet = document.getDocumentElement();
-            for (Map.Entry<String, String> namespace : namespaces.entrySet()) {
+            for (var namespace : namespaces.entrySet()) {
                 stylesheet.setAttribute(String.format("xmlns:%s", namespace.getKey()), namespace.getValue());
             }
-            for (String attribute : attributes) {
+            for (var attributeAndSub : attributes.entrySet()) {
                 final var ael = document.createElementNS(XSL_NS_URI, "xsl:attribute");
                 ael.setAttribute("name", "{name()}");
-                ael.setTextContent("redacted");
+                ael.setTextContent(attributeAndSub.getValue());
                 final var template = document.createElementNS(XSL_NS_URI, "xsl:template");
-                template.setAttribute("match", attribute);
+                template.setAttribute("match", attributeAndSub.getKey());
                 template.appendChild(ael);
                 stylesheet.appendChild(template);
             }
-            for (String tag : tags) {
+            for (var tagAndSub : tags.entrySet()) {
                 final var applyAttributes = document.createElementNS(XSL_NS_URI, "xsl:apply-templates");
                 applyAttributes.setAttribute("select", "@*");
                 final var copy = document.createElementNS(XSL_NS_URI, "xsl:copy");
                 copy.appendChild(applyAttributes);
-                copy.appendChild(document.createTextNode("redacted"));
+                copy.appendChild(document.createTextNode(tagAndSub.getValue()));
                 final var template = document.createElementNS(XSL_NS_URI, "xsl:template");
-                template.setAttribute("match", tag);
+                template.setAttribute("match", tagAndSub.getKey());
                 template.appendChild(copy);
                 stylesheet.appendChild(template);
             }

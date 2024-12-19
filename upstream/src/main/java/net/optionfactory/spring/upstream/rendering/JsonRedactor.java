@@ -7,15 +7,15 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.List;
+import java.util.Map;
 import org.springframework.core.io.InputStreamSource;
 
 public class JsonRedactor {
 
     private final ObjectMapper om;
-    private final List<JsonPointer> jsonPointers;
+    private final Map<JsonPointer, String> jsonPointers;
 
-    public JsonRedactor(ObjectMapper om, List<JsonPointer> jsonPointers) {
+    public JsonRedactor(ObjectMapper om, Map<JsonPointer, String> jsonPointers) {
         this.om = om;
         this.jsonPointers = jsonPointers;
     }
@@ -23,7 +23,8 @@ public class JsonRedactor {
     public String redact(InputStreamSource source) {
         try (final var is = source.getInputStream()) {
             final var root = om.readValue(is, JsonNode.class);
-            for (var ptr : jsonPointers) {
+            for (var ptrAndValue : jsonPointers.entrySet()) {
+                final var ptr = ptrAndValue.getKey();
                 final var match = root.at(ptr);
                 if (match.isMissingNode()) {
                     continue;
@@ -34,11 +35,11 @@ public class JsonRedactor {
                 }
                 if (parent.isObject()) {
                     final var fieldName = ptr.last().toString().substring(1);
-                    ((ObjectNode) parent).put(fieldName, "<redacted>");
+                    ((ObjectNode) parent).put(fieldName, ptrAndValue.getValue());
                 }
                 if (parent.isArray()) {
                     final var index = Integer.parseInt(ptr.last().toString().substring(1));
-                    ((ArrayNode) parent).set(index, "<redacted>");
+                    ((ArrayNode) parent).set(index, ptrAndValue.getValue());
                 }
             }
             return root.toString();

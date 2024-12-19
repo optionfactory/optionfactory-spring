@@ -84,7 +84,7 @@ public class AlertsEmailsSpoolerTest {
                     .sender("test@example.com", null)
                     .recipient("recipient@example.com")
                     .subject("Subject")
-                    .htmlBodyEngine(f -> f.html("/email/",  new SingletonDialect("bodies", new AlertBodiesFunctions())))
+                    .htmlBodyEngine(f -> f.html("/email/", new SingletonDialect("bodies", new AlertBodiesFunctions())))
                     .htmlBodyTemplate("example-email.alerts.inlined.html")
                     .prototype();
 
@@ -117,7 +117,7 @@ public class AlertsEmailsSpoolerTest {
         final var event = new UpstreamAlertEvent(
                 new InvocationContext(
                         new Expressions(null, null),
-                        new BodyRendering(Map.of(), List.of(), List.of(), List.of()),
+                        BodyRendering.builder().build(),
                         new InvocationContext.HttpMessageConverters(List.of()),
                         new EndpointDescriptor("upstream", "endpoint", Object.class.getMethod("toString"), null),
                         new Object[0],

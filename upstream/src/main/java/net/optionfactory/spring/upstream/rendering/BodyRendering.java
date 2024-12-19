@@ -29,7 +29,7 @@ public class BodyRendering {
     private final XsltRedactor xsltRedactor;
     private final JsonRedactor jsonRedactor;
 
-    public BodyRendering(Map<String, String> namespaces, List<String> attributes, List<String> tags, List<JsonPointer> jsonPtrs) {
+    public BodyRendering(Map<String, String> namespaces, Map<String, String> attributes, Map<String, String> tags, Map<JsonPointer, String> jsonPtrs) {
         this.xsltRedactor = XsltRedactor.Factory.INSTANCE.create(namespaces, attributes, tags);
         this.jsonRedactor = new JsonRedactor(new ObjectMapper(), jsonPtrs);
     }
@@ -103,29 +103,84 @@ public class BodyRendering {
 
     public static class Builder {
 
+        public static final String DEFAULT_REPLACEMENT = "@redacted@";
         private final Map<String, String> namespaces = new HashMap<>();
-        private final List<String> tags = new ArrayList<>();
-        private final List<String> attributes = new ArrayList<>();
-        private final List<JsonPointer> jsonPtrs = new ArrayList<>();
+        private final Map<String, String> tags = new HashMap<>();
+        private final Map<String, String> attributes = new HashMap<>();
+        private final Map<JsonPointer, String> jsonPtrs = new HashMap<>();
 
         public Builder namespace(String prefix, String uri) {
             this.namespaces.put(prefix, uri);
             return this;
         }
 
+        /**
+         * Configures a replacement for an XML tag.
+         *
+         * @param tag the tag to be replaced
+         * @param replacement the text to be used as a replacement
+         * @return this builder
+         */
+        public Builder tag(String tag, String replacement) {
+            this.tags.put(tag, replacement);
+            return this;
+        }
+
+        /**
+         * Configures a replacement for an XML tag with the default replacement.
+         *
+         * @param tag the tag to be replaced
+         * @return this builder
+         */
         public Builder tag(String tag) {
-            this.tags.add(tag);
+            return tag(tag, DEFAULT_REPLACEMENT);
+        }
+
+        /**
+         * Configures a replacement for an XML attribute.
+         *
+         * @param attribute the attribute to be replaced
+         * @param replacement the text to be used as a replacement
+         * @return this builder
+         */
+        public Builder attr(String attribute, String replacement) {
+            this.attributes.put(attribute, replacement);
             return this;
         }
 
+        /**
+         * Configures a replacement for an XML attribute with the default
+         * replacement.
+         *
+         * @param attribute the attribute to be replaced
+         * @return this builder
+         */
         public Builder attr(String attribute) {
-            this.attributes.add(attribute);
+            return attr(attribute, DEFAULT_REPLACEMENT);
+        }
+
+        /**
+         * Configures a replacement for a JSON component identified by the
+         * expression.
+         *
+         * @param jsonPtrExpression the JsonPointer expression
+         * @param replacement the replacement text
+         * @return this builder
+         */
+        public Builder jsonPtr(String jsonPtrExpression, String replacement) {
+            this.jsonPtrs.put(JsonPointer.valueOf(jsonPtrExpression), replacement);
             return this;
         }
 
-        public Builder jsonPtr(String expression) {
-            this.jsonPtrs.add(JsonPointer.valueOf(expression));
-            return this;
+        /**
+         * Configures a replacement for a JSON component identified by the
+         * expression with the default replacement.
+         *
+         * @param jsonPtrExpression the JsonPointer expression
+         * @return this builder
+         */
+        public Builder jsonPtr(String jsonPtrExpression) {
+            return jsonPtr(jsonPtrExpression, DEFAULT_REPLACEMENT);
         }
 
         public BodyRendering build() {
