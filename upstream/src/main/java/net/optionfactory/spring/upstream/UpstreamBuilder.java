@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -597,8 +596,10 @@ public class UpstreamBuilder<T> {
      * @param customizer the customizer
      * @return this builder
      */
-    public UpstreamBuilder<T> redact(Function<BodyRendering.Builder, BodyRendering> customizer) {
-        this.rendering = customizer.apply(BodyRendering.builder());
+    public UpstreamBuilder<T> redact(Consumer<BodyRendering.Configurer> customizer) {
+        final var builder = BodyRendering.builder();
+        customizer.accept(builder);
+        this.rendering = builder.build();
         return this;
     }
 

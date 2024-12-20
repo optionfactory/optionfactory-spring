@@ -101,63 +101,44 @@ public class BodyRendering {
         return new Builder();
     }
 
-    public static class Builder {
+    public interface Configurer {
 
-        public static final String DEFAULT_REPLACEMENT = "@redacted@";
-        private final Map<String, String> namespaces = new HashMap<>();
-        private final Map<String, String> tags = new HashMap<>();
-        private final Map<String, String> attributes = new HashMap<>();
-        private final Map<JsonPointer, String> jsonPtrs = new HashMap<>();
-
-        public Builder namespace(String prefix, String uri) {
-            this.namespaces.put(prefix, uri);
-            return this;
-        }
+        Configurer namespace(String prefix, String uri);
 
         /**
          * Configures a replacement for an XML tag.
          *
-         * @param tag the tag to be replaced
+         * @param tagExpression the XSLT tag expression matching tags to be replaced
          * @param replacement the text to be used as a replacement
          * @return this builder
          */
-        public Builder tag(String tag, String replacement) {
-            this.tags.put(tag, replacement);
-            return this;
-        }
+        Configurer tag(String tagExpression, String replacement);
 
         /**
          * Configures a replacement for an XML tag with the default replacement.
          *
-         * @param tag the tag to be replaced
+         * @param tagExpression the XSLT tag expression matching tags to be replaced
          * @return this builder
          */
-        public Builder tag(String tag) {
-            return tag(tag, DEFAULT_REPLACEMENT);
-        }
+        Configurer tag(String tagExpression);
 
         /**
          * Configures a replacement for an XML attribute.
          *
-         * @param attribute the attribute to be replaced
+         * @param attrExpression the XSLT attribute expression matching attributes to be replaced
          * @param replacement the text to be used as a replacement
          * @return this builder
          */
-        public Builder attr(String attribute, String replacement) {
-            this.attributes.put(attribute, replacement);
-            return this;
-        }
+        Configurer attr(String attrExpression, String replacement);
 
         /**
          * Configures a replacement for an XML attribute with the default
          * replacement.
          *
-         * @param attribute the attribute to be replaced
+         * @param attrExpression the XSLT attribute expression matching attributes to be replaced
          * @return this builder
          */
-        public Builder attr(String attribute) {
-            return attr(attribute, DEFAULT_REPLACEMENT);
-        }
+        Configurer attr(String attrExpression);
 
         /**
          * Configures a replacement for a JSON component identified by the
@@ -167,10 +148,7 @@ public class BodyRendering {
          * @param replacement the replacement text
          * @return this builder
          */
-        public Builder jsonPtr(String jsonPtrExpression, String replacement) {
-            this.jsonPtrs.put(JsonPointer.valueOf(jsonPtrExpression), replacement);
-            return this;
-        }
+        Configurer jsonPtr(String jsonPtrExpression, String replacement);
 
         /**
          * Configures a replacement for a JSON component identified by the
@@ -179,6 +157,53 @@ public class BodyRendering {
          * @param jsonPtrExpression the JsonPointer expression
          * @return this builder
          */
+        Configurer jsonPtr(String jsonPtrExpression);
+
+    }
+
+    public static class Builder implements Configurer {
+
+        public static final String DEFAULT_REPLACEMENT = "@redacted@";
+        private final Map<String, String> namespaces = new HashMap<>();
+        private final Map<String, String> tags = new HashMap<>();
+        private final Map<String, String> attributes = new HashMap<>();
+        private final Map<JsonPointer, String> jsonPtrs = new HashMap<>();
+
+        @Override
+        public Builder namespace(String prefix, String uri) {
+            this.namespaces.put(prefix, uri);
+            return this;
+        }
+
+        @Override
+        public Builder tag(String tag, String replacement) {
+            this.tags.put(tag, replacement);
+            return this;
+        }
+
+        @Override
+        public Builder tag(String tag) {
+            return tag(tag, DEFAULT_REPLACEMENT);
+        }
+
+        @Override
+        public Builder attr(String attribute, String replacement) {
+            this.attributes.put(attribute, replacement);
+            return this;
+        }
+
+        @Override
+        public Builder attr(String attribute) {
+            return attr(attribute, DEFAULT_REPLACEMENT);
+        }
+
+        @Override
+        public Builder jsonPtr(String jsonPtrExpression, String replacement) {
+            this.jsonPtrs.put(JsonPointer.valueOf(jsonPtrExpression), replacement);
+            return this;
+        }
+
+        @Override
         public Builder jsonPtr(String jsonPtrExpression) {
             return jsonPtr(jsonPtrExpression, DEFAULT_REPLACEMENT);
         }
