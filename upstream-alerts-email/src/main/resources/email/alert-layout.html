@@ -98,6 +98,10 @@
             
             <tr><td colspan="2"><h3>Request</h3></td></tr>
             <tr>
+                <td class="key">Method:</td>
+                <td>[[${alert.request.method}]]</td>
+            </tr>
+            <tr>
                 <td class="key">URI:</td>
                 <td>[[${alert.request.uri}]]</td>
             </tr>
@@ -107,9 +111,9 @@
             </tr>
             <tr>
                 <td class="key">Body:</td>
-                <td></td>
+                <td data-th-if="${alert.request.body.length == 0}">&lt;empty&gt;</td>
             </tr>
-            <tr>
+            <tr data-th-if="${alert.request.body.length > 0}">
                 <td colspan="2">
                     <pre>[[${#bodies.abbreviated(alert.invocation, alert.request, 2048)}]]</pre>                    
                 </td>
@@ -131,11 +135,11 @@
                     <td class="key">Received at:</td>
                     <td>[[${response.at}]]</td>
                 </tr>
-                <tr data-th-if="${response.body != null}">
+                <tr>
                     <td class="key">Body:</td>
                     <td></td>
                 </tr>            
-                <tr data-th-if="${response.body != null}">
+                <tr>
                     <td colspan="2">
                         <pre>[[${#bodies.abbreviated(alert.invocation, alert.response, 2048)}]]</pre>                    
                     </td>

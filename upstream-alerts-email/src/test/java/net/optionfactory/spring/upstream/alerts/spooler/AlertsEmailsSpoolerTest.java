@@ -160,11 +160,11 @@ public class AlertsEmailsSpoolerTest {
                 ),
                 new RequestContext(
                         Instant.now(),
-                        HttpMethod.PATCH,
+                        HttpMethod.GET,
                         URI.create("https://example.com"),
                         new HttpHeaders(),
                         new HashMap<>(),
-                        "request_body2".repeat(1000).getBytes(StandardCharsets.UTF_8)
+                        new byte[0]
                 ),
                 new ResponseContext(
                         Instant.now(),
