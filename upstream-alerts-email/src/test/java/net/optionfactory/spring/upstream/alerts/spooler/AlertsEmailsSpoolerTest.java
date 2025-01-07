@@ -10,13 +10,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 import net.optionfactory.spring.email.EmailMessage;
 import net.optionfactory.spring.email.EmailPaths;
 import net.optionfactory.spring.email.EmailSender;
 import net.optionfactory.spring.email.EmailSenderConfiguration;
 import net.optionfactory.spring.email.ScheduledEmailSender;
+import net.optionfactory.spring.email.inliner.CssInliner;
 import net.optionfactory.spring.email.spooling.BufferedScheduledSpooler;
 import net.optionfactory.spring.thymeleaf.SingletonDialect;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
@@ -86,6 +86,7 @@ public class AlertsEmailsSpoolerTest {
                     .subject("Subject")
                     .htmlBodyEngine(f -> f.html("/email/", new SingletonDialect("bodies", new AlertBodiesFunctions())))
                     .htmlBodyTemplate("example-email.alerts.inlined.html")
+                    .htmlBodyPostprocessor(new CssInliner())
                     .prototype();
 
             return AlertsEmailsSpooler.bufferedScheduled(
@@ -107,23 +108,25 @@ public class AlertsEmailsSpoolerTest {
     @Autowired
     public EmailPaths paths;
 
+    public record TestPrincipal(String username, TestPrincipal impersonator) {
+
+    }
+
     @Test
     public void exampleUsage() throws IOException, ReflectiveOperationException, InterruptedException {
         emlsIn(paths.spool()).forEach(this::delete);
         emlsIn(paths.sent()).forEach(this::delete);
 
-        final Object principal = null;
-
-        final var event = new UpstreamAlertEvent(
+        final var event1 = new UpstreamAlertEvent(
                 new InvocationContext(
                         new Expressions(null, null),
                         BodyRendering.builder().build(),
                         new InvocationContext.HttpMessageConverters(List.of()),
                         new EndpointDescriptor("upstream", "endpoint", Object.class.getMethod("toString"), null),
                         new Object[0],
-                        "boot-id",
+                        "boot-id1",
                         1,
-                        principal,
+                        null,
                         Buffering.BUFFERED
                 ),
                 new RequestContext(
@@ -132,19 +135,49 @@ public class AlertsEmailsSpoolerTest {
                         URI.create("https://example.com"),
                         new HttpHeaders(),
                         new HashMap<>(),
-                        "request_body".repeat(1000).getBytes(StandardCharsets.UTF_8)
+                        "request_body1".repeat(1000).getBytes(StandardCharsets.UTF_8)
                 ),
                 new ResponseContext(
                         Instant.now(),
                         HttpStatus.OK,
                         HttpStatus.OK.getReasonPhrase(),
                         new HttpHeaders(),
-                        BodySource.of("response_body".repeat(1000), StandardCharsets.UTF_8),
+                        BodySource.of("response_body1".repeat(1000), StandardCharsets.UTF_8),
+                        false
+                ),
+                null);
+        final var event2 = new UpstreamAlertEvent(
+                new InvocationContext(
+                        new Expressions(null, null),
+                        BodyRendering.builder().build(),
+                        new InvocationContext.HttpMessageConverters(List.of()),
+                        new EndpointDescriptor("upstream2", "endpoint2", Object.class.getMethod("toString"), null),
+                        new Object[0],
+                        "boot-id2",
+                        2,
+                        new TestPrincipal("test2@example.com", new TestPrincipal("impers2@example.com", null)),
+                        Buffering.BUFFERED
+                ),
+                new RequestContext(
+                        Instant.now(),
+                        HttpMethod.PATCH,
+                        URI.create("https://example.com"),
+                        new HttpHeaders(),
+                        new HashMap<>(),
+                        "request_body2".repeat(1000).getBytes(StandardCharsets.UTF_8)
+                ),
+                new ResponseContext(
+                        Instant.now(),
+                        HttpStatus.OK,
+                        HttpStatus.OK.getReasonPhrase(),
+                        new HttpHeaders(),
+                        BodySource.of("response_body2".repeat(1000), StandardCharsets.UTF_8),
                         false
                 ),
                 null);
 
-        publisher.publishEvent(event);
+        publisher.publishEvent(event1);
+        publisher.publishEvent(event2);
 
         Thread.sleep(Duration.ofMillis(1500));
         Assert.assertEquals(1, emlsIn(paths.sent()).count());

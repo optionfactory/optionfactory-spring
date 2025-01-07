@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+    <head data-th-fragment="head(color)">
+        <meta charset="UTF-8">
+        <title>Alerts</title>
+        <style data-th-inline="css" data-inlined>
+            h1,h2 {
+                text-align: center;
+                font-weight: 400;
+            }
+
+            h1 {
+                color: white;
+                font-size: 32px;
+            }
+
+            h2 {
+                color: /*[(${color})]*/ #006347;
+                font-size: 24px;
+            }
+
+            h3 {
+                text-align: left;
+                font-weight: 400;
+                color: /*[(${color})]*/ #006347;
+                font-size: 18px;
+                border-bottom: 1px solid /*[(${color})]*/ #006347;
+            }
+            table {
+                font-family: Arial;
+                max-width: 1000px;
+                width: 100%;
+                margin: 20px auto;
+                padding: 20px;
+                color: #333;
+                box-shadow: 10px 10px 43px 0px rgba(224,224,224,1);
+            }
+            td {
+                word-break: break-all;
+            }
+            td.key {
+                font-weight: 700;
+                vertical-align: top;
+                width: 150px;
+            }
+            table.heading {
+                background-color: /*[(${color})]*/ #006347;
+            }
+
+            table.heading td {
+                color: white;
+            }
+            
+            table.heading .service {
+                
+            }
+
+            table.alert {
+                border: 3px solid /*[(${color})]*/ #006347;
+            }
+            pre {
+                border: 1px solid #ccc;
+                margin: 10px 0 10px 20px;
+                padding: 10px;
+                white-space: pre-wrap;
+                background-color: #ffffee;
+                word-break: break-all;
+            }
+            
+        </style>         
+    </head>
+    <body data-th-fragment="alerts(title, alerts, users)">
+        <table class="heading">
+            <tr><td><h1>[[${title}]]</h1></td></tr>
+            <tr >
+                <td>
+                    <span data-th-if="${alerts.size() == 1}">E' stato rilevato un errore </span>
+                    <span data-th-if="${alerts.size() != 1}">Sono stati rilevati [[${alerts.size()}]] errori</span>
+                    durante l'integrazione con servizi esterni.
+                </td>
+            </tr>
+        </table>
+        <table data-th-each="alert: ${alerts}" class="alert">
+            <tr>
+                <td colspan="2">
+                    <h2>Request [[${alert.invocation.boot}]].[[${alert.invocation.id}]]</h2>
+                    <h2>Upstream [[${alert.invocation.endpoint.upstream}]]</h2>
+                    <h2>Endpoint [[${alert.invocation.endpoint.name}]]</h2>
+                </td>
+            </tr>
+            
+            <tr data-th-if="${alert.invocation.principal != null}" data-th-with="principal=${alert.invocation.principal}" data-th-remove="tag">
+                <!--/*/ <th-block data-th-replace="${users}" /> /*/-->
+            </tr>
+            
+            <tr><td colspan="2"><h3>Request</h3></td></tr>
+            <tr>
+                <td class="key">URI:</td>
+                <td>[[${alert.request.uri}]]</td>
+            </tr>
+            <tr>
+                <td class="key">Sent at:</td>
+                <td>[[${alert.request.at}]]</td>
+            </tr>
+            <tr>
+                <td class="key">Body:</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <pre>[[${#bodies.abbreviated(alert.invocation, alert.request, 2048)}]]</pre>                    
+                </td>
+            </tr>
+            <tbody data-th-remove="tag" data-th-if="${alert.response != null}" data-th-with="response=${alert.response}">
+
+                <tr>
+                    <td colspan="2"><h3>Response</h3></td>
+                </tr>
+                <tr data-th-if="${response.status != null}">
+                    <td class="key">HTTP status:</td>
+                    <td>[[${response.status}]]</td>
+                </tr>
+                <tr data-th-if="${response.headers != null}">
+                    <td class="key">Content-Type:</td>
+                    <td>[[${response.headers.getContentType()}]]</td>
+                </tr>
+                <tr>
+                    <td class="key">Received at:</td>
+                    <td>[[${response.at}]]</td>
+                </tr>
+                <tr data-th-if="${response.body != null}">
+                    <td class="key">Body:</td>
+                    <td></td>
+                </tr>            
+                <tr data-th-if="${response.body != null}">
+                    <td colspan="2">
+                        <pre>[[${#bodies.abbreviated(alert.invocation, alert.response, 2048)}]]</pre>                    
+                    </td>
+                </tr>
+            </tbody>
+            <tbody data-th-remove="tag" data-th-if="${alert.exception != null}" data-th-with="exception=${alert.exception}">
+                <tr>
+                    <td colspan="2"><h3>Exception</h3></td>
+                </tr>                
+                <tr>
+                    <td class="key">At:</td>
+                    <td>[[${exception.at}]]</td>
+                </tr>
+                <tr>
+                    <td class="key">Message:</td>
+                    <td></td>
+                </tr>            
+                <tr>
+                    <td colspan="2">
+                        <pre>[[${exception.message}]]</pre>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+    </body>
+</html>
+
