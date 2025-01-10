@@ -5,7 +5,7 @@
 
     <groupId>net.optionfactory.spring</groupId>
     <artifactId>optionfactory-spring</artifactId>
-    <version>21.5</version>
+    <version>21.6-SNAPSHOT</version>
     <packaging>pom</packaging>
     <description>optionfactory-spring parent pom</description>
 
@@ -54,8 +54,7 @@
         <module>problems</module>
         <module>problems-web</module>
         <module>feedback-web</module>
-        <module>authentication-bearer-token</module>
-        <module>authentication-jws</module>
+        <module>authentication-token</module>
         <module>oidc-authorization-code</module>
         <module>content-security-policies</module>
         <module>email</module>

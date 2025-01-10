@@ -19,13 +19,16 @@ public class StrictContentSecurityPolicyHeaderWriter implements HeaderWriter {
     private final ContentSecurityPolicyMode mode;
     private final String directives;
 
-    public StrictContentSecurityPolicyHeaderWriter(ContentSecurityPolicyMode mode) {
+    public StrictContentSecurityPolicyHeaderWriter(ContentSecurityPolicyMode mode, String reportUri, boolean eval, boolean fallbacks) {
         this.mode = mode;
+        final var evalStmt = eval ? " 'unsafe-eval'" : "";
+        final var fallbackStmts = fallbacks ? " 'unsafe-inline' https:" : "";
+        
         this.directives = Stream.of(
                 "object-src 'none'",
-                "script-src 'nonce-{cspnonce}' 'unsafe-inline' 'unsafe-eval' 'strict-dynamic' https: http:",
+                "script-src 'nonce-{cspnonce}' 'strict-dynamic'%s%s".formatted(evalStmt, fallbackStmts),
                 "base-uri 'self'",
-                "report-uri /csp-violations/"
+                "report-uri %s".formatted(reportUri)
         ).collect(Collectors.joining(";"));
     }
 
