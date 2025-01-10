@@ -24,7 +24,7 @@ REST exception resolver for reporting errors in API responses (e.g.: validation)
 
 Server side client errors logging.
 
-## [`authentication-token`](authentication-bearer-token/readme.md)
+## [`authentication-token`](authentication-token/readme.md)
 
 Authentication via HTTP headers (opaque tokens, jws, jwe) for Spring Security.
 
