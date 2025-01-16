@@ -4,7 +4,7 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>21.6</version>
+        <version>21.7-SNAPSHOT</version>
     </parent>
     <artifactId>authentication-token</artifactId>
     <description>optionfactory-spring authentication-token</description>
@@ -25,9 +25,10 @@
             <artifactId>spring-security-config</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt</artifactId>
-        </dependency>        
+            <groupId>com.nimbusds</groupId>
+            <artifactId>nimbus-jose-jwt</artifactId>
+            <version>9.37.3</version>
+        </dependency>           
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j2-impl</artifactId>
