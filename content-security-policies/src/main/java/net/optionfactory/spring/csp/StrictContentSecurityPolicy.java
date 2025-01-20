@@ -27,7 +27,7 @@ public class StrictContentSecurityPolicy {
         private boolean fallbacks = true;
         private int maxBodySize = 65_536;
         private boolean log = true;
-        private Function<Object, String> principalRenderer = (p) -> p == null ? "" : String.format("[user:%s]", p);
+        private Function<Object, String> principalRenderer = (p) -> String.format("[user:%s]", p);
 
         public Configurer mode(ContentSecurityPolicyMode mode) {
             this.mode = mode;
