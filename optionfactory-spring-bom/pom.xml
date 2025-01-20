@@ -63,6 +63,11 @@
             </dependency>
             <dependency>
                 <groupId>net.optionfactory.spring</groupId>
+                <artifactId>content-security-policies</artifactId>
+                <version>${opfa-spring.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.optionfactory.spring</groupId>
                 <artifactId>authentication</artifactId>
                 <version>${opfa-spring.version}</version>
             </dependency>
@@ -79,11 +84,6 @@
             <dependency>
                 <groupId>net.optionfactory.spring</groupId>
                 <artifactId>authentication-resource-server</artifactId>
-                <version>${opfa-spring.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>net.optionfactory.spring</groupId>
-                <artifactId>content-security-policies</artifactId>
                 <version>${opfa-spring.version}</version>
             </dependency>
             <dependency>

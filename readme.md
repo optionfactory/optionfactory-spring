@@ -24,11 +24,13 @@ REST exception resolver for reporting errors in API responses (e.g.: validation)
 
 Server side client errors reporting.
 
+## [`content-security-policies`](content-security-policies/readme.md)
+
+Nonce Based [Strict Content Security Policy](https://web.dev/articles/strict-csp) for Spring Security.
 
 ## [`authentication`](authentication/readme.md)
 
 Support for unifying Principals in spring-security
-
 
 ## [`authentication-tokens`](authentication-tokens/readme.md)
 
@@ -41,10 +43,6 @@ Support for overriding RestOperations used in org.springframework.security.oauth
 ## [`authentication-resource-server`](authentication-resource-server/readme.md)
 
 BearerTokenResolvers with JWT Header introspection
-
-## [`content-security-policies`](content-security-policies/readme.md)
-
-Nonce Based [Strict Content Security Policy](https://web.dev/articles/strict-csp) for Spring Security.
 
 ## [`email`](email/readme.md)
 

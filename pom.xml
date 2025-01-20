@@ -54,11 +54,11 @@
         <module>problems</module>
         <module>problems-web</module>
         <module>client-reports</module>
+        <module>content-security-policies</module>
         <module>authentication</module>
         <module>authentication-tokens</module>
         <module>authentication-authorization-code</module>
         <module>authentication-resource-server</module>
-        <module>content-security-policies</module>
         <module>email</module>
         <module>upstream</module>
         <module>upstream-interceptor-jjwt</module>
