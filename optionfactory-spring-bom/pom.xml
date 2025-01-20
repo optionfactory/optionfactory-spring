@@ -58,17 +58,27 @@
             </dependency>
             <dependency>
                 <groupId>net.optionfactory.spring</groupId>
-                <artifactId>feedback-web</artifactId>
+                <artifactId>client-reports</artifactId>
                 <version>${opfa-spring.version}</version>
             </dependency>
             <dependency>
                 <groupId>net.optionfactory.spring</groupId>
-                <artifactId>authentication-token</artifactId>
+                <artifactId>authentication</artifactId>
                 <version>${opfa-spring.version}</version>
             </dependency>
             <dependency>
                 <groupId>net.optionfactory.spring</groupId>
-                <artifactId>oidc-authorization-code</artifactId>
+                <artifactId>authentication-tokens</artifactId>
+                <version>${opfa-spring.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.optionfactory.spring</groupId>
+                <artifactId>authentication-authorization-code</artifactId>
+                <version>${opfa-spring.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.optionfactory.spring</groupId>
+                <artifactId>authentication-resource-server</artifactId>
                 <version>${opfa-spring.version}</version>
             </dependency>
             <dependency>

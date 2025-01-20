@@ -1,7 +1,6 @@
 package net.optionfactory.spring.csp.examples;
 
 import net.optionfactory.spring.csp.StrictContentSecurityPolicy;
-import net.optionfactory.spring.csp.StrictContentSecurityPolicyHandlerInterceptor;
 import net.optionfactory.spring.csp.StrictContentSecurityPolicyHeaderWriter.ContentSecurityPolicyMode;
 import net.optionfactory.spring.csp.StrictContentSecurityPolicyNonceFilter.Csp;
 import net.optionfactory.spring.csp.examples.CspExampleTest.SecurityConfig;
@@ -118,5 +117,31 @@ public class CspExampleTest {
         Assert.assertNotNull(cspHeader);
         Assert.assertTrue(cspHeader.contains("/test-csp-report/"));
         Assert.assertNotNull(result.getResponse().getHeader("X-XSS-Protection"));
+    }
+
+    @Test
+    public void reportIsProcessedByFilter() throws Exception {
+        mvc.perform(post("/test-csp-report/").content("""
+        {
+            "age": 53531,
+            "body": {
+              "blockedURL": "inline",
+              "columnNumber": 39,
+              "disposition": "enforce",
+              "documentURL": "https://example.com/csp-report",
+              "effectiveDirective": "script-src-elem",
+              "lineNumber": 121,
+              "originalPolicy": "default-src 'self'; report-to csp-endpoint-name",
+              "referrer": "https://www.google.com/",
+              "sample": "console.log",
+              "sourceFile": "https://example.com/csp-report",
+              "statusCode": 200
+            },
+            "type": "csp-violation",
+            "url": "https://example.com/csp-report",
+            "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36"
+        }                                                      
+        """)).andExpect(status().isAccepted());
+
     }
 }

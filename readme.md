@@ -20,17 +20,27 @@ Property source configuration, conditional beans and WebMvc direct field access 
 
 REST exception resolver for reporting errors in API responses (e.g.: validation).
 
-## [`feedback-web`](feedback-web/readme.md)
+## [`client-reports`](client-reports/readme.md)
 
-Server side client errors logging.
+Server side client errors reporting.
 
-## [`authentication-token`](authentication-token/readme.md)
+
+## [`authentication`](authentication/readme.md)
+
+Support for unifying Principals in spring-security
+
+
+## [`authentication-tokens`](authentication-tokens/readme.md)
 
 Authentication via HTTP headers (opaque tokens, jws, jwe) for Spring Security.
 
-## [`oidc-authorization-code`](oidc-authorization-code/readme.md)
+## [`authentication-authorization-code`](authentication-authorization-code/readme.md)
 
 Support for overriding RestOperations used in org.springframework.security.oauth2.client, implementation of OidcRelyingPartyInitiatedLogoutHandler
+
+## [`authentication-resource-server`](authentication-resource-server/readme.md)
+
+BearerTokenResolvers with JWT Header introspection
 
 ## [`content-security-policies`](content-security-policies/readme.md)
 
