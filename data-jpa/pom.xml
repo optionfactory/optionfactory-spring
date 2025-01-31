@@ -4,7 +4,7 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>21.8</version>
+        <version>21.9-SNAPSHOT</version>
     </parent>
     <artifactId>data-jpa</artifactId>
     <description>optionfactory-spring data-jpa</description>
