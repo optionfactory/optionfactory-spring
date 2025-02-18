@@ -72,7 +72,7 @@ import org.springframework.web.service.invoker.HttpRequestValues;
 import org.springframework.web.service.invoker.HttpServiceArgumentResolver;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
-public class UpstreamBuilder<T> {
+public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
 
     protected final List<Consumer<RestClient.Builder>> restClientCustomizers = new ArrayList<>();
     protected final List<UpstreamHttpRequestInitializer> initializers = new ArrayList<>();
@@ -127,6 +127,38 @@ public class UpstreamBuilder<T> {
                 })
                 .collect(Collectors.toMap(EndpointDescriptor::method, ed -> ed));
 
+    }
+
+    public UpstreamBuilder(UpstreamBuilder<T> other) {
+        this.klass = other.klass;
+        this.upstreamId = other.upstreamId;
+        this.endpoints = other.endpoints;
+        this.rfp = other.rfp;
+        this.principal = other.principal;
+        this.clock = other.clock;
+        this.rendering = other.rendering;
+        this.observations = other.observations;
+        this.expressionsApplicationContext = other.expressionsApplicationContext;
+        this.publisher = other.publisher;
+        this.restClientCustomizers.addAll(other.restClientCustomizers);
+        this.initializers.addAll(other.initializers);
+        this.interceptors.addAll(other.interceptors);
+        this.responseErrorHandlers.addAll(other.responseErrorHandlers);
+        this.serviceProxyCustomizers.addAll(other.serviceProxyCustomizers);
+        this.argumentResolvers.addAll(other.argumentResolvers);
+        this.loggingOverrides.putAll(other.loggingOverrides);
+        this.expressionVars.putAll(other.expressionVars);
+        this.requestValuesTransformers.addAll(other.requestValuesTransformers);
+
+    }
+
+    public UpstreamPrototype<T> prototype() {
+        return this;
+    }
+
+    @Override
+    public UpstreamBuilder<T> builder() {
+        return new UpstreamBuilder<>(this);
     }
 
     /**
