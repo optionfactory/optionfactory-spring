@@ -4,7 +4,7 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>21.10-SNAPSHOT</version>
+        <version>21.10</version>
     </parent>
     <artifactId>marshaling-jackson</artifactId>
     <description>optionfactory-spring jackson marshaling</description>
