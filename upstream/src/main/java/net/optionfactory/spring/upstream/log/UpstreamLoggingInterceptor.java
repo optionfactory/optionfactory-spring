@@ -24,10 +24,12 @@ import org.slf4j.LoggerFactory;
 public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
 
     private final Logger logger = LoggerFactory.getLogger(UpstreamLoggingInterceptor.class);
+    private final Optional<Upstream.Logging.Conf> override;
     private final Map<Method, Upstream.Logging.Conf> overrides;
     private final Map<Method, Upstream.Logging.Conf> confs = new ConcurrentHashMap<>();
 
-    public UpstreamLoggingInterceptor(Map<Method, Upstream.Logging.Conf> overrides) {
+    public UpstreamLoggingInterceptor(Optional<Upstream.Logging.Conf> override, Map<Method, Upstream.Logging.Conf> overrides) {
+        this.override = override;
         this.overrides = overrides;
     }
 
@@ -43,7 +45,7 @@ public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
     @Override
     public ResponseContext intercept(InvocationContext invocation, RequestContext request, UpstreamHttpRequestExecution execution) throws IOException {
         final Method m = invocation.endpoint().method();
-        final var conf = Optional.ofNullable(overrides.get(m)).orElse(confs.get(m));
+        final var conf = Optional.ofNullable(overrides.get(m)).or(() -> override).orElseGet(() -> confs.get(m));
         if (conf == null) {
             return execution.execute(invocation, request);
         }

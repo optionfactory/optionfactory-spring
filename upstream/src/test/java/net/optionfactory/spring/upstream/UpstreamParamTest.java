@@ -3,6 +3,7 @@ package net.optionfactory.spring.upstream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Optional;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
 import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
@@ -30,7 +31,7 @@ public class UpstreamParamTest {
                     });
                 })
                 .restClient(r -> r.baseUrl("http://example.com"))
-                .interceptor(new UpstreamLoggingInterceptor(Map.of()))
+                .interceptor(new UpstreamLoggingInterceptor(Optional.empty(), Map.of()))
                 .build()
                 .testEndpoint("value");
 

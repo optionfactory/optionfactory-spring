@@ -1,7 +1,9 @@
 package net.optionfactory.spring.upstream.scopes;
 
 import java.io.IOException;
+import java.net.URI;
 import net.optionfactory.spring.upstream.UpstreamResponseErrorHandler;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.ResponseErrorHandler;
 
@@ -20,7 +22,7 @@ public class ResponseErrorHandlerAdapter implements ResponseErrorHandler {
     }
 
     @Override
-    public void handleError(ClientHttpResponse response) throws IOException {
+    public void handleError(URI url, HttpMethod method, ClientHttpResponse response) throws IOException {
         final var r = (ResponseAdapter) response;
         inner.handleError(r.invocation(), r.request(), r.response());
     }

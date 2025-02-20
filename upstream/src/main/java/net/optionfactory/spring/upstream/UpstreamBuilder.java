@@ -80,13 +80,15 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
     protected final List<UpstreamResponseErrorHandler> responseErrorHandlers = new ArrayList<>();
     protected final List<Consumer<HttpServiceProxyFactory.Builder>> serviceProxyCustomizers = new ArrayList<>();
     protected final List<HttpServiceArgumentResolver> argumentResolvers = new ArrayList<>();
+
+    protected Optional<Upstream.Logging.Conf> loggingOverride = Optional.empty();
     protected final Map<Method, Upstream.Logging.Conf> loggingOverrides = new HashMap<>();
     protected final Map<String, Object> expressionVars = new HashMap<>();
 
     protected List<HttpRequestValuesTransformer> requestValuesTransformers = new ArrayList<>();
-    protected final Class<?> klass;
-    protected final String upstreamId;
-    protected final Map<Method, EndpointDescriptor> endpoints;
+
+    protected Class<?> klass;
+    protected Optional<String> name = Optional.empty();
 
     protected RequestFactoryProvider rfp;
     protected Supplier<Object> principal;
@@ -99,40 +101,23 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
     protected ApplicationEventPublisher publisher;
 
     /**
-     * Creates an upstream builder. You can use {@code #create} or
-     * {@code #named} instead of invoking this constructor directly.
+     * Creates an upstream builder.
      *
-     * @param klass the interface to be implemented
-     * @param name the (optional) overridden name
+     * You can use {@code #create} or {@code #named} instead of invoking this
+     * constructor directly.
+     *
      */
-    public UpstreamBuilder(Class<T> klass, Optional<String> name) {
-        this.klass = klass;
-        this.upstreamId = name.or(() -> Annotations.closest(klass, Upstream.class)
-                .map(a -> a.value()))
-                .filter(n -> !n.isBlank())
-                .orElse(klass.getSimpleName());
-        this.endpoints = Stream.of(klass.getMethods())
-                .filter(m -> !m.isSynthetic() && !m.isBridge() && !m.isDefault())
-                .filter(m -> AnnotationUtils.findAnnotation(m, HttpExchange.class) != null)
-                .map(m -> {
-                    final var epa = AnnotationUtils.findAnnotation(m, Upstream.Endpoint.class);
-                    final var principalIndex = IntStream
-                            .range(0, m.getParameters().length)
-                            .filter(i -> m.getParameters()[i].isAnnotationPresent(Upstream.Principal.class)
-                            || m.getParameters()[i].getType().isAnnotationPresent(Upstream.Principal.class)
-                            )
-                            .mapToObj(i -> i)
-                            .findFirst();
-                    return new EndpointDescriptor(upstreamId, epa == null ? m.getName() : epa.value(), m, principalIndex.orElse(null));
-                })
-                .collect(Collectors.toMap(EndpointDescriptor::method, ed -> ed));
-
+    public UpstreamBuilder() {
     }
 
+    /**
+     * Copy constructor for an upstream builder.
+     *
+     * @param other the other builder
+     */
     public UpstreamBuilder(UpstreamBuilder<T> other) {
         this.klass = other.klass;
-        this.upstreamId = other.upstreamId;
-        this.endpoints = other.endpoints;
+        this.name = other.name;
         this.rfp = other.rfp;
         this.principal = other.principal;
         this.clock = other.clock;
@@ -146,10 +131,10 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
         this.responseErrorHandlers.addAll(other.responseErrorHandlers);
         this.serviceProxyCustomizers.addAll(other.serviceProxyCustomizers);
         this.argumentResolvers.addAll(other.argumentResolvers);
+        this.loggingOverride = other.loggingOverride;
         this.loggingOverrides.putAll(other.loggingOverrides);
         this.expressionVars.putAll(other.expressionVars);
         this.requestValuesTransformers.addAll(other.requestValuesTransformers);
-
     }
 
     public UpstreamPrototype<T> prototype() {
@@ -164,12 +149,21 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
     /**
      * Creates an upstream builder.
      *
+     * @return the builder
+     */
+    public static UpstreamBuilder<?> create() {
+        return new UpstreamBuilder<>();
+    }
+
+    /**
+     * Creates an upstream builder.
+     *
      * @param <T> the interface type
      * @param klass the interface to be implemented
      * @return the builder
      */
     public static <T> UpstreamBuilder<T> create(Class<T> klass) {
-        return new UpstreamBuilder<>(klass, Optional.empty());
+        return create().type(klass);
     }
 
     /**
@@ -181,7 +175,30 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
      * @return the builder
      */
     public static <T> UpstreamBuilder<T> named(Class<T> klass, String name) {
-        return new UpstreamBuilder<>(klass, Optional.of(name));
+        return create().type(klass).name(name);
+    }
+
+    /**
+     * Configures the interface to be implemented.
+     *
+     * @param <K> the interface type
+     * @param klass the interface type
+     * @return this builder
+     */
+    public <K> UpstreamBuilder<K> type(Class<K> klass) {
+        this.klass = klass;
+        return (UpstreamBuilder<K>) this;
+    }
+
+    /**
+     * Overrides the name of the upstream.
+     *
+     * @param name the name
+     * @return this builder
+     */
+    public UpstreamBuilder<T> name(@Nullable String name) {
+        this.name = Optional.ofNullable(name);
+        return this;
     }
 
     /**
@@ -335,9 +352,7 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
      * @return this builder
      */
     public UpstreamBuilder<T> logging(Upstream.Logging.Conf c) {
-        for (Method m : endpoints.keySet()) {
-            loggingOverrides.put(m, c);
-        }
+        loggingOverride = Optional.ofNullable(c);
         return this;
     }
 
@@ -667,6 +682,26 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
      * @return the configured client
      */
     public T build() {
+        Assert.notNull(klass, "type must be configured");
+        final var upstreamId = name.or(() -> Annotations.closest(klass, Upstream.class)
+                .map(a -> a.value()))
+                .filter(n -> !n.isBlank())
+                .orElse(klass.getSimpleName());
+
+        final var endpoints = Stream.of(klass.getMethods())
+                .filter(m -> !m.isSynthetic() && !m.isBridge() && !m.isDefault())
+                .filter(m -> AnnotationUtils.findAnnotation(m, HttpExchange.class) != null)
+                .map(m -> {
+                    final var epa = AnnotationUtils.findAnnotation(m, Upstream.Endpoint.class);
+                    final var principalIndex = IntStream
+                            .range(0, m.getParameters().length)
+                            .filter(i -> m.getParameters()[i].isAnnotationPresent(Upstream.Principal.class) || m.getParameters()[i].getType().isAnnotationPresent(Upstream.Principal.class))
+                            .mapToObj(i -> i)
+                            .findFirst();
+                    return new EndpointDescriptor(upstreamId, epa == null ? m.getName() : epa.value(), m, principalIndex.orElse(null));
+                })
+                .collect(Collectors.toMap(EndpointDescriptor::method, ed -> ed));
+
         Assert.notNull(rfp, "requestFactory must be configured");
         final var obs = observations != null ? observations : ObservationRegistry.NOOP;
         final var pub = publisher != null ? publisher : new ApplicationEventPublisher() {
@@ -701,7 +736,7 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
                 Stream.of(new UpstreamAnnotatedHeadersInterceptor(),
                         new UpstreamAnnotatedCookiesInterceptor(),
                         new UpstreamAnnotatedQueryParamsInterceptor(),
-                        new UpstreamLoggingInterceptor(loggingOverrides),
+                        new UpstreamLoggingInterceptor(loggingOverride, loggingOverrides),
                         new UpstreamAlertInterceptor(pub, obs)
                 ))
                 .peek(i -> i.preprocess(klass, expressions, endpoints))
