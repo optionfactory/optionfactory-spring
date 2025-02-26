@@ -4,7 +4,7 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>21.12</version>
+        <version>21.13-SNAPSHOT</version>
     </parent>
     <artifactId>marshaling-jaxb</artifactId>
     <description>optionfactory-spring jaxb time adapters</description>
