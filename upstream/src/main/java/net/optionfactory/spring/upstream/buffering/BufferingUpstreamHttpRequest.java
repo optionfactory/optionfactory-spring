@@ -63,7 +63,11 @@ public class BufferingUpstreamHttpRequest implements ClientHttpRequest {
         final var response = inner.execute();
         this.bufferedOutput.reset();
         this.executed = true;
-        return buffering == Buffering.BUFFERED ? new BufferingUpstreamHttpResponse(response) : response;
+        return switch(buffering){
+            case BUFFERED -> new BufferingUpstreamHttpResponse(response);
+            case UNBUFFERED -> response;
+            case UNBUFFERED_STREAMING -> new StreamingUpstreamHttpResponse(response);
+        };
     }
 
     @Override

@@ -78,7 +78,7 @@ public record ResponseContext(
 
         @Override
         public ResponseContext.BodySource detached() {
-            if (buffering == Buffering.UNBUFFERED) {
+            if (buffering != Buffering.BUFFERED ) {
                 return new ByteArrayBodySource("<unavailable>".getBytes(StandardCharsets.UTF_8));
             }
             try {
@@ -90,7 +90,7 @@ public record ResponseContext(
 
         @Override
         public ResponseContext.BodySource forInspection(boolean throwIfUnavailable) {
-            if (buffering == Buffering.UNBUFFERED) {
+            if (buffering != Buffering.BUFFERED) {
                 if (throwIfUnavailable) {
                     throw new IllegalStateException("trying to inspect an unavailable body");
                 }

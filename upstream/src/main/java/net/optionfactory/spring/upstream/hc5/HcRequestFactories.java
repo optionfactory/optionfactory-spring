@@ -198,8 +198,12 @@ public class HcRequestFactories {
                 clientBuilderCustomizer.accept(clientBuilder);
             }
             final var f = new HttpComponentsClientHttpRequestFactory(clientBuilder.build());
-            return buffering == Buffering.BUFFERED ? new BufferingClientHttpRequestFactory(f) : f;
-
+            return switch (buffering) {
+                case BUFFERED ->
+                    new BufferingClientHttpRequestFactory(f);
+                case UNBUFFERED, UNBUFFERED_STREAMING ->
+                    f;
+            };
         }
 
         public RequestFactoryProvider buildConfigurer(Buffering buffering) {
@@ -260,12 +264,15 @@ public class HcRequestFactories {
                     clientBuilderCustomizer.accept(clientBuilder);
                 }
                 final var f = new HttpComponentsClientHttpRequestFactory(clientBuilder.build());
-                if (buffering == Buffering.UNBUFFERED) {
-                    return f;
-                }
-                final var buffered = new BufferingUpstreamHttpRequestFactory(f);
-                buffered.preprocess(klass, expressions, endpoints);
-                return scopeHandler.adapt(buffered);
+                return switch (buffering) {
+                    case UNBUFFERED ->
+                        f;
+                    case BUFFERED, UNBUFFERED_STREAMING -> {
+                        final var buffered = new BufferingUpstreamHttpRequestFactory(f);
+                        buffered.preprocess(klass, expressions, endpoints);
+                        yield scopeHandler.adapt(buffered);
+                    }
+                };
             };
         }
     }

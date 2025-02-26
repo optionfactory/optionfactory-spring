@@ -76,7 +76,7 @@ public class UpstreamMethodInterceptor implements MethodInterceptor {
                 .map(i -> mi.getArguments()[i])
                 .or(() -> Optional.ofNullable(principal.get()))
                 .orElse(null);
-        final var buffering = Buffering.fromMethod(method);
+        final var buffering = Buffering.responseBufferingFromMethod(method);
         final InvocationContext invocation = new InvocationContext(expressions, rendering, converters, endpoint, mi.getArguments(), BOOT_ID, INVOCATION_COUNTER.incrementAndGet(), eprincipal, buffering);
         invocations.set(invocation);
         final var obs = Observation.createNotStarted("upstream", observations)

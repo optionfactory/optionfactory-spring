@@ -29,6 +29,7 @@ import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.alerts.UpstreamAlertInterceptor;
 import net.optionfactory.spring.upstream.buffering.Buffering;
 import net.optionfactory.spring.upstream.buffering.BufferingUpstreamHttpRequestFactory;
+import net.optionfactory.spring.upstream.buffering.InputStreamHttpMessageConverter;
 import net.optionfactory.spring.upstream.hc5.HcRequestFactories;
 import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
 import net.optionfactory.spring.upstream.mocks.MockResourcesUpstreamHttpResponseFactory;
@@ -422,7 +423,8 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
                 }
                 c.add(new ByteArrayHttpMessageConverter());
                 c.add(new StringHttpMessageConverter());
-                c.add(new ResourceHttpMessageConverter(true));
+                c.add(new ResourceHttpMessageConverter(false));
+                c.add(new InputStreamHttpMessageConverter());
                 c.add(multipart);
                 c.add(new MappingJackson2HttpMessageConverter(objectMapper));
             });
