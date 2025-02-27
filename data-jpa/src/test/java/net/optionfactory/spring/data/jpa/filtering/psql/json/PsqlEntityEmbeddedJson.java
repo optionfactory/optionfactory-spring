@@ -4,14 +4,10 @@ import jakarta.persistence.Embeddable;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
-import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 @Entity
-@TextCompare(name = "a", path = "embedded.a")
-@TextCompare(name = "b", path = "embedded.b")
-@TextCompare(name = "c", path = "embedded.c")
 public class PsqlEntityEmbeddedJson {
 
     @Id
@@ -34,6 +30,12 @@ public class PsqlEntityEmbeddedJson {
      * dialects.
      * @JdbcTypeCode(SqlTypes.JSON) without @Embeddable can still be used with
      * other dialects.
+     * Using @Embeddable:
+     * <ul>
+     * <li>the object is serialized as jsonb BUT the configured JacksonJsonFormatMapper will not be used.
+     * <li>the deduced JavaType is EmbeddableAggregateJavaType instead of JsonJavaType.
+     * <li>the ImplicitNamingStrategy will be used to rename the aggregate components in the serialized jsonb.
+     * </ul>
      */
     @Embeddable
     public record EmbeddedRecord(String a, String b, String c) {
