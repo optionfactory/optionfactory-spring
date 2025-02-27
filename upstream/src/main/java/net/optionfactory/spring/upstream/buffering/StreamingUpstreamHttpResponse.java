@@ -1,20 +1,14 @@
 package net.optionfactory.spring.upstream.buffering;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.lang.Nullable;
-import org.springframework.util.StreamUtils;
 
 public class StreamingUpstreamHttpResponse implements ClientHttpResponse {
 
     private final ClientHttpResponse inner;
-
-    @Nullable
-    private byte[] body;
 
     public StreamingUpstreamHttpResponse(ClientHttpResponse inner) {
         this.inner = inner;
