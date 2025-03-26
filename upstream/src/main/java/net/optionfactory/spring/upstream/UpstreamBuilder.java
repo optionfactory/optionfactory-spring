@@ -30,6 +30,7 @@ import net.optionfactory.spring.upstream.alerts.UpstreamAlertInterceptor;
 import net.optionfactory.spring.upstream.buffering.Buffering;
 import net.optionfactory.spring.upstream.buffering.BufferingUpstreamHttpRequestFactory;
 import net.optionfactory.spring.upstream.buffering.InputStreamHttpMessageConverter;
+import net.optionfactory.spring.upstream.buffering.StreamHttpMessageConverter;
 import net.optionfactory.spring.upstream.hc5.HcRequestFactories;
 import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
 import net.optionfactory.spring.upstream.mocks.MockResourcesUpstreamHttpResponseFactory;
@@ -59,11 +60,12 @@ import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
+import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.http.converter.support.AllEncompassingFormHttpMessageConverter;
+import org.springframework.http.converter.xml.MappingJackson2XmlHttpMessageConverter;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.web.client.RestClient;
@@ -405,28 +407,50 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
     }
 
     /**
-     * Configures default {@code MessageConverter}s for a REST/HTTP client using
-     * the passed ObjectMapper.
+     * Configures default {@code MessageConverter}s for a REST JSON/HTTP client
+     * using the passed ObjectMapper.
      *
      * @param objectMapper
-     * @return
+     * @return this builder
      */
     public UpstreamBuilder<T> json(ObjectMapper objectMapper) {
         restClientCustomizers.add(b -> {
             b.messageConverters(c -> {
                 c.clear();
-                final var multipart = new AllEncompassingFormHttpMessageConverter();
-                for (var converter : multipart.getPartConverters()) {
-                    if (converter instanceof MappingJackson2HttpMessageConverter j) {
-                        j.setObjectMapper(objectMapper);
-                    }
-                }
+                final var multipart = new FormHttpMessageConverter();
+                multipart.addPartConverter(new MappingJackson2HttpMessageConverter(objectMapper));
                 c.add(new ByteArrayHttpMessageConverter());
                 c.add(new StringHttpMessageConverter());
                 c.add(new ResourceHttpMessageConverter(false));
                 c.add(new InputStreamHttpMessageConverter());
+                c.add(new StreamHttpMessageConverter(objectMapper));
                 c.add(multipart);
                 c.add(new MappingJackson2HttpMessageConverter(objectMapper));
+            });
+        });
+        return this;
+    }
+
+    /**
+     * Configures default {@code MessageConverter}s for a REST XML/HTTP client
+     * using the passed ObjectMapper.
+     *
+     * @param objectMapper
+     * @return this builder
+     */
+    public UpstreamBuilder<T> xml(ObjectMapper objectMapper) {
+        restClientCustomizers.add(b -> {
+            b.messageConverters(c -> {
+                c.clear();
+                final var multipart = new FormHttpMessageConverter();
+                multipart.addPartConverter(new MappingJackson2XmlHttpMessageConverter(objectMapper));
+                c.add(new ByteArrayHttpMessageConverter());
+                c.add(new StringHttpMessageConverter());
+                c.add(new ResourceHttpMessageConverter(false));
+                c.add(new InputStreamHttpMessageConverter());
+                c.add(new StreamHttpMessageConverter(objectMapper));
+                c.add(multipart);
+                c.add(new MappingJackson2XmlHttpMessageConverter(objectMapper));
             });
         });
         return this;
