@@ -423,7 +423,7 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
                 c.add(new StringHttpMessageConverter());
                 c.add(new ResourceHttpMessageConverter(false));
                 c.add(new InputStreamHttpMessageConverter());
-                c.add(new StreamHttpMessageConverter(objectMapper));
+                c.add(StreamHttpMessageConverter.forJson(objectMapper));
                 c.add(multipart);
                 c.add(new MappingJackson2HttpMessageConverter(objectMapper));
             });
@@ -448,7 +448,7 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
                 c.add(new StringHttpMessageConverter());
                 c.add(new ResourceHttpMessageConverter(false));
                 c.add(new InputStreamHttpMessageConverter());
-                c.add(new StreamHttpMessageConverter(objectMapper));
+                c.add(StreamHttpMessageConverter.forXml(objectMapper));
                 c.add(multipart);
                 c.add(new MappingJackson2XmlHttpMessageConverter(objectMapper));
             });

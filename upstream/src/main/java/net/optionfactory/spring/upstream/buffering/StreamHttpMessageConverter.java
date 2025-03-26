@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -25,9 +26,17 @@ public class StreamHttpMessageConverter extends AbstractGenericHttpMessageConver
 
     private final ObjectMapper mapper;
 
-    public StreamHttpMessageConverter(ObjectMapper mapper) {
-        super(new MediaType("application", "jsonl"), MediaType.APPLICATION_JSON, new MediaType("application", "*+json"));
+    public StreamHttpMessageConverter(ObjectMapper mapper, MediaType... mediaTypes) {
+        super(mediaTypes);
         this.mapper = mapper;
+    }
+
+    public static StreamHttpMessageConverter forXml(ObjectMapper mapper) {
+        return new StreamHttpMessageConverter(mapper, new MediaType("text", "xml", StandardCharsets.UTF_8), new MediaType("application", "xml", StandardCharsets.UTF_8), new MediaType("application", "*+xml", StandardCharsets.UTF_8));
+    }
+
+    public static StreamHttpMessageConverter forJson(ObjectMapper mapper) {
+        return new StreamHttpMessageConverter(mapper, new MediaType("application", "jsonl"), MediaType.APPLICATION_JSON, new MediaType("application", "*+json"));
     }
 
     @Override

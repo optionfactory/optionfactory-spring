@@ -1,5 +1,6 @@
 package net.optionfactory.spring.upstream.scopes;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -25,6 +26,7 @@ public class UpstreamHttpExchangeAdapterTest {
 
         final var client = UpstreamBuilder
                 .create(ExchangeAdapterClient.class)
+                .json(new ObjectMapper())
                 .interceptor((invocation, request, execution) -> {
                     capturedBody.set(new String(request.body(), StandardCharsets.UTF_8));
                     return execution.execute(invocation, request);
