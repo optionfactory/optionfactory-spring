@@ -4,7 +4,7 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>21.18-SNAPSHOT</version>
+        <version>21.18</version>
     </parent>
     <artifactId>upstream-alerts-email</artifactId>
     <description>optionfactory-spring email alerting</description>
