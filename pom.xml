@@ -174,7 +174,7 @@
             <dependency>
                 <groupId>org.apache.httpcomponents.client5</groupId>
                 <artifactId>httpclient5</artifactId>
-                <version>5.4.2</version>
+                <version>5.4.3</version>
             </dependency>
             <dependency>
                 <groupId>jakarta.mail</groupId>
@@ -194,7 +194,7 @@
             <dependency>
                 <groupId>com.googlecode.libphonenumber</groupId>
                 <artifactId>libphonenumber</artifactId>
-                <version>9.0.1</version>
+                <version>9.0.2</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
