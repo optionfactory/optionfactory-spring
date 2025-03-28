@@ -4,14 +4,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import java.time.LocalDateTime;
-import net.optionfactory.spring.marshaling.jackson.quirks.Quirks.LocalDateTimeAsIsoInstant;
+import java.time.LocalDate;
+import net.optionfactory.spring.marshaling.jackson.quirks.Quirks.LocalDateAsIsoInstant;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class LocalDateTimeAsIsoInstantTest {
+public class LocalDateAsIsoInstantTest {
 
-    public record Bean(@LocalDateTimeAsIsoInstant LocalDateTime value) {
+    public record Bean(@LocalDateAsIsoInstant LocalDate value) {
 
     }
 
@@ -20,10 +20,10 @@ public class LocalDateTimeAsIsoInstantTest {
         final var om = new ObjectMapper();
         om.registerModule(new JavaTimeModule());
         om.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        String got = om.writeValueAsString(new Bean(LocalDateTime.parse("2024-01-02T00:00:00")));
+        String got = om.writeValueAsString(new Bean(LocalDate.parse("2024-01-02")));
 
         Assert.assertEquals("""
-                            {"value":"2024-01-02T00:00:00"}
+                            {"value":"2024-01-02"}
                             """.trim(), got);
     }
 
@@ -32,7 +32,7 @@ public class LocalDateTimeAsIsoInstantTest {
         final var om = new ObjectMapper();
         om.registerModule(Quirks.defaults().build());
 
-        String got = om.writeValueAsString(new Bean(LocalDateTime.parse("2024-01-02T00:00:00")));
+        String got = om.writeValueAsString(new Bean(LocalDate.parse("2024-01-02")));
 
         Assert.assertEquals("""
                             {"value":"2024-01-02T00:00:00Z"}
@@ -45,10 +45,10 @@ public class LocalDateTimeAsIsoInstantTest {
         om.registerModule(new JavaTimeModule());
 
         final var got = om.readValue("""
-                            {"value":"2024-01-02T00:00:00"}
+                            {"value":"2024-01-02"}
                             """, Bean.class);
 
-        Assert.assertEquals(new Bean(LocalDateTime.parse("2024-01-02T00:00:00")), got);
+        Assert.assertEquals(new Bean(LocalDate.parse("2024-01-02")), got);
     }
 
     @Test
@@ -60,6 +60,6 @@ public class LocalDateTimeAsIsoInstantTest {
                             {"value":"2024-01-02T00:00:00Z"}
                             """, Bean.class);
 
-        Assert.assertEquals(new Bean(LocalDateTime.parse("2024-01-02T00:00:00")), got);
+        Assert.assertEquals(new Bean(LocalDate.parse("2024-01-02")), got);
     }
 }
