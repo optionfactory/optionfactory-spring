@@ -5,31 +5,33 @@ Declarative whitelisted filters on `@Entity`.
 ## Maven
 
 ```xml
-        <dependency>
-            <groupId>net.optionfactory.spring</groupId>
-            <artifactId>data-jpa</artifactId>
-        </dependency>
+<dependency>
+    <groupId>net.optionfactory.spring</groupId>
+    <artifactId>data-jpa</artifactId>
+</dependency>
 ```
-
 
 ## Usage
 
-Enable by using `@EnableJpaWhitelistFilteringRepositories` instead of `@EnableJpaRepositories`:
+1. Enable by using `@EnableJpaWhitelistFilteringRepositories` instead of
+   `@EnableJpaRepositories`: [Example](https://github.com/optionfactory/optionfactory-spring/blob/92c24c910896c12fb37ef0cf3af3272434b3eddf/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/HibernateOnPsqlTestConfig.java#L25-L29)
+2. Create a repository extending
+   `WhitelistFilteringRepository<T>`: [Example](https://github.com/optionfactory/optionfactory-spring/blob/92c24c910896c12fb37ef0cf3af3272434b3eddf/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/examples/PetOwnersRepository.java#L1-L8)
+3. Annotate the root entity to configure the filters you want to
+   allow: [Example](https://github.com/optionfactory/optionfactory-spring/blob/92c24c910896c12fb37ef0cf3af3272434b3eddf/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/examples/PetOwner.java#L17-L24)
+4. Configure the filter (possibly from user controlled data) when using the
+   repository: [Example](https://github.com/optionfactory/optionfactory-spring/blob/92c24c910896c12fb37ef0cf3af3272434b3eddf/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/examples/PetOwnerExampleTest.java#L52-L59)
 
-https://github.com/optionfactory/optionfactory-spring/blob/6327185b5f4ea2620fc08fd8f5275474146ac952/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/HibernateOnPsqlTestConfig.java#L25-L29
+## Reduction support
 
-Create a repository extending `WhitelistFilteringRepository<T>`:
+If you need to perform a reduction with filter support:
 
-https://github.com/optionfactory/optionfactory-spring/blob/6327185b5f4ea2620fc08fd8f5275474146ac952/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/examples/PetOwnersRepository.java#L1-L8
+1. [Create a custom Repository interface](https://github.com/optionfactory/optionfactory-spring/blob/92c24c910896c12fb37ef0cf3af3272434b3eddf/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/h2/reduction/ReductionNumberEntityRepository.java)
+2. [Implement it](https://github.com/optionfactory/optionfactory-spring/blob/92c24c910896c12fb37ef0cf3af3272434b3eddf/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/h2/reduction/ReductionNumberEntityRepositoryImpl.java)
+3. [Link in main repository (extend the interface)](https://github.com/optionfactory/optionfactory-spring/blob/92c24c910896c12fb37ef0cf3af3272434b3eddf/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/h2/reduction/NumberEntityRepository.java#L6)
+4. [Use it passing the FilterRequest](https://github.com/optionfactory/optionfactory-spring/blob/92c24c910896c12fb37ef0cf3af3272434b3eddf/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/h2/reduction/ReductionTest.java#L44-L52)
 
-Annotate the root entity to configure the filters you want to allow:
-
-https://github.com/optionfactory/optionfactory-spring/blob/6327185b5f4ea2620fc08fd8f5275474146ac952/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/examples/PetOwner.java#L17-L24
-
-Configure the filter (possibly from user controlled data) when using the repository:
-
-https://github.com/optionfactory/optionfactory-spring/blob/6327185b5f4ea2620fc08fd8f5275474146ac952/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/examples/PetOwnerExampleTest.java#L52-L59
-
+---
 
 TODO: document annotation options (operators, sensitivity, format)
 
