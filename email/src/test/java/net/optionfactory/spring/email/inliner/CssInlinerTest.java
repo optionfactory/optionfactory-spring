@@ -13,8 +13,7 @@ public class CssInlinerTest {
                     """;
         final var expected = """
                     <html>
-                      <head>
-                      </head>
+                      <head></head>
                       <body>
                         <a style="color:black;">test</a>
                       </body>
