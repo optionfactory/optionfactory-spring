@@ -123,19 +123,29 @@ public @interface TextCompare {
                 }
                 case CONTAINS -> {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
-                    yield builder.like(lhs, "%" + rhs + "%");
+                    yield builder.like(lhs, "%" + escapeForLike(rhs) + "%", LIKE_ESCAPE_CHAR);
                 }
                 case STARTS_WITH -> {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
-                    yield builder.like(lhs, rhs + "%");
+                    yield builder.like(lhs, escapeForLike(rhs) + "%", LIKE_ESCAPE_CHAR);
                 }
                 case ENDS_WITH -> {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
-                    yield builder.like(lhs, "%" + rhs);
+                    yield builder.like(lhs, "%" + escapeForLike(rhs), LIKE_ESCAPE_CHAR);
                 }
                 default ->
                     throw new IllegalStateException("unreachable");
             };
+        }
+        
+        private static final char LIKE_ESCAPE_CHAR = '\\';
+        private static final String LIKE_ESCAPE_STR = String.valueOf(LIKE_ESCAPE_CHAR);
+        
+        public static String escapeForLike(String input){
+            return input
+                    .replace(LIKE_ESCAPE_STR, LIKE_ESCAPE_STR + LIKE_ESCAPE_STR)
+                .replace("%", LIKE_ESCAPE_STR + "%")
+                .replace("_", LIKE_ESCAPE_STR + "_");            
         }
 
         @Override
