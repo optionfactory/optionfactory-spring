@@ -1,6 +1,8 @@
 package net.optionfactory.spring.authentication.tokens.examples;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.HexFormat;
 import net.optionfactory.spring.authentication.tokens.examples.TokenAuthenticationExampleTest.SecurityConfig;
 import net.optionfactory.spring.authentication.tokens.examples.TokenAuthenticationExampleTest.WebConfig;
@@ -61,8 +63,9 @@ public class TokenAuthenticationExampleTest {
                     jc.principal("jws-principal");
                     jc.authorities("ROLE_M2M");
                 });
-                c.token("M2M_SECRET", "principal1", "ROLE_M2M");
-                c.token("ANOTHER_SECRET", "principal2", "ROLE_ANOTHER");
+                c.bearer("M2M_SECRET", "principal1", "ROLE_M2M");
+                c.bearer("ANOTHER_SECRET", "principal2", "ROLE_ANOTHER");
+                c.basic("user", "12345", "principal3", "ROLE_M2M");
             });
 
             http.authorizeHttpRequests(c -> {
@@ -146,4 +149,12 @@ public class TokenAuthenticationExampleTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    // TODO: ensure jws / jwe check tokenSelector
+
+    @Test
+    public void validBasicAuthYields200() throws Exception {
+        var basicCreds = Base64.getEncoder().encodeToString("user:12345".getBytes(StandardCharsets.UTF_8));
+        mvc.perform(get("/api/m2m").header("Authorization", String.format("Basic %s", basicCreds)))
+                .andExpect(status().isOk());
+    }
 }

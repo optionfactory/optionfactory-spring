@@ -4,10 +4,16 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
 import net.optionfactory.spring.authentication.tokens.HttpHeaderAuthentication.UnauthenticatedToken;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,18 +29,16 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class HttpHeaderAuthenticationFilter extends OncePerRequestFilter {
 
     private final AuthenticationManager am;
-    private final String headerName;
-    private final String authScheme;
+    private final List<TokenSelector> tokenSelectors;
 
-    public HttpHeaderAuthenticationFilter(AuthenticationManager am, String headerName, String authScheme) {
+    public HttpHeaderAuthenticationFilter(AuthenticationManager am, LinkedHashSet<TokenSelector> tokenSelectors) {
         this.am = am;
-        this.headerName = headerName;
-        this.authScheme = authScheme.toUpperCase().trim() + " ";
+        this.tokenSelectors = tokenSelectors.stream().toList();
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        searchToken(request, headerName, authScheme).ifPresent(token -> {
+        searchToken(request).ifPresent(token -> {
             try {
                 final Authentication authentication = am.authenticate(token);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -45,10 +49,19 @@ public class HttpHeaderAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    public static Optional<UnauthenticatedToken> searchToken(HttpServletRequest request, String headerName, String authScheme) {
-        return Optional.ofNullable(request.getHeader(headerName))
-                .filter(header -> header.toUpperCase().startsWith(authScheme))
-                .map(header -> header.substring(authScheme.length()).trim())
-                .map(token -> new UnauthenticatedToken(token, request));
+    private Optional<UnauthenticatedToken> searchToken(HttpServletRequest request) {
+        var tokens = this.tokenSelectors.stream()
+                .map(ts ->
+                        Optional.ofNullable(request.getHeader(ts.headerName()))
+                            .filter(v -> v.toUpperCase().startsWith(ts.authScheme()))
+                            .map(v -> v.substring(ts.authScheme().length()).trim())
+                            .map(token -> new UnauthenticatedToken(ts, token, request))
+                ).filter(Optional::isPresent)
+                .map(Optional::get)
+                .toList();
+        if (tokens.size() > 1) {
+            throw new BadCredentialsException("Multiple tokens found");
+        }
+        return tokens.stream().findFirst();
     }
 }

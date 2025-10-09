@@ -14,6 +14,7 @@ import java.text.ParseException;
 import java.util.List;
 import net.optionfactory.spring.authentication.tokens.HttpHeaderAuthentication.PrincipalAndAuthorities;
 import net.optionfactory.spring.authentication.tokens.HttpHeaderAuthentication.TokenProcessor;
+import net.optionfactory.spring.authentication.tokens.TokenSelector;
 import org.springframework.security.authentication.BadCredentialsException;
 
 public class JwtTokenProcessor implements TokenProcessor {
@@ -27,7 +28,7 @@ public class JwtTokenProcessor implements TokenProcessor {
     }
 
     @Override
-    public PrincipalAndAuthorities process(String token) {
+    public PrincipalAndAuthorities process(TokenSelector tokenSelector, String token) {
         final JWT jwt;
         try {
             jwt = JWTParser.parse(token);

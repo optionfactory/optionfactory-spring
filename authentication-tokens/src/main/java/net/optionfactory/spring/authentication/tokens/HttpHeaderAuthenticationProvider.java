@@ -24,7 +24,7 @@ public class HttpHeaderAuthenticationProvider implements AuthenticationProvider 
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         final var token = (UnauthenticatedToken) authentication;
         for (final var processor : processors) {
-            final var paa = processor.process(token.getCredentials());
+            final var paa = processor.process(token.getTokenSelector(), token.getCredentials());
             if (paa != null) {
                 return new AuthenticatedToken(token.getCredentials(), paa.principal(), token.getDetails(), paa.authorities());
             }
