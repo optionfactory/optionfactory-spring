@@ -34,33 +34,38 @@ public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> ext
         this.allowedFilters = Repositories.allowedFilters(ei, em);
         this.allowedSorters = Repositories.allowedSorters(ei, em);
     }
+    
+    private static <T> Specification<T> where(@Nullable Specification<T> spec) {
+            return spec == null ? Specification.unrestricted() : spec;
+    }
+    
 
     @Override
     public Page<T> findAll(@Nullable Specification<T> spec, Pageable pageable) {
-        return super.findAll(Specification.where(spec).and(sort(pageable.getSort())), unsorted(pageable));
+        return super.findAll(where(spec).and(sort(pageable.getSort())), unsorted(pageable));
     }
 
     @Override
     public List<T> findAll(@Nullable Specification<T> spec, Sort sort) {
-        return findAll(Specification.where(spec).and(sort(sort)));
+        return findAll(where(spec).and(sort(sort)));
     }
 
     public Optional<T> findOne(@Nullable Specification<T> base, FilterRequest filters) {
-        return findOne(Specification.where(base).and(filter(filters)));
+        return findOne(where(base).and(filter(filters)));
     }
 
     public Page<T> findAll(@Nullable Specification<T> base, FilterRequest filters, Pageable pageable) {
-        return findAll(Specification.where(base).and(filter(filters)).and(sort(pageable.getSort())), unsorted(pageable));
+        return findAll(where(base).and(filter(filters)).and(sort(pageable.getSort())), unsorted(pageable));
     }
 
     public List<T> findAll(@Nullable Specification<T> base, FilterRequest filters, Sort sort) {
-        return findAll(Specification.where(base).and(filter(filters)).and(sort(sort)), Sort.unsorted());
+        return findAll(where(base).and(filter(filters)).and(sort(sort)), Sort.unsorted());
     }
 
     public <R> Stream<R> findAll(@Nullable Specification<T> base, FilterRequest filters, Sort sort, int fetchSize, BiFunction<SessionPolicy, T, R> callback) {
         final AtomicLong counter = new AtomicLong(-1);
         final SessionPolicy policy = new SessionPolicy(entityManager, counter);
-        return getQuery(Specification.where(base).and(filter(filters)).and(sort(sort)), Sort.unsorted())
+        return getQuery(where(base).and(filter(filters)).and(sort(sort)), Sort.unsorted())
                 .setHint(AvailableHints.HINT_FETCH_SIZE, fetchSize)
                 .getResultStream()
                 .peek(entity -> counter.incrementAndGet())
@@ -68,7 +73,7 @@ public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> ext
     }
 
     public long count(@Nullable Specification<T> base, FilterRequest filters) {
-        return count(Specification.where(base).and(filter(filters)));
+        return count(where(base).and(filter(filters)));
     }
 
     public Optional<T> findOne(FilterRequest filters) {
