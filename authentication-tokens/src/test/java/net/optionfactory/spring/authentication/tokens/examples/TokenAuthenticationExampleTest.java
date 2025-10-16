@@ -15,6 +15,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
@@ -54,7 +55,8 @@ public class TokenAuthenticationExampleTest {
 
             http.with(HttpHeaderAuthentication.configurer(), c -> {
                 c.jws(jc -> {
-                    jc.match(Match.STRICT);
+                    jc.matchHeader(HttpHeaders.AUTHORIZATION, "Bearer"); //this is already the default
+                    jc.matchToken(Match.STRICT); //this is already the default
                     jc.verify(HEX_ENCODED_HS256_KEY);
                     jc.claims(Duration.ofSeconds(60), claims -> {
                         claims.audience("example.com");

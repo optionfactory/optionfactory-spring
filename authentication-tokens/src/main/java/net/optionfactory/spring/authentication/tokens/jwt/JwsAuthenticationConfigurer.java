@@ -1,5 +1,6 @@
 package net.optionfactory.spring.authentication.tokens.jwt;
 
+import net.optionfactory.spring.authentication.tokens.HeaderAndScheme;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
@@ -14,14 +15,15 @@ import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.List;
 import net.optionfactory.spring.authentication.tokens.jwt.JwtTokenProcessor.JwsProcessor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.util.Assert;
 
 public interface JwsAuthenticationConfigurer extends JwtAuthenticationConfigurer<JwsAuthenticationConfigurer> {
 
-    JwsAuthenticationConfigurer matcher(JwsMatcher matcher);
+    JwsAuthenticationConfigurer matchToken(JwsMatcher matcher);
 
-    default JwsAuthenticationConfigurer match(Match m) {
-        return matcher((header, claims, jws) -> m);
+    default JwsAuthenticationConfigurer matchToken(Match m) {
+        return matchToken((header, claims, jws) -> m);
     }
 
     JwsAuthenticationConfigurer verifier(JWSVerifier verifier);
@@ -60,16 +62,25 @@ public interface JwsAuthenticationConfigurer extends JwtAuthenticationConfigurer
 
     public static class Builder implements JwsAuthenticationConfigurer {
 
-        private JwsMatcher matcher;
+        private HeaderAndScheme hs = new HeaderAndScheme(HttpHeaders.AUTHORIZATION, "BEARER ");
+        private JwsMatcher tokenMatcher = (header, unverifiedClaims, jws) -> Match.STRICT;
         private JWSVerifier verifier;
         private JWTClaimsSetVerifier<SecurityContext> claims = new DefaultJWTClaimsVerifier<>(null, null, null, null);
         private JwtAuthoritiesConverter authorities = new RolesGroupsAndScopesFromClaims(List.of());
         private JwtPrincipalConverter principal;
 
         @Override
-        public Builder matcher(JwsMatcher matcher) {
+        public Builder matchHeader(String header, String authScheme) {
+            Assert.notNull(header, "header cannot be null");
+            Assert.notNull(authScheme, "authScheme cannot be null");
+            this.hs = new HeaderAndScheme(header, authScheme.toUpperCase().trim() + " ");
+            return this;
+        }
+
+        @Override
+        public Builder matchToken(JwsMatcher matcher) {
             Assert.notNull(matcher, "JwsMatcher cannot be null");
-            this.matcher = matcher;
+            this.tokenMatcher = matcher;
             return this;
         }
 
@@ -102,10 +113,11 @@ public interface JwsAuthenticationConfigurer extends JwtAuthenticationConfigurer
         }
 
         public JwsProcessor build() {
-            Assert.notNull(matcher, "JwsMatcher must be configured");
+            Assert.notNull(hs, "HeaderAndScheme must be configured");
+            Assert.notNull(tokenMatcher, "JwsMatcher must be configured");
             Assert.notNull(verifier, "JWTClaimsSetVerifier must be configured");
             Assert.notNull(principal, "JwtPrincipalConverter must be configured");
-            return new JwtTokenProcessor.JwsProcessor(matcher, verifier, claims, authorities, principal);
+            return new JwtTokenProcessor.JwsProcessor(hs, tokenMatcher, verifier, claims, authorities, principal);
         }
 
     }

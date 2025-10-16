@@ -1,5 +1,6 @@
 package net.optionfactory.spring.authentication.tokens.jwt;
 
+import net.optionfactory.spring.authentication.tokens.HeaderAndScheme;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWEDecrypter;
 import com.nimbusds.jose.crypto.AESDecrypter;
@@ -11,14 +12,15 @@ import java.security.interfaces.ECPrivateKey;
 import java.util.List;
 import javax.crypto.SecretKey;
 import net.optionfactory.spring.authentication.tokens.jwt.JwtTokenProcessor.JweProcessor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.util.Assert;
 
 public interface JweAuthenticationConfigurer extends JwtAuthenticationConfigurer<JweAuthenticationConfigurer> {
 
-    JweAuthenticationConfigurer matcher(JweMatcher matcher);
+    JweAuthenticationConfigurer matchToken(JweMatcher matcher);
 
     default JweAuthenticationConfigurer match(Match m) {
-        return matcher((header, jwe) -> m);
+        return matchToken((header, jwe) -> m);
     }
 
     JweAuthenticationConfigurer decrypter(JWEDecrypter decrypter);
@@ -53,16 +55,25 @@ public interface JweAuthenticationConfigurer extends JwtAuthenticationConfigurer
 
     public static class Builder implements JweAuthenticationConfigurer {
 
-        private JweMatcher matcher;
+        private HeaderAndScheme hs = new HeaderAndScheme(HttpHeaders.AUTHORIZATION, "BEARER ");
+        private JweMatcher tokenMatcher = (header, jwe) -> Match.STRICT;
         private JWEDecrypter decrypter;
         private JWTClaimsSetVerifier<SecurityContext> claims = new DefaultJWTClaimsVerifier<>(null, null, null, null);
         private JwtAuthoritiesConverter authorities = new RolesGroupsAndScopesFromClaims(List.of());
         private JwtPrincipalConverter principal;
 
         @Override
-        public JweAuthenticationConfigurer matcher(JweMatcher matcher) {
+        public Builder matchHeader(String header, String authScheme) {
+            Assert.notNull(header, "header cannot be null");
+            Assert.notNull(authScheme, "authScheme cannot be null");
+            this.hs = new HeaderAndScheme(header, authScheme.toUpperCase().trim() + " ");
+            return this;
+        }
+
+        @Override
+        public JweAuthenticationConfigurer matchToken(JweMatcher matcher) {
             Assert.notNull(principal, "JweMatcher cannot be null");
-            this.matcher = matcher;
+            this.tokenMatcher = matcher;
             return this;
         }
 
@@ -95,10 +106,11 @@ public interface JweAuthenticationConfigurer extends JwtAuthenticationConfigurer
         }
 
         public JweProcessor build() {
-            Assert.notNull(matcher, "JweMatcher must be configured");
+            Assert.notNull(hs, "HeaderAndSchemeMatcher must be configured");
+            Assert.notNull(tokenMatcher, "JweMatcher must be configured");
             Assert.notNull(decrypter, "JWEDecrypter must be configured");
             Assert.notNull(principal, "JwtPrincipalConverter must be configured");
-            return new JwtTokenProcessor.JweProcessor(matcher, decrypter, claims, authorities, principal);
+            return new JwtTokenProcessor.JweProcessor(hs, tokenMatcher, decrypter, claims, authorities, principal);
         }
 
     }

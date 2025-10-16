@@ -38,6 +38,8 @@ public interface JwtAuthenticationConfigurer<SELF> {
 
     SELF principal(JwtPrincipalConverter principal);
 
+    SELF matchHeader(String header, String authScheme);
+
     default SELF principal(Object principal) {
         return principal((Header header, JWTClaimsSet claims) -> principal);
     }

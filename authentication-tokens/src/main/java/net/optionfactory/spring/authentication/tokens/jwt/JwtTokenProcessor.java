@@ -1,5 +1,6 @@
 package net.optionfactory.spring.authentication.tokens.jwt;
 
+import net.optionfactory.spring.authentication.tokens.HeaderAndScheme;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWEDecrypter;
 import com.nimbusds.jose.JWSVerifier;
@@ -14,7 +15,6 @@ import java.text.ParseException;
 import java.util.List;
 import net.optionfactory.spring.authentication.tokens.HttpHeaderAuthentication.PrincipalAndAuthorities;
 import net.optionfactory.spring.authentication.tokens.HttpHeaderAuthentication.TokenProcessor;
-import net.optionfactory.spring.authentication.tokens.TokenSelector;
 import org.springframework.security.authentication.BadCredentialsException;
 
 public class JwtTokenProcessor implements TokenProcessor {
@@ -28,7 +28,7 @@ public class JwtTokenProcessor implements TokenProcessor {
     }
 
     @Override
-    public PrincipalAndAuthorities process(TokenSelector tokenSelector, String token) {
+    public PrincipalAndAuthorities process(HeaderAndScheme hs, String token) {
         final JWT jwt;
         try {
             jwt = JWTParser.parse(token);
@@ -44,6 +44,9 @@ public class JwtTokenProcessor implements TokenProcessor {
                 return null;
             }
             for (JwsProcessor proc : jwsProcessors) {
+                if(!hs.equals(proc.hs())){
+                    continue;
+                }
                 final var match = proc.matcher().matches(jws.getHeader(), claims, jws);
                 if (match == Match.SKIP) {
                     continue;
@@ -78,6 +81,9 @@ public class JwtTokenProcessor implements TokenProcessor {
 
         if (jwt instanceof EncryptedJWT jwe) {
             for (JweProcessor proc : jweProcessors) {
+                if(!hs.equals(proc.hs())){
+                    continue;
+                }                
                 final var match = proc.matcher().matches(jwe.getHeader(), jwe);
                 if (match == Match.SKIP) {
                     continue;
@@ -117,11 +123,11 @@ public class JwtTokenProcessor implements TokenProcessor {
 
     }
 
-    public record JwsProcessor(JwsMatcher matcher, JWSVerifier verifier, JWTClaimsSetVerifier claimsVerifier, JwtAuthoritiesConverter authorities, JwtPrincipalConverter principal) {
+    public record JwsProcessor(HeaderAndScheme hs, JwsMatcher matcher, JWSVerifier verifier, JWTClaimsSetVerifier claimsVerifier, JwtAuthoritiesConverter authorities, JwtPrincipalConverter principal) {
 
     }
 
-    public record JweProcessor(JweMatcher matcher, JWEDecrypter decrypter, JWTClaimsSetVerifier claimsVerifier, JwtAuthoritiesConverter authorities, JwtPrincipalConverter principal) {
+    public record JweProcessor(HeaderAndScheme hs, JweMatcher matcher, JWEDecrypter decrypter, JWTClaimsSetVerifier claimsVerifier, JwtAuthoritiesConverter authorities, JwtPrincipalConverter principal) {
 
     }
 

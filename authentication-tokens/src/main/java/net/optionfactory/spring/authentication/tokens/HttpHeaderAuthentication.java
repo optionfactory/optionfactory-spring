@@ -40,54 +40,22 @@ public class HttpHeaderAuthentication {
         private final static String BEARER_AUTH_SCHEME = "Bearer";
         private final static String BASIC_AUTH_SCHEME = "Basic";
 
-        private final LinkedHashSet<TokenSelector> tokenSelectors = new LinkedHashSet<>();
+        private final LinkedHashSet<HeaderAndScheme> headerAndSchemes = new LinkedHashSet<>();
         private final List<TokenProcessor> processors = new ArrayList<>();
         private final List<JwsProcessor> jwsProcessors = new ArrayList<>();
         private final List<JweProcessor> jweProcessors = new ArrayList<>();
 
-        /**
-         * @deprecated Use {@link #bearer(String, Object, Collection)} instead.
-         */
-        @Deprecated(forRemoval = true)
-        public Configurer token(String token, Object principal, Collection<? extends GrantedAuthority> authorities) {
-            return bearer(token, principal, authorities);
-        }
-
         public Configurer bearer(String token, Object principal, Collection<? extends GrantedAuthority> authorities) {
             return token(HttpHeaders.AUTHORIZATION, BEARER_AUTH_SCHEME, token, principal, authorities);
-        }
-
-        /**
-         * @deprecated Use {@link #bearerStrict(String, Object, Collection)} instead.
-         */
-        @Deprecated(forRemoval = true)
-        public Configurer tokenStrict(String token, Object principal, Collection<? extends GrantedAuthority> authorities) {
-            return bearerStrict(token, principal, authorities);
         }
 
         public Configurer bearerStrict(String token, Object principal, Collection<? extends GrantedAuthority> authorities) {
             return tokenStrict(HttpHeaders.AUTHORIZATION, BEARER_AUTH_SCHEME, token, principal, authorities);
         }
 
-        /**
-         * @deprecated Use {@link #bearer(String, Object, String...)} instead.
-         */
-        @Deprecated(forRemoval = true)
-        public Configurer token(String token, Object principal, String... authorities) {
-            return bearer(token, principal, authorities);
-        }
-
         public Configurer bearer(String token, Object principal, String... authorities) {
             final var sgas = Stream.of(authorities).map(SimpleGrantedAuthority::new).toList();
             return bearer(token, principal, sgas);
-        }
-
-        /**
-         * @deprecated Use {@link #bearerStrict(String, Object, String...)} instead.
-         */
-        @Deprecated(forRemoval = true)
-        public Configurer tokenStrict(String token, Object principal, String... authorities) {
-            return bearerStrict(token, principal, authorities);
         }
 
         public Configurer bearerStrict(String token, Object principal, String... authorities) {
@@ -96,18 +64,16 @@ public class HttpHeaderAuthentication {
         }
 
         public Configurer token(String headerName, String authScheme, String token, Object principal, Collection<? extends GrantedAuthority> authorities) {
-            authScheme = authScheme.toUpperCase().trim() + " ";
-            var headerSelector = new TokenSelector(headerName, authScheme);
-            tokenSelectors.add(headerSelector);
-            processors.add(new TokenProcessor.StaticLax(headerSelector, token, new PrincipalAndAuthorities(principal, authorities)));
+            final var hs = new HeaderAndScheme(headerName, authScheme.toUpperCase().trim() + " ");
+            headerAndSchemes.add(hs);
+            processors.add(new TokenProcessor.StaticLax(hs, token, new PrincipalAndAuthorities(principal, authorities)));
             return this;
         }
 
         public Configurer tokenStrict(String headerName, String authScheme, String token, Object principal, Collection<? extends GrantedAuthority> authorities) {
-            authScheme = authScheme.toUpperCase().trim() + " ";
-            var headerSelector = new TokenSelector(headerName, authScheme);
-            tokenSelectors.add(headerSelector);
-            processors.add(new TokenProcessor.StaticStrict(headerSelector, token, new PrincipalAndAuthorities(principal, authorities)));
+            final var hs = new HeaderAndScheme(headerName, authScheme.toUpperCase().trim() + " ");
+            headerAndSchemes.add(hs);
+            processors.add(new TokenProcessor.StaticStrict(hs, token, new PrincipalAndAuthorities(principal, authorities)));
             return this;
         }
 
@@ -130,7 +96,6 @@ public class HttpHeaderAuthentication {
             final var sgas = Stream.of(authorities).map(SimpleGrantedAuthority::new).toList();
             return basic(username, password, principal, sgas);
         }
-
 
         public Configurer processor(TokenProcessor processor) {
             processors.add(processor);
@@ -162,7 +127,7 @@ public class HttpHeaderAuthentication {
         @Override
         public void configure(HttpSecurity http) {
             final var authenticationManager = http.getSharedObject(AuthenticationManager.class);
-            final var filter = new HttpHeaderAuthenticationFilter(authenticationManager, tokenSelectors);
+            final var filter = new HttpHeaderAuthenticationFilter(authenticationManager, headerAndSchemes);
             postProcess(filter);
             http.authenticationProvider(new HttpHeaderAuthenticationProvider(makeProcessors(processors, jwsProcessors, jweProcessors)));
             http.addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class);
@@ -176,12 +141,12 @@ public class HttpHeaderAuthentication {
 
     public static class UnauthenticatedToken extends AbstractAuthenticationToken {
 
-        private final TokenSelector tokenSelector;
+        private final HeaderAndScheme hs;
         private final String token;
 
-        public UnauthenticatedToken(TokenSelector tokenSelector, String token, HttpServletRequest request) {
+        public UnauthenticatedToken(HeaderAndScheme hs, String token, HttpServletRequest request) {
             super(null);
-            this.tokenSelector = tokenSelector;
+            this.hs = hs;
             this.token = token;
             super.setAuthenticated(false);
             super.setDetails(new WebAuthenticationDetails(request));
@@ -197,8 +162,8 @@ public class HttpHeaderAuthentication {
             return token;
         }
 
-        public TokenSelector getTokenSelector() {
-            return tokenSelector;
+        public HeaderAndScheme getHeaderAndScheme() {
+            return hs;
         }
     }
 
@@ -228,40 +193,40 @@ public class HttpHeaderAuthentication {
 
     public interface TokenProcessor {
 
-        HttpHeaderAuthentication.PrincipalAndAuthorities process(TokenSelector tokenSelector, String token);
+        HttpHeaderAuthentication.PrincipalAndAuthorities process(HeaderAndScheme hs, String token);
         public static class StaticLax implements TokenProcessor {
 
-            private final TokenSelector tokenSelector;
+            private final HeaderAndScheme hs;
             private final String token;
             private final HttpHeaderAuthentication.PrincipalAndAuthorities paa;
 
-            public StaticLax(TokenSelector tokenSelector, String token, PrincipalAndAuthorities paa) {
-                this.tokenSelector = tokenSelector;
+            public StaticLax(HeaderAndScheme hs, String token, PrincipalAndAuthorities paa) {
+                this.hs = hs;
                 this.token = token;
                 this.paa = paa;
             }
 
             @Override
-            public HttpHeaderAuthentication.PrincipalAndAuthorities process(TokenSelector tokenSelector, String token) {
-                return this.tokenSelector.equals(tokenSelector) && this.token.equals(token) ? paa : null;
+            public HttpHeaderAuthentication.PrincipalAndAuthorities process(HeaderAndScheme hs, String token) {
+                return this.hs.equals(hs) && this.token.equals(token) ? paa : null;
             }
         }
 
         public static class StaticStrict implements TokenProcessor {
 
-            private final TokenSelector tokenSelector;
+            private final HeaderAndScheme hs;
             private final String token;
             private final HttpHeaderAuthentication.PrincipalAndAuthorities paa;
 
-            public StaticStrict(TokenSelector tokenSelector, String token, HttpHeaderAuthentication.PrincipalAndAuthorities paa) {
-                this.tokenSelector = tokenSelector;
+            public StaticStrict(HeaderAndScheme hs, String token, HttpHeaderAuthentication.PrincipalAndAuthorities paa) {
+                this.hs = hs;
                 this.token = token;
                 this.paa = paa;
             }
 
             @Override
-            public HttpHeaderAuthentication.PrincipalAndAuthorities process(TokenSelector tokenSelector, String token) {
-                if (this.tokenSelector.equals(tokenSelector) && !this.token.equals(token)) {
+            public HttpHeaderAuthentication.PrincipalAndAuthorities process(HeaderAndScheme hs, String token) {
+                if (this.hs.equals(hs) && !this.token.equals(token)) {
                     throw new BadCredentialsException("unknown token");
                 }
                 return paa;
