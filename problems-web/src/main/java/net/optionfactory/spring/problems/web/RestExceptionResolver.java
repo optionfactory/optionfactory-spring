@@ -1,10 +1,5 @@
 package net.optionfactory.spring.problems.web;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
@@ -37,7 +32,10 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolver;
-import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
+import org.springframework.web.servlet.view.json.JacksonJsonView;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.exc.UnrecognizedPropertyException;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * A custom exception resolver resolving Spring and Jackson2 exceptions thrown
@@ -48,20 +46,19 @@ import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
  *   {"type": "", "context": "fieldName", "reason": a field validation error", "details": null},
  *   {"type": "", "context": null, "reason": "a global error", "details": null},
  * ]
- * </code>
- * Content-Type header is set to <code>application/failures+json</code>
+ * </code> Content-Type header is set to <code>application/failures+json</code>
  */
 public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
 
     private final Map<HandlerMethod, Boolean> methodToIsRest = new ConcurrentHashMap<>();
-    private final ObjectMapper mapper;
+    private final JsonMapper mapper;
     private final ProblemTransformer[] transformers;
 
     public enum Options {
         INCLUDE_DETAILS, OMIT_DETAILS;
     }
 
-    public RestExceptionResolver(ObjectMapper mapper, Options options, ProblemTransformer... transformers) {
+    public RestExceptionResolver(JsonMapper mapper, Options options, ProblemTransformer... transformers) {
         this.mapper = mapper;
         this.transformers = options == Options.INCLUDE_DETAILS ? transformers : withOmitDetails(transformers);
     }
@@ -84,24 +81,18 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 logger.debug(String.format("Unrecognized property at %s: %s", requestUri, problem));
                 yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(problem));
             }
-            case InvalidFormatException inner -> {
-                final String path = inner.getPath().stream().map(p -> p.getFieldName()).collect(Collectors.joining("."));
-                final Problem problem = Problem.of("INVALID_FORMAT", path, "Invalid format", inner.getMessage());
+            case JacksonException inner -> {
+                final String path = inner.getPath().stream().map(p -> p.getPropertyName()).collect(Collectors.joining("."));
+                final Problem problem;
+                if (path.isEmpty()) {
+                    final Map<String, Object> details = new ConcurrentHashMap<>();
+                    details.put("location", inner.getLocation());
+                    details.put("message", cause.getMessage());
+                    problem = Problem.of("UNPARSEABLE_MESSAGE", Problem.NO_CONTEXT, "Unpearsable message", details);
+                } else {
+                    problem = Problem.of("INVALID_FORMAT", path, "Invalid format", inner.getMessage());
+                }
                 logger.debug(String.format("Invalid format at %s: %s", requestUri, problem));
-                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(problem));
-            }
-            case JsonMappingException inner -> {
-                final String path = inner.getPath().stream().map(p -> p.getFieldName()).collect(Collectors.joining("."));
-                final Problem problem = Problem.of("INVALID_FORMAT", path, "Invalid format", inner.getMessage());
-                logger.debug(String.format("Json mapping exception at %s: %s", requestUri, problem));
-                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(problem));
-            }
-            case JsonParseException inner -> {
-                final Map<String, Object> details = new ConcurrentHashMap<>();
-                details.put("location", inner.getLocation());
-                details.put("message", cause.getMessage());
-                final Problem problem = Problem.of("UNPARSEABLE_MESSAGE", Problem.NO_CONTEXT, "Unpearsable message", details);
-                logger.debug(String.format("Unparseable message: %s", problem.toString()));
                 yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(problem));
             }
             case null, default -> {
@@ -216,9 +207,8 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
 
         response.setStatus(statusAndErrors.status.value());
 
-        final MappingJackson2JsonView view = new MappingJackson2JsonView();
+        final JacksonJsonView view = new JacksonJsonView(mapper);
         view.setExtractValueFromSingleKeyModel(true);
-        view.setObjectMapper(mapper);
         view.setContentType("application/failures+json");
         return new ModelAndView(view, "errors", transformedFailures);
     }

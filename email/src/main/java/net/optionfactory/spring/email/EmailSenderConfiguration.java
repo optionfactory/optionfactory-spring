@@ -3,8 +3,8 @@ package net.optionfactory.spring.email;
 import java.time.Duration;
 import java.util.Optional;
 import javax.net.ssl.SSLSocketFactory;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 public record EmailSenderConfiguration(

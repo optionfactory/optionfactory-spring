@@ -1,9 +1,8 @@
 package net.optionfactory.spring.marshaling.jackson.quirks;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 public class RenameTest {
 
@@ -12,8 +11,8 @@ public class RenameTest {
     }
 
     @Test
-    public void canSerializeWithoutQuirksModule() throws JsonProcessingException {
-        final var om = new ObjectMapper();
+    public void canSerializeWithoutQuirksModule() {
+        final var om = new JsonMapper();
         final var got = om.writeValueAsString(new Bean("a"));
         final var expected = """
         {"originalName":"a"}
@@ -22,8 +21,8 @@ public class RenameTest {
     }
 
     @Test
-    public void canDeserializeWithoutQuirksModule() throws JsonProcessingException {
-        final var om = new ObjectMapper();
+    public void canDeserializeWithoutQuirksModule() {
+        final var om = new JsonMapper();
         final var source = """
         {"originalName":"a"}
         """;
@@ -32,9 +31,9 @@ public class RenameTest {
     }
 
     @Test
-    public void canSerialize() throws JsonProcessingException {
-        final var om = new ObjectMapper();
-        om.registerModule(Quirks.defaults().build());
+    public void canSerialize()  {
+        final var om = JsonMapper.builder().addModule(Quirks.defaults().build()).build();
+        
         String got = om.writeValueAsString(new Bean("a"));
         final var expected = """
         {"renamed":"a"}
@@ -43,9 +42,8 @@ public class RenameTest {
     }
 
     @Test
-    public void canDeserialize() throws JsonProcessingException {
-        final var om = new ObjectMapper();
-        om.registerModule(Quirks.defaults().build());
+    public void canDeserialize()  {
+        final var om = JsonMapper.builder().addModule(Quirks.defaults().build()).build();
         final var source = """
         {"renamed":"a"}
         """;

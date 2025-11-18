@@ -1,6 +1,5 @@
 package net.optionfactory.spring.upstream.examples;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.ObservationRegistry;
 import java.util.Map;
 import java.util.Optional;
@@ -23,6 +22,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.GetExchange;
+import tools.jackson.databind.json.JsonMapper;
 
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = {ClientConfig.class})
@@ -46,7 +46,7 @@ public class UpstreamRestExampleTest {
         ) {
             final boolean isMock = "mock".equals(type);
 
-            final ObjectMapper mapper = new ObjectMapper();
+            final JsonMapper mapper = new JsonMapper();
 
             final var oauthClient = UpstreamBuilder.named(OauthClient.class, "example-auth")
                     .requestFactoryMockIf(isMock, c -> {

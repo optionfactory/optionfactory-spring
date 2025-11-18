@@ -1,6 +1,5 @@
 package net.optionfactory.spring.upstream.mocks;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -13,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
 import org.thymeleaf.dialect.IDialect;
+import tools.jackson.databind.json.JsonMapper;
 
 public class MocksCustomizer {
 
@@ -38,17 +38,17 @@ public class MocksCustomizer {
         return jsont().thymeleaf();
     }
 
-    public MocksCustomizer jsont(String templateSuffix, ObjectMapper mapper) {
+    public MocksCustomizer jsont(String templateSuffix, JsonMapper mapper) {
         this.renderers.add(new JsonTemplateRenderer(templateSuffix, mapper));
         return this;
     }
 
-    public MocksCustomizer jsont(ObjectMapper mapper) {
+    public MocksCustomizer jsont(JsonMapper mapper) {
         return jsont(".tpl.json", mapper);
     }
 
     public MocksCustomizer jsont() {
-        return jsont(".tpl.json", new ObjectMapper());
+        return jsont(".tpl.json", new JsonMapper());
     }
 
     public MocksCustomizer thymeleaf(String templateSuffix, IDialect... dialects) {

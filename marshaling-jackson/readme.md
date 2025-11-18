@@ -1,6 +1,6 @@
 # optionfactory-spring/marshaling-jackson
 
-Jackson modules and adapters. Notably, the Quirks module handles per-`ObjectMapper` serialization/deseralization quirks.
+Jackson modules and adapters. Notably, the Quirks module handles per-`JsonMapper` serialization/deseralization quirks.
 
 ## Maven
 

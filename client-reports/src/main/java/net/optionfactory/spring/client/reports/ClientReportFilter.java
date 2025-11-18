@@ -1,7 +1,5 @@
 package net.optionfactory.spring.client.reports;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,6 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 public class ClientReportFilter<ET> extends OncePerRequestFilter {
 
@@ -28,7 +28,7 @@ public class ClientReportFilter<ET> extends OncePerRequestFilter {
     private final boolean log;
     private final BiFunction<Object, JsonNode, ET> eventFactory;
     private final Function<Object, String> principalRenderer;
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final JsonMapper mapper = new JsonMapper();
 
     public ClientReportFilter(String name, String reportUri, ApplicationEventPublisher publisher, int maxBodySize, boolean log,
             BiFunction<Object, JsonNode, ET> eventFactory,

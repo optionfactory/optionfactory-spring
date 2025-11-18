@@ -1,8 +1,5 @@
 package net.optionfactory.spring.upstream.buffering;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;
@@ -11,6 +8,7 @@ import net.optionfactory.spring.upstream.UpstreamBuilder;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.web.service.annotation.GetExchange;
+import tools.jackson.dataformat.xml.XmlMapper;
 
 public class StreamingXmlClientTest {
 

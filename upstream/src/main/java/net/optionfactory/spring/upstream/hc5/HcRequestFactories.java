@@ -22,11 +22,11 @@ import org.apache.hc.client5.http.ssl.TlsSocketStrategy;
 import org.apache.hc.core5.http.ConnectionReuseStrategy;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.io.SocketConfig;
+import org.jspecify.annotations.Nullable;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.lang.Nullable;
 
 public class HcRequestFactories {
 

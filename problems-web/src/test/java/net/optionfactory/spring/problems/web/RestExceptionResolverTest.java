@@ -1,6 +1,5 @@
 package net.optionfactory.spring.problems.web;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import net.optionfactory.spring.problems.Failure;
 import net.optionfactory.spring.problems.Problem;
@@ -14,7 +13,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
+import org.springframework.web.servlet.view.json.JacksonJsonView;
+import tools.jackson.databind.json.JsonMapper;
 
 public class RestExceptionResolverTest {
 
@@ -25,7 +25,7 @@ public class RestExceptionResolverTest {
 
     @Test
     public void exceptionsAreResolvedWithMappingJackson2JsonView() throws NoSuchMethodException {
-        final var mapper = new ObjectMapper();
+        final var mapper = new JsonMapper();
         final var er = new RestExceptionResolver(mapper, Options.INCLUDE_DETAILS);
         final var hm = new HandlerMethod(new RestExceptionResolverTest(), RestExceptionResolverTest.class.getMethod("fakeControllerMethod"));
         final MockHttpServletRequest req = new MockHttpServletRequest();
@@ -34,12 +34,12 @@ public class RestExceptionResolverTest {
 
         final ModelAndView got = er.resolveException(req, res, hm, exception);
 
-        Assert.assertTrue(got.getView() instanceof MappingJackson2JsonView);
+        Assert.assertTrue(got.getView() instanceof JacksonJsonView);
     }
 
     @Test
     public void exceptionsAreReportedAsProblemsInModel() throws NoSuchMethodException {
-        final var mapper = new ObjectMapper();
+        final var mapper = new JsonMapper();
         final var er = new RestExceptionResolver(mapper, Options.INCLUDE_DETAILS);
         final var hm = new HandlerMethod(new RestExceptionResolverTest(), RestExceptionResolverTest.class.getMethod("fakeControllerMethod"));
 
@@ -54,7 +54,7 @@ public class RestExceptionResolverTest {
 
     @Test
     public void detailsAreNullWhenOptionsIsOmitDetails() throws NoSuchMethodException {
-        final var mapper = new ObjectMapper();
+        final var mapper = new JsonMapper();
         final RestExceptionResolver er = new RestExceptionResolver(mapper, Options.OMIT_DETAILS);
         final HandlerMethod hm = new HandlerMethod(new RestExceptionResolverTest(), RestExceptionResolverTest.class.getMethod("fakeControllerMethod"));
 
@@ -70,7 +70,7 @@ public class RestExceptionResolverTest {
 
     @Test
     public void detailsAreSerializedWhenOptionsIsIncludeDetails() throws NoSuchMethodException {
-        final var mapper = new ObjectMapper();
+        final var mapper = new JsonMapper();
         final RestExceptionResolver er = new RestExceptionResolver(mapper, Options.INCLUDE_DETAILS);
         final HandlerMethod hm = new HandlerMethod(new RestExceptionResolverTest(), RestExceptionResolverTest.class.getMethod("fakeControllerMethod"));
 

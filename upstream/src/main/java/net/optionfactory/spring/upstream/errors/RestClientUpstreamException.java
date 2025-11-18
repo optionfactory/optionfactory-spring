@@ -1,9 +1,9 @@
 package net.optionfactory.spring.upstream.errors;
 
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
-import org.springframework.lang.Nullable;
 import org.springframework.web.client.RestClientResponseException;
 
 public class RestClientUpstreamException extends RestClientResponseException {

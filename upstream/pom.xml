@@ -4,7 +4,7 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>22.6</version>
+        <version>23.0-SNAPSHOT</version>
     </parent>
     <artifactId>upstream</artifactId>
     <description>optionfactory-spring REST upstream core project</description>
@@ -33,9 +33,13 @@
             <artifactId>httpclient5</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
+            <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
+        <dependency>
+            <groupId>tools.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-xml</artifactId>
+        </dependency>                        
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -58,11 +62,6 @@
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>jsr305</artifactId>
         </dependency>              
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-xml</artifactId>
-            <scope>test</scope>
-        </dependency>                
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j2-impl</artifactId>

@@ -1,8 +1,5 @@
 package net.optionfactory.spring.data.jpa.web.filtering;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -13,6 +10,8 @@ import org.springframework.web.bind.support.WebDataBinderFactory;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 public class FilterRequestArgumentResolver implements HandlerMethodArgumentResolver {
 
@@ -22,14 +21,14 @@ public class FilterRequestArgumentResolver implements HandlerMethodArgumentResol
 
     };
     private final String parameterName;
-    private final ObjectMapper mapper;
+    private final JsonMapper mapper;
 
-    public FilterRequestArgumentResolver(String parameterName, ObjectMapper mapper) {
+    public FilterRequestArgumentResolver(String parameterName, JsonMapper mapper) {
         this.parameterName = parameterName;
         this.mapper = mapper;
     }
 
-    public FilterRequestArgumentResolver(ObjectMapper mapper) {
+    public FilterRequestArgumentResolver(JsonMapper mapper) {
         this(DEFAULT_PARAMETER_NAME, mapper);
     }
 
@@ -47,11 +46,7 @@ public class FilterRequestArgumentResolver implements HandlerMethodArgumentResol
         final var parameters = Stream.of(values)
                 .filter(value -> !value.isBlank())
                 .flatMap(value -> {
-                    try {
-                        return mapper.readValue(value, PARAMETERS_TYPE).entrySet().stream();
-                    } catch (JsonProcessingException exception) {
-                        throw new IllegalArgumentException(exception);
-                    }
+                    return mapper.readValue(value, PARAMETERS_TYPE).entrySet().stream();
                 })
                 .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (a, b) -> b, HashMap::new));
         return new FilterRequest(parameters);

@@ -1,6 +1,5 @@
 package net.optionfactory.spring.data.jpa.web.examples;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
 import java.util.List;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
@@ -19,8 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
@@ -34,6 +32,7 @@ import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import tools.jackson.databind.json.JsonMapper;
 
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = WebConfig.class)
@@ -45,26 +44,28 @@ public class DataJpaWebExampleTest {
     public static class WebConfig implements WebMvcConfigurer {
 
         @Bean
-        public ObjectMapper restObjectMapper() {
-            return new Jackson2ObjectMapperBuilder()
+        public JsonMapper restJsonMapper() {
+            return JsonMapper.builder()
                     /**
                      * Registering this mixin simplifies the Page mapping
                      * exposing only size and data.
                      */
-                    .mixIn(Page.class, PageMixin.class)
+                    .addMixIn(Page.class, PageMixin.class)
                     .build();
         }
 
         @Inject
-        public ObjectMapper restObjectMapper;
+        public JsonMapper restJsonMapper;
+        
+        
 
         @Override
         public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
             /**
-             * the ObjectMapper needs to be configured in the
-             * MappingJackson2HttpMessageConverter so the Page mixin is used
+             * the jsonMapper needs to be configured in the
+             * JacksonJsonHttpMessageConverter so the Page mixin is used
              */
-            converters.add(new MappingJackson2HttpMessageConverter(restObjectMapper));
+            converters.add(new JacksonJsonHttpMessageConverter(restJsonMapper));
         }
 
         @Override
@@ -77,7 +78,7 @@ public class DataJpaWebExampleTest {
              * this resolver handles mapping FilterRequests from query
              * parameters
              */
-            resolvers.add(new FilterRequestArgumentResolver(restObjectMapper));
+            resolvers.add(new FilterRequestArgumentResolver(restJsonMapper));
         }
 
         @Bean

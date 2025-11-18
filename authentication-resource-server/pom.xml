@@ -4,7 +4,7 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>22.6</version>
+        <version>23.0-SNAPSHOT</version>
     </parent>
     <artifactId>authentication-resource-server</artifactId>
     <description>optionfactory-spring authentication-resource-server</description>

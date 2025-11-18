@@ -1,22 +1,20 @@
 package net.optionfactory.spring.marshaling.jackson.quirks.time;
 
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.SettableBeanProperty;
-import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
-import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import net.optionfactory.spring.marshaling.jackson.quirks.QuirkHandler;
 import net.optionfactory.spring.marshaling.jackson.quirks.Quirks;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.deser.SettableBeanProperty;
+import tools.jackson.databind.ser.BeanPropertyWriter;
 
 public class LocalDateTimeAsIsoInstantQuirkHandler implements QuirkHandler<Quirks.LocalDateTimeAsIsoInstant> {
 
@@ -31,7 +29,7 @@ public class LocalDateTimeAsIsoInstantQuirkHandler implements QuirkHandler<Quirk
         final var instantOffset = new Offset(ann.ioffset(), ann.iunit());
         final var localDateOffset = new Offset(ann.ldoffset(), ann.ldunit());
         final var serializer = new Serializer(zoneId, instantOffset, localDateOffset);
-        bpw.assignSerializer((JsonSerializer) serializer);
+        bpw.assignSerializer((ValueSerializer) serializer);
         return bpw;
 
     }
@@ -49,7 +47,7 @@ public class LocalDateTimeAsIsoInstantQuirkHandler implements QuirkHandler<Quirk
 
     }
 
-    public static class Deserializer extends JsonDeserializer<LocalDateTime> {
+    public static class Deserializer extends ValueDeserializer<LocalDateTime> {
 
         private final ZoneId zid;
         private final Offset instantOffset;
@@ -62,8 +60,8 @@ public class LocalDateTimeAsIsoInstantQuirkHandler implements QuirkHandler<Quirk
         }
 
         @Override
-        public LocalDateTime deserialize(JsonParser jp, DeserializationContext dc) throws IOException, JacksonException {
-            return Instant.parse(jp.getText())
+        public LocalDateTime deserialize(JsonParser jp, DeserializationContext dc) {
+            return Instant.parse(jp.getString())
                     .minus(instantOffset.amount(), instantOffset.unit())
                     .atZone(zid)
                     .toLocalDateTime()
@@ -71,13 +69,13 @@ public class LocalDateTimeAsIsoInstantQuirkHandler implements QuirkHandler<Quirk
         }
 
         @Override
-        public LocalDateTime getNullValue(DeserializationContext ctxt) throws JsonMappingException {
+        public LocalDateTime getNullValue(DeserializationContext ctxt) {
             return null;
         }
 
     }
 
-    public static class Serializer extends JsonSerializer<LocalDateTime> {
+    public static class Serializer extends ValueSerializer<LocalDateTime> {
 
         private final ZoneId zid;
         private final Offset instantOffset;
@@ -88,17 +86,18 @@ public class LocalDateTimeAsIsoInstantQuirkHandler implements QuirkHandler<Quirk
             this.instantOffset = instantOffset;
             this.localDateOffset = localDateOffset;
         }
-
+        
+        
         @Override
-        public void serialize(LocalDateTime t, JsonGenerator jg, SerializerProvider sp) throws IOException {
-            final var asIsoInstant = t
+        public void serialize(LocalDateTime value, JsonGenerator gen, SerializationContext ctxt) throws JacksonException {
+            final var asIsoInstant = value
                     .plus(localDateOffset.amount(), localDateOffset.unit())
                     .atZone(zid)
                     .toInstant()
                     .plus(instantOffset.amount(), instantOffset.unit())
                     .toString();
 
-            jg.writeString(asIsoInstant);
+            gen.writeString(asIsoInstant);
         }
     }
 

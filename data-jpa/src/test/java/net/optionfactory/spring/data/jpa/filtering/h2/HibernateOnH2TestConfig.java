@@ -1,55 +1,54 @@
 package net.optionfactory.spring.data.jpa.filtering.h2;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import net.optionfactory.spring.data.jpa.Jackson3JsonFormatMapper;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import jakarta.persistence.EntityManagerFactory;
 import java.beans.PropertyVetoException;
 import java.util.Properties;
 import javax.sql.DataSource;
 import net.optionfactory.spring.data.jpa.filtering.EnableJpaWhitelistFilteringRepositories;
-import org.hibernate.SessionFactory;
-import org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy;
 import org.hibernate.boot.model.naming.ImplicitNamingStrategyComponentPathImpl;
+import org.hibernate.boot.model.naming.PhysicalNamingStrategySnakeCaseImpl;
 import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.type.format.jackson.JacksonJsonFormatMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
-import org.springframework.orm.hibernate5.HibernateTransactionManager;
-import org.springframework.orm.hibernate5.LocalSessionFactoryBuilder;
+import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
+import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import tools.jackson.databind.json.JsonMapper;
 
 @Configuration
 @EnableJpaWhitelistFilteringRepositories(basePackageClasses = HibernateOnH2TestConfig.class)
-@PropertySource(value = "classpath:test.properties")
 public class HibernateOnH2TestConfig {
 
     @Bean
-    public ObjectMapper hibernateMapper() {
-        final var mapper = new ObjectMapper();
-        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        return mapper;
+    public JsonMapper hibernateMapper() {
+        return new JsonMapper();
     }
-    
+
     @Bean
-    public SessionFactory entityManagerFactory(DataSource dataSource, ObjectMapper hibernateMapper) {
+    public LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource dataSource, JsonMapper hibernateMapper) {
         final var properties = new Properties();
         properties.put(AvailableSettings.HBM2DDL_AUTO, "update");
-        properties.put(AvailableSettings.SHOW_SQL, false);
+        properties.put(AvailableSettings.SHOW_SQL, true);
         properties.put(AvailableSettings.FORMAT_SQL, false);
         properties.put(AvailableSettings.USE_SQL_COMMENTS, false);
         properties.put(AvailableSettings.GENERATE_STATISTICS, false);
         properties.put(AvailableSettings.USE_SECOND_LEVEL_CACHE, false);
         properties.put(AvailableSettings.USE_QUERY_CACHE, false);
-        properties.put(AvailableSettings.JSON_FORMAT_MAPPER, new JacksonJsonFormatMapper(hibernateMapper));
-        final var builder = new LocalSessionFactoryBuilder(dataSource);
-        builder.scanPackages(HibernateOnH2TestConfig.class.getPackage().getName());
-        builder.setPhysicalNamingStrategy(new CamelCaseToUnderscoresNamingStrategy());
-        builder.setImplicitNamingStrategy(new ImplicitNamingStrategyComponentPathImpl());
-        builder.addProperties(properties);
-        return builder.buildSessionFactory();
+        properties.put(AvailableSettings.JSON_FORMAT_MAPPER, new Jackson3JsonFormatMapper(hibernateMapper));
+        properties.put(AvailableSettings.PHYSICAL_NAMING_STRATEGY, new PhysicalNamingStrategySnakeCaseImpl());
+        properties.put(AvailableSettings.IMPLICIT_NAMING_STRATEGY, new ImplicitNamingStrategyComponentPathImpl());
+
+        final var factory = new LocalContainerEntityManagerFactoryBean();
+        factory.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
+        factory.setPackagesToScan(HibernateOnH2TestConfig.class.getPackage().getName());
+        factory.setDataSource(dataSource);
+        factory.setJpaProperties(properties);
+        return factory;
     }
 
     @Bean
@@ -58,13 +57,13 @@ public class HibernateOnH2TestConfig {
         config.setJdbcUrl("jdbc:h2:mem:testdb");
         config.setUsername("sa");
         config.setPassword("");
-        return new HikariDataSource(config);        
+        return new HikariDataSource(config);
 
     }
 
     @Bean
-    public PlatformTransactionManager transactionManager(SessionFactory hibernate) {
-        return new HibernateTransactionManager(hibernate);
+    public PlatformTransactionManager transactionManager(EntityManagerFactory entityManagerFactory) {
+        return new JpaTransactionManager(entityManagerFactory);
     }
 
     @Bean

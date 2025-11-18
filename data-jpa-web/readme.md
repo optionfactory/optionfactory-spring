@@ -19,7 +19,7 @@ Note: `net.optionfactory.spring:data-jpa` is a transitive dependency
 https://github.com/optionfactory/optionfactory-spring/blob/88478051ee362442aad58ccab3943b846dc19d7d/data-jpa-web/src/test/java/net/optionfactory/spring/data/jpa/web/examples/DataJpaWebExampleTest.java#L69-L81
 
 
-`PageMixin` can be configured on the objectMapper to handle seralization of `Page`s in a simplified form:
+`PageMixin` can be configured on the jsonMapper to handle seralization of `Page`s in a simplified form:
 
 https://github.com/optionfactory/optionfactory-spring/blob/88478051ee362442aad58ccab3943b846dc19d7d/data-jpa-web/src/test/java/net/optionfactory/spring/data/jpa/web/examples/DataJpaWebExampleTest.java#L47-L56
 

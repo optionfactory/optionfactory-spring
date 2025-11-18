@@ -1,13 +1,13 @@
 package net.optionfactory.spring.upstream.paths;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.MissingNode;
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.MissingNode;
 
 public class JsonPath {
 

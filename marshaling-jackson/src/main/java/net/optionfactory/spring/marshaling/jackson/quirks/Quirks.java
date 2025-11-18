@@ -1,7 +1,5 @@
 package net.optionfactory.spring.marshaling.jackson.quirks;
 
-import com.fasterxml.jackson.core.Version;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.time.temporal.ChronoUnit;
@@ -16,6 +14,8 @@ import net.optionfactory.spring.marshaling.jackson.quirks.text.TrimQuirkHandler;
 import net.optionfactory.spring.marshaling.jackson.quirks.time.LocalDateAsIsoInstantQuirkHandler;
 import net.optionfactory.spring.marshaling.jackson.quirks.time.LocalDateTimeAsIsoInstantQuirkHandler;
 import net.optionfactory.spring.marshaling.jackson.quirks.time.TemporalFormatQuirkHandler;
+import tools.jackson.core.Version;
+import tools.jackson.databind.module.SimpleModule;
 
 public interface Quirks {
 

@@ -1,6 +1,5 @@
 package net.optionfactory.spring.upstream.mocks.rendering;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
 import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
@@ -16,6 +15,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.GetExchange;
+import tools.jackson.databind.json.JsonMapper;
 
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = {ClientConfig.class})
@@ -35,7 +35,7 @@ public class MocksReferencingBeansTest {
 
         @Bean
         public ExampleMockClient client(ConfigurableApplicationContext ac) {
-            final ObjectMapper mapper = new ObjectMapper();
+            final JsonMapper mapper = new JsonMapper();
 
             return UpstreamBuilder.create(ExampleMockClient.class)
                     .requestFactoryMock(c -> c.jsont().thymeleaf())

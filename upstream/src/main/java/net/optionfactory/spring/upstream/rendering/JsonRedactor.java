@@ -1,21 +1,21 @@
 package net.optionfactory.spring.upstream.rendering;
 
-import com.fasterxml.jackson.core.JsonPointer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Map;
 import org.springframework.core.io.InputStreamSource;
+import tools.jackson.core.JsonPointer;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 public class JsonRedactor {
 
-    private final ObjectMapper om;
+    private final JsonMapper om;
     private final Map<JsonPointer, String> jsonPointers;
 
-    public JsonRedactor(ObjectMapper om, Map<JsonPointer, String> jsonPointers) {
+    public JsonRedactor(JsonMapper om, Map<JsonPointer, String> jsonPointers) {
         this.om = om;
         this.jsonPointers = jsonPointers;
     }

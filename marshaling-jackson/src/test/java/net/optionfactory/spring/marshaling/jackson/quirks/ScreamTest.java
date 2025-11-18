@@ -1,10 +1,9 @@
 package net.optionfactory.spring.marshaling.jackson.quirks;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import net.optionfactory.spring.marshaling.jackson.quirks.Quirks.Scream;
 import org.junit.Assert;
 import org.junit.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 public class ScreamTest {
 
@@ -13,8 +12,8 @@ public class ScreamTest {
     }
 
     @Test
-    public void canSerializeWithoutQuirksModule() throws JsonProcessingException {
-        final var om = new ObjectMapper();
+    public void canSerializeWithoutQuirksModule() {
+        final var om = JsonMapper.builder().build();
         final var got = om.writeValueAsString(new Bean("a"));
         final var expected = """
         {"assignedValue":"a"}
@@ -23,8 +22,8 @@ public class ScreamTest {
     }
 
     @Test
-    public void canDeserializeWithoutQuirksModule() throws JsonProcessingException {
-        final var om = new ObjectMapper();
+    public void canDeserializeWithoutQuirksModule(){
+        final var om = JsonMapper.builder().build();
         final var source = """
         {"assignedValue":"a"}
         """;
@@ -33,9 +32,8 @@ public class ScreamTest {
     }
 
     @Test
-    public void canSerialize() throws JsonProcessingException {
-        final var om = new ObjectMapper();
-        om.registerModule(Quirks.defaults().build());
+    public void canSerialize() {
+        final var om = JsonMapper.builder().addModule(Quirks.defaults().build()).build();
         String got = om.writeValueAsString(new Bean("a"));
         final var expected = """
         {"ASSIGNED_VALUE":"a"}
@@ -44,9 +42,8 @@ public class ScreamTest {
     }
 
     @Test
-    public void canDeserialize() throws JsonProcessingException {
-        final var om = new ObjectMapper();
-        om.registerModule(Quirks.defaults().build());
+    public void canDeserialize() {
+        final var om = JsonMapper.builder().addModule(Quirks.defaults().build()).build();
         final var source = """
         {"ASSIGNED_VALUE":"a"}
         """;

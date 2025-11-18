@@ -1,18 +1,16 @@
 package net.optionfactory.spring.marshaling.jackson.quirks.bool;
 
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.SettableBeanProperty;
-import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
-import java.io.IOException;
 import net.optionfactory.spring.marshaling.jackson.quirks.QuirkHandler;
 import net.optionfactory.spring.marshaling.jackson.quirks.Quirks;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.deser.SettableBeanProperty;
+import tools.jackson.databind.ser.BeanPropertyWriter;
 
 public class BooleanQuirkHandler implements QuirkHandler<Quirks.Bool> {
 
@@ -23,7 +21,7 @@ public class BooleanQuirkHandler implements QuirkHandler<Quirks.Bool> {
 
     @Override
     public BeanPropertyWriter serialization(Quirks.Bool ann, BeanPropertyWriter bpw) {
-        bpw.assignSerializer((JsonSerializer) new Serializer(ann.t(), ann.f()));
+        bpw.assignSerializer((ValueSerializer) new Serializer(ann.t(), ann.f()));
         return bpw;
     }
 
@@ -34,7 +32,7 @@ public class BooleanQuirkHandler implements QuirkHandler<Quirks.Bool> {
         return sbp.withValueDeserializer(deserializer);
     }
 
-    public static class Deserializer extends JsonDeserializer<Boolean> {
+    public static class Deserializer extends ValueDeserializer<Boolean> {
 
         private final String t;
         private final boolean nullable;
@@ -45,18 +43,18 @@ public class BooleanQuirkHandler implements QuirkHandler<Quirks.Bool> {
         }
 
         @Override
-        public Boolean deserialize(JsonParser jp, DeserializationContext dc) throws IOException, JacksonException {
+        public Boolean deserialize(JsonParser jp, DeserializationContext dc) {
             return t.equals(jp.getText());
         }
 
         @Override
-        public Boolean getNullValue(DeserializationContext ctxt) throws JsonMappingException {
+        public Boolean getNullValue(DeserializationContext ctxt) {
             return nullable ? null : false;
         }
 
     }
 
-    public static class Serializer extends JsonSerializer<Boolean> {
+    public static class Serializer extends ValueSerializer<Boolean> {
 
         private final String t;
         private final String f;
@@ -67,8 +65,8 @@ public class BooleanQuirkHandler implements QuirkHandler<Quirks.Bool> {
         }
 
         @Override
-        public void serialize(Boolean v, JsonGenerator jg, SerializerProvider sp) throws IOException {
-            jg.writeString(v ? t : f);
+        public void serialize(Boolean v, JsonGenerator gen, SerializationContext ctxt) throws JacksonException {
+            gen.writeString(v ? t : f);
         }
 
     }

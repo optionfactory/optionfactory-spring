@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.util.Map;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.StreamingHttpOutputMessage;

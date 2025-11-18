@@ -1,22 +1,19 @@
 package net.optionfactory.spring.marshaling.jackson.quirks.time;
 
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.SettableBeanProperty;
-import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
-import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import net.optionfactory.spring.marshaling.jackson.quirks.QuirkHandler;
 import net.optionfactory.spring.marshaling.jackson.quirks.Quirks;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.deser.SettableBeanProperty;
+import tools.jackson.databind.ser.BeanPropertyWriter;
 
 public class LocalDateAsIsoInstantQuirkHandler implements QuirkHandler<Quirks.LocalDateAsIsoInstant> {
 
@@ -31,7 +28,7 @@ public class LocalDateAsIsoInstantQuirkHandler implements QuirkHandler<Quirks.Lo
         final var instantOffset = new Offset(ann.ioffset(), ann.iunit());
         final var localDateOffset = new Offset(ann.ldoffset(), ann.ldunit());
         final var serializer = new Serializer(zoneId, instantOffset, localDateOffset);
-        bpw.assignSerializer((JsonSerializer) serializer);
+        bpw.assignSerializer((ValueSerializer) serializer);
         return bpw;
 
     }
@@ -49,7 +46,7 @@ public class LocalDateAsIsoInstantQuirkHandler implements QuirkHandler<Quirks.Lo
 
     }
 
-    public static class Deserializer extends JsonDeserializer<LocalDate> {
+    public static class Deserializer extends ValueDeserializer<LocalDate> {
 
         private final ZoneId zid;
         private final Offset instantOffset;
@@ -62,7 +59,7 @@ public class LocalDateAsIsoInstantQuirkHandler implements QuirkHandler<Quirks.Lo
         }
 
         @Override
-        public LocalDate deserialize(JsonParser jp, DeserializationContext dc) throws IOException, JacksonException {
+        public LocalDate deserialize(JsonParser jp, DeserializationContext dc) {
             return Instant.parse(jp.getText())
                     .minus(instantOffset.amount(), instantOffset.unit())
                     .atZone(zid)
@@ -71,13 +68,13 @@ public class LocalDateAsIsoInstantQuirkHandler implements QuirkHandler<Quirks.Lo
         }
 
         @Override
-        public LocalDate getNullValue(DeserializationContext ctxt) throws JsonMappingException {
+        public LocalDate getNullValue(DeserializationContext ctxt) {
             return null;
         }
 
     }
 
-    public static class Serializer extends JsonSerializer<LocalDate> {
+    public static class Serializer extends ValueSerializer<LocalDate> {
 
         private final ZoneId zid;
         private final Offset instantOffset;
@@ -88,17 +85,18 @@ public class LocalDateAsIsoInstantQuirkHandler implements QuirkHandler<Quirks.Lo
             this.instantOffset = instantOffset;
             this.localDateOffset = localDateOffset;
         }
-
+        
+        
         @Override
-        public void serialize(LocalDate t, JsonGenerator jg, SerializerProvider sp) throws IOException {
-            final var asIsoInstant = t
+        public void serialize(LocalDate value, JsonGenerator gen, SerializationContext ctxt) {
+            final var asIsoInstant = value
                     .plus(localDateOffset.amount(), localDateOffset.unit())
                     .atStartOfDay(zid)
                     .toInstant()
                     .plus(instantOffset.amount(), instantOffset.unit())
                     .toString();
 
-            jg.writeString(asIsoInstant);
+            gen.writeString(asIsoInstant);
         }
     }
 

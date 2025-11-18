@@ -1,6 +1,5 @@
 package net.optionfactory.spring.upstream.buffering;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -10,6 +9,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.service.annotation.GetExchange;
+import tools.jackson.databind.json.JsonMapper;
 
 public class StreamingClientTest {
 
@@ -32,7 +32,7 @@ public class StreamingClientTest {
     private final StreamingClient client = UpstreamBuilder.create(StreamingClient.class)
             .requestFactoryMock(c -> {
             })
-            .json(new ObjectMapper())
+            .json(new JsonMapper())
             .baseUri("http://example.com")
             .build();
 

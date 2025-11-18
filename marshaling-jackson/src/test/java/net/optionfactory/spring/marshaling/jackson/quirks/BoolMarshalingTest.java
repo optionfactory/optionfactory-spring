@@ -1,10 +1,9 @@
 package net.optionfactory.spring.marshaling.jackson.quirks;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.UncheckedIOException;
 import org.junit.Assert;
 import org.junit.Test;
+import tools.jackson.databind.exc.MismatchedInputException;
+import tools.jackson.databind.json.JsonMapper;
 
 public class BoolMarshalingTest {
 
@@ -16,27 +15,15 @@ public class BoolMarshalingTest {
 
     }
 
-    private final ObjectMapper configuredOm = new ObjectMapper();
-    private final ObjectMapper defaultOm = new ObjectMapper();
-
-    {
-        configuredOm.registerModule(Quirks.defaults().build());
-    }
+    private final JsonMapper configuredOm = JsonMapper.builder().addModule(Quirks.defaults().build()).build();
+    private final JsonMapper defaultOm = JsonMapper.builder().build();
 
     public <T> T deser(Class<T> type, boolean featureEnabled, String value) {
-        try {
-            return (featureEnabled ? configuredOm : defaultOm).readValue(value, type);
-        } catch (JsonProcessingException ex) {
-            throw new UncheckedIOException(ex);
-        }
+        return (featureEnabled ? configuredOm : defaultOm).readValue(value, type);
     }
 
     public String ser(boolean featureEnabled, Object value) {
-        try {
-            return (featureEnabled ? configuredOm : defaultOm).writeValueAsString(value);
-        } catch (JsonProcessingException ex) {
-            throw new UncheckedIOException(ex);
-        }
+        return (featureEnabled ? configuredOm : defaultOm).writeValueAsString(value);
     }
 
     @Test
@@ -132,14 +119,13 @@ public class BoolMarshalingTest {
                         """
                 )
         );
-        Assert.assertEquals("can deserialize null to nonnulable field",
-                new NonnullableSiNo(false),
-                deser(NonnullableSiNo.class, false,
-                        """
-                        {"value": null}
-                        """
-                )
-        );
+        Assert.assertThrows("cannot deserialize null to nonnulable field", MismatchedInputException.class, () -> {
+            deser(NonnullableSiNo.class, false,
+                    """
+                    {"value": null}
+                    """
+            );
+        });
     }
 
     @Test

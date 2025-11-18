@@ -13,6 +13,7 @@ import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository.
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Repositories;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Sorters;
 import org.hibernate.jpa.AvailableHints;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,7 +21,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.support.JpaEntityInformation;
 import org.springframework.data.jpa.repository.support.SimpleJpaRepository;
-import org.springframework.lang.Nullable;
 
 public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> extends SimpleJpaRepository<T, ID> {
 

@@ -1,6 +1,5 @@
 package net.optionfactory.spring.upstream;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.ObservationRegistry;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
@@ -53,6 +52,7 @@ import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Proto
 import net.optionfactory.spring.upstream.soap.SoapMessageHttpMessageConverter;
 import net.optionfactory.spring.upstream.soap.UpstreamSoapActionIninitializer;
 import net.optionfactory.spring.upstream.values.UpstreamAnnotatedPathVariableTransformer;
+import org.jspecify.annotations.Nullable;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -64,9 +64,8 @@ import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.http.converter.xml.MappingJackson2XmlHttpMessageConverter;
-import org.springframework.lang.Nullable;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
+import org.springframework.http.converter.xml.JacksonXmlHttpMessageConverter;
 import org.springframework.util.Assert;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
@@ -74,6 +73,8 @@ import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.invoker.HttpRequestValues;
 import org.springframework.web.service.invoker.HttpServiceArgumentResolver;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.dataformat.xml.XmlMapper;
 
 public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
 
@@ -361,7 +362,7 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
 
     /**
      * Configures default {@code MessageConverter}s for a SOAP client the passed
-     * ObjectMapper.
+     * XmlMapper.
      *
      * @param protocol the protocol to be used
      * @param schema the schema to be used
@@ -385,8 +386,7 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
     }
 
     /**
-     * Configures default {@code MessageConverter}s for a SOAP client the passed
-     * ObjectMapper.
+     * Configures default {@code MessageConverter}s for a SOAP client.
      *
      * @param protocol the protocol to be used
      * @param schema the schema to be used
@@ -408,24 +408,24 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
 
     /**
      * Configures default {@code MessageConverter}s for a REST JSON/HTTP client
-     * using the passed ObjectMapper.
+     * using the passed JsonMapper.
      *
-     * @param objectMapper
+     * @param jsonMapper
      * @return this builder
      */
-    public UpstreamBuilder<T> json(ObjectMapper objectMapper) {
+    public UpstreamBuilder<T> json(JsonMapper jsonMapper) {
         restClientCustomizers.add(b -> {
             b.messageConverters(c -> {
                 c.clear();
                 final var multipart = new FormHttpMessageConverter();
-                multipart.addPartConverter(new MappingJackson2HttpMessageConverter(objectMapper));
+                multipart.addPartConverter(new JacksonJsonHttpMessageConverter(jsonMapper));
                 c.add(new ByteArrayHttpMessageConverter());
                 c.add(new StringHttpMessageConverter());
                 c.add(new ResourceHttpMessageConverter(false));
                 c.add(new InputStreamHttpMessageConverter());
-                c.add(StreamHttpMessageConverter.forJson(objectMapper));
+                c.add(StreamHttpMessageConverter.forJson(jsonMapper));
                 c.add(multipart);
-                c.add(new MappingJackson2HttpMessageConverter(objectMapper));
+                c.add(new JacksonJsonHttpMessageConverter(jsonMapper));
             });
         });
         return this;
@@ -433,24 +433,24 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
 
     /**
      * Configures default {@code MessageConverter}s for a REST XML/HTTP client
-     * using the passed ObjectMapper.
+     * using the passed XmlMapper.
      *
-     * @param objectMapper
+     * @param xmlMapper
      * @return this builder
      */
-    public UpstreamBuilder<T> xml(ObjectMapper objectMapper) {
+    public UpstreamBuilder<T> xml(XmlMapper xmlMapper) {
         restClientCustomizers.add(b -> {
             b.messageConverters(c -> {
                 c.clear();
                 final var multipart = new FormHttpMessageConverter();
-                multipart.addPartConverter(new MappingJackson2XmlHttpMessageConverter(objectMapper));
+                multipart.addPartConverter(new JacksonXmlHttpMessageConverter(xmlMapper));
                 c.add(new ByteArrayHttpMessageConverter());
                 c.add(new StringHttpMessageConverter());
                 c.add(new ResourceHttpMessageConverter(false));
                 c.add(new InputStreamHttpMessageConverter());
-                c.add(StreamHttpMessageConverter.forXml(objectMapper));
+                c.add(StreamHttpMessageConverter.forXml(xmlMapper));
                 c.add(multipart);
-                c.add(new MappingJackson2XmlHttpMessageConverter(objectMapper));
+                c.add(new JacksonXmlHttpMessageConverter(xmlMapper));
             });
         });
         return this;

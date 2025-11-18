@@ -1,16 +1,10 @@
 package net.optionfactory.spring.upstream.mocks.rendering;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
@@ -19,13 +13,18 @@ import net.optionfactory.spring.upstream.expressions.OverlayEvaluationContext;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.expression.EvaluationException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 
 public class JsonTemplateRenderer implements MocksRenderer {
 
     private final String templateSuffix;
-    private final ObjectMapper om;
+    private final JsonMapper om;
 
-    public JsonTemplateRenderer(String templateSuffix, ObjectMapper om) {
+    public JsonTemplateRenderer(String templateSuffix, JsonMapper om) {
         this.templateSuffix = templateSuffix;
         this.om = om;
     }
@@ -62,12 +61,11 @@ public class JsonTemplateRenderer implements MocksRenderer {
     }
 
     private static FragmentOrNode object(JsonNode input, Expressions expressions, OverlayEvaluationContext ctx, JsonNodeFactory jnf) throws EvaluationException {
-        final var fields = StreamSupport.stream(Spliterators.spliteratorUnknownSize(input.fieldNames(), 0), false)
-                .toList();
-
+        final var fields = input.propertyNames().stream().toList();
+        
         final var firstField = fields.isEmpty() ? null : fields.get(0);
         if (firstField != null && firstField.startsWith("#if")) {
-            final var condition = expressions.parse(input.get(firstField).textValue()).getValue(ctx, boolean.class);
+            final var condition = expressions.parse(input.get(firstField).stringValue()).getValue(ctx, boolean.class);
             if (!condition) {
                 return null;
             }
@@ -80,7 +78,7 @@ public class JsonTemplateRenderer implements MocksRenderer {
         if (firstField != null && firstField.startsWith("#each ")) {
             //needs to be expanded
             final var varName = firstField.substring("#each ".length());
-            final var varValues = expressions.parse(input.get(firstField).textValue()).getValue(ctx, Iterable.class);
+            final var varValues = expressions.parse(input.get(firstField).stringValue()).getValue(ctx, Iterable.class);
             final var otherFields = fields.subList(1, fields.size());
             final var fragmentEls = new ArrayList<JsonNode>();
             for (var value : varValues) {

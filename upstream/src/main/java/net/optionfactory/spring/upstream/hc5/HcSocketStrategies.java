@@ -15,7 +15,7 @@ import org.apache.hc.core5.reactor.ssl.SSLBufferMode;
 import org.apache.hc.core5.ssl.PrivateKeyStrategy;
 import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.apache.hc.core5.ssl.TrustStrategy;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class HcSocketStrategies {
 

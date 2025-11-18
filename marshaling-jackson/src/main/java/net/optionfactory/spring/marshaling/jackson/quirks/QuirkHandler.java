@@ -1,8 +1,8 @@
 package net.optionfactory.spring.marshaling.jackson.quirks;
 
-import com.fasterxml.jackson.databind.deser.SettableBeanProperty;
-import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
 import java.lang.annotation.Annotation;
+import tools.jackson.databind.deser.SettableBeanProperty;
+import tools.jackson.databind.ser.BeanPropertyWriter;
 
 public interface QuirkHandler<A extends Annotation> {
 

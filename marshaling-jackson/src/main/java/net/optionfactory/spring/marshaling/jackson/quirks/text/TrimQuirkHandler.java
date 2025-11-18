@@ -1,18 +1,15 @@
 package net.optionfactory.spring.marshaling.jackson.quirks.text;
 
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.SettableBeanProperty;
-import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
-import java.io.IOException;
 import net.optionfactory.spring.marshaling.jackson.quirks.QuirkHandler;
 import net.optionfactory.spring.marshaling.jackson.quirks.Quirks;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.deser.SettableBeanProperty;
+import tools.jackson.databind.ser.BeanPropertyWriter;
 
 public class TrimQuirkHandler implements QuirkHandler<Quirks.Trim> {
 
@@ -23,7 +20,7 @@ public class TrimQuirkHandler implements QuirkHandler<Quirks.Trim> {
 
     @Override
     public BeanPropertyWriter serialization(Quirks.Trim ann, BeanPropertyWriter bpw) {
-        bpw.assignSerializer((JsonSerializer) Serializer.INSTANCE);
+        bpw.assignSerializer((ValueSerializer) Serializer.INSTANCE);
         return bpw;
     }
 
@@ -32,28 +29,28 @@ public class TrimQuirkHandler implements QuirkHandler<Quirks.Trim> {
         return sbp.withValueDeserializer(Deserializer.INSTANCE);
     }
 
-    public static class Serializer extends JsonSerializer<String> {
+    public static class Serializer extends ValueSerializer<String> {
 
         public static Serializer INSTANCE = new Serializer();
 
         @Override
-        public void serialize(String t, JsonGenerator jg, SerializerProvider sp) throws IOException {
+        public void serialize(String t, JsonGenerator jg, SerializationContext sc) {
             jg.writeString(t.trim());
         }
 
     }
 
-    public static class Deserializer extends JsonDeserializer<String> {
+    public static class Deserializer extends ValueDeserializer<String> {
 
         public static Deserializer INSTANCE = new Deserializer();
 
         @Override
-        public String deserialize(JsonParser jp, DeserializationContext dc) throws IOException, JacksonException {
-            return jp.getText().trim();
+        public String deserialize(JsonParser jp, DeserializationContext dc) {
+            return jp.getString().trim();
         }
 
         @Override
-        public String getNullValue(DeserializationContext ctxt) throws JsonMappingException {
+        public String getNullValue(DeserializationContext ctxt) {
             return null;
         }
 

@@ -6,7 +6,7 @@ JAXB `XmlAdapter`s for Temporals and Money.
 
 ## [`marshaling-jackson`](marshaling-jackson/readme.md)
 
-Jackson modules and adapters. Notably, the Quirks module handles per-`ObjectMapper` serialization/deseralization quirks.
+Jackson modules and adapters. Notably, the Quirks module handles per-`JsonMapper` serialization/deseralization quirks.
 
 ## [`data-jpa`](data-jpa/readme.md), [`data-jpa-web`](data-jpa-web/readme.md)
 

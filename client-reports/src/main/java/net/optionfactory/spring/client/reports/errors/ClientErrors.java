@@ -1,6 +1,5 @@
 package net.optionfactory.spring.client.reports.errors;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.util.function.Function;
 import net.optionfactory.spring.client.reports.ClientReportFilter;
 import org.springframework.context.ApplicationContext;
@@ -9,6 +8,7 @@ import org.springframework.security.config.annotation.SecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.header.HeaderWriterFilter;
+import tools.jackson.databind.JsonNode;
 
 public class ClientErrors {
 
@@ -45,7 +45,7 @@ public class ClientErrors {
         }
 
         @Override
-        public void configure(HttpSecurity http) throws Exception {
+        public void configure(HttpSecurity http) {
             final var publisher = http.getSharedObject(ApplicationContext.class);
             http.addFilterBefore(new ClientErrorReportFilter(reportUri, publisher, maxBodySize, log, principalRenderer), HeaderWriterFilter.class);
         }

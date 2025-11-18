@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 public record EmailPaths(

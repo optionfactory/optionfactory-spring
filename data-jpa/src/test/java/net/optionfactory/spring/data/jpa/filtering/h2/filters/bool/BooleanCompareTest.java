@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ContextConfiguration;
@@ -48,7 +49,7 @@ public class BooleanCompareTest {
         Assert.assertEquals(Set.of(2L), idsIn(flags.findAll(null, filter("YNMatchCaseBoolean", "N"), Pageable.unpaged())));
     }
 
-    @Test(expected = InvalidFilterRequest.class)
+    @Test(expected = InvalidDataAccessApiUsageException.class)
     public void throwsWhenValueDoesNotMatch() {
         flags.findAll(null, filter("yesNoBoolean", "maybe"), Pageable.unpaged());
     }

@@ -9,13 +9,13 @@ import jakarta.persistence.criteria.Root;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
-import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterConfiguration;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -57,7 +57,7 @@ public class FiltersTest {
         repository.findOne(specification, FilterRequest.unfiltered());
     }
 
-    @Test(expected = InvalidFilterConfiguration.class)
+    @Test(expected = InvalidDataAccessApiUsageException.class)
     public void throwsWhenNonExistantPropertyIsReferencedInPropertyChain() {
         final Specification<EntityA> specification = new Specification<EntityA>() {
             @Override

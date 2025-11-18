@@ -12,6 +12,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ContextConfiguration;
@@ -42,7 +43,7 @@ public class NumberCompareTest {
         Assert.assertEquals(Set.of(1L), idsIn(page));
     }
 
-    @Test(expected = InvalidFilterRequest.class)
+    @Test(expected = InvalidDataAccessApiUsageException.class)
     public void cannotFilterInequalityByNullValue() {
         repo.findAll(null, filter("maxPersons", NumberCompare.Operator.LTE, null), Pageable.unpaged());
     }

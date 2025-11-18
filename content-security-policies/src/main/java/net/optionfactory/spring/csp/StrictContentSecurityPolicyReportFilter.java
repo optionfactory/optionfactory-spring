@@ -1,10 +1,10 @@
 package net.optionfactory.spring.csp;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.util.function.Function;
 import net.optionfactory.spring.client.reports.ClientReportFilter;
 import net.optionfactory.spring.csp.StrictContentSecurityPolicyReportFilter.CspViolation;
 import org.springframework.context.ApplicationEventPublisher;
+import tools.jackson.databind.JsonNode;
 
 public class StrictContentSecurityPolicyReportFilter extends ClientReportFilter<CspViolation> {
 

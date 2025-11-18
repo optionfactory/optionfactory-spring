@@ -1,12 +1,12 @@
 package net.optionfactory.spring.marshaling.jackson.quirks.text;
 
-import com.fasterxml.jackson.databind.deser.SettableBeanProperty;
-import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
-import com.fasterxml.jackson.databind.util.NameTransformer;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import net.optionfactory.spring.marshaling.jackson.quirks.QuirkHandler;
 import net.optionfactory.spring.marshaling.jackson.quirks.Quirks;
+import tools.jackson.databind.deser.SettableBeanProperty;
+import tools.jackson.databind.ser.BeanPropertyWriter;
+import tools.jackson.databind.util.NameTransformer;
 
 public class ScreamQuirkHandler implements QuirkHandler<Quirks.Scream> {
 

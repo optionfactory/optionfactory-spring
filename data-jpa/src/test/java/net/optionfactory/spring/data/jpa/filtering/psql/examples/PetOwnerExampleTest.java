@@ -1,8 +1,5 @@
 package net.optionfactory.spring.data.jpa.filtering.psql.examples;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
 import java.time.LocalDate;
 import java.time.Month;
@@ -20,6 +17,9 @@ import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.shaded.com.fasterxml.jackson.core.JsonProcessingException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = HibernateOnPsqlTestConfig.class)
@@ -99,8 +99,8 @@ public class PetOwnerExampleTest {
 
     @Test
     @Transactional
-    public void filtersAreEasilyDeserializable() throws JsonProcessingException {
-        ObjectMapper om = new ObjectMapper();
+    public void filtersAreEasilyDeserializable(){
+        JsonMapper om = new JsonMapper();
         final var mapType = new TypeReference<Map<String, String[]>>() {
         };
         final var filters = om.readValue(

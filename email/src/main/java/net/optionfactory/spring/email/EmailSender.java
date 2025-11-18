@@ -17,7 +17,7 @@ import java.util.stream.Stream;
 import net.optionfactory.spring.email.EmailSenderConfiguration.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.PathResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 
 public class EmailSender {
@@ -58,7 +58,7 @@ public class EmailSender {
     private void trySendSpooledEmail(Path eml) {
         try {
             if (!placebo) {
-                try (InputStream emlStream = new PathResource(eml).getInputStream()) {
+                try (InputStream emlStream = new FileSystemResource(eml).getInputStream()) {
                     final MimeMessage message = new MimeMessage(javaMail.getSession(), emlStream);
                     javaMail.send(message);
                 }

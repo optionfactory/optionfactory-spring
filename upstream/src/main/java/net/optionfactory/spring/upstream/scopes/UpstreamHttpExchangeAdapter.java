@@ -6,10 +6,10 @@ import java.util.Map;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
+import org.jspecify.annotations.Nullable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
-import org.springframework.lang.Nullable;
 import org.springframework.web.service.invoker.HttpExchangeAdapter;
 import org.springframework.web.service.invoker.HttpRequestValues;
 
@@ -49,7 +49,7 @@ public interface UpstreamHttpExchangeAdapter {
             for (final var uriVar : values.getUriVariables().entrySet()) {
                 builder.setUriVariable(uriVar.getKey(), uriVar.getValue());
             }
-            for (final var header : values.getHeaders().entrySet()) {
+            for (final var header : values.getHeaders().headerSet()) {
                 builder.addHeader(header.getKey(), header.getValue().toArray(i -> new String[i]));
             }
             for (final var cookie : values.getCookies().entrySet()) {

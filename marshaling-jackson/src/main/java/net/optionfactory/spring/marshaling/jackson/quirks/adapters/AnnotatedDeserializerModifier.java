@@ -1,18 +1,18 @@
 package net.optionfactory.spring.marshaling.jackson.quirks.adapters;
 
-import com.fasterxml.jackson.databind.BeanDescription;
-import com.fasterxml.jackson.databind.DeserializationConfig;
-import com.fasterxml.jackson.databind.deser.BeanDeserializerBuilder;
-import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
-import com.fasterxml.jackson.databind.deser.SettableBeanProperty;
-import com.fasterxml.jackson.databind.deser.std.StdValueInstantiator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import net.optionfactory.spring.marshaling.jackson.quirks.QuirkHandler;
+import tools.jackson.databind.BeanDescription;
+import tools.jackson.databind.DeserializationConfig;
+import tools.jackson.databind.deser.BeanDeserializerBuilder;
+import tools.jackson.databind.deser.SettableBeanProperty;
+import tools.jackson.databind.deser.ValueDeserializerModifier;
+import tools.jackson.databind.deser.std.StdValueInstantiator;
 
-public class AnnotatedDeserializerModifier extends BeanDeserializerModifier {
+public class AnnotatedDeserializerModifier extends ValueDeserializerModifier {
 
     private final List<QuirkHandler> transformers;
 
@@ -29,7 +29,7 @@ public class AnnotatedDeserializerModifier extends BeanDeserializerModifier {
     }
 
     @Override
-    public BeanDeserializerBuilder updateBuilder(DeserializationConfig config, BeanDescription bd, BeanDeserializerBuilder builder) {
+    public BeanDeserializerBuilder updateBuilder(DeserializationConfig config, BeanDescription.Supplier bd, BeanDeserializerBuilder builder) {
         final var props = asList(builder.getProperties());        
         props.forEach(prop -> {
             transformers.stream().forEach(handler -> {

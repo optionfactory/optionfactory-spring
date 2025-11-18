@@ -66,14 +66,14 @@ public class StrictContentSecurityPolicy {
         }
 
         @Override
-        public void init(HttpSecurity http) throws Exception {
+        public void init(HttpSecurity http) {
             http.headers(c -> {
                 c.addHeaderWriter(new StrictContentSecurityPolicyHeaderWriter(mode, reportUri, eval, fallbacks));
             });
         }
 
         @Override
-        public void configure(HttpSecurity http) throws Exception {
+        public void configure(HttpSecurity http) {
             final var publisher = http.getSharedObject(ApplicationContext.class);
             http.addFilterBefore(new StrictContentSecurityPolicyReportFilter(reportUri, publisher, maxBodySize, log, principalRenderer), HeaderWriterFilter.class);
             http.addFilterBefore(new StrictContentSecurityPolicyNonceFilter(), HeaderWriterFilter.class);

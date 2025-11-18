@@ -1,6 +1,5 @@
 package net.optionfactory.spring.problems.web;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import java.util.ArrayList;
@@ -29,6 +28,7 @@ import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import tools.jackson.databind.json.JsonMapper;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = Config.class)
@@ -53,7 +53,7 @@ public class MethodValidationTest {
         public void extendHandlerExceptionResolvers(List<HandlerExceptionResolver> resolvers) {
             List<HandlerExceptionResolver> old = new ArrayList<>(resolvers);
             resolvers.removeAll(old);
-            resolvers.add(new RestExceptionResolver(new ObjectMapper(), Options.OMIT_DETAILS));
+            resolvers.add(new RestExceptionResolver(new JsonMapper(), Options.OMIT_DETAILS));
             resolvers.addAll(old);
         }
 

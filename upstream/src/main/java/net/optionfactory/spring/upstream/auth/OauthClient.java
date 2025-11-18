@@ -1,6 +1,5 @@
 package net.optionfactory.spring.upstream.auth;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import net.optionfactory.spring.upstream.Upstream;
@@ -11,6 +10,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.PostExchange;
+import tools.jackson.databind.JsonNode;
 
 @Upstream("oauth-client")
 @Upstream.AlertOnRemotingError

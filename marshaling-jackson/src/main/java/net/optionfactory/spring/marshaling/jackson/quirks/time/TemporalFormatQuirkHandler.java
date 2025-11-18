@@ -1,16 +1,5 @@
 package net.optionfactory.spring.marshaling.jackson.quirks.time;
 
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.SettableBeanProperty;
-import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
-import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -30,6 +19,15 @@ import java.util.Map;
 import net.optionfactory.spring.marshaling.jackson.quirks.QuirkHandler;
 import net.optionfactory.spring.marshaling.jackson.quirks.Quirks;
 import net.optionfactory.spring.marshaling.jackson.quirks.Quirks.TemporalFormat;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.deser.SettableBeanProperty;
+import tools.jackson.databind.ser.BeanPropertyWriter;
 
 public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalFormat> {
 
@@ -58,7 +56,7 @@ public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalF
     public BeanPropertyWriter serialization(TemporalFormat ann, BeanPropertyWriter bpw) {
         final var dtf = DateTimeFormatter.ofPattern(ann.value());
         final var serializer = new Serializer(dtf);
-        bpw.assignSerializer((JsonSerializer) serializer);
+        bpw.assignSerializer((ValueSerializer) serializer);
         return bpw;
     }
 
@@ -71,7 +69,7 @@ public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalF
         return sbp.withValueDeserializer(deserializer);
     }
 
-    public static class Serializer extends JsonSerializer<TemporalAccessor> {
+    public static class Serializer extends ValueSerializer<TemporalAccessor> {
 
         private final DateTimeFormatter dtf;
 
@@ -80,13 +78,12 @@ public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalF
         }
 
         @Override
-        public void serialize(TemporalAccessor t, JsonGenerator jg, SerializerProvider sp) throws IOException {
-            jg.writeString(dtf.format(t));
+        public void serialize(TemporalAccessor value, JsonGenerator gen, SerializationContext ctxt) throws JacksonException {
+            gen.writeString(dtf.format(value));
         }
-
     }
 
-    public static class Deserializer extends JsonDeserializer<Object> {
+    public static class Deserializer extends ValueDeserializer<Object> {
 
         private final DateTimeFormatter dtf;
         private final TemporalQuery<?> query;
@@ -97,12 +94,12 @@ public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalF
         }
 
         @Override
-        public Object deserialize(JsonParser jp, DeserializationContext dc) throws IOException, JacksonException {
+        public Object deserialize(JsonParser jp, DeserializationContext dc){
             return dtf.parse(jp.getText(), query);
         }
 
         @Override
-        public TemporalAccessor getNullValue(DeserializationContext ctxt) throws JsonMappingException {
+        public TemporalAccessor getNullValue(DeserializationContext ctxt) {
             return null;
         }
 

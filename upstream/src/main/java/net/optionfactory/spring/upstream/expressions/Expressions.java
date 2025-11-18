@@ -7,12 +7,12 @@ import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.paths.JsonPath;
 import net.optionfactory.spring.upstream.paths.XmlPath;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.common.TemplateParserContext;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.lang.Nullable;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.expression.ThymeleafEvaluationContext;
 

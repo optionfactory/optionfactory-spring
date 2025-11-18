@@ -145,7 +145,7 @@ public class HttpHeaderAuthentication {
         private final String token;
 
         public UnauthenticatedToken(HeaderAndScheme hs, String token, HttpServletRequest request) {
-            super(null);
+            super((Collection<? extends GrantedAuthority>)null);
             this.hs = hs;
             this.token = token;
             super.setAuthenticated(false);

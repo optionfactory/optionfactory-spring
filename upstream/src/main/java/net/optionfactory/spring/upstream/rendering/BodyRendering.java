@@ -1,16 +1,14 @@
 package net.optionfactory.spring.upstream.rendering;
 
-import com.fasterxml.jackson.core.JsonPointer;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
 import org.springframework.http.MediaType;
+import tools.jackson.core.JsonPointer;
+import tools.jackson.databind.json.JsonMapper;
 
 public class BodyRendering {
 
@@ -31,7 +29,7 @@ public class BodyRendering {
 
     public BodyRendering(Map<String, String> namespaces, Map<String, String> attributes, Map<String, String> tags, Map<JsonPointer, String> jsonPtrs) {
         this.xsltRedactor = XsltRedactor.Factory.INSTANCE.create(namespaces, attributes, tags);
-        this.jsonRedactor = new JsonRedactor(new ObjectMapper(), jsonPtrs);
+        this.jsonRedactor = new JsonRedactor(new JsonMapper(), jsonPtrs);
     }
 
     public String render(RequestContext request, Strategy strategy, String infix, int maxSize) {

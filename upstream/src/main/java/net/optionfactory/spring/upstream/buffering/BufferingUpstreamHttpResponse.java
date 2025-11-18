@@ -3,10 +3,10 @@ package net.optionfactory.spring.upstream.buffering;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.lang.Nullable;
 import org.springframework.util.StreamUtils;
 
 public class BufferingUpstreamHttpResponse implements ClientHttpResponse {
