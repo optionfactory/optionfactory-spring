@@ -18,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.HttpMessageConverters;
 import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -56,16 +57,14 @@ public class DataJpaWebExampleTest {
 
         @Inject
         public JsonMapper restJsonMapper;
-        
-        
 
         @Override
-        public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
+        public void configureMessageConverters(HttpMessageConverters.ServerBuilder builder) {
             /**
              * the jsonMapper needs to be configured in the
              * JacksonJsonHttpMessageConverter so the Page mixin is used
              */
-            converters.add(new JacksonJsonHttpMessageConverter(restJsonMapper));
+            builder.withJsonConverter(new JacksonJsonHttpMessageConverter(restJsonMapper));
         }
 
         @Override
