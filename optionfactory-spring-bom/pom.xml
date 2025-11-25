@@ -98,7 +98,7 @@
             </dependency>
             <dependency>
                 <groupId>net.optionfactory.spring</groupId>
-                <artifactId>upstream-interceptor-jjwt</artifactId>
+                <artifactId>upstream-interceptor-jws</artifactId>
                 <version>${opfa-spring.version}</version>
             </dependency>
             <dependency>

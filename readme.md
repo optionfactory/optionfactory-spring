@@ -64,9 +64,9 @@ SOAP and REST clients with support for:
 * Mocking
 
 
-## [`upstream-interceptor-jjwt`](upstream-interceptor-jjwt/readme.md)
+## [`upstream-interceptor-jws`](upstream-interceptor-jws/readme.md)
 
-A `io.jsonwebtoken:jjwt` based JWS/JWT interceptor for upstream clients.
+A `com.nimbusds:nimbus-jose-jwt` based JWS interceptor for upstream clients.
 
 ## [`upstream-interceptor-spring-oauth2`](upstream-interceptor-spring-oauth2/readme.md)
 

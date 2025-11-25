@@ -61,7 +61,7 @@
         <module>authentication-resource-server</module>
         <module>email</module>
         <module>upstream</module>
-        <module>upstream-interceptor-jjwt</module>
+        <module>upstream-interceptor-jws</module>
         <module>upstream-interceptor-spring-oauth2</module>
         <module>upstream-alerts-email</module>
         <module>validators</module>
@@ -172,11 +172,6 @@
                 <version>1.21.2</version>
             </dependency>
             
-            <dependency>
-                <groupId>io.jsonwebtoken</groupId>
-                <artifactId>jjwt</artifactId>
-                <version>0.13.0</version>
-            </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents.client5</groupId>
                 <artifactId>httpclient5</artifactId>
