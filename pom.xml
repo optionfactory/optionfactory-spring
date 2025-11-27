@@ -152,7 +152,17 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-core</artifactId>
+                <version>11.0.14</version>
+            </dependency>        
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-el</artifactId>
+                <version>11.0.14</version>
+            </dependency>        
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-websocket</artifactId>
                 <version>11.0.14</version>
             </dependency>        
             
@@ -224,20 +234,14 @@
                 <version>3.0.4</version>        
             </dependency>
             <dependency>
-                <groupId>com.google.code.findbugs</groupId>
-                <artifactId>jsr305</artifactId>
-                <version>3.0.2</version>
-                <scope>compile</scope>
-            </dependency>
-            <dependency>
                 <groupId>io.github.openhtmltopdf</groupId>
                 <artifactId>openhtmltopdf-core</artifactId>
-                <version>1.1.31</version>
+                <version>1.1.33</version>
             </dependency>
             <dependency>
                 <groupId>io.github.openhtmltopdf</groupId>
                 <artifactId>openhtmltopdf-pdfbox</artifactId>
-                <version>1.1.31</version>
+                <version>1.1.33</version>
                 <exclusions>
                     <exclusion>
                         <artifactId>commons-logging</artifactId>
@@ -248,7 +252,7 @@
             <dependency>
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcpkix-jdk18on</artifactId>
-                <version>1.82</version>
+                <version>1.83</version>
             </dependency>
             <dependency>
                 <groupId>junit</groupId>
@@ -266,6 +270,11 @@
                 <artifactId>log4j-slf4j2-impl</artifactId>
                 <version>2.25.2</version>
             </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-jul</artifactId>
+                <version>2.25.2</version> 
+            </dependency>            
         </dependencies>
     </dependencyManagement>
 

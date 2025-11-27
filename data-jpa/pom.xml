@@ -20,10 +20,6 @@
             <artifactId>spring-data-jpa</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.google.code.findbugs</groupId>
-            <artifactId>jsr305</artifactId>
-        </dependency>                 
-        <dependency>
             <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
