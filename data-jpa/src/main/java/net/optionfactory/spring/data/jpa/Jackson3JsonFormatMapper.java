@@ -1,7 +1,12 @@
 package net.optionfactory.spring.data.jpa;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
+import org.hibernate.type.descriptor.WrapperOptions;
+import org.hibernate.type.descriptor.java.JavaType;
 import org.hibernate.type.format.AbstractJsonFormatMapper;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
 import tools.jackson.databind.json.JsonMapper;
 
 public class Jackson3JsonFormatMapper extends AbstractJsonFormatMapper {
@@ -11,6 +16,27 @@ public class Jackson3JsonFormatMapper extends AbstractJsonFormatMapper {
 
     public Jackson3JsonFormatMapper(JsonMapper mapper) {
         this.mapper = mapper;
+    }
+
+    @Override
+    public <T> void writeToTarget(T value, JavaType<T> javaType, Object target, WrapperOptions options) {
+        mapper.writerFor(mapper.constructType(javaType.getJavaType()))
+                .writeValue((JsonGenerator) target, value);
+    }
+
+    @Override
+    public <T> T readFromSource(JavaType<T> javaType, Object source, WrapperOptions options) throws IOException {
+        return mapper.readValue((JsonParser) source, mapper.constructType(javaType.getJavaType()));
+    }
+
+    @Override
+    public boolean supportsSourceType(Class<?> sourceType) {
+        return JsonParser.class.isAssignableFrom(sourceType);
+    }
+
+    @Override
+    public boolean supportsTargetType(Class<?> targetType) {
+        return JsonGenerator.class.isAssignableFrom(targetType);
     }
 
     @Override
