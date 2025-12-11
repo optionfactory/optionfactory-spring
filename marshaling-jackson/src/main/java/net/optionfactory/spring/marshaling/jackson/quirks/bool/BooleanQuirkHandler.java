@@ -44,7 +44,7 @@ public class BooleanQuirkHandler implements QuirkHandler<Quirks.Bool> {
 
         @Override
         public Boolean deserialize(JsonParser jp, DeserializationContext dc) {
-            return t.equals(jp.getText());
+            return t.equals(jp.getString());
         }
 
         @Override

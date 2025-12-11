@@ -64,7 +64,7 @@ public class ClientReportFilter<ET> extends OncePerRequestFilter {
             StreamUtils.copyRange(is, baos, 0, maxBodySize);
             return mapper.readValue(baos.toByteArray(), JsonNode.class);
         } catch (IOException ex) {
-            return mapper.getNodeFactory().textNode("unparseable report");
+            return mapper.getNodeFactory().stringNode("unparseable report");
         }
     }
 

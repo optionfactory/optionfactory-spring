@@ -23,7 +23,7 @@ public class OauthPasswordAuthenticator implements UpstreamHttpRequestInitialize
     public void initialize(InvocationContext invocation, ClientHttpRequest request) {
         final var accessToken = client.password(clientId, username, password)
                 .get("access_token")
-                .asText();
+                .asString();
         request.getHeaders().set("Authorization", String.format("Bearer %s", accessToken));
     }
 

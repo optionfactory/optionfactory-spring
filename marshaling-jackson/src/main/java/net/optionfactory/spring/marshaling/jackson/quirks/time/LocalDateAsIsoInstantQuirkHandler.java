@@ -60,7 +60,7 @@ public class LocalDateAsIsoInstantQuirkHandler implements QuirkHandler<Quirks.Lo
 
         @Override
         public LocalDate deserialize(JsonParser jp, DeserializationContext dc) {
-            return Instant.parse(jp.getText())
+            return Instant.parse(jp.getString())
                     .minus(instantOffset.amount(), instantOffset.unit())
                     .atZone(zid)
                     .toLocalDate()

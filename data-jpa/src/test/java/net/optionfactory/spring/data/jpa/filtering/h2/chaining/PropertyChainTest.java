@@ -1,5 +1,6 @@
 package net.optionfactory.spring.data.jpa.filtering.h2.chaining;
 
+import jakarta.inject.Inject;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -9,7 +10,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ContextConfiguration;
@@ -21,11 +21,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class PropertyChainTest {
 
-    @Autowired
+    @Inject
     private ActivitiesRepository activities;
-    @Autowired
+    @Inject
     private PerformersRepository performers;
-    @Autowired
+    @Inject
     private AppointmentsRepository appointments;
 
     @Before

@@ -21,7 +21,7 @@ public class OauthClientCredentialsAuthenticator implements UpstreamHttpRequestI
     public void initialize(InvocationContext invocation, ClientHttpRequest request) {
         final var accessToken = client.clientCredentials(clientId, clientSecret)
                 .get("access_token")
-                .asText();
+                .asString();
         request.getHeaders().set(HttpHeaders.AUTHORIZATION, String.format("Bearer %s", accessToken));
     }
 }

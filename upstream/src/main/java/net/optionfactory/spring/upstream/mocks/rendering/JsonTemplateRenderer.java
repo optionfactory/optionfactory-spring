@@ -54,8 +54,8 @@ public class JsonTemplateRenderer implements MocksRenderer {
         if (input.isObject()) {
             return object(input, expressions, ctx, jnf);
         }
-        return FragmentOrNode.literal(input.isTextual()
-                ? jnf.pojoNode(expressions.parseTemplated(input.asText()).getValue(ctx))
+        return FragmentOrNode.literal(input.isString()
+                ? jnf.pojoNode(expressions.parseTemplated(input.asString()).getValue(ctx))
                 : input.deepCopy()
         );
     }

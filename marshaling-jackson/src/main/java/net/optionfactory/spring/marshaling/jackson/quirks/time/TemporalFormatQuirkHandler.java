@@ -95,7 +95,7 @@ public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalF
 
         @Override
         public Object deserialize(JsonParser jp, DeserializationContext dc){
-            return dtf.parse(jp.getText(), query);
+            return dtf.parse(jp.getString(), query);
         }
 
         @Override
