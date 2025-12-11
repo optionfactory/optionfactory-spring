@@ -3,26 +3,23 @@ package net.optionfactory.spring.data.jpa.filtering.h2.chaining.plural;
 import java.util.List;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.annotation.Transactional;
 
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = HibernateOnH2TestConfig.class)
+@SpringJUnitConfig(HibernateOnH2TestConfig.class)
 @Transactional
 public class PluralAttributesChainTest {
 
     @Autowired
     private RootsRepository roots;
 
-    @Before
+    @BeforeEach
     public void setup() {
         final Root r = new Root();
         r.leaves = List.of(new Leaf(), new Leaf());
@@ -43,7 +40,7 @@ public class PluralAttributesChainTest {
                 .build();
         final Pageable pr = Pageable.unpaged();
         final Page<Root> page = roots.findAll(null, fr, pr);
-        Assert.assertEquals(2, page.getContent().get(0).leaves.size());
+        Assertions.assertEquals(2, page.getContent().get(0).leaves.size());
 
     }
 }

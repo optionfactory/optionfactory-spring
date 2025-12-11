@@ -1,7 +1,7 @@
 package net.optionfactory.spring.marshaling.jackson.quirks;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import tools.jackson.databind.exc.MismatchedInputException;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -28,170 +28,191 @@ public class BoolMarshalingTest {
 
     @Test
     public void deserialization() throws Exception {
-        Assert.assertEquals("canDeserializeSiToNullableField",
+        Assertions.assertEquals(
                 new NullableSiNo(Boolean.TRUE),
                 deser(NullableSiNo.class, true,
                         """
                         {"value": "SI"}
                         """
-                )
+                ),
+                "canDeserializeSiToNullableField"
         );
-        Assert.assertEquals("canDeserializeBooleanToNullableField",
+        Assertions.assertEquals(
                 new NullableSiNo(Boolean.TRUE),
                 deser(NullableSiNo.class, false,
                         """
                         {"value": true}
                         """
-                )
+                ),
+                "canDeserializeBooleanToNullableField"
         );
-        Assert.assertEquals("canDeserializeNoToNullableField",
+        Assertions.assertEquals(
                 new NullableSiNo(Boolean.FALSE),
                 deser(NullableSiNo.class, true,
                         """
                         {"value": "NO"}
                         """
-                )
+                ),
+                "canDeserializeNoToNullableField"
         );
-        Assert.assertEquals("canDeserializeFalseToNullableField",
+        Assertions.assertEquals(
                 new NullableSiNo(Boolean.FALSE),
                 deser(NullableSiNo.class, false,
                         """
                         {"value": false}
                         """
-                )
+                ),
+                "canDeserializeFalseToNullableField"
         );
 
-        Assert.assertEquals("canDeserializeNullToNullableField",
+        Assertions.assertEquals(
                 new NullableSiNo(null),
                 deser(NullableSiNo.class, true,
                         """
                         {"value": null}
                         """
-                )
+                ),
+                "canDeserializeNullToNullableField"
         );
-        Assert.assertEquals("canDeserializeNullToNullableField",
+        Assertions.assertEquals(
                 new NullableSiNo(null),
                 deser(NullableSiNo.class, false,
                         """
                         {"value": null}
                         """
-                )
+                ),
+                "canDeserializeNullToNullableField"
         );
 
-        Assert.assertEquals("canDeserializeSiToNonnullableField",
+        Assertions.assertEquals(
                 new NonnullableSiNo(true),
                 deser(NonnullableSiNo.class, true,
                         """
                         {"value": "SI"}
                         """
-                )
+                ),
+                "canDeserializeSiToNonnullableField"
         );
-        Assert.assertEquals("canDeserializeTrueToNonnullableField",
+        Assertions.assertEquals(
                 new NonnullableSiNo(true),
                 deser(NonnullableSiNo.class, false,
                         """
                         {"value": true}
                         """
-                )
+                ),
+                "canDeserializeTrueToNonnullableField"
         );
 
-        Assert.assertEquals("canDeserializeNoToNonnullableField",
+        Assertions.assertEquals(
                 new NonnullableSiNo(false),
                 deser(NonnullableSiNo.class, true,
                         """
                         {"value": "NO"}
                         """
-                )
+                ),
+                "canDeserializeNoToNonnullableField"
         );
-        Assert.assertEquals("canDeserializeFalseToNonnullableField",
+        Assertions.assertEquals(
                 new NonnullableSiNo(false),
                 deser(NonnullableSiNo.class, false,
                         """
                         {"value": false}
                         """
-                )
+                ),
+                "canDeserializeFalseToNonnullableField"
         );
-        Assert.assertEquals("can deserialize null to nonnulable field",
+        Assertions.assertEquals(
                 new NonnullableSiNo(false),
                 deser(NonnullableSiNo.class, true,
                         """
                         {"value": null}
                         """
-                )
+                ),
+                "can deserialize null to nonnulable field"
         );
-        Assert.assertThrows("cannot deserialize null to nonnulable field", MismatchedInputException.class, () -> {
+        Assertions.assertThrows(MismatchedInputException.class, () -> {
             deser(NonnullableSiNo.class, false,
                     """
                     {"value": null}
                     """
             );
-        });
+        }, "cannot deserialize null to nonnulable field");
     }
 
     @Test
     public void serialization() throws Exception {
-        Assert.assertEquals("can serialize Boolean.TRUE as SI",
+        Assertions.assertEquals(
                 """
                 {"value":"SI"}
                 """.trim(),
-                ser(true, new NullableSiNo(Boolean.TRUE))
+                ser(true, new NullableSiNo(Boolean.TRUE)),
+                "can serialize Boolean.TRUE as SI"
         );
-        Assert.assertEquals("can serialize Boolean.TRUE as true",
+        Assertions.assertEquals(
                 """
                 {"value":true}
                 """.trim(),
-                ser(false, new NullableSiNo(Boolean.TRUE))
+                ser(false, new NullableSiNo(Boolean.TRUE)),
+                "can serialize Boolean.TRUE as true"
         );
-        Assert.assertEquals("can serialize Boolean.FALSE to NO",
+        Assertions.assertEquals(
                 """
                 {"value":"NO"}
                 """.trim(),
-                ser(true, new NullableSiNo(Boolean.FALSE))
+                ser(true, new NullableSiNo(Boolean.FALSE)),
+                "can serialize Boolean.FALSE to NO"
         );
-        Assert.assertEquals("can seserialize Boolean.False to false",
+        Assertions.assertEquals(
                 """
                 {"value":false}
                 """.trim(),
-                ser(false, new NullableSiNo(Boolean.FALSE))
+                ser(false, new NullableSiNo(Boolean.FALSE)),
+                "can seserialize Boolean.False to false"
         );
 
-        Assert.assertEquals("can serialize null",
+        Assertions.assertEquals(
                 """
                 {"value":null}
                 """.trim(),
-                ser(true, new NullableSiNo(null))
+                ser(true, new NullableSiNo(null)),
+                "can serialize null"
         );
-        Assert.assertEquals("can serialize null",
+        Assertions.assertEquals(
                 """
                 {"value":null}
                 """.trim(),
-                ser(false, new NullableSiNo(null))
+                ser(false, new NullableSiNo(null)),
+                "can serialize null"
         );
 
-        Assert.assertEquals("can serialize true as SI",
+        Assertions.assertEquals(
                 """
                 {"value":"SI"}
                 """.trim(),
-                ser(true, new NonnullableSiNo(true))
+                ser(true, new NonnullableSiNo(true)),
+                "can serialize true as SI"
         );
-        Assert.assertEquals("can serialize true as true",
+        Assertions.assertEquals(
                 """
                 {"value":true}
                 """.trim(),
-                ser(false, new NonnullableSiNo(true))
+                ser(false, new NonnullableSiNo(true)),
+                "can serialize true as true"
         );
 
-        Assert.assertEquals("can serialize false as NO",
+        Assertions.assertEquals(
                 """
                 {"value":"NO"}
                 """.trim(),
-                ser(true, new NonnullableSiNo(false))
+                ser(true, new NonnullableSiNo(false)),
+                "can serialize false as NO"
         );
-        Assert.assertEquals("can serialize false as false",
+        Assertions.assertEquals(
                 """
                 {"value":false}
                 """.trim(),
-                ser(false, new NonnullableSiNo(false))
+                ser(false, new NonnullableSiNo(false)),
+                "can serialize false as false"
         );
     }
 

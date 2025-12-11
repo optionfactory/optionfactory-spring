@@ -4,17 +4,13 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import java.util.ArrayList;
 import java.util.List;
-import net.optionfactory.spring.problems.web.MethodValidationTest.Config;
 import net.optionfactory.spring.problems.web.RestExceptionResolver.Options;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.context.junit.jupiter.web.SpringJUnitWebConfig;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
@@ -30,9 +26,7 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import tools.jackson.databind.json.JsonMapper;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = Config.class)
-@WebAppConfiguration
+@SpringJUnitWebConfig(MethodValidationTest.Config.class)
 public class MethodValidationTest {
 
     @Configuration
@@ -73,7 +67,7 @@ public class MethodValidationTest {
 
     private MockMvc mvc;
 
-    @Before
+    @BeforeEach
     public void setup() {
         this.mvc = MockMvcBuilders.webAppContextSetup(context).build();
     }

@@ -1,7 +1,7 @@
 package net.optionfactory.spring.email.inliner;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class CssInlinerTest {
 
@@ -21,6 +21,6 @@ public class CssInlinerTest {
 
         final var got = new CssInliner().postprocess(src);
         System.out.println(got);
-        Assert.assertEquals(expected, got);
+        Assertions.assertEquals(expected, got);
     }
 }

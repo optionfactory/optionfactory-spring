@@ -11,18 +11,15 @@ import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.annotation.Transactional;
 
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = HibernateOnH2TestConfig.class)
+@SpringJUnitConfig(HibernateOnH2TestConfig.class)
 @Transactional
 public class FiltersTest {
 
@@ -36,7 +33,7 @@ public class FiltersTest {
             public Predicate toPredicate(Root<EntityA> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
                 final Traversal ts = Filters.traversal(null, root.getModel(), "");
                 final Path<?> path = Filters.path("myFilter", root, ts);
-                Assert.assertEquals(EntityA.class, path.getJavaType());
+                Assertions.assertEquals(EntityA.class, path.getJavaType());
                 return null;
             }
         };
@@ -50,14 +47,14 @@ public class FiltersTest {
             public Predicate toPredicate(Root<EntityA> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
                 final Traversal ts = Filters.traversal(null, root.getModel(), "b.c.i.n");
                 final Expression<Object> path = Filters.path("myFilter", root, ts);
-                Assert.assertEquals(Long.class, path.getJavaType());
+                Assertions.assertEquals(Long.class, path.getJavaType());
                 return null;
             }
         };
         repository.findOne(specification, FilterRequest.unfiltered());
     }
 
-    @Test(expected = InvalidDataAccessApiUsageException.class)
+    @Test
     public void throwsWhenNonExistantPropertyIsReferencedInPropertyChain() {
         final Specification<EntityA> specification = new Specification<EntityA>() {
             @Override
@@ -67,7 +64,10 @@ public class FiltersTest {
                 return null;
             }
         };
-        repository.findOne(specification, FilterRequest.unfiltered());
+
+        Assertions.assertThrows(InvalidDataAccessApiUsageException.class, () -> {
+            repository.findOne(specification, FilterRequest.unfiltered());
+        });
     }
 
     @Test
@@ -75,9 +75,11 @@ public class FiltersTest {
         Filters.ensure(true, "name", null, "");
     }
 
-    @Test(expected = InvalidFilterRequest.class)
+    @Test
     public void ensureThrowsOnFalsePrecondition() {
-        Filters.ensure(false, "name", null, "");
+        Assertions.assertThrows(InvalidFilterRequest.class, () -> {
+            Filters.ensure(false, "name", null, "");
+        });
     }
 
 }

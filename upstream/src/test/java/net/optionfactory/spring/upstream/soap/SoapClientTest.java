@@ -7,8 +7,8 @@ import net.optionfactory.spring.upstream.UpstreamBuilder;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
 import net.optionfactory.spring.upstream.soap.calc.Add;
 import net.optionfactory.spring.upstream.soap.calc.CalculatorClient;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -41,7 +41,7 @@ public class SoapClientTest {
         req.intA = 3;
         req.intB = 5;
         final var got = client.add(req);
-        Assert.assertEquals(8, got.addResult);
+        Assertions.assertEquals(8, got.addResult);
     }
 
     @Test
@@ -69,7 +69,7 @@ public class SoapClientTest {
         req.intA = 3;
         req.intB = 5;
         final var got = client.add(req);
-        Assert.assertEquals(8, got.addResult);
+        Assertions.assertEquals(8, got.addResult);
     }
 
     @Test
@@ -100,10 +100,10 @@ public class SoapClientTest {
         req.intB = 5;
         try {
             client.faultingAdd(req);
-            Assert.fail("should not happen");
+            Assertions.fail("should not happen");
         } catch (InternalServerError ex) {
             SOAPFault o = ex.getResponseBodyAs(SOAPFault.class);
-            Assert.assertEquals("soap:Client", o.getFaultCode());
+            Assertions.assertEquals("soap:Client", o.getFaultCode());
         }
     }
 }

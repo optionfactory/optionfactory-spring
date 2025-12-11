@@ -5,7 +5,8 @@ import net.optionfactory.spring.upstream.soap.Schemas;
 import net.optionfactory.spring.upstream.soap.SoapHeaderWriter;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter;
 import net.optionfactory.spring.upstream.soap.calc.AddResponse;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
 public class UpstreamErrorsHandlerXmlTest {
@@ -35,9 +36,9 @@ public class UpstreamErrorsHandlerXmlTest {
                 .callWithXpath();
     }
 
-    @Test(expected = RestClientUpstreamException.class)
+    @Test
     public void mismatchUsingXpathYieldsException() {
-        UpstreamBuilder
+        final var client = UpstreamBuilder
                 .create(UpstreamErrorsSoapClient.class)
                 .soap(SoapJaxbHttpMessageConverter.Protocol.SOAP_1_1, Schemas.NONE, SoapHeaderWriter.NONE, AddResponse.class)
                 .requestFactoryMock(c -> {
@@ -56,8 +57,10 @@ public class UpstreamErrorsHandlerXmlTest {
                     );
                 })
                 .restClient(r -> r.baseUrl("http://example.com"))
-                .build()
-                .callWithXpath();
+                .build();
+        Assertions.assertThrows(RestClientUpstreamException.class, () -> {
+            client.callWithXpath();
+        });
     }
 
 }

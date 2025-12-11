@@ -5,8 +5,8 @@ import jakarta.validation.Validator;
 import java.util.Locale;
 import java.util.Set;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.web.multipart.MultipartFile;
 
 public class MultipartFileSizeTest {
@@ -28,7 +28,7 @@ public class MultipartFileSizeTest {
         bean.file = new ByteArrayMultipartFile("a.png", "image/png", new byte[1024 * 1024 + 1]);
         final var result = v.validate(bean);
 
-        Assert.assertEquals("File troppo grande, dimensione massima: 1MiB", result.iterator().next().getMessage());
+        Assertions.assertEquals("File troppo grande, dimensione massima: 1MiB", result.iterator().next().getMessage());
     }
 
     @Test
@@ -40,7 +40,7 @@ public class MultipartFileSizeTest {
         final var bean = new BeanWithMultipartFileSize();
         bean.file = new ByteArrayMultipartFile("a.png", "image/png", new byte[1024 * 1024]);
         final var result = v.validate(bean);
-        Assert.assertEquals(0, result.size());
+        Assertions.assertEquals(0, result.size());
     }
 
 }

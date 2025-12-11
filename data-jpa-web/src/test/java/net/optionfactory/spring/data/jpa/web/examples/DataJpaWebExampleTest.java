@@ -6,10 +6,9 @@ import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.web.PageMixin;
 import net.optionfactory.spring.data.jpa.web.examples.DataJpaWebExampleTest.WebConfig;
 import net.optionfactory.spring.data.jpa.web.filtering.FilterRequestArgumentResolver;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.Page;
@@ -17,12 +16,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
-import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverters;
 import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.context.junit.jupiter.web.SpringJUnitWebConfig;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
@@ -35,9 +31,7 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import tools.jackson.databind.json.JsonMapper;
 
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = WebConfig.class)
-@WebAppConfiguration
+@SpringJUnitWebConfig(WebConfig.class)
 public class DataJpaWebExampleTest {
 
     @Configuration
@@ -91,11 +85,11 @@ public class DataJpaWebExampleTest {
 
         @GetMapping("/items")
         public Page<Object> search(Pageable pr, FilterRequest fr) {
-            Assert.assertEquals(2, pr.getPageNumber());
-            Assert.assertEquals(345, pr.getPageSize());
-            Assert.assertTrue("expected byPetType to be mapped", fr.filters().containsKey("byPetType"));
-            Assert.assertTrue("expected byPetBirthDate to be mapped", fr.filters().containsKey("byPetType"));
-            Assert.assertTrue("expected byPetName to be mapper", fr.filters().containsKey("byPetType"));
+            Assertions.assertEquals(2, pr.getPageNumber());
+            Assertions.assertEquals(345, pr.getPageSize());
+            Assertions.assertTrue(fr.filters().containsKey("byPetType"), "expected byPetType to be mapped");
+            Assertions.assertTrue(fr.filters().containsKey("byPetType"), "expected byPetBirthDate to be mapped");
+            Assertions.assertTrue(fr.filters().containsKey("byPetType"), "expected byPetName to be mapper");
             return Page.empty();
         }
 
@@ -106,7 +100,7 @@ public class DataJpaWebExampleTest {
 
     private MockMvc mvc;
 
-    @Before
+    @BeforeEach
     public void setup() {
         mvc = MockMvcBuilders
                 .webAppContextSetup(context)

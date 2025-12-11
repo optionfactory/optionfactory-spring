@@ -7,8 +7,8 @@ import java.util.Optional;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
 import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -24,7 +24,7 @@ public class UpstreamParamTest {
                 .requestFactoryMock(c -> {
                     c.response(MediaType.APPLICATION_JSON, "{}");
                     c.responseFactory((InvocationContext ctx, URI uri, HttpMethod method, HttpHeaders headers) -> {
-                        Assert.assertEquals(expected, uri);
+                        Assertions.assertEquals(expected, uri);
                         final HttpHeaders h = new HttpHeaders();
                         h.setContentType(MediaType.APPLICATION_JSON);
                         return new MockClientHttpResponse(HttpStatus.OK, HttpStatus.OK.getReasonPhrase(), h, new ByteArrayResource("{}".getBytes(StandardCharsets.UTF_8)));

@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Set;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.text.PDFTextStripper;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
 import org.thymeleaf.context.Context;
@@ -23,7 +23,7 @@ public class ThymeleafToPdfRendererTest {
 
     private ThymeleafToPdfRenderer renderer;
 
-    @Before
+    @BeforeEach
     public void setup() throws Exception {
         final var resolver = new ClassLoaderTemplateResolver();
         resolver.setOrder(1);
@@ -48,7 +48,7 @@ public class ThymeleafToPdfRendererTest {
         dump(rendered, "target/example.rendered.pdf");
         try (final var doc = Loader.loadPDF(new File("target/example.rendered.pdf"))) {
             final var got = new PDFTextStripper().getText(doc);
-            Assert.assertEquals("test", got.trim());
+            Assertions.assertEquals("test", got.trim());
         }
     }
 

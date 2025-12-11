@@ -1,8 +1,8 @@
 package net.optionfactory.spring.marshaling.jackson.quirks;
 
 import net.optionfactory.spring.marshaling.jackson.quirks.Quirks.Scream;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
 public class ScreamTest {
@@ -18,7 +18,7 @@ public class ScreamTest {
         final var expected = """
         {"assignedValue":"a"}
         """;
-        Assert.assertEquals(expected.trim(), got);
+        Assertions.assertEquals(expected.trim(), got);
     }
 
     @Test
@@ -28,7 +28,7 @@ public class ScreamTest {
         {"assignedValue":"a"}
         """;
         final var got = om.readValue(source, Bean.class);
-        Assert.assertEquals(new Bean("a"), got);
+        Assertions.assertEquals(new Bean("a"), got);
     }
 
     @Test
@@ -38,7 +38,7 @@ public class ScreamTest {
         final var expected = """
         {"ASSIGNED_VALUE":"a"}
         """;
-        Assert.assertEquals(expected.trim(), got);
+        Assertions.assertEquals(expected.trim(), got);
     }
 
     @Test
@@ -48,6 +48,6 @@ public class ScreamTest {
         {"ASSIGNED_VALUE":"a"}
         """;
         final var got = om.readValue(source, Bean.class);
-        Assert.assertEquals(new Bean("a"), got);
+        Assertions.assertEquals(new Bean("a"), got);
     }
 }

@@ -5,8 +5,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.UUID;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class EmailSenderTest {
 
@@ -29,8 +29,8 @@ public class EmailSenderTest {
 
         spool.resolve(filename).toFile().createNewFile();
         sender.processSpool();
-        Assert.assertTrue(Files.list(spool).noneMatch(p -> filename.equals(p.getFileName().toString())));
-        Assert.assertTrue(Files.list(sent).anyMatch(p -> filename.equals(p.getFileName().toString())));
+        Assertions.assertTrue(Files.list(spool).noneMatch(p -> filename.equals(p.getFileName().toString())));
+        Assertions.assertTrue(Files.list(sent).anyMatch(p -> filename.equals(p.getFileName().toString())));
     }
 
     @Test
@@ -54,8 +54,8 @@ public class EmailSenderTest {
         spool.resolve(filename).toFile().createNewFile();
         Thread.sleep(101);
         sender.processSpool();
-        Assert.assertTrue(Files.list(spool).noneMatch(p -> filename.equals(p.getFileName().toString())));
-        Assert.assertTrue(Files.list(dead).anyMatch(p -> filename.equals(p.getFileName().toString())));
+        Assertions.assertTrue(Files.list(spool).noneMatch(p -> filename.equals(p.getFileName().toString())));
+        Assertions.assertTrue(Files.list(dead).anyMatch(p -> filename.equals(p.getFileName().toString())));
     }
 
 }

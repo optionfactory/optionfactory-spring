@@ -1,7 +1,7 @@
 package net.optionfactory.spring.email;
 
 import java.nio.file.Path;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 

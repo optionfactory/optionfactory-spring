@@ -5,10 +5,9 @@ import net.optionfactory.spring.csp.StrictContentSecurityPolicyHeaderWriter.Cont
 import net.optionfactory.spring.csp.StrictContentSecurityPolicyNonceFilter.Csp;
 import net.optionfactory.spring.csp.examples.CspExampleTest.SecurityConfig;
 import net.optionfactory.spring.csp.examples.CspExampleTest.WebConfig;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,13 +16,11 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.stereotype.Controller;
+import org.springframework.test.context.junit.jupiter.web.SpringJUnitWebConfig;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -31,12 +28,10 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = {
+@SpringJUnitWebConfig({
     WebConfig.class,
     SecurityConfig.class
 })
-@WebAppConfiguration
 public class CspExampleTest {
 
     @Configuration
@@ -88,7 +83,7 @@ public class CspExampleTest {
 
     private MockMvc mvc;
 
-    @Before
+    @BeforeEach
     public void setup() {
         mvc = MockMvcBuilders
                 .webAppContextSetup(context)
@@ -103,7 +98,7 @@ public class CspExampleTest {
                 .andReturn();
         final var mav = result.getModelAndView();
         final var csp = mav.getModel().get("csp");
-        Assert.assertTrue(csp instanceof Csp);
+        Assertions.assertTrue(csp instanceof Csp);
     }
 
     @Test
@@ -114,9 +109,9 @@ public class CspExampleTest {
 
         final var cspHeader = result.getResponse().getHeader("Content-Security-Policy-Report-Only");
 
-        Assert.assertNotNull(cspHeader);
-        Assert.assertTrue(cspHeader.contains("/test-csp-report/"));
-        Assert.assertNotNull(result.getResponse().getHeader("X-XSS-Protection"));
+        Assertions.assertNotNull(cspHeader);
+        Assertions.assertTrue(cspHeader.contains("/test-csp-report/"));
+        Assertions.assertNotNull(result.getResponse().getHeader("X-XSS-Protection"));
     }
 
     @Test

@@ -4,21 +4,18 @@ import java.util.Map;
 import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
 import net.optionfactory.spring.upstream.mocks.rendering.MocksReferencingBeansTest.ClientConfig;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.GetExchange;
 import tools.jackson.databind.json.JsonMapper;
 
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = {ClientConfig.class})
+@SpringJUnitConfig(ClientConfig.class)
 public class MocksReferencingBeansTest {
 
     public record Info(String help) {
@@ -73,13 +70,13 @@ public class MocksReferencingBeansTest {
     public void canReferenceApplicationContextBeansInJsonTemplates() throws Exception {
         final var got = client.jsont("1");
 
-        Assert.assertEquals(Map.of("key", "help"), got);
+        Assertions.assertEquals(Map.of("key", "help"), got);
     }
 
     @Test
     public void canReferenceApplicationContextBeansInThymeleafTemplates() throws Exception {
         final var got = client.thymeleaf("1");
 
-        Assert.assertEquals(Map.of("key", "help"), got);
+        Assertions.assertEquals(Map.of("key", "help"), got);
     }
 }

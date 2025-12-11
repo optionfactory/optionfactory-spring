@@ -9,23 +9,20 @@ import net.optionfactory.spring.upstream.auth.OauthClient;
 import net.optionfactory.spring.upstream.auth.OauthClientCredentialsAuthenticator;
 import net.optionfactory.spring.upstream.examples.UpstreamRestExampleTest.ClientConfig;
 import net.optionfactory.spring.upstream.hc5.HcSocketStrategies;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.GetExchange;
 import tools.jackson.databind.json.JsonMapper;
 
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = {ClientConfig.class})
+@SpringJUnitConfig(ClientConfig.class)
 @TestPropertySource(properties = {
     "myclient.type=mock",
     "myclient.client.id=client-id",
@@ -121,6 +118,6 @@ public class UpstreamRestExampleTest {
     public void canUseClientConfiredWithMocks() throws Exception {
         final var got = client.ok("1");
 
-        Assert.assertEquals(Map.of("mocked", "response"), got);
+        Assertions.assertEquals(Map.of("mocked", "response"), got);
     }
 }

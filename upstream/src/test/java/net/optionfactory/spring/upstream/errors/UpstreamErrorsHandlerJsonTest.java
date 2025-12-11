@@ -1,28 +1,32 @@
 package net.optionfactory.spring.upstream.errors;
 
 import net.optionfactory.spring.upstream.UpstreamBuilder;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
 public class UpstreamErrorsHandlerJsonTest {
 
-    @Test(expected = RestClientUpstreamException.class)
+    @Test
     public void matchinErrorAnnotationYieldsRestClientUpstreamException() {
-        UpstreamBuilder.create(UpstreamErrorsJsonClient.class)
+        final var client = UpstreamBuilder.create(UpstreamErrorsJsonClient.class)
                 .requestFactoryMock(c -> {
                     c.response(MediaType.APPLICATION_JSON,
                             """
-                            {
-                                "metadata": {"success": false},
-                                "data": null
-                            }
-                            """
+                                                        {
+                                                            "metadata": {"success": false},
+                                                            "data": null
+                                                        }
+                                                        """
                     );
                 })
                 .restClient(r -> r.baseUrl("http://example.com"))
-                .build()
-                .callWithJsonPath();
+                .build();
+
+        Assertions.assertThrows(RestClientUpstreamException.class, () -> {
+            client.callWithJsonPath();
+        });
+
     }
 
     @Test
@@ -42,7 +46,7 @@ public class UpstreamErrorsHandlerJsonTest {
                 .build()
                 .callWithJsonPath();
 
-        Assert.assertEquals(true, response.metadata.success);
+        Assertions.assertEquals(true, response.metadata.success);
     }
 
 }

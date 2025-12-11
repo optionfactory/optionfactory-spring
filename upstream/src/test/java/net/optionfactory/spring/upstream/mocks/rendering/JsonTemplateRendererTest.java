@@ -2,8 +2,8 @@ package net.optionfactory.spring.upstream.mocks.rendering;
 
 import java.util.Map;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class JsonTemplateRendererTest {
 
@@ -17,6 +17,6 @@ public class JsonTemplateRendererTest {
 
         Map<String, String> got = client.testEndpoint("passed");
 
-        Assert.assertEquals(Map.of("key", "passed"), got);
+        Assertions.assertEquals(Map.of("key", "passed"), got);
     }
 }

@@ -11,8 +11,8 @@ import java.io.OutputStream;
 import javax.xml.validation.Schema;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
 import net.optionfactory.spring.upstream.soap.calc.Add;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpInputMessage;
@@ -56,8 +56,8 @@ public class SoapMarshallingTest {
                 return new HttpHeaders();
             }
         });
-        Assert.assertEquals(123, read.intA);
-        Assert.assertEquals(345, read.intB);
+        Assertions.assertEquals(123, read.intA);
+        Assertions.assertEquals(345, read.intB);
     }
 
 }

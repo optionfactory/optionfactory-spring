@@ -5,8 +5,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 
@@ -27,7 +27,7 @@ public class XmlPathTest {
 
         final var path = new XmlPath(new ResponseContext(Instant.now(), HttpStatus.OK, HttpStatus.OK.getReasonPhrase(), HttpHeaders.EMPTY, BodySource.of(data, StandardCharsets.UTF_8), false));
 
-        Assert.assertTrue(path.xpathBool("//CodicePositivo[@nil='true']"));
+        Assertions.assertTrue(path.xpathBool("//CodicePositivo[@nil='true']"));
     }
 
     @Test
@@ -45,6 +45,6 @@ public class XmlPathTest {
 
         final var path = new XmlPath(new ResponseContext(Instant.now(), HttpStatus.OK, HttpStatus.OK.getReasonPhrase(), HttpHeaders.EMPTY, BodySource.of(data, StandardCharsets.UTF_8), false));
 
-        Assert.assertFalse(path.xpathBool("//CodicePositivo[@nil='true']"));
+        Assertions.assertFalse(path.xpathBool("//CodicePositivo[@nil='true']"));
     }
 }

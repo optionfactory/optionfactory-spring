@@ -29,9 +29,8 @@ import net.optionfactory.spring.upstream.alerts.UpstreamAlertEvent;
 import net.optionfactory.spring.upstream.alerts.spooler.AlertsEmailsSpoolerTest.Conf;
 import net.optionfactory.spring.upstream.buffering.Buffering;
 import net.optionfactory.spring.upstream.rendering.BodyRendering;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -43,11 +42,9 @@ import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.SimpleAsyncTaskScheduler;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = Conf.class)
+@SpringJUnitConfig(Conf.class)
 public class AlertsEmailsSpoolerTest {
 
     @EnableScheduling
@@ -180,7 +177,7 @@ public class AlertsEmailsSpoolerTest {
         publisher.publishEvent(event2);
 
         Thread.sleep(Duration.ofMillis(1500));
-        Assert.assertEquals(1, emlsIn(paths.sent()).count());
+        Assertions.assertEquals(1, emlsIn(paths.sent()).count());
     }
 
     private Stream<Path> emlsIn(Path path) throws IOException {

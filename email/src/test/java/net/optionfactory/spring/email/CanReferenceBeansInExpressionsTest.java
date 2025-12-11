@@ -2,18 +2,15 @@ package net.optionfactory.spring.email;
 
 import java.nio.charset.StandardCharsets;
 import net.optionfactory.spring.email.CanReferenceBeansInExpressionsTest.Conf;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.thymeleaf.templatemode.TemplateMode;
 
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = Conf.class)
+@SpringJUnitConfig(Conf.class)
 public class CanReferenceBeansInExpressionsTest {
 
     public static class Conf {
@@ -51,6 +48,6 @@ public class CanReferenceBeansInExpressionsTest {
                 .builder()
                 .marshal();
 
-        Assert.assertTrue(new String(out, StandardCharsets.UTF_8).contains("Help Message"));
+        Assertions.assertTrue(new String(out, StandardCharsets.UTF_8).contains("Help Message"));
     }
 }

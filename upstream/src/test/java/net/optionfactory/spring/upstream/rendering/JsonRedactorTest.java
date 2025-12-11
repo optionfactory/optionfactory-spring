@@ -2,8 +2,8 @@ package net.optionfactory.spring.upstream.rendering;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ByteArrayResource;
 import tools.jackson.core.JsonPointer;
 import tools.jackson.databind.json.JsonMapper;
@@ -29,6 +29,6 @@ public class JsonRedactorTest {
         {"password":"<redacted>","nested":{"password":"<redacted>"}}
         """;
 
-        Assert.assertEquals(expected.strip(), got);
+        Assertions.assertEquals(expected.strip(), got);
     }
 }

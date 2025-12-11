@@ -2,7 +2,7 @@ package net.optionfactory.spring.upstream.rendering;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ByteArrayResource;
 
 public class XsltRedactorTest {

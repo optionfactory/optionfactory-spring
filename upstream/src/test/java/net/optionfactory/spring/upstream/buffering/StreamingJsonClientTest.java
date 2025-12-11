@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.stream.Stream;
 import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.service.annotation.GetExchange;
 import tools.jackson.databind.json.JsonMapper;
@@ -47,7 +47,7 @@ public class StreamingJsonClientTest {
     @Test
     public void canReadUnbufferedStreamWhenMappingToAStream() throws IOException {
         try (final var stream = client.fetchStream()) {
-            Assert.assertEquals(List.of(new Bean("k1", "v1"), new Bean("k2", "v2")), stream.toList());
+            Assertions.assertEquals(List.of(new Bean("k1", "v1"), new Bean("k2", "v2")), stream.toList());
         }
     }
 
@@ -55,14 +55,14 @@ public class StreamingJsonClientTest {
     public void canReadUnbufferedStreamWhenMappingToAResponseEntityWithStream() throws IOException {
         final var got = client.fetchStreamWithResponseEntity();
         try (final var stream = got.getBody()) {
-            Assert.assertEquals(List.of(new Bean("k1", "v1"), new Bean("k2", "v2")), stream.toList());
+            Assertions.assertEquals(List.of(new Bean("k1", "v1"), new Bean("k2", "v2")), stream.toList());
         }
     }
 
     @Test
     public void canReadUnbufferedStreamWhenMappingToAStreamFromJsonl() throws IOException {
         try (final var stream = client.fetchStreamFromJsonl()) {
-            Assert.assertEquals(List.of(new Bean("k1", "v1"), new Bean("k2", "v2")), stream.toList());
+            Assertions.assertEquals(List.of(new Bean("k1", "v1"), new Bean("k2", "v2")), stream.toList());
         }
     }
 

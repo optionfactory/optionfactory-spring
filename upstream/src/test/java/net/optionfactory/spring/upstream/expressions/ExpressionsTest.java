@@ -1,8 +1,8 @@
 package net.optionfactory.spring.upstream.expressions;
 
 import java.util.Map;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
@@ -20,7 +20,7 @@ public class ExpressionsTest {
         final var ac = new AnnotationConfigApplicationContext(Config.class);
         final var e = new Expressions(ac, Map.of());
         final var got = e.string("@environment.getProperty('test.value')", Expressions.Type.EXPRESSION).evaluate(e.context());
-        Assert.assertEquals("my value", got);
+        Assertions.assertEquals("my value", got);
     }
 
     @Test
@@ -28,7 +28,7 @@ public class ExpressionsTest {
         final var ac = new AnnotationConfigApplicationContext(Config.class);
         final var e = new Expressions(ac, Map.of());
         final var got = e.string("@environment['test.value']", Expressions.Type.EXPRESSION).evaluate(e.context());
-        Assert.assertEquals("my value", got);
+        Assertions.assertEquals("my value", got);
     }
 
     @Test
@@ -36,6 +36,6 @@ public class ExpressionsTest {
         final var ac = new AnnotationConfigApplicationContext(Config.class);
         final var e = new Expressions(ac, Map.of("test", "my value"));
         final var got = e.string("#test", Expressions.Type.EXPRESSION).evaluate(e.context());
-        Assert.assertEquals("my value", got);
+        Assertions.assertEquals("my value", got);
     }
 }

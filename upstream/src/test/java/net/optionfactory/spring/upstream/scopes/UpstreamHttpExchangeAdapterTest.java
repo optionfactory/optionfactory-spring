@@ -9,12 +9,12 @@ import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.scopes.ExchangeAdapterClient.Wrapper;
-import org.junit.Assert;
-import org.junit.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.service.invoker.HttpRequestValues;
 import net.optionfactory.spring.upstream.scopes.UpstreamHttpExchangeAdapter.HttpRequestValuesTransformer;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
 public class UpstreamHttpExchangeAdapterTest {
@@ -43,19 +43,19 @@ public class UpstreamHttpExchangeAdapterTest {
                             """.trim();
 
         client.adaptExchange(new ExchangeAdapterClient.InnerBody("key", "value"));
-        Assert.assertEquals(expectedRequestBody, capturedBody.get());
+        Assertions.assertEquals(expectedRequestBody, capturedBody.get());
 
         capturedBody.set(null);
         client.adaptExchangeForBodilessEntity(new ExchangeAdapterClient.InnerBody("key", "value"));
-        Assert.assertEquals(expectedRequestBody, capturedBody.get());
+        Assertions.assertEquals(expectedRequestBody, capturedBody.get());
 
         capturedBody.set(null);
         client.adaptExchangeForBody(new ExchangeAdapterClient.InnerBody("key", "value"));
-        Assert.assertEquals(expectedRequestBody, capturedBody.get());
+        Assertions.assertEquals(expectedRequestBody, capturedBody.get());
 
         capturedBody.set(null);
         client.adaptExchangeForEntity(new ExchangeAdapterClient.InnerBody("key", "value"));
-        Assert.assertEquals(expectedRequestBody, capturedBody.get());
+        Assertions.assertEquals(expectedRequestBody, capturedBody.get());
 
     }
 

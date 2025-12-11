@@ -3,16 +3,13 @@ package net.optionfactory.spring.data.jpa.filtering.psql.json;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.psql.HibernateOnPsqlTestConfig;
 import net.optionfactory.spring.data.jpa.filtering.psql.json.PsqlEntityEmbeddedJson.EmbeddedRecord;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.annotation.Transactional;
 
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = HibernateOnPsqlTestConfig.class)
+@SpringJUnitConfig(HibernateOnPsqlTestConfig.class)
 public class PsqlEntityEmbeddedJsonTest {
 
     @Autowired
@@ -34,6 +31,6 @@ public class PsqlEntityEmbeddedJsonTest {
 
         final var found = entities.findAll(fr);
 
-        Assert.assertEquals(1, found.size());
+        Assertions.assertEquals(1, found.size());
     }
 }

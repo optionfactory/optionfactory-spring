@@ -10,25 +10,22 @@ import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare.CaseSensi
 import net.optionfactory.spring.data.jpa.filtering.psql.HibernateOnPsqlTestConfig;
 import net.optionfactory.spring.data.jpa.filtering.psql.examples.Pet.PetType;
 import net.optionfactory.spring.data.jpa.filtering.psql.examples.PetOwner.Address;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.shaded.com.fasterxml.jackson.core.JsonProcessingException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = HibernateOnPsqlTestConfig.class)
+@SpringJUnitConfig(HibernateOnPsqlTestConfig.class)
 public class PetOwnerExampleTest {
 
     @Inject
     private PetOwnersRepository owners;
 
-    @Before
+    @BeforeEach
     @Transactional
     public void setup() {
         owners.save(PetOwner.of("Dorothy", "Gale",
@@ -58,7 +55,7 @@ public class PetOwnerExampleTest {
                 .map(po -> po.firstName)
                 .toList();
 
-        Assert.assertEquals(List.of("Tintin"), foundNames);
+        Assertions.assertEquals(List.of("Tintin"), foundNames);
 
     }
 
@@ -76,7 +73,7 @@ public class PetOwnerExampleTest {
                 .map(po -> po.firstName)
                 .toList();
 
-        Assert.assertEquals(List.of("Dorothy", "Tintin"), foundNames);
+        Assertions.assertEquals(List.of("Dorothy", "Tintin"), foundNames);
 
     }
 
@@ -94,7 +91,7 @@ public class PetOwnerExampleTest {
                 .map(po -> po.firstName)
                 .toList();
 
-        Assert.assertEquals(List.of("Dorothy", "Tintin"), foundNames);
+        Assertions.assertEquals(List.of("Dorothy", "Tintin"), foundNames);
     }
 
     @Test
@@ -115,7 +112,7 @@ public class PetOwnerExampleTest {
                 .map(po -> po.firstName)
                 .toList();
 
-        Assert.assertEquals(List.of("Dorothy", "Tintin"), foundNames);
+        Assertions.assertEquals(List.of("Dorothy", "Tintin"), foundNames);
     }
 
     @Test
@@ -129,6 +126,6 @@ public class PetOwnerExampleTest {
                 .stream()
                 .map(po -> po.firstName)
                 .toList();
-        Assert.assertEquals(List.of("Dorothy"), foundNames);
+        Assertions.assertEquals(List.of("Dorothy"), foundNames);
     }
 }

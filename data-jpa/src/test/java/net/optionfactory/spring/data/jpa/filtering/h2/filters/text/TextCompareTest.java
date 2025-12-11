@@ -3,9 +3,9 @@ package net.optionfactory.spring.data.jpa.filtering.h2.filters.text;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare.CaseSensitivity;
 import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,7 +16,7 @@ public class TextCompareTest {
     private EntityForTextCompareRepository repo;
     private TransactionTemplate tx;
 
-    @Before
+    @BeforeEach
     public void setup() {
         final AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
         ctx.register(HibernateOnH2TestConfig.class);
@@ -44,7 +44,7 @@ public class TextCompareTest {
 
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
-        Assert.assertEquals(123L, page.getContent().get(0).id);
+        Assertions.assertEquals(123L, page.getContent().get(0).id);
     }
 
     @Test
@@ -54,7 +54,7 @@ public class TextCompareTest {
                 .build();
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
-        Assert.assertEquals(123L, page.getContent().get(0).id);
+        Assertions.assertEquals(123L, page.getContent().get(0).id);
     }
 
     @Test
@@ -64,7 +64,7 @@ public class TextCompareTest {
                 .build();
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
-        Assert.assertEquals(123L, page.getContent().get(0).id);
+        Assertions.assertEquals(123L, page.getContent().get(0).id);
     }
 
     @Test
@@ -75,7 +75,7 @@ public class TextCompareTest {
 
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
-        Assert.assertEquals(123L, page.getContent().get(0).id);
+        Assertions.assertEquals(123L, page.getContent().get(0).id);
     }
 
     @Test
@@ -86,7 +86,7 @@ public class TextCompareTest {
 
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
-        Assert.assertEquals(123L, page.getContent().get(0).id);
+        Assertions.assertEquals(123L, page.getContent().get(0).id);
     }
 
     @Test
@@ -98,7 +98,7 @@ public class TextCompareTest {
 
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
-        Assert.assertEquals(123L, page.getContent().get(0).id);
+        Assertions.assertEquals(123L, page.getContent().get(0).id);
     }
 
     @Test
@@ -110,7 +110,7 @@ public class TextCompareTest {
 
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
-        Assert.assertEquals(123L, page.getContent().get(0).id);
+        Assertions.assertEquals(123L, page.getContent().get(0).id);
     }
 
     @Test
@@ -120,7 +120,7 @@ public class TextCompareTest {
                 .build();
         final Pageable pr = Pageable.unpaged();
         Page<EntityForTextCompare> page = tx.execute(txs -> repo.findAll(null, fr, pr));
-        Assert.assertEquals(123L, page.getContent().get(0).id);
+        Assertions.assertEquals(123L, page.getContent().get(0).id);
     }
 
     @Test
@@ -132,6 +132,6 @@ public class TextCompareTest {
 
         final Page<EntityForTextCompare> all = repo.findAll(Pageable.unpaged());
         final Page<EntityForTextCompare> page = repo.findAll(null, fr, Pageable.unpaged());
-        Assert.assertEquals(all.getTotalElements(), page.getTotalElements());
+        Assertions.assertEquals(all.getTotalElements(), page.getTotalElements());
     }
 }

@@ -1,32 +1,29 @@
 package net.optionfactory.spring.pem.der;
 
 import java.time.Instant;
+import java.util.stream.Stream;
 import net.optionfactory.spring.pem.der.DerCursor.DerValue;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.experimental.theories.DataPoints;
-import org.junit.experimental.theories.Theories;
-import org.junit.experimental.theories.Theory;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Theories.class)
 public class DateParsingTest {
 
-    public static record D(String message, Instant expected, String parseable) {
-
+    public static Stream<Arguments> data() {
+        return Stream.of(
+                Arguments.of("can parse with seconds, with Z", Instant.parse("2023-12-13T01:45:50Z"), "231213014550Z"),
+                Arguments.of("can parse without seconds, with Z", Instant.parse("2023-12-13T01:45:00Z"), "2312130145Z"),
+                Arguments.of("can parse with seconds, with offset", Instant.parse("2023-12-13T01:45:50+01:20"), "231213014550+0120"),
+                Arguments.of("can parse without seconds, with offset", Instant.parse("2023-12-13T01:45:00+01:20"), "2312130145+0120")
+        );
     }
 
-    @DataPoints
-    public static D[] ds = new D[]{
-        new D("can parse with seconds, with Z", Instant.parse("2023-12-13T01:45:50Z"), "231213014550Z"),
-        new D("can parse without seconds, with Z", Instant.parse("2023-12-13T01:45:00Z"), "2312130145Z"),
-        new D("can parse with seconds, with offset", Instant.parse("2023-12-13T01:45:50+01:20"), "231213014550+0120"),
-        new D("can parse without seconds, with offset", Instant.parse("2023-12-13T01:45:00+01:20"), "2312130145+0120")
-    };
-
-    @Theory
-    public void canParseUtcTime(D d) {
-        Assert.assertEquals(d.message(), d.expected(), Instant.from(DerValue.UTC_TIME_PATTERN.parse(d.parseable())));
+    @ParameterizedTest
+    @MethodSource("data")
+    public void canParseUtcTime(String message, Instant expected, String parseable) {
+        Assertions.assertEquals(expected, Instant.from(DerValue.UTC_TIME_PATTERN.parse(parseable)), message);
 
     }
 
@@ -36,7 +33,7 @@ public class DateParsingTest {
         Instant got = DerCursor.flat(bytes)
                 .next().utc(bytes);
 
-        Assert.assertEquals(
+        Assertions.assertEquals(
                 Instant.parse("2016-03-17T16:40:46Z"),
                 got
         );

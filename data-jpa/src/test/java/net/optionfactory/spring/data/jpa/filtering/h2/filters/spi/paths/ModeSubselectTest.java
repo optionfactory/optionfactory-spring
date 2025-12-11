@@ -2,24 +2,21 @@ package net.optionfactory.spring.data.jpa.filtering.h2.filters.spi.paths;
 
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.annotation.Transactional;
 
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = HibernateOnH2TestConfig.class)
+@SpringJUnitConfig(HibernateOnH2TestConfig.class)
 @Transactional
 public class ModeSubselectTest {
 
     @Autowired
     private RootEntityWithSubselectFiltersRepository roots;
 
-    @Before
+    @BeforeEach
     public void setup() {
         roots.save(RootEntityWithSubselectFilters.of(
                 LeafEntityWithSubselectFilters.of(true, true),
@@ -47,6 +44,6 @@ public class ModeSubselectTest {
                 .bool("flag2", f -> f.eq(Boolean.TRUE))
                 .build();
         
-        Assert.assertEquals(2, roots.findAll(null, fr).size());
+        Assertions.assertEquals(2, roots.findAll(null, fr).size());
     }
 }

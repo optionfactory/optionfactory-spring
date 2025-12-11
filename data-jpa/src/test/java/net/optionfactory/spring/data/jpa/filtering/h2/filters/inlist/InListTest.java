@@ -4,26 +4,23 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.annotation.Transactional;
 
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = HibernateOnH2TestConfig.class)
+@SpringJUnitConfig(HibernateOnH2TestConfig.class)
 @Transactional
 public class InListTest {
 
     @Autowired
     private EntityForInListRepository repo;
 
-    @Before
+    @BeforeEach
     public void setup() {
         repo.save(entity(1, "swimming", 1, 10));
         repo.save(entity(2, "skiing", 1, 10));
@@ -38,7 +35,7 @@ public class InListTest {
                 .build();
         final Pageable pr = Pageable.unpaged();
         final Page<EntityForInList> page = repo.findAll(null, fr, pr);
-        Assert.assertEquals(Set.of(2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
@@ -49,7 +46,7 @@ public class InListTest {
 
         final Pageable pr = Pageable.unpaged();
         final Page<EntityForInList> page = repo.findAll(null, fr, pr);
-        Assert.assertEquals(0L, page.getTotalElements());
+        Assertions.assertEquals(0L, page.getTotalElements());
     }
 
     @Test
@@ -60,7 +57,7 @@ public class InListTest {
 
         final Pageable pr = Pageable.unpaged();
         final Page<EntityForInList> page = repo.findAll(null, fr, pr);
-        Assert.assertEquals(Set.of(1L, 2L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(1L, 2L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
@@ -71,7 +68,7 @@ public class InListTest {
 
         final Pageable pr = Pageable.unpaged();
         final Page<EntityForInList> page = repo.findAll(null, fr, pr);
-        Assert.assertEquals(Set.of(3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
@@ -82,7 +79,7 @@ public class InListTest {
 
         final Pageable pr = Pageable.unpaged();
         final Page<EntityForInList> page = repo.findAll(null, fr, pr);
-        Assert.assertEquals(Set.of(3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     private static EntityForInList entity(long id, String name, double rating, Integer maxPersons) {

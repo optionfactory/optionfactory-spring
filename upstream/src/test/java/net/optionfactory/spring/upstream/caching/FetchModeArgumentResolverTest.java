@@ -2,7 +2,7 @@ package net.optionfactory.spring.upstream.caching;
 
 import net.optionfactory.spring.upstream.UpstreamBuilder;
 import net.optionfactory.spring.upstream.caching.FetchModeClient.FetchMode;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
 public class FetchModeArgumentResolverTest {

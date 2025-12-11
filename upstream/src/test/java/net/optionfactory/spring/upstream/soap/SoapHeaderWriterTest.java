@@ -5,14 +5,12 @@ import jakarta.xml.soap.MessageFactory;
 import jakarta.xml.soap.SOAPException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
 import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
 import net.optionfactory.spring.upstream.rendering.BodyRendering;
 import net.optionfactory.spring.upstream.rendering.BodyRendering.Strategy;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.util.FastByteArrayOutputStream;
 
@@ -51,6 +49,6 @@ public class SoapHeaderWriterTest {
         """, StandardCharsets.UTF_8);
         final var expected = bodyRendering.render(Strategy.ABBREVIATED_REDACTED, 0, MediaType.APPLICATION_XML, bodySource, "X", 100_000);
 
-        Assert.assertEquals(expected, new String(baos.toByteArrayUnsafe(), StandardCharsets.UTF_8));
+        Assertions.assertEquals(expected, new String(baos.toByteArrayUnsafe(), StandardCharsets.UTF_8));
     }
 }

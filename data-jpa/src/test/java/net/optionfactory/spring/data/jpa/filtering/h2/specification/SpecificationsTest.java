@@ -3,9 +3,9 @@ package net.optionfactory.spring.data.jpa.filtering.h2.specification;
 import java.util.List;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -14,7 +14,7 @@ public class SpecificationsTest {
     private EntityForSpecificationRepository repo;
     private TransactionTemplate tx;
 
-    @Before
+    @BeforeEach
     public void setup() {
         final AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
         ctx.register(HibernateOnH2TestConfig.class);
@@ -44,6 +44,6 @@ public class SpecificationsTest {
                 .text("byDesc", f -> f.eq("description"))
                 .build();
         List<EntityForSpecification> page = tx.execute(txs -> repo.findAllByName("name2", fr));
-        Assert.assertEquals(1, page.size());
+        Assertions.assertEquals(1, page.size());
     }
 }

@@ -2,8 +2,8 @@ package net.optionfactory.spring.marshaling.jackson.quirks;
 
 import java.time.LocalDateTime;
 import net.optionfactory.spring.marshaling.jackson.quirks.Quirks.LocalDateTimeAsIsoInstant;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
 public class LocalDateTimeAsIsoInstantTest {
@@ -17,7 +17,7 @@ public class LocalDateTimeAsIsoInstantTest {
         final var om = JsonMapper.builder().build();
         String got = om.writeValueAsString(new Bean(LocalDateTime.parse("2024-01-02T00:00:00")));
 
-        Assert.assertEquals("""
+        Assertions.assertEquals("""
                             {"value":"2024-01-02T00:00:00"}
                             """.trim(), got);
     }
@@ -28,7 +28,7 @@ public class LocalDateTimeAsIsoInstantTest {
         
         String got = om.writeValueAsString(new Bean(LocalDateTime.parse("2024-01-02T00:00:00")));
 
-        Assert.assertEquals("""
+        Assertions.assertEquals("""
                             {"value":"2024-01-02T00:00:00Z"}
                             """.trim(), got);
     }
@@ -40,7 +40,7 @@ public class LocalDateTimeAsIsoInstantTest {
                             {"value":"2024-01-02T00:00:00"}
                             """, Bean.class);
 
-        Assert.assertEquals(new Bean(LocalDateTime.parse("2024-01-02T00:00:00")), got);
+        Assertions.assertEquals(new Bean(LocalDateTime.parse("2024-01-02T00:00:00")), got);
     }
 
     @Test
@@ -50,6 +50,6 @@ public class LocalDateTimeAsIsoInstantTest {
                             {"value":"2024-01-02T00:00:00Z"}
                             """, Bean.class);
 
-        Assert.assertEquals(new Bean(LocalDateTime.parse("2024-01-02T00:00:00")), got);
+        Assertions.assertEquals(new Bean(LocalDateTime.parse("2024-01-02T00:00:00")), got);
     }
 }

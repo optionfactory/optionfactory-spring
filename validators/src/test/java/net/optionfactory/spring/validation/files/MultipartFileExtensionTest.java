@@ -6,8 +6,8 @@ import jakarta.validation.Validator;
 import java.util.Locale;
 import java.util.Set;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.web.multipart.MultipartFile;
 
 public class MultipartFileExtensionTest {
@@ -28,7 +28,7 @@ public class MultipartFileExtensionTest {
         final BeanWithMultipartFileExtension bean = new BeanWithMultipartFileExtension();
         bean.file = new ByteArrayMultipartFile("a.png", "image/png", new byte[0]);
         Set<ConstraintViolation<BeanWithMultipartFileExtension>> result = v.validate(bean);
-        Assert.assertEquals("Tipo file non supportato, supportati: [svg]", result.iterator().next().getMessage());
+        Assertions.assertEquals("Tipo file non supportato, supportati: [svg]", result.iterator().next().getMessage());
     }
 
     @Test
@@ -39,7 +39,7 @@ public class MultipartFileExtensionTest {
         final BeanWithMultipartFileExtension bean = new BeanWithMultipartFileExtension();
         bean.file = new ByteArrayMultipartFile("a.svg", "image/svg", new byte[0]);
         Set<ConstraintViolation<BeanWithMultipartFileExtension>> result = v.validate(bean);
-        Assert.assertEquals(0, result.size());
+        Assertions.assertEquals(0, result.size());
     }
 
     @Test
@@ -50,7 +50,7 @@ public class MultipartFileExtensionTest {
         final BeanWithMultipartFileExtension bean = new BeanWithMultipartFileExtension();
         bean.file = new ByteArrayMultipartFile("a.SvG", "image/svg", new byte[0]);
         Set<ConstraintViolation<BeanWithMultipartFileExtension>> result = v.validate(bean);
-        Assert.assertEquals(0, result.size());
+        Assertions.assertEquals(0, result.size());
     }
 
     @Test
@@ -61,7 +61,7 @@ public class MultipartFileExtensionTest {
         final BeanWithMultipartFileExtension bean = new BeanWithMultipartFileExtension();
         bean.file = new ByteArrayMultipartFile("a.", "image/svg", new byte[0]);
         Set<ConstraintViolation<BeanWithMultipartFileExtension>> result = v.validate(bean);
-        Assert.assertEquals(1, result.size());
+        Assertions.assertEquals(1, result.size());
     }
 
     @Test
@@ -72,7 +72,7 @@ public class MultipartFileExtensionTest {
         final BeanWithMultipartFileExtension bean = new BeanWithMultipartFileExtension();
         bean.file = new ByteArrayMultipartFile("a", "image/svg", new byte[0]);
         Set<ConstraintViolation<BeanWithMultipartFileExtension>> result = v.validate(bean);
-        Assert.assertEquals(1, result.size());
+        Assertions.assertEquals(1, result.size());
     }
 
 }

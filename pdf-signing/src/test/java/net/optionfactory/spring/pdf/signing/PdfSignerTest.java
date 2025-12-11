@@ -15,9 +15,9 @@ import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.bouncycastle.cms.CMSProcessableByteArray;
 import org.bouncycastle.cms.CMSSignedData;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
@@ -26,7 +26,7 @@ public class PdfSignerTest {
 
     private PdfSigner signer;
 
-    @Before
+    @BeforeEach
     public void setup() throws Exception {
         // keytool -genkeypair -storepass "changeit" -storetype pkcs12 -alias pdf -validity 3650 -v -keyalg RSA -keystore devpdf.pkcs12
         try (InputStream is = PdfSignerTest.class.getResourceAsStream("/example/teststore.pkcs12")) {
@@ -59,10 +59,10 @@ public class PdfSignerTest {
             final var signerInformationStore = cmsSignedData.getSignerInfos();
             final var signers = signerInformationStore.getSigners();
             final var signer = signers.stream().findFirst().orElseThrow();
-            Assert.assertNotNull(signer);
-            Assert.assertEquals(si.name, pdSignature.getName());
-            Assert.assertEquals(si.reason, pdSignature.getReason());
-            Assert.assertEquals(si.location, pdSignature.getLocation());
+            Assertions.assertNotNull(signer);
+            Assertions.assertEquals(si.name, pdSignature.getName());
+            Assertions.assertEquals(si.reason, pdSignature.getReason());
+            Assertions.assertEquals(si.location, pdSignature.getLocation());
         }
 
     }

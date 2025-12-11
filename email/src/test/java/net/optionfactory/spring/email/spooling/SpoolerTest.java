@@ -7,9 +7,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import net.optionfactory.spring.email.spooling.SpoolerTest.Conf;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -18,11 +17,9 @@ import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.SimpleAsyncTaskScheduler;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = Conf.class)
+@SpringJUnitConfig(Conf.class)
 public class SpoolerTest {
 
     @EnableScheduling
@@ -78,7 +75,7 @@ public class SpoolerTest {
             publisher.publishEvent(new TestEvent(i));
         }
         boolean reachedZero = countDownLatch.await(1, TimeUnit.SECONDS);
-        Assert.assertTrue(reachedZero);
+        Assertions.assertTrue(reachedZero);
     }
 
 }

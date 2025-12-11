@@ -11,8 +11,8 @@ import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
 import net.optionfactory.spring.upstream.soap.calc.Add;
 import net.optionfactory.spring.upstream.soap.calc.CalculatorClient;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
@@ -53,7 +53,7 @@ public class UpstreamSoapActionInterceptorTest {
                 .build()
                 .add(new Add());
 
-        Assert.assertEquals("\"http://tempuri.org/Add\"", capturedHeaders.get().getFirst("SOAPAction"));
+        Assertions.assertEquals("\"http://tempuri.org/Add\"", capturedHeaders.get().getFirst("SOAPAction"));
     }
 
     @Test
@@ -89,7 +89,7 @@ public class UpstreamSoapActionInterceptorTest {
                 .build()
                 .add(new Add());
 
-        Assert.assertEquals("\"http://tempuri.org/Add\"", capturedHeaders.get().getContentType().getParameter("action"));
+        Assertions.assertEquals("\"http://tempuri.org/Add\"", capturedHeaders.get().getContentType().getParameter("action"));
     }
 
 }

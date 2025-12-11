@@ -8,28 +8,25 @@ import java.util.List;
 import java.util.stream.Collectors;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.annotation.Transactional;
 
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = HibernateOnH2TestConfig.class)
+@SpringJUnitConfig(HibernateOnH2TestConfig.class)
 @Transactional
 public class SortTest {
 
     @Autowired
     private EntityForSortRepository repo;
 
-    @Before
+    @BeforeEach
     public void setup() {
         repo.save(entity(1, 2, "A"));
         repo.save(entity(2, 1, "B"));
@@ -44,14 +41,14 @@ public class SortTest {
         final Sort sort = Sort.by(Sort.Order.asc("byA"), Sort.Order.desc("byB"));
         final List<EntityForSort> all = repo.findAll(sort);
         final List<String> expected = List.of("D", "C", "B", "F", "E", "A");
-        Assert.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()));
+        Assertions.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()));
     }
 
     @Test
     public void canSortWithSpecificationOrders() {
         final List<EntityForSort> all = repo.findAll(new EvenIdFirst(), FilterRequest.unfiltered());
         final List<String> expected = List.of("B", "D", "F", "A", "C", "E");
-        Assert.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()));
+        Assertions.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()));
     }
 
     @Test
@@ -59,7 +56,7 @@ public class SortTest {
         final Sort sort = Sort.by(Sort.Order.asc("byA"), Sort.Order.desc("byB"));
         final List<EntityForSort> all = repo.findAll(new EvenIdFirst(), FilterRequest.unfiltered(), sort);
         final List<String> expected = List.of("D", "B", "F", "C", "E", "A");
-        Assert.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()));
+        Assertions.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()));
     }
 
     @Test
@@ -67,7 +64,7 @@ public class SortTest {
         final Sort sort = Sort.by(Sort.Order.asc("byA"), Sort.Order.desc("byB"));
         final List<EntityForSort> all = repo.findAll(new EvenIdFirst(), sort);
         final List<String> expected = List.of("D", "B", "F", "C", "E", "A");
-        Assert.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()));
+        Assertions.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()));
     }
 
     @Test
@@ -76,7 +73,7 @@ public class SortTest {
         final PageRequest pr = PageRequest.of(0, 10, sort);
         final Page<EntityForSort> all = repo.findAll(new EvenIdFirst(), pr);
         final List<String> expected = List.of("D", "B", "F", "C", "E", "A");
-        Assert.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()));
+        Assertions.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()));
     }
 
     @Test
@@ -84,7 +81,7 @@ public class SortTest {
         final Sort sort = Sort.by(Sort.Order.asc("byA"), Sort.Order.desc("byB"));
         final Page<EntityForSort> page = repo.findAll(PageRequest.of(0, Integer.MAX_VALUE, sort));
         final List<String> expected = List.of("D", "C", "B", "F", "E", "A");
-        Assert.assertEquals(expected, page.stream().map(e -> e.b).collect(Collectors.toList()));
+        Assertions.assertEquals(expected, page.stream().map(e -> e.b).collect(Collectors.toList()));
     }
 
     @Test
@@ -92,7 +89,7 @@ public class SortTest {
         final Sort sort = Sort.by(Sort.Order.asc("byA"), Sort.Order.desc("byB"));
         final Page<EntityForSort> page = repo.findAll(new EvenIdFirst(), FilterRequest.unfiltered(), PageRequest.of(0, Integer.MAX_VALUE, sort));
         final List<String> expected = List.of("D", "B", "F", "C", "E", "A");
-        Assert.assertEquals(expected, page.stream().map(e -> e.b).collect(Collectors.toList()));
+        Assertions.assertEquals(expected, page.stream().map(e -> e.b).collect(Collectors.toList()));
     }
 
     private static class EvenIdFirst implements Specification<EntityForSort> {

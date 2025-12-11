@@ -5,8 +5,8 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.service.annotation.GetExchange;
 import tools.jackson.databind.json.JsonMapper;
@@ -40,7 +40,7 @@ public class StreamingClientTest {
     public void canReadUnbufferedStreamWhenMappingToAnInputStream() throws IOException {
         final var got = client.fetch();
         try (final var is = got) {
-            Assert.assertEquals("content", new String(is.readAllBytes(), StandardCharsets.UTF_8));
+            Assertions.assertEquals("content", new String(is.readAllBytes(), StandardCharsets.UTF_8));
         }
     }
 
@@ -48,7 +48,7 @@ public class StreamingClientTest {
     public void canReadUnbufferedStreamWhenMappingToAResponseEntityWithInputStream() throws IOException {
         final var got = client.fetchWithResponseEntity();
         try (final var is = got.getBody()) {
-            Assert.assertEquals("content", new String(is.readAllBytes(), StandardCharsets.UTF_8));
+            Assertions.assertEquals("content", new String(is.readAllBytes(), StandardCharsets.UTF_8));
         }
     }
 }

@@ -4,8 +4,8 @@ import java.util.List;
 import net.optionfactory.spring.problems.Failure;
 import net.optionfactory.spring.problems.Problem;
 import net.optionfactory.spring.problems.web.RestExceptionResolver.Options;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -34,7 +34,7 @@ public class RestExceptionResolverTest {
 
         final ModelAndView got = er.resolveException(req, res, hm, exception);
 
-        Assert.assertTrue(got.getView() instanceof JacksonJsonView);
+        Assertions.assertTrue(got.getView() instanceof JacksonJsonView);
     }
 
     @Test
@@ -49,7 +49,7 @@ public class RestExceptionResolverTest {
 
         final ModelAndView got = er.resolveException(req, res, hm, exception);
         Object failures = got.getModel().get("errors");
-        Assert.assertTrue(failures instanceof List && ((List) failures).get(0) instanceof Problem);
+        Assertions.assertTrue(failures instanceof List && ((List) failures).get(0) instanceof Problem);
     }
 
     @Test
@@ -65,7 +65,7 @@ public class RestExceptionResolverTest {
         final ModelAndView got = er.resolveException(req, res, hm, exception);
         final Object failures = got.getModel().get("errors");
         final Problem problem = (Problem) ((List) failures).get(0);
-        Assert.assertEquals(null, problem.details);
+        Assertions.assertEquals(null, problem.details);
     }
 
     @Test
@@ -81,7 +81,7 @@ public class RestExceptionResolverTest {
         final ModelAndView got = er.resolveException(req, res, hm, exception);
         final Object failures = got.getModel().get("errors");
         final Problem problem = (Problem) ((List) failures).get(0);
-        Assert.assertEquals("details", problem.details);
+        Assertions.assertEquals("details", problem.details);
     }
 
 }

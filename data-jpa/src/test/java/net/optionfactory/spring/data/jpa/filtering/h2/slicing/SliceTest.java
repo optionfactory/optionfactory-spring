@@ -1,21 +1,18 @@
 package net.optionfactory.spring.data.jpa.filtering.h2.slicing;
 
 import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.annotation.Transactional;
 
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = HibernateOnH2TestConfig.class)
+@SpringJUnitConfig(HibernateOnH2TestConfig.class)
 @Transactional
 public class SliceTest {
 
@@ -29,7 +26,7 @@ public class SliceTest {
         return entity;
     }
 
-    @Before
+    @BeforeEach
     public void setup() {
         repo.deleteAll();
         repo.save(entity(1, "TEST"));
@@ -44,23 +41,23 @@ public class SliceTest {
     public void firstSliceHasNoPrevious() {
         Pageable p = PageRequest.of(0, 2, Sort.by("id"));
         Slice<EntityForSlice> findByName = repo.findByName("TEST", p);
-        Assert.assertFalse(findByName.hasPrevious());
-        Assert.assertTrue(findByName.hasContent());
+        Assertions.assertFalse(findByName.hasPrevious());
+        Assertions.assertTrue(findByName.hasContent());
     }
 
     @Test
     public void firstSliceHasNext() {
         Pageable p = PageRequest.of(0, 2, Sort.by("id"));
         Slice<EntityForSlice> findByName = repo.findByName("TEST", p);
-        Assert.assertTrue(findByName.hasNext());
-        Assert.assertTrue(findByName.hasContent());
+        Assertions.assertTrue(findByName.hasNext());
+        Assertions.assertTrue(findByName.hasContent());
     }
 
     @Test
     public void secondSliceHasPrevious() {
         Pageable p = PageRequest.of(1, 2, Sort.by("id"));
         Slice<EntityForSlice> findByName = repo.findByName("TEST", p);
-        Assert.assertTrue(findByName.hasPrevious());
-        Assert.assertTrue(findByName.hasContent());
+        Assertions.assertTrue(findByName.hasPrevious());
+        Assertions.assertTrue(findByName.hasContent());
     }
 }

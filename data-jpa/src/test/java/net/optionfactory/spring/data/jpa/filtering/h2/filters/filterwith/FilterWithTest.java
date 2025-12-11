@@ -4,29 +4,25 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
-import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.annotation.Transactional;
 
-@RunWith(SpringRunner.class)
-@ContextConfiguration(classes = HibernateOnH2TestConfig.class)
+@SpringJUnitConfig(HibernateOnH2TestConfig.class)
 @Transactional
 public class FilterWithTest {
 
     @Autowired
     private CustomsRepository customs;
 
-    @Before
+    @BeforeEach
     public void setup() {
         customs.saveAll(Arrays.asList(
                 custom(1, 1),
@@ -45,16 +41,18 @@ public class FilterWithTest {
         return custom;
     }
 
-    @Test(expected = InvalidDataAccessApiUsageException.class)
+    @Test
     public void throwsWhenCustomFilterDoesNotMeetParametersPreconditions() {
         final var fr = FilterRequest.builder().with("custom").build();
-        customs.findAll(null, fr, Pageable.unpaged());
+        Assertions.assertThrows(InvalidDataAccessApiUsageException.class, () -> {
+            customs.findAll(null, fr, Pageable.unpaged());
+        });
     }
 
     @Test
     public void canApplyCustomFilterWithParameter() {
         final var fr = FilterRequest.builder().with("custom", CustomFilter.Check.LESS.name()).build();
         final Page<CustomEntity> page = customs.findAll(null, fr, Pageable.unpaged());
-        Assert.assertEquals(Set.of(3L, 5L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(3L, 5L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 }
