@@ -18,4 +18,4 @@ SOAP and REST clients
 
 ## Usage
 
-https://github.com/optionfactory/optionfactory-spring/blob/4ece42be4b19e70554f7d5db1641a5d0b13d9cec/upstream/src/test/java/net/optionfactory/spring/upstream/examples/UpstreamRestExampleTest.java#L30-L130
+https://github.com/optionfactory/optionfactory-spring/blob/e42b80744775c3026908242c4c994a2727cd8bbb/upstream/src/test/java/net/optionfactory/spring/upstream/examples/UpstreamRestExampleTest.java#L30-L130
