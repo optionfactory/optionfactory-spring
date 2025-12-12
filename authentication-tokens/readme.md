@@ -1,4 +1,4 @@
-# optionfactory-spring/authentication-token
+# optionfactory-spring/authentication-tokens
 
 Authentication via HTTP headers (opaque tokens, jws, jwe) for Spring Security.
 
