@@ -79,7 +79,7 @@ public class UpstreamRestExampleTest {
                         c.disableAutomaticRetries();
                     })
                     //initializers and interceptors can be registered 
-                    .initializer(new OauthClientCredentialsAuthenticator(clientId, clientSecret, oauthClient))
+                    .initializer(OauthClientCredentialsAuthenticator.builder(oauthClient).clientId(clientId).clientSecret(clientSecret).build())
                     //Configures the client for JSON/HTTP 
                     .json(mapper)
                     //optional monitoring 
