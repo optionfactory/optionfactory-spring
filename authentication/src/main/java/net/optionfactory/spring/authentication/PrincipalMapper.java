@@ -2,10 +2,7 @@ package net.optionfactory.spring.authentication;
 
 import org.springframework.security.core.Authentication;
 
-public interface PrincipalMapper<T> {
+public interface PrincipalMapper<T, R> {
 
-    boolean supports(Authentication auth, Object principal);
-
-    T map(Authentication auth, Object principal);
-
+    R map(Authentication auth, T principal);
 }

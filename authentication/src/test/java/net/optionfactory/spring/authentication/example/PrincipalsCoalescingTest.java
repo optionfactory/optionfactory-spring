@@ -1,7 +1,6 @@
 package net.optionfactory.spring.authentication.example;
 
 import net.optionfactory.spring.authentication.CoalescingAuthentication;
-import net.optionfactory.spring.authentication.PrincipalMapper;
 import net.optionfactory.spring.authentication.Principals;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +27,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import net.optionfactory.spring.authentication.PrincipalMappingStrategy;
 
 @SpringJUnitWebConfig(PrincipalsCoalescingTest.Config.class)
 public class PrincipalsCoalescingTest {
@@ -59,17 +59,7 @@ public class PrincipalsCoalescingTest {
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
             http.with(Principals.coalescing(CustomPrincipal.class), c -> {
-                c.principal(new PrincipalMapper<CustomPrincipal>() {
-                    @Override
-                    public boolean supports(Authentication auth, Object principal) {
-                        return principal instanceof UserDetails;
-                    }
-
-                    @Override
-                    public CustomPrincipal map(Authentication auth, Object principal) {
-                        return new CustomPrincipal(((UserDetails) principal).getUsername());
-                    }
-                });
+                c.principal(UserDetails.class, (auth, principal) -> new CustomPrincipal(principal.getUsername()));
             });
 
             return http
