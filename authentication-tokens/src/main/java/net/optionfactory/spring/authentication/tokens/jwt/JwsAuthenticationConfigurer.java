@@ -1,6 +1,5 @@
 package net.optionfactory.spring.authentication.tokens.jwt;
 
-import net.optionfactory.spring.authentication.tokens.HeaderAndScheme;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
@@ -14,6 +13,7 @@ import com.nimbusds.jwt.proc.JWTClaimsSetVerifier;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.List;
+import net.optionfactory.spring.authentication.tokens.HeaderAndScheme;
 import net.optionfactory.spring.authentication.tokens.jwt.JwtTokenProcessor.JwsProcessor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.util.Assert;

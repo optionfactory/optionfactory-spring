@@ -14,22 +14,22 @@ Declarative whitelisted filters on `@Entity`.
 ## Usage
 
 1. Enable by using `@EnableJpaWhitelistFilteringRepositories` instead of
-   `@EnableJpaRepositories`: [Example](https://github.com/optionfactory/optionfactory-spring/blob/92c24c910896c12fb37ef0cf3af3272434b3eddf/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/HibernateOnPsqlTestConfig.java#L25-L29)
+   `@EnableJpaRepositories`: [Example](https://github.com/optionfactory/optionfactory-spring/blob/4ece42be4b19e70554f7d5db1641a5d0b13d9cec/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/HibernateOnPsqlTestConfig.java#L25-L29)
 2. Create a repository extending
-   `WhitelistFilteringRepository<T>`: [Example](https://github.com/optionfactory/optionfactory-spring/blob/92c24c910896c12fb37ef0cf3af3272434b3eddf/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/examples/PetOwnersRepository.java#L1-L8)
+   `WhitelistFilteringRepository<T>`: [Example](https://github.com/optionfactory/optionfactory-spring/blob/4ece42be4b19e70554f7d5db1641a5d0b13d9cec/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/examples/PetOwnersRepository.java#L1-L8)
 3. Annotate the root entity to configure the filters you want to
-   allow: [Example](https://github.com/optionfactory/optionfactory-spring/blob/92c24c910896c12fb37ef0cf3af3272434b3eddf/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/examples/PetOwner.java#L17-L24)
+   allow: [Example](https://github.com/optionfactory/optionfactory-spring/blob/4ece42be4b19e70554f7d5db1641a5d0b13d9cec/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/examples/PetOwner.java#L17-L24)
 4. Configure the filter (possibly from user controlled data) when using the
-   repository: [Example](https://github.com/optionfactory/optionfactory-spring/blob/92c24c910896c12fb37ef0cf3af3272434b3eddf/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/examples/PetOwnerExampleTest.java#L52-L59)
+   repository: [Example](https://github.com/optionfactory/optionfactory-spring/blob/4ece42be4b19e70554f7d5db1641a5d0b13d9cec/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/examples/PetOwnerExampleTest.java#L52-L59)
 
 ## Reduction support
 
 If you need to perform a reduction with filter support:
 
-1. [Create a custom Repository interface](https://github.com/optionfactory/optionfactory-spring/blob/92c24c910896c12fb37ef0cf3af3272434b3eddf/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/h2/reduction/ReductionNumberEntityRepository.java)
-2. [Implement it](https://github.com/optionfactory/optionfactory-spring/blob/92c24c910896c12fb37ef0cf3af3272434b3eddf/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/h2/reduction/ReductionNumberEntityRepositoryImpl.java)
-3. [Link in main repository (extend the interface)](https://github.com/optionfactory/optionfactory-spring/blob/92c24c910896c12fb37ef0cf3af3272434b3eddf/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/h2/reduction/NumberEntityRepository.java#L6)
-4. [Use it passing the FilterRequest](https://github.com/optionfactory/optionfactory-spring/blob/92c24c910896c12fb37ef0cf3af3272434b3eddf/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/h2/reduction/ReductionTest.java#L44-L52)
+1. [Create a custom Repository interface](https://github.com/optionfactory/optionfactory-spring/blob/4ece42be4b19e70554f7d5db1641a5d0b13d9cec/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/h2/reduction/ReductionNumberEntityRepository.java)
+2. [Implement it](https://github.com/optionfactory/optionfactory-spring/blob/4ece42be4b19e70554f7d5db1641a5d0b13d9cec/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/h2/reduction/ReductionNumberEntityRepositoryImpl.java)
+3. [Link in main repository (extend the interface)](https://github.com/optionfactory/optionfactory-spring/blob/4ece42be4b19e70554f7d5db1641a5d0b13d9cec/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/h2/reduction/NumberEntityRepository.java#L6)
+4. [Use it passing the FilterRequest](https://github.com/optionfactory/optionfactory-spring/blob/4ece42be4b19e70554f7d5db1641a5d0b13d9cec/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/h2/reduction/ReductionTest.java#L44-L52)
 
 ---
 

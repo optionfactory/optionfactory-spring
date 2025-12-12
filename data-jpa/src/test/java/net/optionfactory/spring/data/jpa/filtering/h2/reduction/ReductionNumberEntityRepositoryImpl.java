@@ -1,13 +1,12 @@
 package net.optionfactory.spring.data.jpa.filtering.h2.reduction;
 
 import jakarta.persistence.EntityManager;
+import java.util.Map;
 import net.optionfactory.spring.data.jpa.filtering.Filter;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringSpecificationAdapter;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Repositories;
 import org.springframework.data.jpa.repository.support.JpaEntityInformationSupport;
-
-import java.util.Map;
 
 public class ReductionNumberEntityRepositoryImpl implements ReductionNumberEntityRepository {
 
@@ -29,7 +28,6 @@ public class ReductionNumberEntityRepositoryImpl implements ReductionNumberEntit
         final var root = query.from(NumberEntity.class);
         final var predicate = new WhitelistFilteringSpecificationAdapter<NumberEntity>(request, this.allowedFilters).toPredicate(root, query, builder);
 
-        //The multiselect parameters must be in the same order as the Reduction constructor
         final var select = query
                 .where(predicate)
                 .select(

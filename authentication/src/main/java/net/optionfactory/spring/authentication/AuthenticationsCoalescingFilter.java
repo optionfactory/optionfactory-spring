@@ -63,7 +63,7 @@ public class AuthenticationsCoalescingFilter<R> extends OncePerRequestFilter {
     private static <R> R mapPrincipal(List<PrincipalMappingStrategy<?, R>> mappers, Authentication auth, Object principal) {
         for (final var mapper : mappers) {
             if (mapper.supports(auth, principal)) {
-                final var tmapper = (PrincipalMappingStrategy<Object, R>) mapper;                
+                final var tmapper = (PrincipalMappingStrategy<Object, R>) mapper;
                 return tmapper.map(auth, principal);
             }
         }

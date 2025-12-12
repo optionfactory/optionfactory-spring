@@ -1,12 +1,12 @@
 package net.optionfactory.spring.data.jpa.filtering.h2;
 
-import net.optionfactory.spring.data.jpa.Jackson3JsonFormatMapper;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import jakarta.persistence.EntityManagerFactory;
 import java.beans.PropertyVetoException;
 import java.util.Properties;
 import javax.sql.DataSource;
+import net.optionfactory.spring.data.jpa.Jackson3JsonFormatMapper;
 import net.optionfactory.spring.data.jpa.filtering.EnableJpaWhitelistFilteringRepositories;
 import org.hibernate.boot.model.naming.ImplicitNamingStrategyComponentPathImpl;
 import org.hibernate.boot.model.naming.PhysicalNamingStrategySnakeCaseImpl;

@@ -16,4 +16,4 @@ Support for unifying Principals in spring security
 ## Usage
 
 
-https://github.com/optionfactory/optionfactory-spring/blob/21f960d6bcc47fc4a626159f32076a15ed044160/authentication/src/test/java/net/optionfactory/spring/authentication/example/PrincipalsCoalescingTest.java#L61-L73
+https://github.com/optionfactory/optionfactory-spring/blob/4ece42be4b19e70554f7d5db1641a5d0b13d9cec/authentication/src/test/java/net/optionfactory/spring/authentication/example/PrincipalsCoalescingTest.java#L61-L73

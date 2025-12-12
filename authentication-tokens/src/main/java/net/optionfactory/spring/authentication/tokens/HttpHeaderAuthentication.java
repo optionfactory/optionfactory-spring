@@ -1,11 +1,9 @@
 package net.optionfactory.spring.authentication.tokens;
 
 import jakarta.servlet.http.HttpServletRequest;
-
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Stream;
-
 import net.optionfactory.spring.authentication.tokens.jwt.JweAuthenticationConfigurer;
 import net.optionfactory.spring.authentication.tokens.jwt.JwsAuthenticationConfigurer;
 import net.optionfactory.spring.authentication.tokens.jwt.JwtTokenProcessor;

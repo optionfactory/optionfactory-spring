@@ -2,7 +2,6 @@ package net.optionfactory.spring.authentication;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiFunction;
 import org.springframework.security.authentication.AuthenticationTrustResolver;
 import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
 import org.springframework.security.config.annotation.SecurityConfigurerAdapter;

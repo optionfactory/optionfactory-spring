@@ -9,6 +9,8 @@ import java.time.InstantSource;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
+import net.optionfactory.spring.upstream.alerts.UpstreamAlertEvent;
+import net.optionfactory.spring.upstream.buffering.Buffering;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.ExceptionContext;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
@@ -16,8 +18,6 @@ import net.optionfactory.spring.upstream.contexts.InvocationContext.HttpMessageC
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
-import net.optionfactory.spring.upstream.alerts.UpstreamAlertEvent;
-import net.optionfactory.spring.upstream.buffering.Buffering;
 import net.optionfactory.spring.upstream.rendering.BodyRendering;
 import static net.optionfactory.spring.upstream.scopes.ScopeHandler.BOOT_ID;
 import static net.optionfactory.spring.upstream.scopes.ScopeHandler.INVOCATION_COUNTER;

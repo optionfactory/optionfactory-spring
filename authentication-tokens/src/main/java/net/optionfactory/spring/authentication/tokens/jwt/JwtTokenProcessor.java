@@ -1,6 +1,5 @@
 package net.optionfactory.spring.authentication.tokens.jwt;
 
-import net.optionfactory.spring.authentication.tokens.HeaderAndScheme;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWEDecrypter;
 import com.nimbusds.jose.JWSVerifier;
@@ -13,6 +12,7 @@ import com.nimbusds.jwt.proc.BadJWTException;
 import com.nimbusds.jwt.proc.JWTClaimsSetVerifier;
 import java.text.ParseException;
 import java.util.List;
+import net.optionfactory.spring.authentication.tokens.HeaderAndScheme;
 import net.optionfactory.spring.authentication.tokens.HttpHeaderAuthentication.PrincipalAndAuthorities;
 import net.optionfactory.spring.authentication.tokens.HttpHeaderAuthentication.TokenProcessor;
 import org.springframework.security.authentication.BadCredentialsException;

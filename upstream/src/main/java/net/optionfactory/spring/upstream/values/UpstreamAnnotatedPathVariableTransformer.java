@@ -10,8 +10,8 @@ import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.expressions.StringExpression;
-import org.springframework.web.service.invoker.HttpRequestValues;
 import net.optionfactory.spring.upstream.scopes.UpstreamHttpExchangeAdapter.HttpRequestValuesTransformer;
+import org.springframework.web.service.invoker.HttpRequestValues;
 
 public class UpstreamAnnotatedPathVariableTransformer implements HttpRequestValuesTransformer {
 
