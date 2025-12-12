@@ -23,7 +23,7 @@ public class Principals {
             return this;
         }
 
-        public PrincipalsConfigurer princpal(Object old, T replacement) {
+        public PrincipalsConfigurer principal(Object old, T replacement) {
             this.mappers.add(new PrincipalMapper<T>() {
                 @Override
                 public boolean supports(Authentication auth, Object principal) {

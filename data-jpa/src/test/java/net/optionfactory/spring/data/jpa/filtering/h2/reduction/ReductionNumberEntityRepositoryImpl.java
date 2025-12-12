@@ -15,7 +15,6 @@ public class ReductionNumberEntityRepositoryImpl implements ReductionNumberEntit
     private final Map<String, Filter> allowedFilters;
     private final Map<String, String> allowedSorters;
 
-
     public ReductionNumberEntityRepositoryImpl(EntityManager em) {
         final var ei = JpaEntityInformationSupport.getEntityInformation(NumberEntity.class, em);
         this.entityManager = em;
@@ -23,23 +22,24 @@ public class ReductionNumberEntityRepositoryImpl implements ReductionNumberEntit
         this.allowedSorters = Repositories.allowedSorters(ei, em);
     }
 
-
     @Override
     public Reduction reduce(FilterRequest request) {
         final var builder = entityManager.getCriteriaBuilder();
         final var query = builder.createQuery(Reduction.class);
         final var root = query.from(NumberEntity.class);
-        final var predicate = new WhitelistFilteringSpecificationAdapter<NumberEntity>(request, this.allowedFilters).toPredicate(root, query, entityManager.getCriteriaBuilder());
-
-        query.where(predicate);
+        final var predicate = new WhitelistFilteringSpecificationAdapter<NumberEntity>(request, this.allowedFilters).toPredicate(root, query, builder);
 
         //The multiselect parameters must be in the same order as the Reduction constructor
-        final var select = query.multiselect(
-                builder.count(root),
-                builder.min(root.get("number")),
-                builder.max(root.get("number")),
-                builder.avg(root.get("number"))
-        );
+        final var select = query
+                .where(predicate)
+                .select(
+                        builder.construct(Reduction.class,
+                                builder.count(root),
+                                builder.min(root.get("number")),
+                                builder.max(root.get("number")),
+                                builder.avg(root.get("number"))
+                        )
+                );
         return entityManager.createQuery(select).setMaxResults(1).getSingleResult();
     }
 }
