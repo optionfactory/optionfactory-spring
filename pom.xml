@@ -67,9 +67,8 @@
         <module>validators</module>
         <module>thymeleaf</module>
         <module>localized-enums</module>
-        <module>pdf</module>
-        <module>pdf-signing</module>
         <module>pem</module>
+        <module>pdf</module>
         <module>optionfactory-spring-bom</module>
     </modules>
 

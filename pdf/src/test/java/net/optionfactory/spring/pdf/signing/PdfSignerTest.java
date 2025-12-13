@@ -8,9 +8,9 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.security.KeyStore;
 import java.security.PrivateKey;
-import java.security.cert.Certificate;
-import java.time.ZoneId;
+import java.security.cert.X509Certificate;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.bouncycastle.cms.CMSProcessableByteArray;
@@ -32,23 +32,32 @@ public class PdfSignerTest {
         try (InputStream is = PdfSignerTest.class.getResourceAsStream("/example/teststore.pkcs12")) {
             final KeyStore keystore = KeyStore.getInstance("PKCS12");
             keystore.load(is, "changeit".toCharArray());
-            final PrivateKey privateKey = (PrivateKey) keystore.getKey("pdf", "changeit".toCharArray());
-            final Certificate[] certificateChain = keystore.getCertificateChain("pdf");
-            this.signer = new PdfSigner(privateKey, certificateChain);
+            final var privateKey = (PrivateKey) keystore.getKey("pdf", "changeit".toCharArray());
+            final var cert = keystore.getCertificateChain("pdf");
+            final var x509Chain = Arrays.copyOf(
+                    cert,
+                    cert.length,
+                    X509Certificate[].class
+            );
+            this.signer = new PdfSigner(privateKey, x509Chain);
+
         }
     }
 
     @Test
     public void canSign() throws Exception {
-        final PdfSignatureInfo si = new PdfSignatureInfo();
-        si.name = "Test Name";
-        si.reason = "Test Reason";
-        si.at = ZonedDateTime.now(ZoneId.of("Europe/Rome"));
-        si.location = "Italy";
+        final var targetFile = "target/signed-jdk.pdf";
+        final SignatureInfo si = new SignatureInfo(
+                "Test Name", 
+                "Test Reason", 
+                "Italy", 
+                ZonedDateTime.parse("2000-01-02T10:11:12+01:00[Europe/Rome]"),
+                SignatureInfo.CommitmentType.PROOF_OF_ORIGIN
+        );
         Resource signed = signer.sign(new ClassPathResource("/example/example.pdf"), si);
-        dump(signed, "target/signed.pdf");
+        dump(signed, targetFile);
 
-        final var signedFile = new File("target/signed.pdf");
+        final var signedFile = new File(targetFile);
         try (PDDocument document = Loader.loadPDF(signedFile)) {
             final var signatureDictionaries = document.getSignatureDictionaries();
             final var pdSignature = signatureDictionaries.get(0);
@@ -60,9 +69,9 @@ public class PdfSignerTest {
             final var signers = signerInformationStore.getSigners();
             final var signer = signers.stream().findFirst().orElseThrow();
             Assertions.assertNotNull(signer);
-            Assertions.assertEquals(si.name, pdSignature.getName());
-            Assertions.assertEquals(si.reason, pdSignature.getReason());
-            Assertions.assertEquals(si.location, pdSignature.getLocation());
+            Assertions.assertEquals(si.name(), pdSignature.getName());
+            Assertions.assertEquals(si.reason(), pdSignature.getReason());
+            Assertions.assertEquals(si.location(), pdSignature.getLocation());
         }
 
     }
