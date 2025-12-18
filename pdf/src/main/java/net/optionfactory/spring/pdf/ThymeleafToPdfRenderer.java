@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.List;
+import org.apache.pdfbox.pdmodel.PDDocument;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.FastByteArrayOutputStream;
@@ -36,16 +37,18 @@ public class ThymeleafToPdfRenderer {
 
     public Resource render(String template, Context context) {
         final var xhtml = templateEngine.process(template, context);
-        try {
+        try(final var doc = new PDDocument()){
             final var nonSigned = new FastByteArrayOutputStream(64 * 1024);
             final var builder = new PdfRendererBuilder()
                     .useFastMode()
-                    .withHtmlContent(xhtml, "")
-                    .toStream(nonSigned)
                     .usePdfVersion(1.7f)
                     .usePdfAConformance(PdfRendererBuilder.PdfAConformance.PDFA_3_A)
+                    .usePdfUaAccessibility(true)
                     .useCacheStore(PdfRendererBuilder.CacheStore.PDF_FONT_METRICS, cache)
-                    .useColorProfile(colorProfile);
+                    .useColorProfile(colorProfile)
+                    .withHtmlContent(xhtml, "")
+                    .usePDDocument(doc)
+                    .toStream(nonSigned);
             
             fonts.forEach(font -> {
                 builder.useFont(new ClassPathFontSupplier(font.path), font.family, font.weight, font.style, font.subset);
