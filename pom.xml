@@ -84,7 +84,7 @@
             <dependency>
                 <groupId>org.springframework.data</groupId>
                 <artifactId>spring-data-bom</artifactId>
-                <version>2025.1.1</version>
+                <version>2025.1.2</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>                        
@@ -98,7 +98,7 @@
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-framework-bom</artifactId>
-                <version>7.0.2</version>
+                <version>7.0.3</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -118,13 +118,13 @@
             <dependency>
                 <groupId>com.nimbusds</groupId>
                 <artifactId>nimbus-jose-jwt</artifactId>
-                <version>10.6</version>
+                <version>10.7</version>
             </dependency>
             
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-core</artifactId>
-                <version>7.2.0.Final</version>
+                <version>7.2.1.Final</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
@@ -185,13 +185,13 @@
             <dependency>
                 <groupId>org.jsoup</groupId>
                 <artifactId>jsoup</artifactId>
-                <version>1.21.2</version>
+                <version>1.22.1</version>
             </dependency>
             
             <dependency>
                 <groupId>org.apache.httpcomponents.client5</groupId>
                 <artifactId>httpclient5</artifactId>
-                <version>5.5.1</version>
+                <version>5.6</version>
             </dependency>
             <dependency>
                 <groupId>jakarta.mail</groupId>
@@ -211,7 +211,7 @@
             <dependency>
                 <groupId>com.googlecode.libphonenumber</groupId>
                 <artifactId>libphonenumber</artifactId>
-                <version>9.0.21</version>
+                <version>9.0.22</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -242,12 +242,12 @@
             <dependency>
                 <groupId>io.github.openhtmltopdf</groupId>
                 <artifactId>openhtmltopdf-core</artifactId>
-                <version>1.1.35</version>
+                <version>1.1.36</version>
             </dependency>
             <dependency>
                 <groupId>io.github.openhtmltopdf</groupId>
                 <artifactId>openhtmltopdf-pdfbox</artifactId>
-                <version>1.1.35</version>
+                <version>1.1.36</version>
                 <exclusions>
                     <exclusion>
                         <artifactId>commons-logging</artifactId>
@@ -263,7 +263,7 @@
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter</artifactId>
-                <version>6.0.1</version>
+                <version>6.0.2</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -370,7 +370,7 @@
                     <plugin>
                         <groupId>org.sonatype.central</groupId>
                         <artifactId>central-publishing-maven-plugin</artifactId>
-                        <version>0.9.0</version>
+                        <version>0.10.0</version>
                         <extensions>true</extensions>
                         <configuration>
                             <publishingServerId>central</publishingServerId>

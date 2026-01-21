@@ -40,7 +40,6 @@ public class ThymeleafToPdfRenderer {
         try(final var doc = new PDDocument()){
             final var nonSigned = new FastByteArrayOutputStream(64 * 1024);
             final var builder = new PdfRendererBuilder()
-                    .useFastMode()
                     .usePdfVersion(1.7f)
                     .usePdfAConformance(PdfRendererBuilder.PdfAConformance.PDFA_3_A)
                     .usePdfUaAccessibility(true)
