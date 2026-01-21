@@ -76,8 +76,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>21</maven.compiler.release>
         <maven.compiler.parameters>true</maven.compiler.parameters>
+        <maven.compiler.showWarnings>true</maven.compiler.showWarnings>
         <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
-        <maven.compiler.proc>none</maven.compiler.proc>        
+        <maven.compiler.proc>none</maven.compiler.proc>
+        <!-- added to make build reproducible https://maven.apache.org/guides/mini/guide-reproducible-builds.html -->
+        <project.build.outputTimestamp>2000-01-01T00:00:00Z</project.build.outputTimestamp>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -296,6 +299,11 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.14.1</version>
+                <configuration>
+                    <compilerArgs>
+                        <arg>-Xlint:unchecked</arg>
+                    </compilerArgs>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
