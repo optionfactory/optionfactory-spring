@@ -1,6 +1,6 @@
 # optionfactory-spring/context
 
-Property source configuration, conditional beans and WebMvc direct field access configuration
+Property source, direct field access and devtools configurations
 
 ## Maven
 
