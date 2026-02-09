@@ -127,12 +127,12 @@
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-core</artifactId>
-                <version>7.2.1.Final</version>
+                <version>7.2.4.Final</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-micrometer</artifactId>
-                <version>7.2.1.Final</version>
+                <version>7.2.4.Final</version>
             </dependency>
             <dependency>
                 <groupId>com.zaxxer</groupId>
@@ -157,17 +157,17 @@
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-core</artifactId>
-                <version>11.0.15</version>
+                <version>11.0.18</version>
             </dependency>        
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-el</artifactId>
-                <version>11.0.15</version>
+                <version>11.0.18</version>
             </dependency>        
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-websocket</artifactId>
-                <version>11.0.15</version>
+                <version>11.0.18</version>
             </dependency>        
             
             <dependency>
@@ -214,7 +214,7 @@
             <dependency>
                 <groupId>com.googlecode.libphonenumber</groupId>
                 <artifactId>libphonenumber</artifactId>
-                <version>9.0.22</version>
+                <version>9.0.23</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -225,7 +225,7 @@
             <dependency>
                 <groupId>jakarta.xml.bind</groupId>
                 <artifactId>jakarta.xml.bind-api</artifactId>
-                <version>4.0.4</version>
+                <version>4.0.5</version>
             </dependency>    
             <dependency>
                 <groupId>org.glassfish.jaxb</groupId>
@@ -303,7 +303,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.14.1</version>
+                <version>3.15.0</version>
                 <configuration>
                     <compilerArgs>
                         <arg>-Xlint:unchecked</arg>
