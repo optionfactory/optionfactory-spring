@@ -136,6 +136,11 @@
                 <artifactId>pdf</artifactId>
                 <version>${opfa-spring.version}</version>
             </dependency>
+            <dependency>
+                <groupId>net.optionfactory.spring</groupId>
+                <artifactId>applications-web-tomcat</artifactId>
+                <version>${opfa-spring.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>

@@ -98,9 +98,14 @@ Simplified PDF generations with [Thymeleaf](https://www.thymeleaf.org/) + [openh
 FILTER_ADOBE_PPKLITE/SUBFILTER_ADBE_PKCS7_DETACHED PDF signing using [`bouncycastle`](https://www.bouncycastle.org/) and [pdfbox](https://pdfbox.apache.org/)
 
 
+
 ## [`pem`](pem/readme.md)
 
 PEM based `Keystore`s 
+
+## [`applications-web-tomcat`](applications-web-tomcat/readme.md)
+
+Embedded Tomcat + Spring web mvc configuration
 
 ## [`optionfactory-spring-bom`](optionfactory-spring-bom/readme.md)
 
