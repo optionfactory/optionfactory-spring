@@ -12,6 +12,7 @@ import net.optionfactory.spring.applications.web.tomcat.EmbeddedTomcatWebMvcAppl
 import net.optionfactory.spring.applications.web.tomcat.EmbeddedTomcatWebMvcApplication.ScanForControllersBeanRegistrar;
 import net.optionfactory.spring.applications.web.tomcat.EmbeddedTomcatWebMvcApplication.TomcatDefaultsBeanRegistrar;
 import net.optionfactory.spring.context.devtools.DevToolsImportSelector;
+import net.optionfactory.spring.context.fieldaccess.EnableCustomWebMvc.CustomizableDelegatingWebMvcConfiguration;
 import net.optionfactory.spring.context.propertysources.ApplicationPropertiesConfig;
 import org.apache.catalina.Engine;
 import org.apache.catalina.valves.RemoteIpValve;
@@ -39,30 +40,18 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.multipart.support.StandardServletMultipartResolver;
-import org.springframework.web.servlet.config.annotation.DelegatingWebMvcConfiguration;
 
-/**
- * Configuration for an embedded Tomcat spring-web-mvc application. This
- * annotation enables and configures:
- * <ul>
- * <li>Spring dev tools (autodetected)
- * <li>The spring dispatcher servlet
- * <li>The embedded tomcat
- * <li>{@code @EnableWebMvc}
- * <li>{@code @ApplicationProperties} when {@code useApplicationProperties()} is
- * true (default: true)
- * <li>The RemoteIpValve if {@code remoteIpValve()} is true (default: false)
- * <li>The Tomcat CookieSameSiteSupplier via {@code sameSite()} (default:
- * SameSite.LAX)
- * <li>A StandardServletMultipartResolver bean with
- * {@code multipartMaxFileSize()} (default: 20MB) and
- * {@code multpartMaxRequestSize()} (default: 100MB)
- * <li>The service listening {@code port()} (default: 8080)
- * <li>Classpath scan for {@code @Controller}s and {@code @ControllerAdvice}s
- * when {@code scanForControllers()} is true (default: true).
- * </ul>
- *
- */
+/// Configuration for an embedded Tomcat spring-web-mvc application. This
+/// annotation enables and configures:
+/// - Spring dev tools (autodetected)
+/// - The embedded tomcat
+/// - `@EnableCustomWebMvc` (for directFieldAccess and support for custom localeResolvers)
+/// - `@ApplicationProperties` when `useApplicationProperties()` is `"true"` (default: true)
+/// - The RemoteIpValve if `remoteIpValve()` is `true` (default: false)
+/// - The Tomcat CookieSameSiteSupplier via {@code sameSite()} (default: SameSite.LAX)
+/// - A StandardServletMultipartResolver bean with {@code multipartMaxFileSize()} (default: 20MB) and {@code multpartMaxRequestSize()} (default: 100MB)
+/// - The service listening {@code port()} (default: 8080)
+/// - Classpath scan for {@code @Controller}s and {@code @ControllerAdvice}s when {@code scanForControllers()} is true (default: true).
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
@@ -70,7 +59,7 @@ import org.springframework.web.servlet.config.annotation.DelegatingWebMvcConfigu
     DevToolsImportSelector.class,
     DispatcherServletAutoConfiguration.class,
     TomcatServletWebServerAutoConfiguration.class,
-    DelegatingWebMvcConfiguration.class,
+    CustomizableDelegatingWebMvcConfiguration.class,
     ApplicationPropertiesImportSelector.class,
     TomcatDefaultsBeanRegistrar.class,
     ScanForControllersBeanRegistrar.class
