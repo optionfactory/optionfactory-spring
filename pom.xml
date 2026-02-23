@@ -142,18 +142,18 @@
             <dependency>
                 <groupId>com.nimbusds</groupId>
                 <artifactId>nimbus-jose-jwt</artifactId>
-                <version>10.7</version>
+                <version>10.8</version>
             </dependency>
             
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-core</artifactId>
-                <version>7.2.4.Final</version>
+                <version>7.2.5.Final</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-micrometer</artifactId>
-                <version>7.2.4.Final</version>
+                <version>7.2.5.Final</version>
             </dependency>
             <dependency>
                 <groupId>com.zaxxer</groupId>
@@ -299,7 +299,7 @@
             <dependency>
                 <groupId>com.jayway.jsonpath</groupId>
                 <artifactId>json-path</artifactId>
-                <version>2.10.0</version>
+                <version>3.0.0</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
