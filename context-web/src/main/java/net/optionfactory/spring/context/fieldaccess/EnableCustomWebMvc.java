@@ -6,7 +6,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import net.optionfactory.spring.context.fieldaccess.EnableCustomWebMvc.CustomizableDelegatingWebMvcConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.format.support.FormattingConversionService;
@@ -29,9 +32,10 @@ public @interface EnableCustomWebMvc {
     @Configuration
     public static class CustomizableDelegatingWebMvcConfiguration extends DelegatingWebMvcConfiguration {
 
+        private final Logger logger = LoggerFactory.getLogger(CustomizableDelegatingWebMvcConfiguration.class);
         private final ObjectProvider<LocaleResolver> customLocaleResolver;
 
-        public CustomizableDelegatingWebMvcConfiguration(ObjectProvider<LocaleResolver> customLocaleResolver) {
+        public CustomizableDelegatingWebMvcConfiguration(@Qualifier("customLocaleResolver") ObjectProvider<LocaleResolver> customLocaleResolver) {
             this.customLocaleResolver = customLocaleResolver;
         }
 
@@ -46,9 +50,11 @@ public @interface EnableCustomWebMvc {
         public LocaleResolver localeResolver() {
             final var resolvers = customLocaleResolver.stream().toList();
             if(resolvers.isEmpty()){
+                logger.info("LocaleResolver: bean 'customLocaleResolver' not found: using the default localeResolver");
                 return super.localeResolver();
             }
             if(resolvers.size() == 1){
+                logger.info("LocaleResolver: bean 'customLocaleResolver' found: configured");
                 return resolvers.get(0);
             }
             throw new IllegalStateException(String.format("multiple conflicting locale resolvers found: %s", resolvers));
