@@ -161,7 +161,7 @@ public @interface EmbeddedTomcatWebMvcApplication {
                 return;
             }
 
-            final var scanner = new ClassPathBeanDefinitionScanner(registry, false);
+            final var scanner = new ClassPathBeanDefinitionScanner(registry, false, environment);
             scanner.addIncludeFilter(new AnnotationTypeFilter(Controller.class));
             scanner.addIncludeFilter(new AnnotationTypeFilter(ControllerAdvice.class));
             scanner.scan(ClassUtils.getPackageName(importingClass.getClassName()));
