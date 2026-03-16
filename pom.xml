@@ -5,7 +5,7 @@
 
     <groupId>net.optionfactory.spring</groupId>
     <artifactId>optionfactory-spring</artifactId>
-    <version>23.17</version>
+    <version>23.18-SNAPSHOT</version>
     <packaging>pom</packaging>
     <description>optionfactory-spring parent pom</description>
 
@@ -81,7 +81,7 @@
         <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
         <maven.compiler.proc>none</maven.compiler.proc>
         <!-- added to make build reproducible https://maven.apache.org/guides/mini/guide-reproducible-builds.html -->
-        <project.build.outputTimestamp>2026-02-25T16:31:43Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2026-03-16T10:02:12Z</project.build.outputTimestamp>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -108,7 +108,7 @@
             <dependency>
                 <groupId>org.springframework.data</groupId>
                 <artifactId>spring-data-bom</artifactId>
-                <version>2025.1.3</version>
+                <version>2025.1.4</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>                        
@@ -122,7 +122,7 @@
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-framework-bom</artifactId>
-                <version>7.0.5</version>
+                <version>7.0.6</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -148,12 +148,12 @@
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-core</artifactId>
-                <version>7.2.5.Final</version>
+                <version>7.2.7.Final</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-micrometer</artifactId>
-                <version>7.2.5.Final</version>
+                <version>7.2.7.Final</version>
             </dependency>
             <dependency>
                 <groupId>com.zaxxer</groupId>
@@ -235,7 +235,7 @@
             <dependency>
                 <groupId>com.googlecode.libphonenumber</groupId>
                 <artifactId>libphonenumber</artifactId>
-                <version>9.0.24</version>
+                <version>9.0.26</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -251,7 +251,7 @@
             <dependency>
                 <groupId>org.glassfish.jaxb</groupId>
                 <artifactId>jaxb-runtime</artifactId>
-                <version>4.0.6</version>
+                <version>4.0.7</version>
             </dependency>
             <dependency>
                 <groupId>jakarta.xml.soap</groupId>
