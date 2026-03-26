@@ -103,14 +103,18 @@ public class HttpHeaderAuthentication {
         public Configurer jws(Customizer<JwsAuthenticationConfigurer> customizer) {
             final var builder = JwsAuthenticationConfigurer.builder();
             customizer.customize(builder);
-            jwsProcessors.add(builder.build());
+            final var processor = builder.build();
+            jwsProcessors.add(processor);
+            headerAndSchemes.add(processor.hs());
             return this;
         }
 
         public Configurer jwe(Customizer<JweAuthenticationConfigurer> customizer) {
             final var builder = JweAuthenticationConfigurer.builder();
             customizer.customize(builder);
-            jweProcessors.add(builder.build());
+            final var processor = builder.build();
+            jweProcessors.add(processor);
+            headerAndSchemes.add(processor.hs());
             return this;
         }
 
