@@ -88,22 +88,22 @@
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-devtools</artifactId>
-                <version>4.0.3</version>
+                <version>4.0.5</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-webmvc</artifactId>
-                <version>4.0.3</version>
+                <version>4.0.5</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-autoconfigure</artifactId>
-                <version>4.0.3</version>
+                <version>4.0.5</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-tomcat</artifactId>
-                <version>4.0.3</version>
+                <version>4.0.5</version>
             </dependency>            
             <dependency>
                 <groupId>org.springframework.data</groupId>
@@ -115,7 +115,7 @@
             <dependency>
                 <groupId>org.springframework.security</groupId>
                 <artifactId>spring-security-bom</artifactId>
-                <version>7.0.3</version>
+                <version>7.0.4</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -148,12 +148,12 @@
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-core</artifactId>
-                <version>7.2.7.Final</version>
+                <version>7.3.0.Final</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-micrometer</artifactId>
-                <version>7.2.7.Final</version>
+                <version>7.3.0.Final</version>
             </dependency>
             <dependency>
                 <groupId>com.zaxxer</groupId>
@@ -178,17 +178,17 @@
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-core</artifactId>
-                <version>11.0.18</version>
+                <version>11.0.20</version>
             </dependency>        
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-el</artifactId>
-                <version>11.0.18</version>
+                <version>11.0.20</version>
             </dependency>        
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-websocket</artifactId>
-                <version>11.0.18</version>
+                <version>11.0.20</version>
             </dependency>        
             
             <dependency>
@@ -235,7 +235,7 @@
             <dependency>
                 <groupId>com.googlecode.libphonenumber</groupId>
                 <artifactId>libphonenumber</artifactId>
-                <version>9.0.26</version>
+                <version>9.0.27</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
