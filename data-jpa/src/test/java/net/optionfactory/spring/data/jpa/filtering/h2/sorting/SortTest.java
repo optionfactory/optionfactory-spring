@@ -2,6 +2,7 @@ package net.optionfactory.spring.data.jpa.filtering.h2.sorting;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import java.util.List;
@@ -102,9 +103,11 @@ public class SortTest {
                                     .when(criteriaBuilder.equal(
                                             // Since Hibernate 7.3.0.Final, criteria type checks became stricter.
                                             // CriteriaBuilder.mod() supports only Integer numeric type, making a Long expression an incompatible argument.
-                                            // For this specific test setup, modulo two operation still works on values that are downcasted from Long to Integer.
+                                            // The following criterion is no longer valid with an "id" field of Long/long type:
+                                            //     criteriaBuilder.mod(root.get("id").as(Integer.class), 2),
+                                            // Therefore, we have to use the CriteriaBuilder.function() method instead, with the "mod" function name.
                                             // It would be nicer to have CriteriaBuilder implementing mod for Long expressions as well.
-                                            criteriaBuilder.mod(root.get("id").as(Integer.class), 2),
+                                            criteriaBuilder.function("mod", Long.class, root.get("id"), criteriaBuilder.literal(2L)),
                                             0),0)
                                     .otherwise(1)
                     )
