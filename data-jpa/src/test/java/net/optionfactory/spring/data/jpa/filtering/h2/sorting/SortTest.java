@@ -99,7 +99,13 @@ public class SortTest {
             query.orderBy(
                     criteriaBuilder.asc(
                             criteriaBuilder.selectCase()
-                                    .when(criteriaBuilder.equal(criteriaBuilder.mod(root.get("id"), 2), 0), 0)
+                                    .when(criteriaBuilder.equal(
+                                            // Since Hibernate 7.3.0.Final, criteria type checks became stricter.
+                                            // CriteriaBuilder.mod() supports only Integer numeric type, making a Long expression an incompatible argument.
+                                            // For this specific test setup, modulo two operation still works on values that are downcasted from Long to Integer.
+                                            // It would be nicer to have CriteriaBuilder implementing mod for Long expressions as well.
+                                            criteriaBuilder.mod(root.get("id").as(Integer.class), 2),
+                                            0),0)
                                     .otherwise(1)
                     )
             );
