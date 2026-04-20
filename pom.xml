@@ -108,7 +108,7 @@
             <dependency>
                 <groupId>org.springframework.data</groupId>
                 <artifactId>spring-data-bom</artifactId>
-                <version>2025.1.4</version>
+                <version>2025.1.5</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>                        
@@ -122,7 +122,7 @@
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-framework-bom</artifactId>
-                <version>7.0.6</version>
+                <version>7.0.7</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -209,13 +209,13 @@
             <dependency>
                 <groupId>org.jsoup</groupId>
                 <artifactId>jsoup</artifactId>
-                <version>1.22.1</version>
+                <version>1.22.2</version>
             </dependency>
             
             <dependency>
                 <groupId>org.apache.httpcomponents.client5</groupId>
                 <artifactId>httpclient5</artifactId>
-                <version>5.6</version>
+                <version>5.6.1</version>
             </dependency>
             <dependency>
                 <groupId>jakarta.mail</groupId>
@@ -282,7 +282,7 @@
             <dependency>
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcpkix-jdk18on</artifactId>
-                <version>1.83</version>
+                <version>1.84</version>
             </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
