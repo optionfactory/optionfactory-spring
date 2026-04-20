@@ -4,10 +4,13 @@ import com.openhtmltopdf.extend.FSSupplier;
 import com.openhtmltopdf.extend.impl.FSDefaultCacheStore;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.openhtmltopdf.util.XRLog;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Optional;
+
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -22,8 +25,10 @@ public class ThymeleafToPdfRenderer {
     private final byte[] colorProfile;
     private final List<PdfFontInfo> fonts;
     private final FSDefaultCacheStore cache;
+    private final String producer;
 
-    public ThymeleafToPdfRenderer(TemplateEngine templateEngine, List<PdfFontInfo> fonts) {
+
+    public ThymeleafToPdfRenderer(TemplateEngine templateEngine, List<PdfFontInfo> fonts, Optional<String> producer) {
         try (final InputStream is = ThymeleafToPdfRenderer.class.getResourceAsStream("sRGB.icc")) {
             this.colorProfile = StreamUtils.copyToByteArray(is);
         } catch (IOException ex) {
@@ -32,6 +37,7 @@ public class ThymeleafToPdfRenderer {
         this.fonts = fonts;
         this.templateEngine = templateEngine;
         this.cache = new FSDefaultCacheStore();
+        this.producer = producer.orElse("");
         XRLog.setLoggingEnabled(false);
     }
 
@@ -46,9 +52,10 @@ public class ThymeleafToPdfRenderer {
                     .useCacheStore(PdfRendererBuilder.CacheStore.PDF_FONT_METRICS, cache)
                     .useColorProfile(colorProfile)
                     .withHtmlContent(xhtml, "")
+                    .withProducer(producer)
                     .usePDDocument(doc)
                     .toStream(nonSigned);
-            
+
             fonts.forEach(font -> {
                 builder.useFont(new ClassPathFontSupplier(font.path), font.family, font.weight, font.style, font.subset);
             });

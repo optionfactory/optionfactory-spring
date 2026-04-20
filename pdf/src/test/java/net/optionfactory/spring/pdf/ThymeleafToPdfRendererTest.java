@@ -1,12 +1,15 @@
 package net.optionfactory.spring.pdf;
 
 import com.openhtmltopdf.outputdevice.helper.BaseRendererBuilder;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.Assertions;
@@ -39,7 +42,7 @@ public class ThymeleafToPdfRendererTest {
         this.renderer = new ThymeleafToPdfRenderer(templateEngine, List.of(
                 PdfFontInfo.of("font_opensans.ttf", "OpenSans", 400, BaseRendererBuilder.FontStyle.NORMAL, true),
                 PdfFontInfo.of("font_opensans_bold.ttf", "OpenSans", 700, BaseRendererBuilder.FontStyle.NORMAL, true)
-        ));
+        ), Optional.of("producer"));
     }
 
     @Test
