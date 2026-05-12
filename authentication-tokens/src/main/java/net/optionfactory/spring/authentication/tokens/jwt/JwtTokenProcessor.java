@@ -3,6 +3,7 @@ package net.optionfactory.spring.authentication.tokens.jwt;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWEDecrypter;
 import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -123,11 +124,11 @@ public class JwtTokenProcessor implements TokenProcessor {
 
     }
 
-    public record JwsProcessor(HeaderAndScheme hs, JwsMatcher matcher, JWSVerifier verifier, JWTClaimsSetVerifier claimsVerifier, JwtAuthoritiesConverter authorities, JwtPrincipalConverter principal) {
+    public record JwsProcessor(HeaderAndScheme hs, JwsMatcher matcher, JWSVerifier verifier, JWTClaimsSetVerifier<SecurityContext> claimsVerifier, JwtAuthoritiesConverter authorities, JwtPrincipalConverter principal) {
 
     }
 
-    public record JweProcessor(HeaderAndScheme hs, JweMatcher matcher, JWEDecrypter decrypter, JWTClaimsSetVerifier claimsVerifier, JwtAuthoritiesConverter authorities, JwtPrincipalConverter principal) {
+    public record JweProcessor(HeaderAndScheme hs, JweMatcher matcher, JWEDecrypter decrypter, JWTClaimsSetVerifier<SecurityContext> claimsVerifier, JwtAuthoritiesConverter authorities, JwtPrincipalConverter principal) {
 
     }
 

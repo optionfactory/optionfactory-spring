@@ -85,7 +85,7 @@ public interface JweAuthenticationConfigurer extends JwtAuthenticationConfigurer
         }
 
         @Override
-        public Builder claimsVerifier(JWTClaimsSetVerifier claims) {
+        public Builder claimsVerifier(JWTClaimsSetVerifier<SecurityContext> claims) {
             Assert.notNull(claims, "JWTClaimsSetVerifier cannot be null");
             this.claims = claims;
             return this;

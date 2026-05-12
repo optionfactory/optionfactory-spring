@@ -16,7 +16,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 public interface JwtAuthenticationConfigurer<SELF> {
 
-    SELF claimsVerifier(JWTClaimsSetVerifier principal);
+    SELF claimsVerifier(JWTClaimsSetVerifier<SecurityContext> principal);
 
     default SELF claims(Duration maxClockSkew, Customizer<ClaimsVerifierConfigurer> c) {
         final var builder = new ClaimsVerifierBuilder(maxClockSkew);
