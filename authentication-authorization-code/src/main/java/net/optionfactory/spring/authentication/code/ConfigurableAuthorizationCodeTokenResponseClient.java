@@ -16,10 +16,9 @@ public class ConfigurableAuthorizationCodeTokenResponseClient implements OAuth2A
 
     public ConfigurableAuthorizationCodeTokenResponseClient(ClientHttpRequestFactory httpRequestFactory) {
 	final var restClient = RestClient.builder()
-			.messageConverters((messageConverters) -> {
-				messageConverters.clear();
-				messageConverters.add(new FormHttpMessageConverter());
-				messageConverters.add(new OAuth2AccessTokenResponseHttpMessageConverter());
+                	.configureMessageConverters((messageConverters) -> {
+				messageConverters.addCustomConverter(new FormHttpMessageConverter());
+				messageConverters.addCustomConverter(new OAuth2AccessTokenResponseHttpMessageConverter());
 			})
 			.defaultStatusHandler(new OAuth2ErrorResponseErrorHandler())
                         .requestFactory(httpRequestFactory)
