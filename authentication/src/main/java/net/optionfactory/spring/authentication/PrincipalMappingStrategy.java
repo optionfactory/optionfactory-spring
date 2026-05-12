@@ -6,7 +6,6 @@ public interface PrincipalMappingStrategy<T, R> extends PrincipalMapper<T, R> {
 
     boolean supports(Authentication auth, Object principal);
 
-
     public static class ByType<T, R> implements PrincipalMappingStrategy<T, R> {
 
         private final Class<T> type;
@@ -24,7 +23,7 @@ public interface PrincipalMappingStrategy<T, R> extends PrincipalMapper<T, R> {
 
         @Override
         public R map(Authentication auth, Object principal) {
-            return mapper.map(auth, (T) principal);
+            return mapper.map(auth, type.cast(principal));
         }
 
     }
@@ -33,7 +32,6 @@ public interface PrincipalMappingStrategy<T, R> extends PrincipalMapper<T, R> {
 
         private final Object old;
         private final PrincipalMapper<Object, R> mapper;
-        
 
         public ByInstance(Object old, PrincipalMapper<Object, R> mapper) {
             this.old = old;
