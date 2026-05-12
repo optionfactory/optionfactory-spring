@@ -4,6 +4,7 @@ import net.optionfactory.spring.upstream.UpstreamBuilder;
 import net.optionfactory.spring.upstream.caching.FetchModeClient.FetchMode;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import tools.jackson.databind.json.JsonMapper;
 
 public class FetchModeArgumentResolverTest {
 
@@ -14,7 +15,8 @@ public class FetchModeArgumentResolverTest {
                 .requestFactoryMock(c -> {
                     c.response(MediaType.APPLICATION_JSON, "{}");
                 })
-                .restClient(r -> r.baseUrl("http://example.com"))
+                .json(JsonMapper.builder().build())
+                .baseUri("http://example.com")
                 .build();
 
         client.get("a", FetchMode.ANY);

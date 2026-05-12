@@ -38,6 +38,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageConverters;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -118,7 +119,7 @@ public class AlertsEmailsSpoolerTest {
                 new InvocationContext(
                         new Expressions(null, null),
                         BodyRendering.builder().build(),
-                        new InvocationContext.HttpMessageConverters(List.of()),
+                        new InvocationContext.MessageConverters(HttpMessageConverters.forClient().build()),
                         new EndpointDescriptor("upstream", "endpoint", Object.class.getMethod("toString"), null),
                         new Object[0],
                         "boot-id1",
@@ -147,7 +148,7 @@ public class AlertsEmailsSpoolerTest {
                 new InvocationContext(
                         new Expressions(null, null),
                         BodyRendering.builder().build(),
-                        new InvocationContext.HttpMessageConverters(List.of()),
+                        new InvocationContext.MessageConverters(HttpMessageConverters.forClient().build()),
                         new EndpointDescriptor("upstream2", "endpoint2", Object.class.getMethod("toString"), null),
                         new Object[0],
                         "boot-id2",

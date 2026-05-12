@@ -12,10 +12,10 @@ import tools.jackson.databind.node.MissingNode;
 public class JsonPath {
 
     public static final MethodHandle JSON_PATH_METHOD_HANDLE = jsonPathMethodHandle();
-    private final InvocationContext.HttpMessageConverters converters;
+    private final InvocationContext.MessageConverters converters;
     private final ResponseContext response;
 
-    public JsonPath(InvocationContext.HttpMessageConverters converters, ResponseContext response) {
+    public JsonPath(InvocationContext.MessageConverters converters, ResponseContext response) {
         this.converters = converters;
         this.response = response;
     }
@@ -36,7 +36,7 @@ public class JsonPath {
         }
     }
 
-    public static MethodHandle boundMethodHandle(InvocationContext.HttpMessageConverters converters, ResponseContext response) {
+    public static MethodHandle boundMethodHandle(InvocationContext.MessageConverters converters, ResponseContext response) {
         return JSON_PATH_METHOD_HANDLE.bindTo(new JsonPath(converters, response));
     }
 

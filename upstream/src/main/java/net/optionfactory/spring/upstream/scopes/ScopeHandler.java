@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
 import net.optionfactory.spring.upstream.UpstreamResponseErrorHandler;
-import net.optionfactory.spring.upstream.contexts.InvocationContext.HttpMessageConverters;
+import net.optionfactory.spring.upstream.contexts.InvocationContext.MessageConverters;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.springframework.http.client.ClientHttpRequestFactory;
@@ -23,7 +23,7 @@ public interface ScopeHandler {
 
     public static final AtomicLong INVOCATION_COUNTER = new AtomicLong();
 
-    MethodInterceptor interceptor(HttpMessageConverters cs);
+    MethodInterceptor interceptor(MessageConverters cs);
 
     HttpExchangeAdapter adapt(UpstreamHttpExchangeAdapter adapter);
 

@@ -4,7 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.List;
+import java.util.stream.StreamSupport;
 import net.optionfactory.spring.upstream.buffering.Buffering;
 import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.rendering.BodyRendering;
@@ -13,20 +13,21 @@ import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpOutputMessage;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.HttpMessageConverters;
 import org.springframework.util.FastByteArrayOutputStream;
 
 public record InvocationContext(
         Expressions expressions,
         BodyRendering rendering,
-        HttpMessageConverters converters,
+        MessageConverters converters,
         EndpointDescriptor endpoint,
         Object[] arguments,
         String boot,
         long id,
-        Object principal, 
+        Object principal,
         Buffering buffering) {
 
-    public record HttpMessageConverters(List<HttpMessageConverter<?>> all) {
+    public record MessageConverters(HttpMessageConverters all) {
 
         public <T> T convert(byte[] bytes, Class<T> type, MediaType mediaType) throws IOException {
             return convert(new ByteArrayInputStream(bytes), type, mediaType);
@@ -48,7 +49,7 @@ public record InvocationContext(
 
         public <T> T convert(HttpInputMessage im, Class<T> type, MediaType mediaType) throws IOException {
             @SuppressWarnings("unchecked")
-            final HttpMessageConverter<T> converter = (HttpMessageConverter) all().stream()
+            final HttpMessageConverter<T> converter = (HttpMessageConverter) StreamSupport.stream(all().spliterator(), false)
                     .filter(c -> c.canRead(type, mediaType))
                     .findFirst()
                     .orElseThrow();
@@ -75,7 +76,7 @@ public record InvocationContext(
         @SuppressWarnings("unchecked")
         public void convert(Object value, HttpOutputMessage om, Class<?> type, MediaType mediaType) throws IOException {
 
-            final HttpMessageConverter converter = all().stream()
+            final HttpMessageConverter converter = (HttpMessageConverter) StreamSupport.stream(all().spliterator(), false)
                     .filter(c -> c.canWrite(type, mediaType))
                     .findFirst()
                     .orElseThrow();

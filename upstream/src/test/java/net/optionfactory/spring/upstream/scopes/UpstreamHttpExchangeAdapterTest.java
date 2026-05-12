@@ -35,7 +35,7 @@ public class UpstreamHttpExchangeAdapterTest {
                 .requestFactoryMock(c -> {
                     c.response(HttpStatus.OK, MediaType.APPLICATION_JSON, "");
                 })
-                .restClient(r -> r.baseUrl("https://hub.dummyapis.com/statuscode/"))
+                .baseUri("https://hub.dummyapis.com/statuscode/")
                 .build();
 
         final var expectedRequestBody = """

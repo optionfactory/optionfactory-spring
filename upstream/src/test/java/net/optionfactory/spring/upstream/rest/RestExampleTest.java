@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.HttpClientErrorException;
+import tools.jackson.databind.json.JsonMapper;
 
 public class RestExampleTest {
 
@@ -18,7 +19,8 @@ public class RestExampleTest {
                         {"a": "b"}
                     """);
                 })
-                .restClient(r -> r.baseUrl("https://hub.dummyapis.com/statuscode/"))
+                .json(JsonMapper.builder().build())
+                .baseUri("https://hub.dummyapis.com/statuscode/")
                 .build();
         final var response = client.ok("asd");
         Assertions.assertEquals("b", response.get("a"));
@@ -31,7 +33,8 @@ public class RestExampleTest {
                 .requestFactoryMock(c -> {
                     c.response(HttpStatus.BAD_REQUEST, MediaType.APPLICATION_JSON, "");
                 })
-                .restClient(r -> r.baseUrl("https://hub.dummyapis.com/statuscode/"))
+                .json(JsonMapper.builder().build())
+                .baseUri("https://hub.dummyapis.com/statuscode/")
                 .build();
         Assertions.assertThrows(HttpClientErrorException.BadRequest.class, () -> {
             client.error("asd");

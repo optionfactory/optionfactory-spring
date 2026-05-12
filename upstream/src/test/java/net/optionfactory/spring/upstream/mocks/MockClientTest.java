@@ -6,13 +6,15 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import tools.jackson.databind.json.JsonMapper;
 
 public class MockClientTest {
 
     private final MockClient client = UpstreamBuilder.create(MockClient.class)
             .requestFactoryMock(c -> {
             })
-            .restClient(r -> r.baseUrl("http://example.com"))
+            .json(JsonMapper.builder().build())
+            .baseUri("http://example.com")
             .build();
 
     @Test

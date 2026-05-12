@@ -4,6 +4,7 @@ import net.optionfactory.spring.upstream.UpstreamBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import tools.jackson.databind.json.JsonMapper;
 
 public class UpstreamErrorsHandlerJsonTest {
 
@@ -20,7 +21,7 @@ public class UpstreamErrorsHandlerJsonTest {
                                                         """
                     );
                 })
-                .restClient(r -> r.baseUrl("http://example.com"))
+                .baseUri("http://example.com")
                 .build();
 
         Assertions.assertThrows(RestClientUpstreamException.class, () -> {
@@ -42,7 +43,8 @@ public class UpstreamErrorsHandlerJsonTest {
                             """
                     );
                 })
-                .restClient(r -> r.baseUrl("http://example.com"))
+                .baseUri("http://example.com")
+                .json(JsonMapper.builder().build())                
                 .build()
                 .callWithJsonPath();
 

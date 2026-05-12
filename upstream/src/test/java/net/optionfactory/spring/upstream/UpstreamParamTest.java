@@ -14,6 +14,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import tools.jackson.databind.json.JsonMapper;
 
 public class UpstreamParamTest {
 
@@ -30,7 +31,8 @@ public class UpstreamParamTest {
                         return new MockClientHttpResponse(HttpStatus.OK, HttpStatus.OK.getReasonPhrase(), h, new ByteArrayResource("{}".getBytes(StandardCharsets.UTF_8)));
                     });
                 })
-                .restClient(r -> r.baseUrl("http://example.com"))
+                .json(JsonMapper.builder().build())
+                .baseUri("http://example.com")
                 .interceptor(new UpstreamLoggingInterceptor(Optional.empty(), Map.of()))
                 .build()
                 .testEndpoint("value");

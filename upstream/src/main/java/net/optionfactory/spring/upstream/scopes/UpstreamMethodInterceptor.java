@@ -14,7 +14,7 @@ import net.optionfactory.spring.upstream.buffering.Buffering;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.ExceptionContext;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
-import net.optionfactory.spring.upstream.contexts.InvocationContext.HttpMessageConverters;
+import net.optionfactory.spring.upstream.contexts.InvocationContext.MessageConverters;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
@@ -38,12 +38,12 @@ public class UpstreamMethodInterceptor implements MethodInterceptor {
     private final Supplier<Object> principal;
     private final Expressions expressions;
     private final BodyRendering rendering;
-    private final HttpMessageConverters converters;
+    private final MessageConverters converters;
     private final ObservationRegistry observations;
     private final InstantSource clock;
     private final ApplicationEventPublisher publisher;
 
-    public UpstreamMethodInterceptor(Map<Method, EndpointDescriptor> endpoints, ThreadLocal<InvocationContext> invocations, Supplier<Object> principal, Expressions expressions, BodyRendering rendering, HttpMessageConverters converters, ObservationRegistry observations,
+    public UpstreamMethodInterceptor(Map<Method, EndpointDescriptor> endpoints, ThreadLocal<InvocationContext> invocations, Supplier<Object> principal, Expressions expressions, BodyRendering rendering, MessageConverters converters, ObservationRegistry observations,
             ThreadLocal<RequestContext> requests,
             ThreadLocal<ResponseContext> responses,
             InstantSource clock,

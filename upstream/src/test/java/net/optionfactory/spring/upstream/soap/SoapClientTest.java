@@ -34,7 +34,7 @@ public class SoapClientTest {
                                         """);
                 })
                 .soap(Protocol.SOAP_1_1, schema, SoapHeaderWriter.NONE, Add.class)
-                .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
+                .baseUri("http://www.dneonline.com/calculator.asmx")
                 .build();
 
         Add req = new Add();
@@ -62,7 +62,7 @@ public class SoapClientTest {
                                         """);
                 })
                 .soap(Protocol.SOAP_1_2, schema, SoapHeaderWriter.NONE, Add.class)
-                .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
+                .baseUri("http://www.dneonline.com/calculator.asmx")
                 .build();
 
         Add req = new Add();
@@ -92,7 +92,7 @@ public class SoapClientTest {
                                         """);
                 })
                 .soap(Protocol.SOAP_1_1, schema, SoapHeaderWriter.NONE, Add.class)
-                .restClient(r -> r.baseUrl("http://www.dneonline.com/calculator.asmx"))
+                .baseUri("http://www.dneonline.com/calculator.asmx")
                 .build();
 
         Add req = new Add();

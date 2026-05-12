@@ -31,7 +31,7 @@ public class UpstreamErrorsHandlerXmlTest {
                             """
                     );
                 })
-                .restClient(r -> r.baseUrl("http://example.com"))
+                .baseUri("http://example.com")
                 .build()
                 .callWithXpath();
     }
@@ -56,7 +56,7 @@ public class UpstreamErrorsHandlerXmlTest {
                             """
                     );
                 })
-                .restClient(r -> r.baseUrl("http://example.com"))
+                .baseUri("http://example.com")
                 .build();
         Assertions.assertThrows(RestClientUpstreamException.class, () -> {
             client.callWithXpath();

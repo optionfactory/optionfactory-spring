@@ -27,7 +27,7 @@ import net.optionfactory.spring.upstream.buffering.BufferingUpstreamHttpRequestF
 import net.optionfactory.spring.upstream.buffering.InputStreamHttpMessageConverter;
 import net.optionfactory.spring.upstream.buffering.StreamHttpMessageConverter;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
-import net.optionfactory.spring.upstream.contexts.InvocationContext.HttpMessageConverters;
+import net.optionfactory.spring.upstream.contexts.InvocationContext.MessageConverters;
 import net.optionfactory.spring.upstream.errors.UpstreamErrorOnReponseHandler;
 import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.hc5.HcRequestFactories;
@@ -61,7 +61,7 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
 import org.springframework.http.converter.FormHttpMessageConverter;
-import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.HttpMessageConverters;
 import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
@@ -78,6 +78,7 @@ import tools.jackson.dataformat.xml.XmlMapper;
 
 public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
 
+    protected Optional<Consumer<HttpMessageConverters.ClientBuilder>> convertersConfigurer = Optional.empty();
     protected final List<Consumer<RestClient.Builder>> restClientCustomizers = new ArrayList<>();
     protected final List<UpstreamHttpRequestInitializer> initializers = new ArrayList<>();
     protected final List<UpstreamHttpInterceptor> interceptors = new ArrayList<>();
@@ -129,6 +130,7 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
         this.observations = other.observations;
         this.expressionsApplicationContext = other.expressionsApplicationContext;
         this.publisher = other.publisher;
+        this.convertersConfigurer = other.convertersConfigurer;
         this.restClientCustomizers.addAll(other.restClientCustomizers);
         this.initializers.addAll(other.initializers);
         this.interceptors.addAll(other.interceptors);
@@ -189,6 +191,7 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
      * @param klass the interface type
      * @return this builder
      */
+    @SuppressWarnings("unchecked")
     public <K> UpstreamBuilder<K> type(Class<K> klass) {
         this.klass = klass;
         return (UpstreamBuilder<K>) this;
@@ -360,6 +363,11 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
         return this;
     }
 
+    public UpstreamBuilder<T> messageConverters(Consumer<HttpMessageConverters.ClientBuilder> configurer) {
+        this.convertersConfigurer = Optional.ofNullable(configurer);
+        return this;
+    }
+
     /**
      * Configures default {@code MessageConverter}s for a SOAP client the passed
      * XmlMapper.
@@ -396,12 +404,9 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
      */
     public UpstreamBuilder<T> soap(Protocol protocol, @Nullable Schema schema, @Nullable SoapHeaderWriter headerWriter, JAXBContext context) {
         this.initializer(new UpstreamSoapActionIninitializer(protocol));
-        restClientCustomizers.add(b -> {
-            b.messageConverters(c -> {
-                c.clear();
-                c.add(new SoapMessageHttpMessageConverter(protocol));
-                c.add(new SoapJaxbHttpMessageConverter(protocol, context, schema, headerWriter));
-            });
+        this.messageConverters(c -> {
+            c.addCustomConverter(new SoapMessageHttpMessageConverter(protocol));
+            c.addCustomConverter(new SoapJaxbHttpMessageConverter(protocol, context, schema, headerWriter));
         });
         return this;
     }
@@ -414,19 +419,16 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
      * @return this builder
      */
     public UpstreamBuilder<T> json(JsonMapper jsonMapper) {
-        restClientCustomizers.add(b -> {
-            b.messageConverters(c -> {
-                c.clear();
-                final var multipart = new FormHttpMessageConverter();
-                multipart.addPartConverter(new JacksonJsonHttpMessageConverter(jsonMapper));
-                c.add(new ByteArrayHttpMessageConverter());
-                c.add(new StringHttpMessageConverter());
-                c.add(new ResourceHttpMessageConverter(false));
-                c.add(new InputStreamHttpMessageConverter());
-                c.add(StreamHttpMessageConverter.forJson(jsonMapper));
-                c.add(multipart);
-                c.add(new JacksonJsonHttpMessageConverter(jsonMapper));
-            });
+        this.messageConverters(c -> {
+            final var multipart = new FormHttpMessageConverter();
+            multipart.addPartConverter(new JacksonJsonHttpMessageConverter(jsonMapper));
+            c.addCustomConverter(new ByteArrayHttpMessageConverter());
+            c.addCustomConverter(new StringHttpMessageConverter());
+            c.addCustomConverter(new ResourceHttpMessageConverter(false));
+            c.addCustomConverter(new InputStreamHttpMessageConverter());
+            c.addCustomConverter(StreamHttpMessageConverter.forJson(jsonMapper));
+            c.addCustomConverter(multipart);
+            c.addCustomConverter(new JacksonJsonHttpMessageConverter(jsonMapper));
         });
         return this;
     }
@@ -439,19 +441,16 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
      * @return this builder
      */
     public UpstreamBuilder<T> xml(XmlMapper xmlMapper) {
-        restClientCustomizers.add(b -> {
-            b.messageConverters(c -> {
-                c.clear();
-                final var multipart = new FormHttpMessageConverter();
-                multipart.addPartConverter(new JacksonXmlHttpMessageConverter(xmlMapper));
-                c.add(new ByteArrayHttpMessageConverter());
-                c.add(new StringHttpMessageConverter());
-                c.add(new ResourceHttpMessageConverter(false));
-                c.add(new InputStreamHttpMessageConverter());
-                c.add(StreamHttpMessageConverter.forXml(xmlMapper));
-                c.add(multipart);
-                c.add(new JacksonXmlHttpMessageConverter(xmlMapper));
-            });
+        this.messageConverters(c -> {
+            final var multipart = new FormHttpMessageConverter();
+            multipart.addPartConverter(new JacksonXmlHttpMessageConverter(xmlMapper));
+            c.addCustomConverter(new ByteArrayHttpMessageConverter());
+            c.addCustomConverter(new StringHttpMessageConverter());
+            c.addCustomConverter(new ResourceHttpMessageConverter(false));
+            c.addCustomConverter(new InputStreamHttpMessageConverter());
+            c.addCustomConverter(StreamHttpMessageConverter.forXml(xmlMapper));
+            c.addCustomConverter(multipart);
+            c.addCustomConverter(new JacksonXmlHttpMessageConverter(xmlMapper));
         });
         return this;
     }
@@ -750,7 +749,13 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
 
         final var requestFactory = this.rfp.configure(scopeHandler, klass, expressions, endpoints);
 
-        final var rcb = RestClient.builder().requestFactory(requestFactory);
+        final var httpMessageConverterBuilder = HttpMessageConverters.forClient();
+        convertersConfigurer.ifPresent(c -> c.accept(httpMessageConverterBuilder));
+        final var httpMessageConverters = httpMessageConverterBuilder.build();
+
+        final var rcb = RestClient.builder().requestFactory(requestFactory).configureMessageConverters(configurer -> {
+            httpMessageConverters.forEach(configurer::addCustomConverter);
+        });
         restClientCustomizers.forEach(c -> c.accept(rcb));
 
         initializers.stream()
@@ -777,11 +782,6 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
                 .map(scopeHandler::adapt)
                 .forEach(rcb::defaultStatusHandler);
 
-        final List<HttpMessageConverter<?>> messageConverters = new ArrayList<>();
-        rcb.messageConverters(mcs -> {
-            messageConverters.addAll(mcs);
-        });
-
         final var innerExchangeAdapter = RestClientAdapter.create(rcb.build());
 
         final var exchangeAdapterChain = new UpstreamHttpExchangeAdapter.Chain(innerExchangeAdapter, Stream.concat(
@@ -802,7 +802,7 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
         final var p = new ProxyFactory();
         p.setTarget(client);
         p.setInterfaces(klass);
-        p.addAdvice(scopeHandler.interceptor(new HttpMessageConverters(messageConverters)));
+        p.addAdvice(scopeHandler.interceptor(new MessageConverters(httpMessageConverters)));
         @SuppressWarnings("unchecked")
         final var r = (T) p.getProxy();
         return r;

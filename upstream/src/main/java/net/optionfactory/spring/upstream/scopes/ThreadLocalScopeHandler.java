@@ -11,7 +11,7 @@ import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
 import net.optionfactory.spring.upstream.UpstreamResponseErrorHandler;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
-import net.optionfactory.spring.upstream.contexts.InvocationContext.HttpMessageConverters;
+import net.optionfactory.spring.upstream.contexts.InvocationContext.MessageConverters;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
@@ -54,7 +54,7 @@ public class ThreadLocalScopeHandler implements ScopeHandler {
     }
 
     @Override
-    public MethodInterceptor interceptor(HttpMessageConverters converters) {
+    public MethodInterceptor interceptor(MessageConverters converters) {
         return new UpstreamMethodInterceptor(endpoints, invocations, principal, expressions, rendering, converters, observations, requests, responses, clock, publisher);
     }
 
