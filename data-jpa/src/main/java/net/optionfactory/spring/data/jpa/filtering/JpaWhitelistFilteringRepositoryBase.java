@@ -21,7 +21,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.support.JpaEntityInformation;
 import org.springframework.data.jpa.repository.support.SimpleJpaRepository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
+@Transactional(readOnly = true, propagation = Propagation.MANDATORY)
 public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> extends SimpleJpaRepository<T, ID> {
 
     private final Map<String, Filter> allowedFilters;
@@ -34,11 +37,10 @@ public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> ext
         this.allowedFilters = Repositories.allowedFilters(ei, em);
         this.allowedSorters = Repositories.allowedSorters(ei, em);
     }
-    
+
     private static <T> Specification<T> where(@Nullable Specification<T> spec) {
-            return spec == null ? Specification.unrestricted() : spec;
+        return spec == null ? Specification.unrestricted() : spec;
     }
-    
 
     @Override
     public Page<T> findAll(@Nullable Specification<T> spec, Pageable pageable) {
