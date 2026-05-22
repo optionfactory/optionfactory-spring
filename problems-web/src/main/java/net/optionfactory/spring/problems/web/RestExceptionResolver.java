@@ -5,16 +5,20 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.ElementKind;
+import jakarta.validation.Path.Node;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import net.optionfactory.spring.problems.Failure;
 import net.optionfactory.spring.problems.Problem;
+import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -23,6 +27,7 @@ import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.client.RestClientException;
@@ -111,15 +116,21 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 yield handleMessageNotReadable(requestUri, inner);
             }
             case BindException be -> {
-                final Stream<Problem> globalFailures = be.getGlobalErrors().stream().map(RestExceptionResolver::objectErrorToProblem);
-                final Stream<Problem> fieldFailures = be.getFieldErrors().stream().map(RestExceptionResolver::fieldErrorToProblem);
-                final List<Problem> failures = Stream.concat(globalFailures, fieldFailures).collect(Collectors.toList());
+                final var globalFailures = be.getGlobalErrors().stream().map(RestExceptionResolver::objectErrorToProblem);
+                final var fieldFailures = be.getFieldErrors().stream().map(RestExceptionResolver::fieldErrorToProblem);
+                final var failures = Stream.concat(globalFailures, fieldFailures).collect(Collectors.toList());
                 logger.debug(String.format("Binding failure at %s: %s", requestUri, failures));
                 yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, failures);
             }
             case ConstraintViolationException cve -> {
-                final Stream<Problem> fieldFailures = cve.getConstraintViolations().stream().map(RestExceptionResolver::constraintViolationToProblem);
-                final List<Problem> failures = fieldFailures.collect(Collectors.toList());
+                final var requestBodyParams = hm == null ? Set.<String>of() : Stream.of(hm.getMethodParameters())
+                        .filter(p -> p.hasParameterAnnotation(RequestBody.class))
+                        .map(MethodParameter::getParameterName)
+                        .collect(Collectors.toSet());
+
+                final var fieldFailures = cve.getConstraintViolations().stream()
+                        .map(cv -> constraintViolationToProblem(cv, requestBodyParams));
+                final var failures = fieldFailures.collect(Collectors.toList());
                 logger.debug(String.format("Constraint violations at %s: %s", requestUri, failures));
                 yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, failures);
             }
@@ -128,12 +139,13 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 logger.debug(String.format("Missing servlet RequestParameter at %s: %s", requestUri, problem));
                 yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, Collections.singletonList(problem));
             }
-            case MethodArgumentTypeMismatchException matme -> { // Handles type errors in path variables (Es. not-numeric string when expecting an int)
-                final String parameterName = matme.getParameter().getParameterName();
-                final String parameterType = matme.getParameter().getParameterType().toGenericString();
-                final Object value = matme.getValue();
-                final String sourceType = value == null ? "null" : value.getClass().toGenericString();
-                final List<Problem> failures = Collections.singletonList(Problem.of("CONVERSION_ERROR", parameterName, "Conversion error", String.format("Failed to convert value of type '%s' to '%s'.", sourceType, parameterType)));
+            case MethodArgumentTypeMismatchException matme -> {
+                // Handles type errors in path variables (Es. not-numeric string when expecting an int)
+                final var parameterName = matme.getParameter().getParameterName();
+                final var parameterType = matme.getParameter().getParameterType().toGenericString();
+                final var value = matme.getValue();
+                final var sourceType = value == null ? "null" : value.getClass().toGenericString();
+                final var failures = Collections.singletonList(Problem.of("CONVERSION_ERROR", parameterName, "Conversion error", String.format("Failed to convert value of type '%s' to '%s'.", sourceType, parameterType)));
                 logger.debug(String.format("Conversion error for argument %s expected type %s found type %s at %s: %s", parameterName, parameterType, sourceType, requestUri, failures));
                 yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, failures);
             }
@@ -224,12 +236,38 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
 
     }
 
-    private static Problem constraintViolationToProblem(ConstraintViolation error) {
-        final var path = StreamSupport.stream(error.getPropertyPath().spliterator(), false)
-                .skip(1)
-                .map(node -> node.getIndex() != null ? String.valueOf(node.getIndex()) : node.getName())
+    private static Problem constraintViolationToProblem(ConstraintViolation<?> error, Set<String> requestBodyParams) {
+        final var nodes = StreamSupport.stream(error.getPropertyPath().spliterator(), false)
+                .collect(Collectors.toList());
+
+        final var paramName = nodes.stream()
+                .filter(node -> node.getKind() == ElementKind.PARAMETER)
+                .map(Node::getName)
+                .findFirst()
+                .orElse(null);
+
+        final var isRequestBody = paramName != null && requestBodyParams.contains(paramName);
+
+        final var path = nodes.stream()
+                .filter(node -> node.getKind() != ElementKind.METHOD)
+                .filter(node -> !(node.getKind() == ElementKind.PARAMETER && isRequestBody))
+                .map(node -> {
+                    String name = node.getName();
+                    if (name != null && name.startsWith("<") && name.endsWith(">")) {
+                        name = "";
+                    }
+
+                    if (node.getIndex() != null) {
+                        return node.getIndex() + (name != null && !name.isEmpty() ? "." + name : "");
+                    }
+                    return name;
+                })
+                .filter(s -> s != null && !s.isEmpty())
                 .collect(Collectors.joining("."));
-        return Problem.of("FIELD_ERROR", path, error.getMessage(), null);
+
+        return path.isEmpty()
+                ? Problem.of("OBJECT_ERROR", null, error.getMessage(), null)
+                : Problem.of("FIELD_ERROR", path, error.getMessage(), null);
     }
 
     private static Problem fieldErrorToProblem(FieldError error) {
