@@ -11,11 +11,18 @@ public interface Downstream {
     @Target(ElementType.METHOD)
     @interface Method {
 
-        String[] value() default {};
+        String[] clients() default {};
     }
 
     @Target({ElementType.METHOD, ElementType.PARAMETER, ElementType.FIELD, ElementType.TYPE_USE})
     @Retention(RetentionPolicy.RUNTIME)
     @interface Ignore {
+    }
+
+    @Target(ElementType.TYPE)
+    @Retention(RetentionPolicy.RUNTIME)
+    @interface Rename {
+
+        String value();
     }
 }

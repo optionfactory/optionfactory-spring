@@ -9,7 +9,7 @@
     <artifactId>downstream-maven-plugin</artifactId>
     <description>optionfactory-spring downstream-maven-plugin</description>
     <name>${project.groupId}:${project.artifactId}</name>
-    <packaging>jar</packaging>
+    <packaging>maven-plugin</packaging>
     <dependencies>
         <dependency>
             <groupId>net.optionfactory.spring</groupId>
@@ -53,7 +53,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-plugin-plugin</artifactId>
-                <version>3.9.11</version>
+                <version>3.15.2</version>
             </plugin>
         </plugins>
     </build>    
