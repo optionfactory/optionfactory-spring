@@ -8,15 +8,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import net.optionfactory.spring.downstream.Downstream;
-import net.optionfactory.spring.downstream.plugin.processing.DownstreamMappingsResolver.Type;
-import net.optionfactory.spring.downstream.plugin.processing.DownstreamMethodsScanner.AnnotatedMethod;
+import net.optionfactory.spring.downstream.plugin.processing.TypesMapper.Type;
+import net.optionfactory.spring.downstream.plugin.processing.AnnotatedMethodsScanner.AnnotatedMethod;
 
-public class DownstreamDtosScanner {
+public class PayloadsScanner {
 
     private final String sourcePackage;
     private final String targetClientName;
 
-    public DownstreamDtosScanner(String sourcePackage, String targetClientName) {
+    public PayloadsScanner(String sourcePackage, String targetClientName) {
         this.sourcePackage = sourcePackage;
         this.targetClientName = targetClientName;
     }

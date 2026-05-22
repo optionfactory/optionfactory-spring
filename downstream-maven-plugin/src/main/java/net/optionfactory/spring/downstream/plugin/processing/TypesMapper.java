@@ -6,13 +6,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import net.optionfactory.spring.downstream.Downstream;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.Log;
 
-public class DownstreamMappingsResolver {
+public class TypesMapper {
 
     private final String targetPackage;
 
-    public DownstreamMappingsResolver(String targetPackage) {
+    public TypesMapper(String targetPackage) {
         this.targetPackage = targetPackage;
     }
 
@@ -25,7 +24,7 @@ public class DownstreamMappingsResolver {
 
     }
 
-    public Map<Class<?>, TypeAndName> resolve(Map<Class<?>, Type> scanResult) throws MojoExecutionException {
+    public Map<Class<?>, TypeAndName> map(Map<Class<?>, Type> scanResult) throws MojoExecutionException {
         final Map<Class<?>, TypeAndName> result = new HashMap<>();
 
         for (Map.Entry<Class<?>, Type> entry : scanResult.entrySet()) {

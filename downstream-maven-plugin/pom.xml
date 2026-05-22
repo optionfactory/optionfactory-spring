@@ -39,7 +39,6 @@
             <artifactId>javapoet</artifactId>
             <version>0.15.0</version> 
         </dependency>
-
         <dependency>
             <groupId>io.github.classgraph</groupId>
             <artifactId>classgraph</artifactId>

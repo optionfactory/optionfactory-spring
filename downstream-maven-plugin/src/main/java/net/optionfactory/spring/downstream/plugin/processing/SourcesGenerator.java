@@ -17,16 +17,16 @@ import java.util.List;
 import java.util.Map;
 import javax.lang.model.element.Modifier;
 import net.optionfactory.spring.downstream.Downstream;
-import net.optionfactory.spring.downstream.plugin.processing.DownstreamMappingsResolver.Type;
-import net.optionfactory.spring.downstream.plugin.processing.DownstreamMappingsResolver.TypeAndName;
+import net.optionfactory.spring.downstream.plugin.processing.TypesMapper.Type;
+import net.optionfactory.spring.downstream.plugin.processing.TypesMapper.TypeAndName;
 
-public class DownstreamSourcesGenerator {
+public class SourcesGenerator {
 
     private final File outputDir;
     private final File projectBaseDir;
     private final String targetPackage;
 
-    public DownstreamSourcesGenerator(File outputDir, File projectBaseDir, String targetPackage) {
+    public SourcesGenerator(File outputDir, File projectBaseDir, String targetPackage) {
         this.outputDir = outputDir;
         this.projectBaseDir = projectBaseDir;
         this.targetPackage = targetPackage;
@@ -41,7 +41,7 @@ public class DownstreamSourcesGenerator {
         for (final var classToMapping : resolved.entrySet()) {
             final Class<?> declaring = classToMapping.getKey().getDeclaringClass();
             if (declaring == null || !resolved.containsKey(declaring)) {
-                final TypeSpec rootSpec = classToMapping.getValue().type() == DownstreamMappingsResolver.Type.DTO
+                final TypeSpec rootSpec = classToMapping.getValue().type() == TypesMapper.Type.DTO
                         ? buildDtoSpec(resolved, classToMapping.getKey(), true)
                         : buildEnumSpec(resolved, classToMapping.getKey(), true);
 
@@ -119,9 +119,7 @@ public class DownstreamSourcesGenerator {
     }
 
     private GenerateCandidate writeRootFile(File outputDir, ClassName rootClassName, TypeSpec rootSpec) throws IOException {
-        final String topLevelName = rootClassName.simpleNames().get(0);
-
-        final var relativePath = "src/main/java/" + targetPackage.replace('.', '/') + "/" + topLevelName + ".java";
+        final var relativePath = "src/main/java/%s/%s.java".formatted(targetPackage.replace('.', '/'), rootClassName.simpleNames().get(0));
         final var sourceFile = new File(projectBaseDir, relativePath);
         if (sourceFile.exists()) {
             return new GenerateCandidate(relativePath, false);
