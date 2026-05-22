@@ -15,7 +15,6 @@ public class AnnotatedMethodsScanner {
     public List<AnnotatedMethod> scan(ScanResult scanResult) {
         final var methods = new ArrayList<AnnotatedMethod>();
         final var classInfoList = scanResult.getClassesWithMethodAnnotation(Downstream.Method.class.getName());
-
         for (final var classInfo : classInfoList) {
             for (final var method : classInfo.loadClass().getDeclaredMethods()) {
                 final var annotation = method.getAnnotation(Downstream.Method.class);

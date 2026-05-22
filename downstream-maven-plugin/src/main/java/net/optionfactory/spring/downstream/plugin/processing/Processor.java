@@ -1,9 +1,10 @@
 package net.optionfactory.spring.downstream.plugin.processing;
 
 import io.github.classgraph.ClassGraph;
+import java.io.File;
+import java.util.Map;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
-import java.io.File;
 
 public class Processor {
 
@@ -15,14 +16,14 @@ public class Processor {
     private final TypesMapper types;
     private final SourcesGenerator sources;
 
-    public Processor(Log log, MavenProject project, String sourcePackage, String targetPackage, String targetClientName) {
+    public Processor(Log log, MavenProject project, String sourcePackage, String targetPackage, String targetClientName, Map<String, String> translations) {
         this.log = log;
         this.project = project;
         this.outputDir = new File(project.getBuild().getDirectory(), "generated-sources/downstream");
         this.methods = new AnnotatedMethodsScanner();
         this.payloads = new PayloadsScanner(sourcePackage, targetClientName);
         this.types = new TypesMapper(targetPackage);
-        this.sources = new SourcesGenerator(outputDir, project.getBasedir(), targetPackage);
+        this.sources = new SourcesGenerator(outputDir, project.getBasedir(), targetPackage, translations);
     }
 
     public void process() throws Exception {
@@ -39,10 +40,10 @@ public class Processor {
             log.info("Discovered %s dtos and enums".formatted(ps.size()));
 
             final var mapped = types.map(ps);
-            final var candidates = sources.generate(mapped);
+            final var outcomes = sources.generate(mapped);
 
-            for (final var candidate : candidates) {
-                log.info("Source code generation: %s: %s".formatted(candidate.generated() ? "CREATED" : "SKIPPED", candidate.name()));
+            for (final var outcome : outcomes) {
+                log.info("Source code generation: %s: %s".formatted(outcome.generated() ? "CREATED" : "SKIPPED", outcome.name()));
             }
         }
 

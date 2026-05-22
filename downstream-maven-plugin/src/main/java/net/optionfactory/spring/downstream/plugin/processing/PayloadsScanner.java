@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import net.optionfactory.spring.downstream.Downstream;
-import net.optionfactory.spring.downstream.plugin.processing.TypesMapper.Type;
 import net.optionfactory.spring.downstream.plugin.processing.AnnotatedMethodsScanner.AnnotatedMethod;
 
 public class PayloadsScanner {
@@ -21,37 +20,40 @@ public class PayloadsScanner {
         this.targetClientName = targetClientName;
     }
 
-    public Map<Class<?>, Type> scan(List<AnnotatedMethod> methods) {
+    public enum PayloadType {
+        ENUM,
+        DTO;
+    }
+
+    public Map<Class<?>, PayloadType> scan(List<AnnotatedMethod> methods) {
         final var targetMethods = methods.stream().filter(m -> {
             final var clients = m.annotation().clients();
             return clients.length == 0 || Stream.of(clients).anyMatch(c -> c.equals(targetClientName));
         }).toList();
 
-        final var result = new HashMap<Class<?>, Type>();
+        final var result = new HashMap<Class<?>, PayloadType>();
         for (final var am : targetMethods) {
-            registerIfDto(result, am.method().getAnnotatedReturnType());
+            registerIfPayload(result, am.method().getAnnotatedReturnType());
             for (final var param : am.method().getParameters()) {
-                registerIfDto(result, param.getAnnotatedType());
+                registerIfPayload(result, param.getAnnotatedType());
             }
         }
         return result;
     }
 
-    private void registerIfDto(Map<Class<?>, Type> result, AnnotatedType annotatedType) {
+    private void registerIfPayload(Map<Class<?>, PayloadType> result, AnnotatedType annotatedType) {
         if (annotatedType == null || annotatedType.isAnnotationPresent(Downstream.Ignore.class)) {
             return;
         }
-
         if (annotatedType instanceof AnnotatedParameterizedType apt) {
             for (final var arg : apt.getAnnotatedActualTypeArguments()) {
-                registerIfDto(result, arg);
+                registerIfPayload(result, arg);
             }
             if (apt.getType() instanceof ParameterizedType pType && pType.getRawType() instanceof Class<?> clazz) {
-                processClassIfDto(result, clazz);
+                processClassIfPayload(result, clazz);
             }
             return;
         }
-
         if (!(annotatedType.getType() instanceof Class<?> clazz)) {
             return;
         }
@@ -60,29 +62,34 @@ public class PayloadsScanner {
             elementClass = elementClass.getComponentType();
         }
 
-        processClassIfDto(result, elementClass);
+        processClassIfPayload(result, elementClass);
     }
 
-    private void processClassIfDto(Map<Class<?>, Type> result, Class<?> clazz) {
+    private void processClassIfPayload(Map<Class<?>, PayloadType> result, Class<?> clazz) {
         if (!clazz.getName().startsWith(sourcePackage) || clazz.isAnnotation()) {
             return;
         }
-
         if (clazz.isEnum()) {
-            result.put(clazz, Type.ENUM);
+            result.put(clazz, PayloadType.ENUM);
+            return;
+        }
+        if (result.put(clazz, PayloadType.DTO) != null) {
             return;
         }
 
-        if (result.put(clazz, Type.DTO) != null) {
-            return;
+        for (final Class<?> nested : clazz.getDeclaredClasses()) {
+            processClassIfPayload(result, nested);
         }
 
-        for (final var field : clazz.getDeclaredFields()) {
-            if (field.isSynthetic()) {
-                continue;
+        Class<?> current = clazz;
+        while (current != null && current != Object.class) {
+            for (final var field : current.getDeclaredFields()) {
+                if (field.isSynthetic()) {
+                    continue;
+                }
+                registerIfPayload(result, field.getAnnotatedType());
             }
-            registerIfDto(result, field.getAnnotatedType());
+            current = current.getSuperclass();
         }
     }
-
 }

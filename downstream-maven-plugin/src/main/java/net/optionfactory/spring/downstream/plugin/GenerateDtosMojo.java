@@ -1,5 +1,7 @@
 package net.optionfactory.spring.downstream.plugin;
 
+import java.util.HashMap;
+import java.util.Map;
 import net.optionfactory.spring.downstream.plugin.processing.Processor;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -23,10 +25,13 @@ public class GenerateDtosMojo extends AbstractMojo {
     @Parameter(required = true)
     private String targetPackage;
 
+    @Parameter
+    private Map<String, String> translations = new HashMap<>();
+
     @Override
     public void execute() throws MojoExecutionException {
         try {
-            final var processor = new Processor(getLog(), project, sourceBasePackage, targetPackage, targetClientName);
+            final var processor = new Processor(getLog(), project, sourceBasePackage, targetPackage, targetClientName, translations);
             processor.process();
         } catch (MojoExecutionException e) {
             throw e;

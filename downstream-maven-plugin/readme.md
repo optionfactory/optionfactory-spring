@@ -40,7 +40,11 @@ Make sure you add the "server" as a dependency of the plugin.
                             <sourceBasePackage>net.optionfactory.server</sourceBasePackage>
                             <targetPackage>net.optionfactory.myclient</targetPackage>
                             <targetClientName>MyClient</targetClientName>
-                        </configuration>                                                
+                            <translations>
+                                <org.springframework.web.multipart.MultipartFile>byte[]</org.springframework.web.multipart.MultipartFile>
+                                <java.time.LocalDate>java.lang.String</java.time.LocalDate>
+                            </translations>                                
+                        </configuration>
                     </execution>
                 </executions>
                 <dependencies>

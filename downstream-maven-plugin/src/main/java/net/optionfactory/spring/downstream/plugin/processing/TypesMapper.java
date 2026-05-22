@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import net.optionfactory.spring.downstream.Downstream;
+import net.optionfactory.spring.downstream.plugin.processing.PayloadsScanner.PayloadType;
 import org.apache.maven.plugin.MojoExecutionException;
 
 public class TypesMapper {
@@ -15,45 +16,35 @@ public class TypesMapper {
         this.targetPackage = targetPackage;
     }
 
-    public enum Type {
-        ENUM,
-        DTO;
-    }
-
-    public record TypeAndName(Type type, ClassName className) {
+    public record PayloadInfo(PayloadType type, ClassName className) {
 
     }
 
-    public Map<Class<?>, TypeAndName> map(Map<Class<?>, Type> scanResult) throws MojoExecutionException {
-        final Map<Class<?>, TypeAndName> result = new HashMap<>();
-
-        for (Map.Entry<Class<?>, Type> entry : scanResult.entrySet()) {
-            result.put(entry.getKey(), new TypeAndName(entry.getValue(), resolveClassName(entry.getKey(), scanResult)));
+    public TypesRegistry map(Map<Class<?>, PayloadType> scanResult) throws MojoExecutionException {
+        final var result = new HashMap<Class<?>, PayloadInfo>();
+        for (final var entry : scanResult.entrySet()) {
+            result.put(entry.getKey(), new PayloadInfo(entry.getValue(), resolveClassName(entry.getKey(), scanResult)));
         }
-        enforceNoNameCollisions(result);
-        return result;
-    }
-
-    private void enforceNoNameCollisions(Map<Class<?>, TypeAndName> state) throws MojoExecutionException {
-        final var clashingGroups = state.entrySet().stream()
+        final var clashingGroups = result.entrySet().stream()
                 .collect(Collectors.groupingBy(entry -> entry.getValue().className().canonicalName()))
                 .entrySet().stream()
                 .filter(entry -> entry.getValue().size() > 1)
                 .toList();
-
-        if (clashingGroups.isEmpty()) {
-            return;
+        if (!clashingGroups.isEmpty()) {
+            final var message = clashingGroups.stream().map(cg -> {
+                final var className = cg.getKey();
+                final var collisions = cg.getValue().stream().map(e -> e.getKey().getName()).collect(Collectors.joining(","));
+                return "Class name collision target '%s' found in multiple source packages: %s".formatted(className, collisions);
+            }).collect(Collectors.joining("\n"));
+            throw new MojoExecutionException("name collision while generating dtos: %s".formatted(message));
         }
-        final var message = clashingGroups.stream().map(cg -> {
-            final var className = cg.getKey();
-            final var collisions = cg.getValue().stream().map(e -> e.getKey().getName()).collect(Collectors.joining(","));
-            return "Class name collision target '%s' found in multiple source packages: %s".formatted(className, collisions);            
-        }).collect(Collectors.joining("\n"));
-        throw new MojoExecutionException("name collision while generating dtos: %s".formatted(message));
+        return new TypesRegistry(result);
+
     }
 
-    private ClassName resolveClassName(Class<?> clazz, Map<Class<?>, Type> allDiscovered) {
-        final String name = getMappedName(clazz);
+    private ClassName resolveClassName(Class<?> clazz, Map<Class<?>, PayloadType> allDiscovered) {
+        final var annotation = clazz.getAnnotation(Downstream.Rename.class);
+        final var name = annotation != null ? annotation.value() : clazz.getSimpleName();
         final Class<?> declaring = clazz.getDeclaringClass();
 
         if (declaring != null && allDiscovered.containsKey(declaring)) {
@@ -61,11 +52,6 @@ public class TypesMapper {
         }
 
         return ClassName.get(targetPackage, name);
-    }
-
-    private String getMappedName(Class<?> clazz) {
-        final Downstream.Rename rename = clazz.getAnnotation(Downstream.Rename.class);
-        return rename != null ? rename.value() : clazz.getSimpleName();
     }
 
 }
