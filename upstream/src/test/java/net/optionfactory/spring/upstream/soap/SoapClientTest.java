@@ -4,6 +4,7 @@ import jakarta.xml.bind.JAXBException;
 import jakarta.xml.soap.SOAPFault;
 import javax.xml.validation.Schema;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
+import net.optionfactory.spring.upstream.errors.RestClientUpstreamException;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
 import net.optionfactory.spring.upstream.soap.calc.Add;
 import net.optionfactory.spring.upstream.soap.calc.CalculatorClient;
@@ -12,7 +13,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.web.client.HttpServerErrorException.InternalServerError;
 
 public class SoapClientTest {
 
@@ -101,7 +101,7 @@ public class SoapClientTest {
         try {
             client.faultingAdd(req);
             Assertions.fail("should not happen");
-        } catch (InternalServerError ex) {
+        } catch (RestClientUpstreamException ex) {
             SOAPFault o = ex.getResponseBodyAs(SOAPFault.class);
             Assertions.assertEquals("soap:Client", o.getFaultCode());
         }

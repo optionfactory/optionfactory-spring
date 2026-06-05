@@ -8,8 +8,9 @@ import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.ElementKind;
 import jakarta.validation.Path.Node;
 import java.io.IOException;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,11 +19,16 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import net.optionfactory.spring.problems.Failure;
 import net.optionfactory.spring.problems.Problem;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.util.ClassUtils;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
@@ -32,6 +38,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.server.ResponseStatusException;
@@ -57,70 +64,155 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
 
     private final Map<HandlerMethod, Boolean> methodToIsRest = new ConcurrentHashMap<>();
     private final JsonMapper mapper;
-    private final ProblemTransformer[] transformers;
+    private final List<FailureTransformer> transformers;
+    private final MessageSource messageSource;
 
     public enum Options {
         INCLUDE_DETAILS, OMIT_DETAILS;
     }
 
-    public RestExceptionResolver(JsonMapper mapper, Options options, ProblemTransformer... transformers) {
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static RestExceptionResolver withDefaults(Options options, JsonMapper mapper) {
+        final var builder = new Builder().withOptions(options);
+        if (ClassUtils.isPresent("net.optionfactory.spring.upstream.errors.RestClientUpstreamException", RestExceptionResolver.class.getClassLoader())) {
+            try {
+                builder.withTransformer((FailureTransformer) Class.forName("net.optionfactory.spring.problems.web.upstream.UpstreamFailureTransformer")
+                        .getDeclaredConstructor()
+                        .newInstance());
+            } catch (Exception ex) {
+                throw new IllegalStateException("Failed to instantiate UpstreamFailureTransformer", ex);
+            }
+        }
+        return builder.build(mapper);
+    }
+
+    public static class Builder {
+
+        private Options options = Options.INCLUDE_DETAILS;
+        private final List<FailureTransformer> transformers = new ArrayList<>();
+        private MessageSource messageSource;
+
+        public Builder withMessageSource(MessageSource messageSource) {
+            this.messageSource = messageSource;
+            return this;
+        }
+
+        public Builder withOptions(Options options) {
+            this.options = options;
+            return this;
+        }
+
+        public Builder withTransformer(FailureTransformer t) {
+            this.transformers.add(t);
+            return this;
+        }
+
+        public RestExceptionResolver build(JsonMapper mapper) {
+            final var fts = new ArrayList<>(transformers);
+            if (options == Options.OMIT_DETAILS) {
+                fts.add(new OmitDetails());
+            }
+            final MessageSource ms;
+            if (messageSource != null) {
+                ms = messageSource;
+            } else {
+                final var defaultMessageSource = new ResourceBundleMessageSource();
+                defaultMessageSource.setBasename("optionfactory-problems-web");
+                defaultMessageSource.setDefaultEncoding("UTF-8");
+                ms = defaultMessageSource;
+            }
+            return new RestExceptionResolver(mapper, ms, fts);
+        }
+
+    }
+
+    public RestExceptionResolver(JsonMapper mapper, MessageSource messageSource, List<FailureTransformer> transformers) {
         this.mapper = mapper;
-        this.transformers = options == Options.INCLUDE_DETAILS ? transformers : withOmitDetails(transformers);
+        this.transformers = transformers;
+        this.messageSource = messageSource;
     }
 
-    private ProblemTransformer[] withOmitDetails(ProblemTransformer[] transformers) {
-        final ProblemTransformer[] r = new ProblemTransformer[transformers.length + 1];
-        System.arraycopy(transformers, 0, r, 0, transformers.length);
-        r[transformers.length] = new OmitDetails();
-        return r;
-    }
-
-    private HttpStatusAndFailures handleMessageNotReadable(String requestUri, HttpMessageNotReadableException ex) {
+    private HttpStatusAndProblems handleMessageNotReadable(String requestUri, HttpMessageNotReadableException ex, Locale locale) {
         final Throwable cause = ex.getCause();
         return switch (ex.getCause()) {
             case UnrecognizedPropertyException inner -> {
-                final Map<String, Object> metadata = new ConcurrentHashMap<>();
+                final var metadata = new ConcurrentHashMap<String, Object>();
                 metadata.put("known", inner.getKnownPropertyIds());
                 metadata.put("in", inner.getReferringClass().getSimpleName());
-                final Problem problem = Problem.of("UNRECOGNIZED_PROPERTY", inner.getPropertyName(), "Unrecognized field", metadata);
+
+                final var reason = messageSource.getMessage("error.unrecognized_field", null, "Unrecognized field", locale);
+                final var problem = Problem.of("UNRECOGNIZED_PROPERTY", inner.getPropertyName(), reason, metadata);
                 logger.debug(String.format("Unrecognized property at %s: %s", requestUri, problem));
-                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(problem));
+                yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, List.of(problem));
             }
             case JacksonException inner -> {
-                final String path = inner.getPath().stream().map(p -> p.getPropertyName()).collect(Collectors.joining("."));
+                final var path = inner.getPath().stream().map(p -> p.getPropertyName()).collect(Collectors.joining("."));
                 final Problem problem;
                 if (path.isEmpty()) {
-                    final Map<String, Object> details = new ConcurrentHashMap<>();
+                    final var details = new ConcurrentHashMap<String, Object>();
                     details.put("location", inner.getLocation());
                     details.put("message", cause.getMessage());
-                    problem = Problem.of("UNPARSEABLE_MESSAGE", Problem.NO_CONTEXT, "Unpearsable message", details);
+                    final String reason = messageSource.getMessage("error.unparseable_message", null, "Unpearsable message", locale);
+                    problem = Problem.of("UNPARSEABLE_MESSAGE", Problem.NO_CONTEXT, reason, details);
                 } else {
-                    problem = Problem.of("INVALID_FORMAT", path, "Invalid format", inner.getMessage());
+                    final String reason = messageSource.getMessage("error.invalid_format", null, "Invalid format", locale);
+                    problem = Problem.of("INVALID_FORMAT", path, reason, inner.getMessage());
                 }
                 logger.debug(String.format("Invalid format at %s: %s", requestUri, problem));
-                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(problem));
+                yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, List.of(problem));
             }
             case null, default -> {
-                final Problem problem = Problem.of("MESSAGE_NOT_READABLE", Problem.NO_CONTEXT, "Message not readable", cause != null ? cause.getMessage() : ex.getMessage());
+                final String reason = messageSource.getMessage("error.message_not_readable", null, "Message not readable", locale);
+                final Problem problem = Problem.of("MESSAGE_NOT_READABLE", Problem.NO_CONTEXT, reason, cause != null ? cause.getMessage() : ex.getMessage());
                 logger.debug(String.format("Unreadable message at %s: %s", requestUri, problem));
-                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, List.of(problem));
+                yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, List.of(problem));
             }
         };
     }
 
-    protected HttpStatusAndFailures toStatusAndErrors(HttpServletRequest request, HttpServletResponse response, HandlerMethod hm, Exception ex) {
+    protected HttpStatusAndProblems toStatusAndErrors(HttpServletRequest request, HttpServletResponse response, HandlerMethod hm, Exception ex) {
         final String requestUri = request.getRequestURI();
-
+        final var locale = LocaleContextHolder.getLocale();
         return switch (ex) {
             case HttpMessageNotReadableException inner -> {
-                yield handleMessageNotReadable(requestUri, inner);
+                yield handleMessageNotReadable(requestUri, inner, locale);
+            }
+            case HandlerMethodValidationException hmve -> {
+                final var failures = new ArrayList<Problem>();
+                //NOTE: we are relying on jakarta validation translation so error.getDefaultMessage() is localized already
+                for (final var result : hmve.getParameterValidationResults()) {
+                    final var param = result.getMethodParameter();
+                    final Object containerKey = result.getContainerIndex() != null ? result.getContainerIndex() : result.getContainerKey();
+                    final String prefix = containerKey != null ? containerKey.toString() : "";
+
+                    if (result instanceof org.springframework.validation.method.ParameterErrors pe) {
+                        pe.getGlobalErrors().forEach(error -> failures.add(RestExceptionResolver.objectErrorToProblem(error)));
+                        pe.getFieldErrors().forEach(error -> {
+                            final String path = prefix.isEmpty() ? error.getField() : prefix + "." + error.getField();
+                            failures.add(Problem.of("FIELD_ERROR", path, error.getDefaultMessage(), null));
+                        });
+                    } else {
+                        final boolean isRequestBody = param.hasParameterAnnotation(RequestBody.class);
+                        final String path = !prefix.isEmpty() ? prefix : (isRequestBody ? null : param.getParameterName());
+                        result.getResolvableErrors().forEach(error -> failures.add(path == null
+                                ? Problem.of("OBJECT_ERROR", null, error.getDefaultMessage(), null)
+                                : Problem.of("FIELD_ERROR", path, error.getDefaultMessage(), null)
+                        ));
+                    }
+                }
+
+                logger.debug(String.format("Handler method validation failures at %s: %s", requestUri, failures));
+                yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, failures);
             }
             case BindException be -> {
                 final var globalFailures = be.getGlobalErrors().stream().map(RestExceptionResolver::objectErrorToProblem);
                 final var fieldFailures = be.getFieldErrors().stream().map(RestExceptionResolver::fieldErrorToProblem);
-                final var failures = Stream.concat(globalFailures, fieldFailures).collect(Collectors.toList());
+                final var failures = Stream.concat(globalFailures, fieldFailures).toList();
                 logger.debug(String.format("Binding failure at %s: %s", requestUri, failures));
-                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, failures);
+                yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, failures);
             }
             case ConstraintViolationException cve -> {
                 final var requestBodyParams = hm == null ? Set.<String>of() : Stream.of(hm.getMethodParameters())
@@ -130,14 +222,15 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
 
                 final var fieldFailures = cve.getConstraintViolations().stream()
                         .map(cv -> constraintViolationToProblem(cv, requestBodyParams));
-                final var failures = fieldFailures.collect(Collectors.toList());
+                final var failures = fieldFailures.toList();
                 logger.debug(String.format("Constraint violations at %s: %s", requestUri, failures));
-                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, failures);
+                yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, failures);
             }
             case MissingServletRequestParameterException msrpe -> {
-                final Problem problem = Problem.of("FIELD_ERROR", msrpe.getParameterName(), "Parameter is missing", Problem.NO_DETAILS);
+                final String reason = messageSource.getMessage("error.missing_parameter", null, "Parameter is missing", locale);
+                final Problem problem = Problem.of("FIELD_ERROR", msrpe.getParameterName(), reason, Problem.NO_DETAILS);
                 logger.debug(String.format("Missing servlet RequestParameter at %s: %s", requestUri, problem));
-                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, Collections.singletonList(problem));
+                yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, List.of(problem));
             }
             case MethodArgumentTypeMismatchException matme -> {
                 // Handles type errors in path variables (Es. not-numeric string when expecting an int)
@@ -145,33 +238,33 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 final var parameterType = matme.getParameter().getParameterType().toGenericString();
                 final var value = matme.getValue();
                 final var sourceType = value == null ? "null" : value.getClass().toGenericString();
-                final var failures = Collections.singletonList(Problem.of("CONVERSION_ERROR", parameterName, "Conversion error", String.format("Failed to convert value of type '%s' to '%s'.", sourceType, parameterType)));
+                final var failures = List.of(Problem.of("CONVERSION_ERROR", parameterName, "Conversion error", String.format("Failed to convert value of type '%s' to '%s'.", sourceType, parameterType)));
                 logger.debug(String.format("Conversion error for argument %s expected type %s found type %s at %s: %s", parameterName, parameterType, sourceType, requestUri, failures));
-                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, failures);
+                yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, failures);
             }
             case MissingServletRequestPartException msrpe -> {
-                final Problem problem = Problem.of("FIELD_ERROR", msrpe.getRequestPartName(), "Required request part is not present", Problem.NO_DETAILS);
+                final var problem = Problem.of("FIELD_ERROR", msrpe.getRequestPartName(), "Required request part is not present", Problem.NO_DETAILS);
                 logger.debug(String.format("Missing required part %s of multipart request: %s", msrpe.getRequestPartName(), requestUri));
-                yield new HttpStatusAndFailures(HttpStatus.BAD_REQUEST, Collections.singletonList(problem));
+                yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, List.of(problem));
             }
             case ResponseStatusException rse -> {
-                final Problem problem = Problem.of(HttpStatus.resolve(rse.getStatusCode().value()).name(), null, rse.getReason(), Problem.NO_DETAILS);
+                final var problem = Problem.of(HttpStatus.resolve(rse.getStatusCode().value()).name(), null, rse.getReason(), Problem.NO_DETAILS);
                 logger.debug(String.format("ResponseStatusException at %s: %s", requestUri, problem));
-                yield new HttpStatusAndFailures(HttpStatus.resolve(rse.getStatusCode().value()), Collections.singletonList(problem));
+                yield new HttpStatusAndProblems(HttpStatus.resolve(rse.getStatusCode().value()), List.of(problem));
             }
             case Failure failure -> {
                 logger.debug(String.format("Failure at %s", requestUri), failure);
-                yield new HttpStatusAndFailures(annotatedStatusOr(failure, HttpStatus.BAD_REQUEST), failure.problems);
+                yield new HttpStatusAndProblems(annotatedStatusOr(failure, HttpStatus.BAD_REQUEST), failure.problems);
             }
             case RestClientException rce -> {
-                final Problem problem = Problem.of("UPSTREAM_ERROR", null, "upstream failure", rce.getMessage());
+                final var problem = Problem.of("UPSTREAM_ERROR", null, "upstream failure", rce.getMessage());
                 logger.warn(String.format("Upstream error %s: %s", requestUri, rce.getMessage()), rce);
-                yield new HttpStatusAndFailures(HttpStatus.BAD_GATEWAY, List.of(problem));
+                yield new HttpStatusAndProblems(HttpStatus.BAD_GATEWAY, List.of(problem));
             }
             case AccessDeniedException ade -> {
-                final Problem problem = Problem.of("FORBIDDEN", null, null, ade.getMessage());
+                final var problem = Problem.of("FORBIDDEN", null, null, ade.getMessage());
                 logger.debug(String.format("Access denied at %s: %s", requestUri, problem));
-                yield new HttpStatusAndFailures(annotatedStatusOr(ade, HttpStatus.FORBIDDEN), List.of(problem));
+                yield new HttpStatusAndProblems(annotatedStatusOr(ade, HttpStatus.FORBIDDEN), List.of(problem));
             }
             default -> {
                 if (null != super.doResolveException(request, new SendErrorToSetStatusHttpServletResponse(response), hm, ex)) {
@@ -180,10 +273,10 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                     }
                     final HttpStatus currentStatus = HttpStatus.valueOf(response.getStatus());
                     logger.warn(String.format("got an unexpected error while processing request at %s", requestUri), ex);
-                    yield new HttpStatusAndFailures(annotatedStatusOr(ex, currentStatus), List.of(Problem.of("INTERNAL_ERROR", null, null, ex.getMessage())));
+                    yield new HttpStatusAndProblems(annotatedStatusOr(ex, currentStatus), List.of(Problem.of("INTERNAL_ERROR", null, null, ex.getMessage())));
                 }
                 logger.error(String.format("got an unexpected error while processing request at %s", requestUri), ex);
-                yield new HttpStatusAndFailures(annotatedStatusOr(ex, HttpStatus.INTERNAL_SERVER_ERROR), List.of(Problem.of("UNEXPECTED_PROBLEM", null, null, ex.getMessage())));
+                yield new HttpStatusAndProblems(annotatedStatusOr(ex, HttpStatus.INTERNAL_SERVER_ERROR), List.of(Problem.of("UNEXPECTED_PROBLEM", null, null, ex.getMessage())));
             }
         };
     }
@@ -198,10 +291,9 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
 
     @Override
     protected boolean shouldApplyTo(HttpServletRequest request, Object handler) {
-        if (handler instanceof HandlerMethod == false) {
+        if (!(handler instanceof HandlerMethod handlerMethod)) {
             return false;
         }
-        final var handlerMethod = (HandlerMethod) handler;
         return super.shouldApplyTo(request, handler) && methodToIsRest.computeIfAbsent(handlerMethod, m -> {
             return m.hasMethodAnnotation(ResponseBody.class) || AnnotatedElementUtils.hasAnnotation(m.getBeanType(), ResponseBody.class);
         });
@@ -209,36 +301,30 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
 
     @Override
     protected ModelAndView doResolveException(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
-        final HandlerMethod hm = (HandlerMethod) handler;
-        final HttpStatusAndFailures statusAndErrors = toStatusAndErrors(request, response, hm, ex);
+        final var hm = (HandlerMethod) handler;
+        final var statusAndErrors = toStatusAndErrors(request, response, hm, ex);
 
-        final var transformedFailures = statusAndErrors.failures
-                .stream()
-                .map(p -> applyAllTransformers(p, request, response, hm, ex))
-                .collect(Collectors.toList());
+        var transformed = new HttpStatusAndProblems(statusAndErrors.status(), statusAndErrors.problems());
 
-        response.setStatus(statusAndErrors.status.value());
+        for (final var failureTansformer : transformers) {
+            transformed = failureTansformer.transform(transformed, request, response, hm, ex);
+        }
 
-        final JacksonJsonView view = new JacksonJsonView(mapper);
+        response.setStatus(transformed.status.value());
+
+        final var view = new JacksonJsonView(mapper);
         view.setExtractValueFromSingleKeyModel(true);
         view.setContentType("application/failures+json");
-        return new ModelAndView(view, "errors", transformedFailures);
+        return new ModelAndView(view, "errors", transformed.problems());
     }
 
-    private Problem applyAllTransformers(Problem p, HttpServletRequest request, HttpServletResponse response, HandlerMethod handler, Exception ex) {
-        for (ProblemTransformer pt : transformers) {
-            p = pt.transform(p, request, response, handler, ex);
-        }
-        return p;
-    }
-
-    public static record HttpStatusAndFailures(HttpStatus status, List<Problem> failures) {
+    public static record HttpStatusAndProblems(HttpStatusCode status, List<Problem> problems) {
 
     }
 
     private static Problem constraintViolationToProblem(ConstraintViolation<?> error, Set<String> requestBodyParams) {
         final var nodes = StreamSupport.stream(error.getPropertyPath().spliterator(), false)
-                .collect(Collectors.toList());
+                .toList();
 
         final var paramName = nodes.stream()
                 .filter(node -> node.getKind() == ElementKind.PARAMETER)

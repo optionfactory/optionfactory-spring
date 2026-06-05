@@ -57,6 +57,7 @@ public class UpstreamErrorOnReponseHandler implements UpstreamResponseErrorHandl
         final String reason = e.evaluate(ectx);
 
         throw new RestClientUpstreamException(
+                invocation.converters(),
                 invocation.endpoint().upstream(),
                 invocation.endpoint().name(),
                 reason,

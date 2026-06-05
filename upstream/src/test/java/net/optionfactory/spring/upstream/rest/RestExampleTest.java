@@ -1,11 +1,11 @@
 package net.optionfactory.spring.upstream.rest;
 
 import net.optionfactory.spring.upstream.UpstreamBuilder;
+import net.optionfactory.spring.upstream.errors.RestClientUpstreamException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.web.client.HttpClientErrorException;
 import tools.jackson.databind.json.JsonMapper;
 
 public class RestExampleTest {
@@ -36,7 +36,7 @@ public class RestExampleTest {
                 .json(JsonMapper.builder().build())
                 .baseUri("https://hub.dummyapis.com/statuscode/")
                 .build();
-        Assertions.assertThrows(HttpClientErrorException.BadRequest.class, () -> {
+        Assertions.assertThrows(RestClientUpstreamException.class, () -> {
             client.error("asd");
         });
     }

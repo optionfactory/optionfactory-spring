@@ -26,7 +26,7 @@ public class RestExceptionResolverTest {
     @Test
     public void exceptionsAreResolvedWithMappingJackson2JsonView() throws NoSuchMethodException {
         final var mapper = new JsonMapper();
-        final var er = new RestExceptionResolver(mapper, Options.INCLUDE_DETAILS);
+        final var er = RestExceptionResolver.withDefaults(Options.INCLUDE_DETAILS, mapper);
         final var hm = new HandlerMethod(new RestExceptionResolverTest(), RestExceptionResolverTest.class.getMethod("fakeControllerMethod"));
         final MockHttpServletRequest req = new MockHttpServletRequest();
         final MockHttpServletResponse res = new MockHttpServletResponse();
@@ -40,7 +40,7 @@ public class RestExceptionResolverTest {
     @Test
     public void exceptionsAreReportedAsProblemsInModel() throws NoSuchMethodException {
         final var mapper = new JsonMapper();
-        final var er = new RestExceptionResolver(mapper, Options.INCLUDE_DETAILS);
+        final var er = RestExceptionResolver.withDefaults(Options.INCLUDE_DETAILS, mapper);
         final var hm = new HandlerMethod(new RestExceptionResolverTest(), RestExceptionResolverTest.class.getMethod("fakeControllerMethod"));
 
         final MockHttpServletRequest req = new MockHttpServletRequest();
@@ -55,7 +55,7 @@ public class RestExceptionResolverTest {
     @Test
     public void detailsAreNullWhenOptionsIsOmitDetails() throws NoSuchMethodException {
         final var mapper = new JsonMapper();
-        final RestExceptionResolver er = new RestExceptionResolver(mapper, Options.OMIT_DETAILS);
+        final var er = RestExceptionResolver.withDefaults(Options.OMIT_DETAILS, mapper);
         final HandlerMethod hm = new HandlerMethod(new RestExceptionResolverTest(), RestExceptionResolverTest.class.getMethod("fakeControllerMethod"));
 
         final MockHttpServletRequest req = new MockHttpServletRequest();
@@ -71,7 +71,7 @@ public class RestExceptionResolverTest {
     @Test
     public void detailsAreSerializedWhenOptionsIsIncludeDetails() throws NoSuchMethodException {
         final var mapper = new JsonMapper();
-        final RestExceptionResolver er = new RestExceptionResolver(mapper, Options.INCLUDE_DETAILS);
+        final var er = RestExceptionResolver.withDefaults(Options.INCLUDE_DETAILS, mapper);
         final HandlerMethod hm = new HandlerMethod(new RestExceptionResolverTest(), RestExceptionResolverTest.class.getMethod("fakeControllerMethod"));
 
         final MockHttpServletRequest req = new MockHttpServletRequest();

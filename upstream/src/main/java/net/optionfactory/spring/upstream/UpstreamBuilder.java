@@ -3,6 +3,7 @@ package net.optionfactory.spring.upstream;
 import io.micrometer.observation.ObservationRegistry;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.time.InstantSource;
@@ -28,6 +29,8 @@ import net.optionfactory.spring.upstream.buffering.InputStreamHttpMessageConvert
 import net.optionfactory.spring.upstream.buffering.StreamHttpMessageConverter;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext.MessageConverters;
+import net.optionfactory.spring.upstream.errors.RestClientUpstreamException;
+import net.optionfactory.spring.upstream.errors.UpstreamErrorOnErrorStatusHandler;
 import net.optionfactory.spring.upstream.errors.UpstreamErrorOnReponseHandler;
 import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.hc5.HcRequestFactories;
@@ -58,7 +61,10 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.http.HttpRequest;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
 import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverters;
@@ -775,9 +781,7 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
 
         rcb.requestInterceptor(scopeHandler.adapt(initializedInterceptors));
 
-        Stream.concat(
-                Stream.of(new UpstreamErrorOnReponseHandler()),
-                responseErrorHandlers.stream())
+        Stream.concat(responseErrorHandlers.stream(), Stream.of(new UpstreamErrorOnErrorStatusHandler(), new UpstreamErrorOnReponseHandler()))
                 .peek(i -> i.preprocess(klass, expressions, endpoints))
                 .map(scopeHandler::adapt)
                 .forEach(rcb::defaultStatusHandler);
