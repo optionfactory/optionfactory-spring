@@ -30,7 +30,7 @@ public class CanReferenceBeansInExpressionsTest {
                     .sender("test.sender@example.com", "Test sender")
                     .recipient("test@example.com")
                     .subject("test subject")
-                    .htmlBodyEngine(c -> c.string(TemplateMode.HTML))
+                    .htmlBodyEngine(c -> c.string(TemplateMode.HTML, ac))
                     .htmlBodyTemplate("""
                         [[${@info.help()}]]
                     """)

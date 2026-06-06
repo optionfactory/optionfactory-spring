@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -17,6 +18,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.MessageSource;
 import org.springframework.util.Assert;
 import org.thymeleaf.ITemplateEngine;
 import org.thymeleaf.context.Context;
@@ -81,13 +83,16 @@ public record EmailMessage(
          * @param dialects the dialects to be registered
          * @return the template engine
          */
-        public SpringTemplateEngine string(TemplateMode mode, IDialect... dialects) {
+        public SpringTemplateEngine string(TemplateMode mode, MessageSource ms, IDialect... dialects) {
             final var resolver = new StringTemplateResolver();
             resolver.setOrder(1);
             resolver.setTemplateMode(mode);
             resolver.setCacheable(true);
             final var engine = new SpringTemplateEngine();
             engine.addTemplateResolver(resolver);
+            if(ms != null){
+                engine.setTemplateEngineMessageSource(ms);
+            }
             return engine;
         }
 
@@ -98,7 +103,7 @@ public record EmailMessage(
          * @param dialects the dialects to be registered
          * @return the template engine
          */
-        public SpringTemplateEngine text(String prefix, IDialect... dialects) {
+        public SpringTemplateEngine text(String prefix, MessageSource ms, IDialect... dialects) {
             final var resolver = new ClassLoaderTemplateResolver();
             resolver.setOrder(1);
             resolver.setResolvablePatterns(Set.of("*.txt"));
@@ -109,6 +114,9 @@ public record EmailMessage(
 
             final var engine = new SpringTemplateEngine();
             engine.addTemplateResolver(resolver);
+            if(ms != null){
+                engine.setTemplateEngineMessageSource(ms);
+            }            
             for (IDialect dialect : dialects) {
                 engine.addDialect(dialect);
             }
@@ -122,7 +130,7 @@ public record EmailMessage(
          * @param dialects the dialects to be registered
          * @return the template engine
          */
-        public SpringTemplateEngine html(String prefix, IDialect... dialects) {
+        public SpringTemplateEngine html(String prefix, MessageSource ms, IDialect... dialects) {
             final var resolver = new ClassLoaderTemplateResolver();
             resolver.setOrder(1);
             resolver.setResolvablePatterns(Set.of("*.html"));
@@ -133,6 +141,9 @@ public record EmailMessage(
 
             final var engine = new SpringTemplateEngine();
             engine.addTemplateResolver(resolver);
+            if(ms != null){
+                engine.setTemplateEngineMessageSource(ms);
+            }            
             for (IDialect dialect : dialects) {
                 engine.addDialect(dialect);
             }
@@ -150,6 +161,7 @@ public record EmailMessage(
         private InternetAddress[] ccAddresses;
         private InternetAddress[] bccAddresses;
 
+        private Locale locale;
         private String subject;
         private ITemplateEngine textBodyEngine;
         private String textBodyTemplate;
@@ -158,7 +170,7 @@ public record EmailMessage(
         private String htmlBodyTemplate;
         private String htmlBodyLiteral;
         private HtmlBodyPostprocessor htmlBodyPostprocessor;
-
+        
         private List<AttachmentSource> attachments = new ArrayList<>();
         private List<CidSource> cids = new ArrayList<>();
         private ConfigurableApplicationContext applicationContext;
@@ -221,6 +233,11 @@ public record EmailMessage(
             return this;
         }
 
+        public Builder locale(@Nullable Locale locale) {
+            this.locale = locale;
+            return this;
+        }
+        
         public Builder subject(String subject) {
             this.subject = subject;
             return this;
@@ -336,6 +353,7 @@ public record EmailMessage(
             builder.ccAddresses = ccAddresses;
             builder.bccAddresses = bccAddresses;
 
+            builder.locale = locale;
             builder.subject = subject;
 
             builder.textBodyEngine = textBodyEngine;
@@ -355,8 +373,8 @@ public record EmailMessage(
             return builder;
         }
 
-        private static Context makeContext(ConfigurableApplicationContext ac, Map<String, Object> variables) {
-            final var ctx = new Context();
+        private static Context makeContext(ConfigurableApplicationContext ac, Locale locale, Map<String, Object> variables) {
+            final var ctx = new Context(locale);
             if (ac != null) {
                 ctx.setVariable(ThymeleafEvaluationContext.THYMELEAF_EVALUATION_CONTEXT_CONTEXT_VARIABLE_NAME, new ThymeleafEvaluationContext(ac, ac.getBeanFactory().getConversionService()));
             }
@@ -376,7 +394,7 @@ public record EmailMessage(
 
             final var templated = htmlBodyTemplateConfigured || textBodyTemplateConfigured;
 
-            final var context = templated ? makeContext(applicationContext, variables) : null;
+            final var context = templated ? makeContext(applicationContext, locale, variables) : null;
             final var htmlBody = htmlBodyTemplateConfigured ? htmlBodyEngine.process(htmlBodyTemplate, context) : htmlBodyLiteral;
             final var postprocessedHtmlBody = htmlBodyPostprocessor != null ? htmlBodyPostprocessor.postprocess(htmlBody) : htmlBody;
             final var textBody = textBodyTemplateConfigured ? textBodyEngine.process(textBodyTemplate, context) : textBodyLiteral;
