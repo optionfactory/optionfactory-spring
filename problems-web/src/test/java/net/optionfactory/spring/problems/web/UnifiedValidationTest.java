@@ -52,16 +52,16 @@ public class UnifiedValidationTest {
             resolver.setDefaultLocale(Locale.ITALIAN);
             return resolver;
         }
-
-        @Bean
-        public LocalValidatorFactoryBean validator() {
-            return new LocalValidatorFactoryBean();
-        }
-
-        @Override
-        public Validator getValidator() {
-            return validator();
-        }
+//
+//        @Bean
+//        public LocalValidatorFactoryBean validator() {
+//            return new LocalValidatorFactoryBean();
+//        }
+//
+//        @Override
+//        public Validator getValidator() {
+//            return validator();
+//        }
 
         @Override
         public void extendHandlerExceptionResolvers(List<HandlerExceptionResolver> resolvers) {
