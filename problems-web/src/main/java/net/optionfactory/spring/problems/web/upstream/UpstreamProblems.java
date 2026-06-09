@@ -27,7 +27,7 @@ public interface UpstreamProblems {
     }
     
     public enum MapMode {
-        REGEX_FIRST, REGEX_ALL, STRING_ALL;
+        REGEX_FIRST, REGEX_ALL, STRING_ALL, STRING_FIRST;
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -39,7 +39,7 @@ public interface UpstreamProblems {
 
         String endpoint() default "";
 
-        MapMode mode() default MapMode.STRING_ALL;
+        MapMode mode() default MapMode.STRING_FIRST;
         
         String source();
 

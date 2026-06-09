@@ -69,10 +69,20 @@ public class UpstreamFailureTransformer implements FailureTransformer {
                 if (problem.context == null) {
                     continue;
                 }
-                problem.context = switch(annotation.mode()){
-                    case REGEX_FIRST -> problem.context.replaceFirst(annotation.source(), annotation.target());
-                    case REGEX_ALL -> problem.context.replaceAll(annotation.source(), annotation.target());
-                    case STRING_ALL -> problem.context.replace(annotation.source(), annotation.target());
+                problem.context = switch (annotation.mode()) {
+                    case STRING_FIRST -> {
+                        int index = problem.context.indexOf(annotation.source());
+                        if (index < 0) {
+                            yield problem.context; // search string not found
+                        }
+                        yield problem.context.substring(0, index) + annotation.target() + problem.context.substring(index + annotation.source().length());
+                    }
+                    case REGEX_FIRST ->
+                        problem.context.replaceFirst(annotation.source(), annotation.target());
+                    case REGEX_ALL ->
+                        problem.context.replaceAll(annotation.source(), annotation.target());
+                    case STRING_ALL ->
+                        problem.context.replace(annotation.source(), annotation.target());
                 };
             }
 
