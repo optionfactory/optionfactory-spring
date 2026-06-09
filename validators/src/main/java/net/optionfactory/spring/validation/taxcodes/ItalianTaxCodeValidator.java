@@ -7,7 +7,7 @@ public class ItalianTaxCodeValidator implements ConstraintValidator<ItalianTaxCo
 
     public static final int PARTITA_IVA_LENGTH = 11;
     public static final int CODICE_FISCALE_LENGTH = 16;
-    private ItalianTaxCode.Type type;
+    private ItalianTaxCodes.Type type;
     private boolean lenient;
 
     @Override
@@ -17,7 +17,7 @@ public class ItalianTaxCodeValidator implements ConstraintValidator<ItalianTaxCo
     }
 
     @Override
-    public boolean isValid(String value, ConstraintValidatorContext constraintContext) {
+    public boolean isValid(String value, ConstraintValidatorContext context) {
         if (value == null) {
             return true;
         }
@@ -26,8 +26,13 @@ public class ItalianTaxCodeValidator implements ConstraintValidator<ItalianTaxCo
         if (len == 0) {
             return true;
         }
-        return ItalianTaxCodes.isValid(value, type);
+        if (ItalianTaxCodes.isValid(normalized, type)) {
+            return true;
+        }
+        context.disableDefaultConstraintViolation();
+        final var template = "{jakarta.validation.constraints.ItalianTaxCode.%s.message}".formatted(type);        
+        context.buildConstraintViolationWithTemplate(template).addConstraintViolation();
+        return false;
     }
-
 
 }

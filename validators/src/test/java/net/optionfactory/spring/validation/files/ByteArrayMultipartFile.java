@@ -12,6 +12,10 @@ public class ByteArrayMultipartFile implements MultipartFile {
     private final String contentType;
     private final byte[] bytes;
 
+    public static ByteArrayMultipartFile empty(String originalName, String contentType) {
+        return new ByteArrayMultipartFile(originalName, contentType, new byte[0]);
+    }
+
     public ByteArrayMultipartFile(String originalName, String contentType, byte[] bytes) {
         this.originalName = originalName;
         this.contentType = contentType;

@@ -1,15 +1,24 @@
 package net.optionfactory.spring.validation.taxcodes;
 
+import java.time.DateTimeException;
+import java.time.LocalDate;
+import java.time.Month;
+import java.time.Year;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.IntStream;
-import net.optionfactory.spring.validation.taxcodes.ItalianTaxCode.Type;
 import static net.optionfactory.spring.validation.taxcodes.ItalianTaxCodeValidator.CODICE_FISCALE_LENGTH;
 import static net.optionfactory.spring.validation.taxcodes.ItalianTaxCodeValidator.PARTITA_IVA_LENGTH;
 
 public class ItalianTaxCodes {
 
+    public enum Type {
+        CODICE_FISCALE, PARTITA_IVA, ANY;
+    }
+
+    
+    
     public static String normalize(String taxcode) {
         if (taxcode == null) {
             return null;
@@ -37,6 +46,45 @@ public class ItalianTaxCodes {
                     .orElse(false);
         }
         return false;
+    }
+
+    private static String unmapHomocody(String segment) {
+        final var sb = new StringBuilder();
+        for (char c : segment.toCharArray()) {
+            sb.append(HOMOCODY_REVERSE.getOrDefault(c, c));
+        }
+        return sb.toString();
+    }
+
+    public static LocalDate guessBirthDate(String value, LocalDate referenceDate) {
+        final var fiscalCode = normalize(value);
+        if (fiscalCode == null || fiscalCode.length() != CODICE_FISCALE_LENGTH) {
+            return null;
+        }
+
+        final var yearChars = fiscalCode.substring(6, 8);
+        final var monthChar = fiscalCode.charAt(8);
+        final var dayChars = fiscalCode.substring(9, 11);
+
+        final int twoDigitYear = Integer.parseInt(unmapHomocody(yearChars));
+        final int rawDayInt = Integer.parseInt(unmapHomocody(dayChars));
+
+        if (!MONTH_CODES.containsKey(monthChar)) {
+            return null;
+        }
+        final var month = MONTH_CODES.get(monthChar);
+        final int day = rawDayInt > 40 ? rawDayInt - 40 : rawDayInt;
+
+        final int referenceYear = referenceDate.getYear();
+        final int currentCentury = (referenceYear / 100) * 100;
+        final var firstGuessYear = currentCentury + twoDigitYear;
+        final var candidateYear = day > month.length(Year.isLeap(firstGuessYear)) ? firstGuessYear - 100 : firstGuessYear;
+        try {
+            final var candidateDate = LocalDate.of(candidateYear, month, day);
+            return candidateDate.isAfter(referenceDate) ? candidateDate.minusYears(100) : candidateDate;
+        } catch (DateTimeException ex) {
+            return null;
+        }
     }
 
     public static Optional<Character> controlCodePartitaIva(String piva) {
@@ -79,6 +127,9 @@ public class ItalianTaxCodes {
 
     private static final Map<Integer, Integer> ODD_CODES = new ConcurrentHashMap<>();
     private static final Map<Integer, Integer> EVEN_CODES = new ConcurrentHashMap<>();
+    private static final Map<Character, Month> MONTH_CODES = new ConcurrentHashMap<>();    
+    private static final Map<Character, Character> HOMOCODY = new ConcurrentHashMap<>();
+    private static final Map<Character, Character> HOMOCODY_REVERSE = new ConcurrentHashMap<>();
 
     static {
 
@@ -155,7 +206,41 @@ public class ItalianTaxCodes {
         EVEN_CODES.put((int) 'X', 23);
         EVEN_CODES.put((int) 'Y', 24);
         EVEN_CODES.put((int) 'Z', 25);
+        
+        MONTH_CODES.put('A', Month.JANUARY);
+        MONTH_CODES.put('B', Month.FEBRUARY);
+        MONTH_CODES.put('C', Month.MARCH);
+        MONTH_CODES.put('D', Month.APRIL);
+        MONTH_CODES.put('E', Month.MAY);
+        MONTH_CODES.put('H', Month.JUNE);
+        MONTH_CODES.put('L', Month.JULY);
+        MONTH_CODES.put('M', Month.AUGUST);
+        MONTH_CODES.put('P', Month.SEPTEMBER);
+        MONTH_CODES.put('R', Month.OCTOBER);
+        MONTH_CODES.put('S', Month.NOVEMBER);
+        MONTH_CODES.put('T', Month.DECEMBER);
 
+        HOMOCODY.put('0', 'L');
+        HOMOCODY.put('1', 'M');
+        HOMOCODY.put('2', 'N');
+        HOMOCODY.put('3', 'P');
+        HOMOCODY.put('4', 'Q');
+        HOMOCODY.put('5', 'R');
+        HOMOCODY.put('6', 'S');
+        HOMOCODY.put('7', 'T');
+        HOMOCODY.put('8', 'U');
+        HOMOCODY.put('9', 'V');
+
+        HOMOCODY_REVERSE.put('L', '0');
+        HOMOCODY_REVERSE.put('M', '1');
+        HOMOCODY_REVERSE.put('N', '2');
+        HOMOCODY_REVERSE.put('P', '3');
+        HOMOCODY_REVERSE.put('Q', '4');
+        HOMOCODY_REVERSE.put('R', '5');
+        HOMOCODY_REVERSE.put('S', '6');
+        HOMOCODY_REVERSE.put('T', '7');
+        HOMOCODY_REVERSE.put('U', '8');
+        HOMOCODY_REVERSE.put('V', '9');
     }
 
 }

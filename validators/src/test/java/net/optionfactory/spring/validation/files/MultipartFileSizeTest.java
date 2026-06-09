@@ -11,10 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 public class MultipartFileSizeTest {
 
-    public static class BeanWithMultipartFileSize {
-
-        @MultipartFileMaxSize(value = 1)
-        public MultipartFile file;
+    public record BeanWithMultipartFileSize(@MultipartFileMaxSize(value = 1) MultipartFile file) {
 
     }
 
@@ -24,8 +21,7 @@ public class MultipartFileSizeTest {
                 .messageInterpolator(new ParameterMessageInterpolator(Set.of(), Locale.ITALIAN, false))
                 .buildValidatorFactory().getValidator();
 
-        final var bean = new BeanWithMultipartFileSize();
-        bean.file = new ByteArrayMultipartFile("a.png", "image/png", new byte[1024 * 1024 + 1]);
+        final var bean = new BeanWithMultipartFileSize(new ByteArrayMultipartFile("a.png", "image/png", new byte[1024 * 1024 + 1]));
         final var result = v.validate(bean);
 
         Assertions.assertEquals("File troppo grande, dimensione massima: 1MiB", result.iterator().next().getMessage());
@@ -37,8 +33,7 @@ public class MultipartFileSizeTest {
                 .messageInterpolator(new ParameterMessageInterpolator(Set.of(), Locale.ITALIAN, false))
                 .buildValidatorFactory().getValidator();
 
-        final var bean = new BeanWithMultipartFileSize();
-        bean.file = new ByteArrayMultipartFile("a.png", "image/png", new byte[1024 * 1024]);
+        final var bean = new BeanWithMultipartFileSize(new ByteArrayMultipartFile("a.png", "image/png", new byte[1024 * 1024]));
         final var result = v.validate(bean);
         Assertions.assertEquals(0, result.size());
     }
