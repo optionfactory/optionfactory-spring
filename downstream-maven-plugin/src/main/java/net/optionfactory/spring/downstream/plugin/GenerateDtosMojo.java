@@ -2,9 +2,9 @@ package net.optionfactory.spring.downstream.plugin;
 
 import java.util.HashMap;
 import java.util.Map;
+import net.optionfactory.spring.downstream.plugin.gen.JavaSourcesGenerator.JavaOutputStyle;
 import net.optionfactory.spring.downstream.plugin.gen.SourcesGenerator.GeneratorType;
 import net.optionfactory.spring.downstream.plugin.processing.Processor;
-import net.optionfactory.spring.downstream.plugin.processing.TypesMapper.Nesting;
 import net.optionfactory.spring.downstream.plugin.processing.TypesMapper.Nesting;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -22,7 +22,10 @@ public class GenerateDtosMojo extends AbstractMojo {
     @Parameter(required = true)
     private String sourceBasePackage;
 
-    @Parameter(required = true)
+    @Parameter(required = false)
+    private String target;
+    
+    @Parameter(required = false)
     private String targetClientName;
 
     @Parameter(required = true)
@@ -31,16 +34,18 @@ public class GenerateDtosMojo extends AbstractMojo {
     @Parameter
     private Map<String, String> translations = new HashMap<>();
 
-    @Parameter
-    private boolean buildDtosAsClasses;
-
     @Parameter(defaultValue = "NESTED", required = true)
     private Nesting nesting;
 
+    @Parameter(defaultValue = "RECORDS", required = true)
+    private JavaOutputStyle outputStyle;
+
+    
+    
     @Override
     public void execute() throws MojoExecutionException {
         try {
-            final var processor = new Processor(getLog(), project, sourceBasePackage, targetPackage, targetClientName, translations, GeneratorType.JAVA, nesting, buildDtosAsClasses);
+            final var processor = new Processor(getLog(), project, sourceBasePackage, target, targetPackage, targetClientName, translations, GeneratorType.JAVA, nesting, outputStyle);
             processor.process();
         } catch (MojoExecutionException e) {
             throw e;

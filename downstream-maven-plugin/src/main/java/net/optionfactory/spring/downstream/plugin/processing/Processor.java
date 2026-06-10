@@ -4,6 +4,8 @@ import net.optionfactory.spring.downstream.plugin.gen.JavaSourcesGenerator;
 import io.github.classgraph.ClassGraph;
 import java.io.File;
 import java.util.Map;
+import java.util.Optional;
+import net.optionfactory.spring.downstream.plugin.gen.JavaSourcesGenerator.JavaOutputStyle;
 import net.optionfactory.spring.downstream.plugin.gen.SourcesGenerator;
 import net.optionfactory.spring.downstream.plugin.gen.SourcesGenerator.GeneratorType;
 import net.optionfactory.spring.downstream.plugin.gen.TypeScriptSourcesGenerator;
@@ -22,16 +24,18 @@ public class Processor {
     private final TypesMapper types;
     private final SourcesGenerator generator;
 
-    public Processor(Log log, MavenProject project, String sourcePackage, String targetPackage, String targetClientName, Map<String, String> translations, GeneratorType genType, Nesting flattening, boolean buildDtosAsClasses) {
+    public Processor(Log log, MavenProject project, String sourcePackage, String target, String targetPackage, String targetClientName, Map<String, String> translations, GeneratorType genType, Nesting flattening, JavaOutputStyle javaOutputStyle) {
+        final var suffix = Optional.ofNullable(target).or(() -> Optional.ofNullable(targetClientName)).map(v -> "-" + v).orElse(null);
         this.log = log;
         this.genType = genType;
         this.project = project;
-        this.outputDir = new File(project.getBuild().getDirectory(), genType == GeneratorType.JAVA ? "generated-sources/downstream" : "generated-resources/downstream");
+        
+        this.outputDir = new File(project.getBuild().getDirectory(), "generated-%ssources/downstream%s".formatted(genType == GeneratorType.JAVA ? "" : "re", suffix));
         this.methods = new AnnotatedMethodsScanner();
         this.payloads = new PayloadsScanner(sourcePackage, targetClientName);
         this.types = new TypesMapper(targetPackage, flattening);
         this.generator = genType == GeneratorType.JAVA
-                ? new JavaSourcesGenerator(outputDir, project.getBasedir(), targetPackage, translations, buildDtosAsClasses)
+                ? new JavaSourcesGenerator(outputDir, project.getBasedir(), targetPackage, translations, javaOutputStyle)
                 : new TypeScriptSourcesGenerator(outputDir, translations);
     }
 

@@ -28,7 +28,7 @@ public class PayloadsScanner {
     public Map<Class<?>, PayloadType> scan(List<AnnotatedMethod> methods) {
         final var targetMethods = methods.stream().filter(m -> {
             final var clients = m.annotation().clients();
-            return clients.length == 0 || Stream.of(clients).anyMatch(c -> c.equals(targetClientName));
+            return clients.length == 0 || targetClientName == null || Stream.of(clients).anyMatch(c -> c.equals(targetClientName));
         }).toList();
 
         final var result = new HashMap<Class<?>, PayloadType>();

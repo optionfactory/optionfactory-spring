@@ -22,6 +22,9 @@ public class GenerateTsMojo extends AbstractMojo {
     @Parameter(required = true)
     private String sourceBasePackage;
 
+    @Parameter(required = false)
+    private String target;
+    
     @Parameter(required = true)
     private String targetClientName;
 
@@ -34,7 +37,7 @@ public class GenerateTsMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException {
         try {
-            final var processor = new Processor(getLog(), project, sourceBasePackage, "", targetClientName, translations, GeneratorType.TYPESCRIPT, nesting, false);
+            final var processor = new Processor(getLog(), project, sourceBasePackage, target, "", targetClientName, translations, GeneratorType.TYPESCRIPT, nesting, null);
             processor.process();
         } catch (MojoExecutionException e) {
             throw e;

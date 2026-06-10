@@ -26,16 +26,19 @@ public class JavaSourcesGenerator implements SourcesGenerator {
     private final File projectBaseDir;
     private final String targetPackage;
     private final Map<String, String> translations;
-    private final boolean buildDtosAsClasses;
+    private final JavaOutputStyle javaOutputStyle;
 
-    public JavaSourcesGenerator(File outputDir, File projectBaseDir, String targetPackage, Map<String, String> translations, boolean buildDtosAsClasses) {
+    public enum JavaOutputStyle {
+        CLASSES, RECORDS;
+    }
+
+    public JavaSourcesGenerator(File outputDir, File projectBaseDir, String targetPackage, Map<String, String> translations, JavaOutputStyle javaOutputStyle) {
         this.outputDir = outputDir;
         this.projectBaseDir = projectBaseDir;
         this.targetPackage = targetPackage;
         this.translations = translations;
-        this.buildDtosAsClasses = buildDtosAsClasses;
+        this.javaOutputStyle = javaOutputStyle;
     }
-
 
     @Override
     public List<GenerateOutcome> generate(TypesRegistry types) throws IOException {
@@ -58,13 +61,13 @@ public class JavaSourcesGenerator implements SourcesGenerator {
 
     private TypeSpec buildDtoSpec(TypesRegistry types, TypesTranslator translator, Class<?> dtoClass, boolean root) {
         final var mappedName = types.getClassName(dtoClass);
-        final var typeBuilder = (buildDtosAsClasses ? TypeSpec.classBuilder(mappedName.simpleName()) : TypeSpec.recordBuilder(mappedName.simpleName()))
+        final var typeBuilder = (javaOutputStyle == JavaOutputStyle.CLASSES ? TypeSpec.classBuilder(mappedName.simpleName()) : TypeSpec.recordBuilder(mappedName.simpleName()))
                 .addModifiers(Modifier.PUBLIC);
 
         for (final var typeParam : dtoClass.getTypeParameters()) {
             final var translatedBounds = Arrays.stream(typeParam.getAnnotatedBounds())
                     .map(translator::translate)
-                    .filter(bound -> !bound.equals(ClassName.OBJECT)) // Strips default implicit Object bounds
+                    .filter(bound -> !bound.equals(ClassName.OBJECT))
                     .toArray(TypeName[]::new);
             typeBuilder.addTypeVariable(TypeVariableName.get(typeParam.getName(), translatedBounds));
         }
@@ -83,7 +86,7 @@ public class JavaSourcesGenerator implements SourcesGenerator {
             fieldHierarchy.addAll(0, Arrays.asList(current.getDeclaredFields()));
             current = current.getSuperclass();
         }
-        if (buildDtosAsClasses) {
+        if (javaOutputStyle == JavaOutputStyle.CLASSES) {
             for (final var field : fieldHierarchy) {
                 if (field.isSynthetic() || field.isAnnotationPresent(Downstream.Ignore.class)) {
                     continue;
@@ -91,7 +94,7 @@ public class JavaSourcesGenerator implements SourcesGenerator {
                 final var fieldType = translator.translate(field.getAnnotatedType());
                 typeBuilder.addField(FieldSpec.builder(fieldType, field.getName(), Modifier.PUBLIC).build());
             }
-        }else{
+        } else {
             final var constructorBuilder = MethodSpec.constructorBuilder();
 
             for (final var field : fieldHierarchy) {
