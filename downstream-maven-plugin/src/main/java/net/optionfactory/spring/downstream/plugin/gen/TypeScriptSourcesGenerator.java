@@ -216,6 +216,9 @@ public class TypeScriptSourcesGenerator implements SourcesGenerator {
             }
         }
 
+        if (type instanceof TypeName cn) {
+            return cn.equals(TypeName.BOOLEAN) ? "boolean" : "number";
+        }
         return "any";
     }
 
