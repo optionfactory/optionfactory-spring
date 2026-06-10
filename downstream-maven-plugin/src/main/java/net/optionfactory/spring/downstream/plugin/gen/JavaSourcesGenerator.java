@@ -1,4 +1,4 @@
-package net.optionfactory.spring.downstream.plugin.processing;
+package net.optionfactory.spring.downstream.plugin.gen;
 
 import com.palantir.javapoet.ClassName;
 import com.palantir.javapoet.JavaFile;
@@ -16,25 +16,25 @@ import java.util.Map;
 import javax.lang.model.element.Modifier;
 import net.optionfactory.spring.downstream.Downstream;
 import net.optionfactory.spring.downstream.plugin.processing.PayloadsScanner.PayloadType;
+import net.optionfactory.spring.downstream.plugin.processing.TypesRegistry;
+import net.optionfactory.spring.downstream.plugin.processing.TypesTranslator;
 
-public class SourcesGenerator {
+public class JavaSourcesGenerator implements SourcesGenerator {
 
     private final File outputDir;
     private final File projectBaseDir;
     private final String targetPackage;
     private final Map<String, String> translations;
 
-    public SourcesGenerator(File outputDir, File projectBaseDir, String targetPackage, Map<String, String> translations) {
+    public JavaSourcesGenerator(File outputDir, File projectBaseDir, String targetPackage, Map<String, String> translations) {
         this.outputDir = outputDir;
         this.projectBaseDir = projectBaseDir;
         this.targetPackage = targetPackage;
         this.translations = translations;
     }
 
-    public record GenerateOutcome(String name, boolean generated) {
 
-    }
-
+    @Override
     public List<GenerateOutcome> generate(TypesRegistry types) throws IOException {
         final var outcomes = new ArrayList<GenerateOutcome>();
         final var translator = new TypesTranslator(types, translations);

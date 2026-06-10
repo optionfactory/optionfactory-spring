@@ -11,9 +11,16 @@ import org.apache.maven.plugin.MojoExecutionException;
 public class TypesMapper {
 
     private final String targetPackage;
+    private final Nesting flattening;
 
-    public TypesMapper(String targetPackage) {
+    public enum Nesting {
+        FLATTEN,
+        NESTED
+    }
+
+    public TypesMapper(String targetPackage, Nesting flattening) {
         this.targetPackage = targetPackage;
+        this.flattening = flattening;
     }
 
     public record PayloadInfo(PayloadType type, ClassName className) {
@@ -33,13 +40,12 @@ public class TypesMapper {
         if (!clashingGroups.isEmpty()) {
             final var message = clashingGroups.stream().map(cg -> {
                 final var className = cg.getKey();
-                final var collisions = cg.getValue().stream().map(e -> e.getKey().getName()).collect(Collectors.joining(","));
-                return "Class name collision target '%s' found in multiple source packages: %s".formatted(className, collisions);
+                final var collisions = cg.getValue().stream().map(e -> e.getKey().getName()).collect(Collectors.joining(", "));
+                return "Target identifier '%s' caused a naming collision. Conflicting source classes: [%s]".formatted(className, collisions);
             }).collect(Collectors.joining("\n"));
-            throw new MojoExecutionException("name collision while generating dtos: %s".formatted(message));
+            throw new MojoExecutionException("Naming collision detected while mapping types. If you are using UNPREFIXED flattening, consider switching to PREFIX to isolate nested inner classes:\n%s".formatted(message));
         }
         return new TypesRegistry(result);
-
     }
 
     private ClassName resolveClassName(Class<?> clazz, Map<Class<?>, PayloadType> allDiscovered) {
@@ -48,10 +54,11 @@ public class TypesMapper {
         final Class<?> declaring = clazz.getDeclaringClass();
 
         if (declaring != null && allDiscovered.containsKey(declaring)) {
+            if (flattening == Nesting.FLATTEN) {
+                return ClassName.get(targetPackage, name);
+            }
             return resolveClassName(declaring, allDiscovered).nestedClass(name);
         }
-
         return ClassName.get(targetPackage, name);
     }
-
 }
