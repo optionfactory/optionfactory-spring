@@ -5,6 +5,7 @@ import java.util.Map;
 import net.optionfactory.spring.downstream.plugin.gen.SourcesGenerator.GeneratorType;
 import net.optionfactory.spring.downstream.plugin.processing.Processor;
 import net.optionfactory.spring.downstream.plugin.processing.TypesMapper.Nesting;
+import net.optionfactory.spring.downstream.plugin.processing.TypesMapper.Nesting;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -30,14 +31,16 @@ public class GenerateDtosMojo extends AbstractMojo {
     @Parameter
     private Map<String, String> translations = new HashMap<>();
 
+    @Parameter
+    private boolean buildDtosAsClasses;
+
     @Parameter(defaultValue = "NESTED", required = true)
     private Nesting nesting;
-    
-    
+
     @Override
     public void execute() throws MojoExecutionException {
         try {
-            final var processor = new Processor(getLog(), project, sourceBasePackage, targetPackage, targetClientName, translations, GeneratorType.JAVA, nesting);
+            final var processor = new Processor(getLog(), project, sourceBasePackage, targetPackage, targetClientName, translations, GeneratorType.JAVA, nesting, buildDtosAsClasses);
             processor.process();
         } catch (MojoExecutionException e) {
             throw e;

@@ -1,6 +1,7 @@
 package net.optionfactory.spring.downstream.plugin.gen;
 
 import com.palantir.javapoet.ClassName;
+import com.palantir.javapoet.FieldSpec;
 import com.palantir.javapoet.JavaFile;
 import com.palantir.javapoet.MethodSpec;
 import com.palantir.javapoet.TypeName;
@@ -25,12 +26,14 @@ public class JavaSourcesGenerator implements SourcesGenerator {
     private final File projectBaseDir;
     private final String targetPackage;
     private final Map<String, String> translations;
+    private final boolean buildDtosAsClasses;
 
-    public JavaSourcesGenerator(File outputDir, File projectBaseDir, String targetPackage, Map<String, String> translations) {
+    public JavaSourcesGenerator(File outputDir, File projectBaseDir, String targetPackage, Map<String, String> translations, boolean buildDtosAsClasses) {
         this.outputDir = outputDir;
         this.projectBaseDir = projectBaseDir;
         this.targetPackage = targetPackage;
         this.translations = translations;
+        this.buildDtosAsClasses = buildDtosAsClasses;
     }
 
 
@@ -55,7 +58,7 @@ public class JavaSourcesGenerator implements SourcesGenerator {
 
     private TypeSpec buildDtoSpec(TypesRegistry types, TypesTranslator translator, Class<?> dtoClass, boolean root) {
         final var mappedName = types.getClassName(dtoClass);
-        final var recordBuilder = TypeSpec.recordBuilder(mappedName.simpleName())
+        final var typeBuilder = (buildDtosAsClasses ? TypeSpec.classBuilder(mappedName.simpleName()) : TypeSpec.recordBuilder(mappedName.simpleName()))
                 .addModifiers(Modifier.PUBLIC);
 
         for (final var typeParam : dtoClass.getTypeParameters()) {
@@ -63,42 +66,51 @@ public class JavaSourcesGenerator implements SourcesGenerator {
                     .map(translator::translate)
                     .filter(bound -> !bound.equals(ClassName.OBJECT)) // Strips default implicit Object bounds
                     .toArray(TypeName[]::new);
-            recordBuilder.addTypeVariable(TypeVariableName.get(typeParam.getName(), translatedBounds));
+            typeBuilder.addTypeVariable(TypeVariableName.get(typeParam.getName(), translatedBounds));
         }
 
         if (root) {
-            recordBuilder.addJavadoc("Generated from {@code $L}", dtoClass.getName());
+            typeBuilder.addJavadoc("Generated from {@code $L}", dtoClass.getName());
         }
+
         final var declaring = dtoClass.getDeclaringClass();
         if (declaring != null && types.isRegistered(declaring)) {
-            recordBuilder.addModifiers(Modifier.STATIC);
+            typeBuilder.addModifiers(Modifier.STATIC);
         }
-
-        final var constructorBuilder = MethodSpec.constructorBuilder();
-
         final var fieldHierarchy = new ArrayList<Field>();
         Class<?> current = dtoClass;
         while (current != null && current != Object.class) {
             fieldHierarchy.addAll(0, Arrays.asList(current.getDeclaredFields()));
             current = current.getSuperclass();
         }
-
-        for (final var field : fieldHierarchy) {
-            if (field.isSynthetic() || field.isAnnotationPresent(Downstream.Ignore.class)) {
-                continue;
+        if (buildDtosAsClasses) {
+            for (final var field : fieldHierarchy) {
+                if (field.isSynthetic() || field.isAnnotationPresent(Downstream.Ignore.class)) {
+                    continue;
+                }
+                final var fieldType = translator.translate(field.getAnnotatedType());
+                typeBuilder.addField(FieldSpec.builder(fieldType, field.getName(), Modifier.PUBLIC).build());
             }
-            final var fieldType = translator.translate(field.getAnnotatedType());
-            constructorBuilder.addParameter(fieldType, field.getName());
+        }else{
+            final var constructorBuilder = MethodSpec.constructorBuilder();
+
+            for (final var field : fieldHierarchy) {
+                if (field.isSynthetic() || field.isAnnotationPresent(Downstream.Ignore.class)) {
+                    continue;
+                }
+                final var fieldType = translator.translate(field.getAnnotatedType());
+                constructorBuilder.addParameter(fieldType, field.getName());
+            }
+            typeBuilder.recordConstructor(constructorBuilder.build());
         }
-        recordBuilder.recordConstructor(constructorBuilder.build());
 
         for (final var nested : dtoClass.getDeclaredClasses()) {
             if (!types.isRegistered(nested)) {
                 continue;
             }
-            recordBuilder.addType(buildSpec(types, translator, types.getType(nested), nested, false));
+            typeBuilder.addType(buildSpec(types, translator, types.getType(nested), nested, false));
         }
-        return recordBuilder.build();
+        return typeBuilder.build();
     }
 
     private TypeSpec buildEnumSpec(TypesRegistry types, TypesTranslator translator, Class<?> enumClass, boolean root) {

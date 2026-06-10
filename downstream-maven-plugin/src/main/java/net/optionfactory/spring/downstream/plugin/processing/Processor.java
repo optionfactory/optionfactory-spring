@@ -22,7 +22,7 @@ public class Processor {
     private final TypesMapper types;
     private final SourcesGenerator generator;
 
-    public Processor(Log log, MavenProject project, String sourcePackage, String targetPackage, String targetClientName, Map<String, String> translations, GeneratorType genType, Nesting flattening) {
+    public Processor(Log log, MavenProject project, String sourcePackage, String targetPackage, String targetClientName, Map<String, String> translations, GeneratorType genType, Nesting flattening, boolean buildDtosAsClasses) {
         this.log = log;
         this.genType = genType;
         this.project = project;
@@ -31,7 +31,7 @@ public class Processor {
         this.payloads = new PayloadsScanner(sourcePackage, targetClientName);
         this.types = new TypesMapper(targetPackage, flattening);
         this.generator = genType == GeneratorType.JAVA
-                ? new JavaSourcesGenerator(outputDir, project.getBasedir(), targetPackage, translations)
+                ? new JavaSourcesGenerator(outputDir, project.getBasedir(), targetPackage, translations, buildDtosAsClasses)
                 : new TypeScriptSourcesGenerator(outputDir, translations);
     }
 

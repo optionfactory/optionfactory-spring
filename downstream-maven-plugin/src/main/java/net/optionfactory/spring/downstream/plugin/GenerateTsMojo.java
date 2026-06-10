@@ -34,7 +34,7 @@ public class GenerateTsMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException {
         try {
-            final var processor = new Processor(getLog(), project, sourceBasePackage, "", targetClientName, translations, GeneratorType.TYPESCRIPT, nesting);
+            final var processor = new Processor(getLog(), project, sourceBasePackage, "", targetClientName, translations, GeneratorType.TYPESCRIPT, nesting, false);
             processor.process();
         } catch (MojoExecutionException e) {
             throw e;
