@@ -41,7 +41,7 @@ public class JavaSourcesGenerator implements SourcesGenerator {
     }
 
     @Override
-    public List<GenerateOutcome> generate(TypesRegistry types) throws IOException {
+    public List<GenerateOutcome> generate(TypesRegistry types, SourcesClassLoader cl) throws IOException {
         final var outcomes = new ArrayList<GenerateOutcome>();
         final var translator = new TypesTranslator(types, translations);
         for (final var mapping : types.allMappings()) {
