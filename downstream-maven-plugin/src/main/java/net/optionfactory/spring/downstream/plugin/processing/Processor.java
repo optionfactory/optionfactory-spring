@@ -24,13 +24,13 @@ public class Processor {
     private final TypesMapper types;
     private final SourcesGenerator generator;
 
-    public Processor(Log log, MavenProject project, String sourcePackage, String target, String targetPackage, String targetClientName, Map<String, String> translations, GeneratorType genType, Nesting flattening, JavaOutputStyle javaOutputStyle) {
+    public Processor(Log log, MavenProject project, String sourcePackage, String target, File targetDirectory, String targetPackage, String targetClientName, Map<String, String> translations, GeneratorType genType, Nesting flattening, JavaOutputStyle javaOutputStyle) {
         final var suffix = Optional.ofNullable(target).or(() -> Optional.ofNullable(targetClientName)).map(v -> "-" + v).orElse(null);
         this.log = log;
         this.genType = genType;
         this.project = project;
         
-        this.outputDir = new File(project.getBuild().getDirectory(), "generated-%ssources/downstream%s".formatted(genType == GeneratorType.JAVA ? "" : "re", suffix));
+        this.outputDir = targetDirectory != null ? targetDirectory : new File(project.getBuild().getDirectory(), "generated-%ssources/downstream%s".formatted(genType == GeneratorType.JAVA ? "" : "re", suffix));
         this.methods = new AnnotatedMethodsScanner();
         this.payloads = new PayloadsScanner(sourcePackage, targetClientName);
         this.types = new TypesMapper(targetPackage, flattening);

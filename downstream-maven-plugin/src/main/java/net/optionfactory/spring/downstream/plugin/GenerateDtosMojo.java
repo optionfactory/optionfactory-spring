@@ -45,7 +45,7 @@ public class GenerateDtosMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException {
         try {
-            final var processor = new Processor(getLog(), project, sourceBasePackage, target, targetPackage, targetClientName, translations, GeneratorType.JAVA, nesting, outputStyle);
+            final var processor = new Processor(getLog(), project, sourceBasePackage, target, null, targetPackage, targetClientName, translations, GeneratorType.JAVA, nesting, outputStyle);
             processor.process();
         } catch (MojoExecutionException e) {
             throw e;

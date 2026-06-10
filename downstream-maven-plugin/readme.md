@@ -85,13 +85,14 @@ Generates types in `target/generated-resources/downstream-{target}`
 
 ### Configuration params
 
-| Param              | Mandatory | Default   | Description
-| --                 | --        | --        | -- 
-| `sourceBasePackage`| `true`    | N/A       | The base package to scan for `@Downstream.Method`s
-| `target`           | `false`   | `targetClientName` or ""        | A name for this target
-| `targetClientName` | `false`   | `null`    | The client name used to filter `@Downstream.Method`s for this execution
-| `nesting`          | `true`    | `FLATTEN` | The nesting strategy to use when generating code: `NESTED` renames inner classes with the outer class as prefix, `FLATTEN` moves them to the root.
-| `translations`     | `false`   | N/A       | Type translations to apply
+| Param               | Mandatory | Default   | Description
+|---------------------| --        | --        | -- 
+| `sourceBasePackage` | `true`    | N/A       | The base package to scan for `@Downstream.Method`s
+| `target`            | `false`   | `targetClientName` or ""        | A name for this target
+| `targetClientName`  | `false`   | `null`    | The client name used to filter `@Downstream.Method`s for this execution
+| `targetDirectory`   | `false`   | `null`    | Target directory in which to create the generated spec.d.ts
+| `nesting`           | `true`    | `FLATTEN` | The nesting strategy to use when generating code: `NESTED` renames inner classes with the outer class as prefix, `FLATTEN` moves them to the root.
+| `translations`      | `false`   | N/A       | Type translations to apply
 
 
 
