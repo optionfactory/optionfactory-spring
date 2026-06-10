@@ -66,6 +66,9 @@ public class PayloadsScanner {
     }
 
     private void processClassIfPayload(Map<Class<?>, PayloadType> result, Class<?> clazz) {
+        if (clazz.isAnnotationPresent(Downstream.Ignore.class)) {
+            return;
+        }
         if (!clazz.getName().startsWith(sourcePackage) || clazz.isAnnotation()) {
             return;
         }
