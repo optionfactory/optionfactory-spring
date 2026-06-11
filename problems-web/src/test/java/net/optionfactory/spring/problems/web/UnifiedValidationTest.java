@@ -18,8 +18,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.validation.Validator;
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -87,6 +85,18 @@ public class UnifiedValidationTest {
         @PostMapping("/body-list-required")
         public void bodyListRequired(@Valid @RequestBody @NotNull List<@Valid @NotNull Dto> request) {
         }
+
+        @PostMapping("/body-using-data-binder")
+        public void bodyUsingDataBinder(@Valid @RequestBody ListWrapper request) {
+            // Triggers MethodArgumentNotValidException because the parameter is just a plain Bean, 
+            // and the DataBinder handles the nested list validation.            
+        }
+    }
+
+    public record ListWrapper(
+            @Valid
+            @NotNull List<Dto> items) {
+
     }
 
     public record Dto(@NotNull String value) {
@@ -185,4 +195,24 @@ public class UnifiedValidationTest {
                         MockMvcResultMatchers.jsonPath("$.[0].context").value((Object) null)
                 );
     }
+
+    @Test
+    public void invalidFieldWhenUsingDataBinderIsReportedAsFieldError() throws Exception {
+        final var body = """
+        {
+            "items": [{"value": null}]
+        }
+        """;
+
+        mvc
+                .perform(MockMvcRequestBuilders.post("/body-using-data-binder")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpectAll(
+                        MockMvcResultMatchers.jsonPath("$.[0].type").value("FIELD_ERROR"),
+                        MockMvcResultMatchers.jsonPath("$.[0].context").value("items.0.value"),
+                        MockMvcResultMatchers.jsonPath("$.[0].reason").value("non deve essere null")
+                );
+    }
+
 }

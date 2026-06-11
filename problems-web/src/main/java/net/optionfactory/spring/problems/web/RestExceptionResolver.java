@@ -32,6 +32,7 @@ import org.springframework.util.ClassUtils;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
+import org.springframework.validation.method.ParameterErrors;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -188,11 +189,12 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                     final Object containerKey = result.getContainerIndex() != null ? result.getContainerIndex() : result.getContainerKey();
                     final String prefix = containerKey != null ? containerKey.toString() : "";
 
-                    if (result instanceof org.springframework.validation.method.ParameterErrors pe) {
+                    if (result instanceof ParameterErrors pe) {
                         pe.getGlobalErrors().forEach(error -> failures.add(RestExceptionResolver.objectErrorToProblem(error)));
                         pe.getFieldErrors().forEach(error -> {
-                            final String path = prefix.isEmpty() ? error.getField() : prefix + "." + error.getField();
-                            failures.add(Problem.of("FIELD_ERROR", path, error.getDefaultMessage(), null));
+                            final String field = error.getField();
+                            final String path = prefix.isEmpty() ? field : prefix + "." + field;
+                            failures.add(Problem.of("FIELD_ERROR", toDottedPath(path), error.getDefaultMessage(), null));
                         });
                     } else {
                         final boolean isRequestBody = param.hasParameterAnnotation(RequestBody.class);
@@ -208,6 +210,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, failures);
             }
             case BindException be -> {
+                // this handles MethodArgumentNotValidException too, the other exception thrown by unified validation
                 final var globalFailures = be.getGlobalErrors().stream().map(RestExceptionResolver::objectErrorToProblem);
                 final var fieldFailures = be.getFieldErrors().stream().map(RestExceptionResolver::fieldErrorToProblem);
                 final var failures = Stream.concat(globalFailures, fieldFailures).toList();
@@ -356,8 +359,12 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 : Problem.of("FIELD_ERROR", path, error.getMessage(), null);
     }
 
+    private static String toDottedPath(String path) {
+        return path.replaceAll("\\[(\\d+)\\]", ".$1").replaceFirst("^\\.", "");
+    }
+
     private static Problem fieldErrorToProblem(FieldError error) {
-        return Problem.of("FIELD_ERROR", error.getField(), error.getDefaultMessage(), null);
+        return Problem.of("FIELD_ERROR", toDottedPath(error.getField()), error.getDefaultMessage(), null);
     }
 
     private static Problem objectErrorToProblem(ObjectError error) {
