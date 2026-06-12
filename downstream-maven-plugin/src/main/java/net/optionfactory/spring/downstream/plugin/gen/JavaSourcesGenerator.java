@@ -4,6 +4,7 @@ import com.palantir.javapoet.ClassName;
 import com.palantir.javapoet.FieldSpec;
 import com.palantir.javapoet.JavaFile;
 import com.palantir.javapoet.MethodSpec;
+import com.palantir.javapoet.ParameterSpec;
 import com.palantir.javapoet.TypeName;
 import com.palantir.javapoet.TypeSpec;
 import com.palantir.javapoet.TypeVariableName;
@@ -19,6 +20,7 @@ import net.optionfactory.spring.downstream.Downstream;
 import net.optionfactory.spring.downstream.plugin.processing.PayloadsScanner.PayloadType;
 import net.optionfactory.spring.downstream.plugin.processing.TypesRegistry;
 import net.optionfactory.spring.downstream.plugin.processing.TypesTranslator;
+import org.jspecify.annotations.Nullable;
 
 public class JavaSourcesGenerator implements SourcesGenerator {
 
@@ -92,17 +94,24 @@ public class JavaSourcesGenerator implements SourcesGenerator {
                     continue;
                 }
                 final var fieldType = translator.translate(field.getAnnotatedType(), cl);
-                typeBuilder.addField(FieldSpec.builder(fieldType, field.getName(), Modifier.PUBLIC).build());
+                final var fieldSpecBuilder = FieldSpec.builder(fieldType, field.getName(), Modifier.PUBLIC);
+                if (field.getAnnotatedType().isAnnotationPresent(Nullable.class)) {
+                    fieldSpecBuilder.addAnnotation(Nullable.class);
+                }
+                typeBuilder.addField(fieldSpecBuilder.build());
             }
         } else {
             final var constructorBuilder = MethodSpec.constructorBuilder();
-
             for (final var field : fieldHierarchy) {
                 if (field.isSynthetic() || field.isAnnotationPresent(Downstream.Ignore.class)) {
                     continue;
                 }
                 final var fieldType = translator.translate(field.getAnnotatedType(), cl);
-                constructorBuilder.addParameter(fieldType, field.getName());
+                final var paramSpecBuilder = ParameterSpec.builder(fieldType, field.getName());
+                if (field.getAnnotatedType().isAnnotationPresent(Nullable.class)) {
+                    paramSpecBuilder.addAnnotation(Nullable.class);
+                }
+                constructorBuilder.addParameter(paramSpecBuilder.build());
             }
             typeBuilder.recordConstructor(constructorBuilder.build());
         }
