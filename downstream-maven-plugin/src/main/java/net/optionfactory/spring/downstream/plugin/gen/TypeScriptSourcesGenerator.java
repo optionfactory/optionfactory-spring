@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -49,7 +50,7 @@ public class TypeScriptSourcesGenerator implements SourcesGenerator {
             fw.write("export type Instant = string;\n");
             fw.write("export type Locale = string;\n\n");
 
-            for (final var mapping : types.allMappings()) {
+            for (final var mapping : types.allMappings().stream().sorted(Comparator.comparing(e -> e.getKey().getPackageName() + e.getKey().getSimpleName())).toList()) {
                 final var clazz = mapping.getKey();
                 final var spec = buildSpec(cl, types, translator, types.getType(clazz), clazz);
                 outcomes.add(new GenerateOutcome(clazz.getSimpleName(), true));
