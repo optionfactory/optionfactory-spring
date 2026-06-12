@@ -77,7 +77,7 @@ public class TypeScriptSourcesGenerator implements SourcesGenerator {
         );
         final var fields = new StringBuilder();
 
-        for (final var field : dtoClass.getDeclaredFields()) {
+        for (final var field : dtoClass.getFields()) {
             if (Modifier.isStatic(field.getModifiers()) || Modifier.isTransient(field.getModifiers())) {
                 continue;
             }
