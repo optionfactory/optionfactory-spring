@@ -31,7 +31,7 @@ public class TypesTranslator {
 
         if (annotatedType instanceof AnnotatedParameterizedType apt && type instanceof ParameterizedType pType) {
             final var typeArgs = Arrays.stream(apt.getAnnotatedActualTypeArguments())
-                    .map(at -> translate(annotatedType, cl))
+                    .map(at -> translate(at, cl))
                     .toArray(TypeName[]::new);
 
             if (pType.getRawType() instanceof Class<?> rawClass && translations.containsKey(rawClass.getName())) {
