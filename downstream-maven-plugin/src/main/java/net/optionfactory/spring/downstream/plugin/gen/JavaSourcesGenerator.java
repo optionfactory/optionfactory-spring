@@ -49,24 +49,24 @@ public class JavaSourcesGenerator implements SourcesGenerator {
             if (!types.isRoot(clazz)) {
                 continue;
             }
-            final var rootSpec = buildSpec(types, translator, types.getType(clazz), clazz, true);
+            final var rootSpec = buildSpec(cl, types, translator, types.getType(clazz), clazz, true);
             outcomes.add(writeRootFile(outputDir, mapping.getValue().className(), rootSpec));
         }
         return outcomes;
     }
 
-    private TypeSpec buildSpec(TypesRegistry types, TypesTranslator translator, PayloadType type, Class<?> clazz, boolean root) {
-        return type == PayloadType.DTO ? buildDtoSpec(types, translator, clazz, root) : buildEnumSpec(types, translator, clazz, root);
+    private TypeSpec buildSpec(SourcesClassLoader cl, TypesRegistry types, TypesTranslator translator, PayloadType type, Class<?> clazz, boolean root) {
+        return type == PayloadType.DTO ? buildDtoSpec(cl, types, translator, clazz, root) : buildEnumSpec(cl, types, translator, clazz, root);
     }
 
-    private TypeSpec buildDtoSpec(TypesRegistry types, TypesTranslator translator, Class<?> dtoClass, boolean root) {
+    private TypeSpec buildDtoSpec(SourcesClassLoader cl, TypesRegistry types, TypesTranslator translator, Class<?> dtoClass, boolean root) {
         final var mappedName = types.getClassName(dtoClass);
         final var typeBuilder = (javaOutputStyle == JavaOutputStyle.CLASSES ? TypeSpec.classBuilder(mappedName.simpleName()) : TypeSpec.recordBuilder(mappedName.simpleName()))
                 .addModifiers(Modifier.PUBLIC);
 
         for (final var typeParam : dtoClass.getTypeParameters()) {
             final var translatedBounds = Arrays.stream(typeParam.getAnnotatedBounds())
-                    .map(translator::translate)
+                    .map(b -> translator.translate(b, cl))
                     .filter(bound -> !bound.equals(ClassName.OBJECT))
                     .toArray(TypeName[]::new);
             typeBuilder.addTypeVariable(TypeVariableName.get(typeParam.getName(), translatedBounds));
@@ -91,7 +91,7 @@ public class JavaSourcesGenerator implements SourcesGenerator {
                 if (field.isSynthetic() || field.isAnnotationPresent(Downstream.Ignore.class)) {
                     continue;
                 }
-                final var fieldType = translator.translate(field.getAnnotatedType());
+                final var fieldType = translator.translate(field.getAnnotatedType(), cl);
                 typeBuilder.addField(FieldSpec.builder(fieldType, field.getName(), Modifier.PUBLIC).build());
             }
         } else {
@@ -101,7 +101,7 @@ public class JavaSourcesGenerator implements SourcesGenerator {
                 if (field.isSynthetic() || field.isAnnotationPresent(Downstream.Ignore.class)) {
                     continue;
                 }
-                final var fieldType = translator.translate(field.getAnnotatedType());
+                final var fieldType = translator.translate(field.getAnnotatedType(), cl);
                 constructorBuilder.addParameter(fieldType, field.getName());
             }
             typeBuilder.recordConstructor(constructorBuilder.build());
@@ -111,12 +111,12 @@ public class JavaSourcesGenerator implements SourcesGenerator {
             if (!types.isRegistered(nested)) {
                 continue;
             }
-            typeBuilder.addType(buildSpec(types, translator, types.getType(nested), nested, false));
+            typeBuilder.addType(buildSpec(cl, types, translator, types.getType(nested), nested, false));
         }
         return typeBuilder.build();
     }
 
-    private TypeSpec buildEnumSpec(TypesRegistry types, TypesTranslator translator, Class<?> enumClass, boolean root) {
+    private TypeSpec buildEnumSpec(SourcesClassLoader cl, TypesRegistry types, TypesTranslator translator, Class<?> enumClass, boolean root) {
         final ClassName mappedName = types.getClassName(enumClass);
 
         final var enumBuilder = TypeSpec.enumBuilder(mappedName.simpleName())
@@ -135,7 +135,7 @@ public class JavaSourcesGenerator implements SourcesGenerator {
             if (!types.isRegistered(nested)) {
                 continue;
             }
-            enumBuilder.addType(buildSpec(types, translator, types.getType(nested), nested, false));
+            enumBuilder.addType(buildSpec(cl, types, translator, types.getType(nested), nested, false));
         }
         return enumBuilder.build();
     }

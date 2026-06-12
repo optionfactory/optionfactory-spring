@@ -10,6 +10,7 @@ import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.Map;
 import net.optionfactory.spring.downstream.Downstream;
+import net.optionfactory.spring.downstream.plugin.gen.SourcesGenerator.SourcesClassLoader;
 
 public class TypesTranslator {
 
@@ -21,7 +22,7 @@ public class TypesTranslator {
         this.translations = translations;
     }
 
-    public TypeName translate(AnnotatedType annotatedType) {
+    public TypeName translate(AnnotatedType annotatedType, SourcesClassLoader cl) {
         if (annotatedType == null || annotatedType.isAnnotationPresent(Downstream.Ignore.class)) {
             return ClassName.OBJECT;
         }
@@ -30,12 +31,12 @@ public class TypesTranslator {
 
         if (annotatedType instanceof AnnotatedParameterizedType apt && type instanceof ParameterizedType pType) {
             final var typeArgs = Arrays.stream(apt.getAnnotatedActualTypeArguments())
-                    .map(this::translate)
+                    .map(at -> translate(annotatedType, cl))
                     .toArray(TypeName[]::new);
 
             if (pType.getRawType() instanceof Class<?> rawClass && translations.containsKey(rawClass.getName())) {
                 TypeName substitutedRaw = resolveTarget(translations.get(rawClass.getName()));
-                if (substitutedRaw instanceof ClassName className && typeArgs.length > 0) {
+                if (substitutedRaw instanceof ClassName className && typeArgs.length > 0 && cl.load(className.reflectionName()).getTypeParameters().length > 0) {
                     return ParameterizedTypeName.get(className, typeArgs);
                 }
                 return substitutedRaw;

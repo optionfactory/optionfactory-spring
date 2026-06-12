@@ -80,7 +80,7 @@ public class TypeScriptSourcesGenerator implements SourcesGenerator {
             if (Modifier.isStatic(field.getModifiers()) || Modifier.isTransient(field.getModifiers())) {
                 continue;
             }
-            final var javaPoetType = translator.translate(field.getAnnotatedType());
+            final var javaPoetType = translator.translate(field.getAnnotatedType(), cl);
             final var tsType = mapJavaPoetToTs(cl, types, javaPoetType);
             final var isOptional = !field.getType().isPrimitive() && (field.getType() == java.util.Optional.class || hasNullableAnnotation(field));
             fields.append(String.format("    %s%s: %s;\n", field.getName(), isOptional ? "?" : "", tsType));
