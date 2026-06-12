@@ -21,7 +21,7 @@ public class BooleanQuirkHandler implements QuirkHandler<Quirks.Bool> {
 
     @Override
     public BeanPropertyWriter serialization(Quirks.Bool ann, BeanPropertyWriter bpw) {
-        bpw.assignSerializer((ValueSerializer) new Serializer(ann.t(), ann.f()));
+        bpw.assignSerializer(new Serializer(ann.t(), ann.f()));
         return bpw;
     }
 
@@ -54,7 +54,7 @@ public class BooleanQuirkHandler implements QuirkHandler<Quirks.Bool> {
 
     }
 
-    public static class Serializer extends ValueSerializer<Boolean> {
+    public static class Serializer extends ValueSerializer<Object> {
 
         private final String t;
         private final String f;
@@ -65,8 +65,9 @@ public class BooleanQuirkHandler implements QuirkHandler<Quirks.Bool> {
         }
 
         @Override
-        public void serialize(Boolean v, JsonGenerator gen, SerializationContext ctxt) throws JacksonException {
-            gen.writeString(v ? t : f);
+        public void serialize(Object v, JsonGenerator gen, SerializationContext ctxt) throws JacksonException {
+            boolean value = Boolean.TRUE.equals(v);            
+            gen.writeString(value ? t : f);
         }
 
     }

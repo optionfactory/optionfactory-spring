@@ -1,5 +1,6 @@
 package net.optionfactory.spring.marshaling.jackson.quirks.adapters;
 
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -14,9 +15,9 @@ import tools.jackson.databind.deser.std.StdValueInstantiator;
 
 public class AnnotatedDeserializerModifier extends ValueDeserializerModifier {
 
-    private final List<QuirkHandler> transformers;
+    private final List<QuirkHandler<?>> transformers;
 
-    public AnnotatedDeserializerModifier(List<QuirkHandler> transformers) {
+    public AnnotatedDeserializerModifier(List<QuirkHandler<?>> transformers) {
         this.transformers = transformers;
     }
 
@@ -28,18 +29,25 @@ public class AnnotatedDeserializerModifier extends ValueDeserializerModifier {
         return r;
     }
 
+    private <A extends Annotation> SettableBeanProperty transform(QuirkHandler<A> handler, SettableBeanProperty prop) {
+        final A ann = prop.getAnnotation(handler.annotation());
+        if (ann == null) {
+            return prop;
+        }
+        return handler.deserialization(ann, prop);
+    }
+
     @Override
     public BeanDeserializerBuilder updateBuilder(DeserializationConfig config, BeanDescription.Supplier bd, BeanDeserializerBuilder builder) {
-        final var props = asList(builder.getProperties());        
+        final var props = asList(builder.getProperties());
         props.forEach(prop -> {
-            transformers.stream().forEach(handler -> {
-                final var ann = prop.getAnnotation(handler.annotation());
-                if (ann == null) {
-                    return;
-                }
-                final var transformed = handler.deserialization(ann, prop);
-                builder.addOrReplaceProperty(transformed, true);
-            });
+            SettableBeanProperty currentProp = prop;
+            for (QuirkHandler<?> handler : transformers) {
+                currentProp = transform(handler, currentProp);
+            }
+            if (currentProp != prop) {
+                builder.addOrReplaceProperty(currentProp, true);
+            }
         });
         //see https://github.com/FasterXML/jackson-databind/issues/3981
         if (builder.getValueInstantiator() instanceof StdValueInstantiator vi && vi.canCreateFromObjectWith()) {
@@ -47,14 +55,11 @@ public class AnnotatedDeserializerModifier extends ValueDeserializerModifier {
             if (instantiatorProperties != null && instantiatorProperties.length > 0) {
                 // replace all creator properties instantiator to use replacementDeserializer
                 final var modifiedProperties = Arrays.stream(instantiatorProperties).map(prop -> {
+                    SettableBeanProperty currentProp = prop;
                     for (final var transformer : transformers) {
-                        final var ann = prop.getAnnotation(transformer.annotation());
-                        if (ann == null) {
-                            continue;
-                        }
-                        prop = transformer.deserialization(ann, prop);
+                        currentProp = transform(transformer, currentProp);
                     }
-                    return prop;
+                    return currentProp;
                 }).toArray(length -> new SettableBeanProperty[length]);
                 // configure valueInstantiator to use the modified properties
                 vi.configureFromObjectSettings(

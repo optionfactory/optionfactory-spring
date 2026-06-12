@@ -20,7 +20,7 @@ public class TrimQuirkHandler implements QuirkHandler<Quirks.Trim> {
 
     @Override
     public BeanPropertyWriter serialization(Quirks.Trim ann, BeanPropertyWriter bpw) {
-        bpw.assignSerializer((ValueSerializer) Serializer.INSTANCE);
+        bpw.assignSerializer(Serializer.INSTANCE);
         return bpw;
     }
 
@@ -29,13 +29,13 @@ public class TrimQuirkHandler implements QuirkHandler<Quirks.Trim> {
         return sbp.withValueDeserializer(Deserializer.INSTANCE);
     }
 
-    public static class Serializer extends ValueSerializer<String> {
+    public static class Serializer extends ValueSerializer<Object> {
 
         public static Serializer INSTANCE = new Serializer();
 
         @Override
-        public void serialize(String t, JsonGenerator jg, SerializationContext sc) {
-            jg.writeString(t.trim());
+        public void serialize(Object t, JsonGenerator jg, SerializationContext sc) {
+            jg.writeString(((String)t).trim());
         }
 
     }

@@ -29,7 +29,7 @@ public class LocalDateTimeAsIsoInstantQuirkHandler implements QuirkHandler<Quirk
         final var instantOffset = new Offset(ann.ioffset(), ann.iunit());
         final var localDateOffset = new Offset(ann.ldoffset(), ann.ldunit());
         final var serializer = new Serializer(zoneId, instantOffset, localDateOffset);
-        bpw.assignSerializer((ValueSerializer) serializer);
+        bpw.assignSerializer(serializer);
         return bpw;
 
     }
@@ -75,7 +75,7 @@ public class LocalDateTimeAsIsoInstantQuirkHandler implements QuirkHandler<Quirk
 
     }
 
-    public static class Serializer extends ValueSerializer<LocalDateTime> {
+    public static class Serializer extends ValueSerializer<Object> {
 
         private final ZoneId zid;
         private final Offset instantOffset;
@@ -89,8 +89,8 @@ public class LocalDateTimeAsIsoInstantQuirkHandler implements QuirkHandler<Quirk
         
         
         @Override
-        public void serialize(LocalDateTime value, JsonGenerator gen, SerializationContext ctxt) throws JacksonException {
-            final var asIsoInstant = value
+        public void serialize(Object value, JsonGenerator gen, SerializationContext ctxt) throws JacksonException {
+            final var asIsoInstant = ((LocalDateTime)value)
                     .plus(localDateOffset.amount(), localDateOffset.unit())
                     .atZone(zid)
                     .toInstant()

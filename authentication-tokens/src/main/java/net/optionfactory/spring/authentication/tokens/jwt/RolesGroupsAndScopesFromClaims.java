@@ -48,7 +48,7 @@ public class RolesGroupsAndScopesFromClaims implements JwtAuthoritiesConverter {
                     .filter(String::isEmpty)
                     .toList();
         }
-        if (claim instanceof List scopes) {
+        if (claim instanceof List<?> scopes) {
             return scopes.stream()
                     .map(Object::toString)
                     .toList();

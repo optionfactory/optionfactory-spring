@@ -56,7 +56,7 @@ public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalF
     public BeanPropertyWriter serialization(TemporalFormat ann, BeanPropertyWriter bpw) {
         final var dtf = DateTimeFormatter.ofPattern(ann.value());
         final var serializer = new Serializer(dtf);
-        bpw.assignSerializer((ValueSerializer) serializer);
+        bpw.assignSerializer(serializer);
         return bpw;
     }
 
@@ -69,7 +69,7 @@ public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalF
         return sbp.withValueDeserializer(deserializer);
     }
 
-    public static class Serializer extends ValueSerializer<TemporalAccessor> {
+    public static class Serializer extends ValueSerializer<Object> {
 
         private final DateTimeFormatter dtf;
 
@@ -78,8 +78,8 @@ public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalF
         }
 
         @Override
-        public void serialize(TemporalAccessor value, JsonGenerator gen, SerializationContext ctxt) throws JacksonException {
-            gen.writeString(dtf.format(value));
+        public void serialize(Object value, JsonGenerator gen, SerializationContext ctxt) throws JacksonException {
+            gen.writeString(dtf.format((TemporalAccessor) value));
         }
     }
 
@@ -94,7 +94,7 @@ public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalF
         }
 
         @Override
-        public Object deserialize(JsonParser jp, DeserializationContext dc){
+        public Object deserialize(JsonParser jp, DeserializationContext dc) {
             return dtf.parse(jp.getString(), query);
         }
 

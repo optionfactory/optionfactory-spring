@@ -6,7 +6,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import net.optionfactory.spring.marshaling.jackson.quirks.adapters.AnnotatedDeserializerModifier;
-import net.optionfactory.spring.marshaling.jackson.quirks.adapters.AnnotatedSeralizerModifier;
+import net.optionfactory.spring.marshaling.jackson.quirks.adapters.AnnotatedSerializerModifier;
 import net.optionfactory.spring.marshaling.jackson.quirks.bool.BooleanQuirkHandler;
 import net.optionfactory.spring.marshaling.jackson.quirks.text.RenameQuirkHandler;
 import net.optionfactory.spring.marshaling.jackson.quirks.text.ScreamQuirkHandler;
@@ -93,7 +93,7 @@ public interface Quirks {
 
     public static class Builder {
 
-        private final List<QuirkHandler> handlers = new ArrayList<>();
+        private final List<QuirkHandler<?>> handlers = new ArrayList<>();
 
         public Builder add(QuirkHandler q) {
             handlers.add(q);
@@ -103,7 +103,7 @@ public interface Quirks {
         public SimpleModule build() {
             final var module = new SimpleModule("QuirksModule", Version.unknownVersion());
             module.setDeserializerModifier(new AnnotatedDeserializerModifier(handlers));
-            module.setSerializerModifier(new AnnotatedSeralizerModifier(handlers));
+            module.setSerializerModifier(new AnnotatedSerializerModifier(handlers));
             return module;
         }
     }

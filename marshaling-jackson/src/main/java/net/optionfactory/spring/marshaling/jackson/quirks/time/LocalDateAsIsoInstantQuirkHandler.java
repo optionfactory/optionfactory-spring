@@ -28,7 +28,7 @@ public class LocalDateAsIsoInstantQuirkHandler implements QuirkHandler<Quirks.Lo
         final var instantOffset = new Offset(ann.ioffset(), ann.iunit());
         final var localDateOffset = new Offset(ann.ldoffset(), ann.ldunit());
         final var serializer = new Serializer(zoneId, instantOffset, localDateOffset);
-        bpw.assignSerializer((ValueSerializer) serializer);
+        bpw.assignSerializer(serializer);
         return bpw;
 
     }
@@ -74,7 +74,7 @@ public class LocalDateAsIsoInstantQuirkHandler implements QuirkHandler<Quirks.Lo
 
     }
 
-    public static class Serializer extends ValueSerializer<LocalDate> {
+    public static class Serializer extends ValueSerializer<Object> {
 
         private final ZoneId zid;
         private final Offset instantOffset;
@@ -88,8 +88,8 @@ public class LocalDateAsIsoInstantQuirkHandler implements QuirkHandler<Quirks.Lo
         
         
         @Override
-        public void serialize(LocalDate value, JsonGenerator gen, SerializationContext ctxt) {
-            final var asIsoInstant = value
+        public void serialize(Object value, JsonGenerator gen, SerializationContext ctxt) {
+            final var asIsoInstant = ((LocalDate)value)
                     .plus(localDateOffset.amount(), localDateOffset.unit())
                     .atStartOfDay(zid)
                     .toInstant()

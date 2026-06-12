@@ -59,7 +59,7 @@ public class Principals {
             final var atr = http.getSharedObject(AuthenticationTrustResolver.class);
             final var matr = atr != null ? atr : new AuthenticationTrustResolverImpl();
 
-            final var filter = new AuthenticationsCoalescingFilter(mschs, mscr, matr, mappers, principalType);
+            final var filter = new AuthenticationsCoalescingFilter<>(mschs, mscr, matr, mappers, principalType);
 
             postProcess(filter);
             http.addFilterBefore(filter, SessionManagementFilter.class);
