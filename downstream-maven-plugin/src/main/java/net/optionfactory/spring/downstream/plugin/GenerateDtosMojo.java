@@ -1,11 +1,15 @@
 package net.optionfactory.spring.downstream.plugin;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import net.optionfactory.spring.downstream.plugin.gen.JavaSourcesGenerator.JavaOutputStyle;
-import net.optionfactory.spring.downstream.plugin.gen.SourcesGenerator.GeneratorType;
-import net.optionfactory.spring.downstream.plugin.processing.Processor;
-import net.optionfactory.spring.downstream.plugin.processing.TypesMapper.Nesting;
+import java.util.Optional;
+import net.optionfactory.spring.downstream.plugin.core.GenerationPipeline;
+import net.optionfactory.spring.downstream.plugin.discovery.Endpoints;
+import net.optionfactory.spring.downstream.plugin.discovery.Payloads;
+import net.optionfactory.spring.downstream.plugin.emit.java.JavaEmitter;
+import net.optionfactory.spring.downstream.plugin.emit.java.JavaEmitter.DtoStyle;
+import net.optionfactory.spring.downstream.plugin.mapping.TypeRegistry.Nesting;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -24,7 +28,7 @@ public class GenerateDtosMojo extends AbstractMojo {
 
     @Parameter(required = false)
     private String target;
-    
+
     @Parameter(required = false)
     private String targetClientName;
 
@@ -38,20 +42,30 @@ public class GenerateDtosMojo extends AbstractMojo {
     private Nesting nesting;
 
     @Parameter(defaultValue = "RECORDS", required = true)
-    private JavaOutputStyle outputStyle;
+    private DtoStyle outputStyle;
 
-    
-    
     @Override
     public void execute() throws MojoExecutionException {
         try {
-            final var processor = new Processor(getLog(), project, sourceBasePackage, target, null, targetPackage, targetClientName, translations, GeneratorType.JAVA, nesting, outputStyle);
-            processor.process();
-        } catch (MojoExecutionException e) {
-            throw e;
+            final var suffix = Optional.ofNullable(target)
+                    .or(() -> Optional.ofNullable(targetClientName))
+                    .map(v -> "-" + v)
+                    .orElse("");
+
+            final var outputDir = new File(project.getBuild().getDirectory(), "generated-sources/downstream" + suffix);
+
+            final var endpoints = new Endpoints(targetClientName);
+            final var payloads = new Payloads(sourceBasePackage);
+            final var emitter = new JavaEmitter(outputDir, project.getBasedir(), translations, outputStyle);
+
+            final var pipeline = new GenerationPipeline(getLog(), endpoints, payloads, emitter);
+            pipeline.execute(targetPackage, nesting);
+
+            project.addCompileSourceRoot(outputDir.getAbsolutePath());
+            getLog().info("Generated code added to the compile source root: " + outputDir.getAbsolutePath());
+
         } catch (Exception e) {
-            throw new MojoExecutionException("Downstream code generation failed", e);
+            throw new MojoExecutionException("Downstream Java code generation failed", e);
         }
     }
-
 }
