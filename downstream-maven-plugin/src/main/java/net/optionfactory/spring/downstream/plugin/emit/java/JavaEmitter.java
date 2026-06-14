@@ -26,7 +26,8 @@ public class JavaEmitter implements SourceEmitter {
     private final File projectBaseDir;
     private final Map<String, String> translations;
     private final DtoStyle dtoStyle;
-    
+    private static final ClassName NULLABLE = ClassName.get("org.jspecify.annotations", "Nullable");
+
     public enum DtoStyle {
         RECORDS, CLASSES;
     }
@@ -44,7 +45,7 @@ public class JavaEmitter implements SourceEmitter {
         final var translator = new JavaTypeTranslator(registry, translations);
 
         for (final var sourceClass : registry.allSourceClasses()) {
-            final var target = registry.getTargetName(sourceClass);            
+            final var target = registry.getTargetName(sourceClass);
             if (target.names().size() > 1) {
                 continue;
             }
@@ -66,8 +67,8 @@ public class JavaEmitter implements SourceEmitter {
     }
 
     private TypeSpec buildSpec(Class<?> clazz, TypeRegistry registry, JavaTypeTranslator translator, boolean root) {
-        return clazz.isEnum() 
-                ? buildEnumSpec(clazz, registry, translator, root) 
+        return clazz.isEnum()
+                ? buildEnumSpec(clazz, registry, translator, root)
                 : buildDtoSpec(clazz, registry, translator, root);
     }
 
@@ -76,7 +77,7 @@ public class JavaEmitter implements SourceEmitter {
         final var simpleName = targetName.names().getLast();
 
         final var typeBuilder = (DtoStyle.CLASSES == dtoStyle
-                ? TypeSpec.classBuilder(simpleName) 
+                ? TypeSpec.classBuilder(simpleName)
                 : TypeSpec.recordBuilder(simpleName))
                 .addModifiers(Modifier.PUBLIC);
 
@@ -94,15 +95,14 @@ public class JavaEmitter implements SourceEmitter {
             typeBuilder.addModifiers(Modifier.STATIC);
         }
 
-        
         final var fields = Reflection.candidateFields(dtoClass, Object.class);
 
         if (dtoStyle == DtoStyle.CLASSES) {
-            for (final var field : fields) {               
+            for (final var field : fields) {
                 final var fieldType = translator.translate(field.annotatedType());
                 final var fieldSpecBuilder = FieldSpec.builder(fieldType, field.name(), Modifier.PUBLIC);
                 if (field.nullable()) {
-                    fieldSpecBuilder.addAnnotation(ClassName.get("org.jspecify.annotations", "Nullable"));                    
+                    fieldSpecBuilder.addAnnotation(NULLABLE);
                 }
                 typeBuilder.addField(fieldSpecBuilder.build());
             }
@@ -112,7 +112,7 @@ public class JavaEmitter implements SourceEmitter {
                 final var fieldType = translator.translate(field.annotatedType());
                 final var paramSpecBuilder = ParameterSpec.builder(fieldType, field.name());
                 if (field.nullable()) {
-                    paramSpecBuilder.addAnnotation(ClassName.get("org.jspecify.annotations", "Nullable"));                                        
+                    paramSpecBuilder.addAnnotation(NULLABLE);
                 }
                 constructorBuilder.addParameter(paramSpecBuilder.build());
             }
@@ -136,17 +136,17 @@ public class JavaEmitter implements SourceEmitter {
         final var simpleName = targetName.names().get(targetName.names().size() - 1);
 
         final var enumBuilder = TypeSpec.enumBuilder(simpleName).addModifiers(Modifier.PUBLIC);
-        
+
         if (root) {
             enumBuilder.addJavadoc("Generated from {@code $L}", enumClass.getName());
         } else {
             enumBuilder.addModifiers(Modifier.STATIC);
         }
-        
+
         for (final var constant : enumClass.getEnumConstants()) {
             enumBuilder.addEnumConstant(((Enum<?>) constant).name());
         }
-        
+
         for (final var nested : enumClass.getDeclaredClasses()) {
             if (registry.isRegistered(nested)) {
                 final TargetName nestedTarget = registry.getTargetName(nested);

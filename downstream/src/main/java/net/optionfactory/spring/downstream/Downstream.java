@@ -14,7 +14,7 @@ public interface Downstream {
         String[] clients() default {};
     }
 
-    @Target({ElementType.METHOD, ElementType.PARAMETER, ElementType.FIELD, ElementType.TYPE_USE})
+    @Target({ElementType.TYPE, ElementType.FIELD, ElementType.PARAMETER})
     @Retention(RetentionPolicy.RUNTIME)
     @interface Ignore {
     }

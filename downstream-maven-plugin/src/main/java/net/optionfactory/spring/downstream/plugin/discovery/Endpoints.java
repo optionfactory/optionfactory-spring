@@ -3,8 +3,8 @@ package net.optionfactory.spring.downstream.plugin.discovery;
 import io.github.classgraph.ScanResult;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
 import net.optionfactory.spring.downstream.Downstream;
 
 public class Endpoints {
@@ -25,7 +25,7 @@ public class Endpoints {
                     continue;
                 }
                 final var clients = annotation.clients();
-                if ((clients.length != 0 && targetClientName != null && Stream.of(clients).noneMatch(c -> c.equals(targetClientName)))) {
+                if (clients.length != 0 && targetClientName != null && !Arrays.asList(clients).contains(targetClientName)) {
                     continue;
                 }
                 methods.add(method);

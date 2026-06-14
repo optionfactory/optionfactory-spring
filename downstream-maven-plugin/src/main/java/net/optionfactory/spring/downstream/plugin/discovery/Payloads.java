@@ -24,6 +24,9 @@ public class Payloads {
         for (final var method : endpoints) {
             registerIfPayload(result, method.getAnnotatedReturnType());
             for (final var param : method.getParameters()) {
+                if (param.isAnnotationPresent(Downstream.Ignore.class)) {
+                    continue;
+                }
                 registerIfPayload(result, param.getAnnotatedType());
             }
         }

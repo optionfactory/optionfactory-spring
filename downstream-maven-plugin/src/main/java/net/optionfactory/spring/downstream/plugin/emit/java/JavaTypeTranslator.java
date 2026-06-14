@@ -9,7 +9,6 @@ import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.Map;
-import net.optionfactory.spring.downstream.Downstream;
 import net.optionfactory.spring.downstream.plugin.mapping.TypeRegistry;
 import net.optionfactory.spring.downstream.plugin.mapping.TypeRegistry.TargetName;
 
@@ -24,11 +23,7 @@ public class JavaTypeTranslator {
     }
 
     public TypeName translate(AnnotatedType annotatedType) {
-        //TODO: remove?
-        if (annotatedType == null || annotatedType.isAnnotationPresent(Downstream.Ignore.class)) {
-            return ClassName.OBJECT;
-        }
-        final java.lang.reflect.Type type = annotatedType.getType();
+        final var type = annotatedType.getType();
         if (annotatedType instanceof AnnotatedParameterizedType apt && type instanceof ParameterizedType pType) {
             final var typeArgs = Arrays.stream(apt.getAnnotatedActualTypeArguments()).map(this::translate).toArray(TypeName[]::new);
             if (pType.getRawType() instanceof Class<?> rawClass && translations.containsKey(rawClass.getName())) {
