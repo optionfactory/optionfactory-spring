@@ -1,15 +1,16 @@
 package net.optionfactory.spring.downstream.plugin.reflection;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 import net.optionfactory.spring.downstream.Downstream;
-import org.jspecify.annotations.Nullable;
 
 public class Reflection {
 
@@ -33,12 +34,17 @@ public class Reflection {
                 .filter(f -> !f.isSynthetic() && !f.isAnnotationPresent(Downstream.Ignore.class))
                 .filter(f -> !Modifier.isStatic(f.getModifiers()) && !Modifier.isTransient(f.getModifiers()))
                 .map(f -> new CandidateField(
-                    f.getName(),
-                    f.getGenericType(),
-                    f.getAnnotatedType(),
-                    f.isAnnotationPresent(Nullable.class) || f.getAnnotatedType().isAnnotationPresent(Nullable.class),
-                    f.getType() == Optional.class
-                ))
+                f.getName(),
+                f.getGenericType(),
+                f.getAnnotatedType(),
+                hasNullableAnnotation(f.getAnnotations()) || hasNullableAnnotation(f.getAnnotatedType().getAnnotations()),
+                f.getType() == Optional.class
+        ))
                 .toList();
+    }
+
+    private static boolean hasNullableAnnotation(Annotation[] annotations) {
+        return Arrays.stream(annotations)
+                .anyMatch(a -> a.annotationType().getSimpleName().equals("Nullable"));
     }
 }

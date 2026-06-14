@@ -19,7 +19,6 @@ import net.optionfactory.spring.downstream.plugin.emit.SourceEmitter.GenerateOut
 import net.optionfactory.spring.downstream.plugin.mapping.TypeRegistry;
 import net.optionfactory.spring.downstream.plugin.mapping.TypeRegistry.TargetName;
 import net.optionfactory.spring.downstream.plugin.reflection.Reflection;
-import org.jspecify.annotations.Nullable;
 
 public class JavaEmitter implements SourceEmitter {
 
@@ -103,7 +102,7 @@ public class JavaEmitter implements SourceEmitter {
                 final var fieldType = translator.translate(field.annotatedType());
                 final var fieldSpecBuilder = FieldSpec.builder(fieldType, field.name(), Modifier.PUBLIC);
                 if (field.nullable()) {
-                    fieldSpecBuilder.addAnnotation(Nullable.class);
+                    fieldSpecBuilder.addAnnotation(ClassName.get("org.jspecify.annotations", "Nullable"));                    
                 }
                 typeBuilder.addField(fieldSpecBuilder.build());
             }
@@ -113,7 +112,7 @@ public class JavaEmitter implements SourceEmitter {
                 final var fieldType = translator.translate(field.annotatedType());
                 final var paramSpecBuilder = ParameterSpec.builder(fieldType, field.name());
                 if (field.nullable()) {
-                    paramSpecBuilder.addAnnotation(Nullable.class);
+                    paramSpecBuilder.addAnnotation(ClassName.get("org.jspecify.annotations", "Nullable"));                                        
                 }
                 constructorBuilder.addParameter(paramSpecBuilder.build());
             }
