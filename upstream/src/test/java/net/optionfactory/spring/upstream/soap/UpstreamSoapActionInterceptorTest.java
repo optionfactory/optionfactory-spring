@@ -24,7 +24,7 @@ public class UpstreamSoapActionInterceptorTest {
 
     @Test
     public void soapActionHeaderIsAddedForSoap11() throws IOException {
-        final Schema schema = Schemas.load(new ClassPathResource("/calculator/schema.xsd"));
+        final Schema schema = Schemas.fromXsds(new ClassPathResource("/calculator/schema.xsd"));
 
         final var capturedHeaders = new AtomicReference<HttpHeaders>();
 
@@ -58,7 +58,7 @@ public class UpstreamSoapActionInterceptorTest {
 
     @Test
     public void soapActionIsAddedAsContentTypeParameterForSoap12() throws IOException {
-        final Schema schema = Schemas.load(new ClassPathResource("/calculator/schema.xsd"));
+        final Schema schema = Schemas.fromXsds(new ClassPathResource("/calculator/schema.xsd"));
 
         final var capturedHeaders = new AtomicReference<HttpHeaders>();
 

@@ -18,7 +18,7 @@ public class SoapClientTest {
 
     @Test
     public void canDoSoap11Call() throws JAXBException {
-        final Schema schema = Schemas.load(new ClassPathResource("/calculator/schema.xsd"));
+        final Schema schema = Schemas.fromXsds(new ClassPathResource("/calculator/schema.xsd"));
 
         final var client = UpstreamBuilder.create(CalculatorClient.class)
                 .requestFactoryMock(c -> {

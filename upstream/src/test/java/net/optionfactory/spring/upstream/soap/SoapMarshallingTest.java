@@ -23,7 +23,7 @@ public class SoapMarshallingTest {
 
     @Test
     public void canMarshalAndUnmarshal() throws SOAPException, IOException, JAXBException, SAXException {
-        final Schema schema = Schemas.load(new ClassPathResource("/calculator/schema.xsd"));
+        final Schema schema = Schemas.fromXsds(new ClassPathResource("/calculator/schema.xsd"));
         final var context = JAXBContext.newInstance(Add.class.getPackageName());
         final var req = new Add();
         req.intA = 123;
