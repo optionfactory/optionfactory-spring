@@ -20,7 +20,6 @@ import javax.xml.validation.SchemaFactory;
 import org.springframework.core.io.InputStreamSource;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 public class Schemas {
@@ -34,25 +33,47 @@ public class Schemas {
         }
 
         public List<String> importsFor(String ns) {
-            return nsToImports.get(ns);
+            return nsToImports.getOrDefault(ns, List.of());
         }
 
         public Set<String> namespaces() {
             return nsToSchema.keySet();
         }
-
     }
 
-    public static Schema fromWsdl(InputStreamSource wsdlSource) {
-        try (InputStream is = wsdlSource.getInputStream()) {
+    /// Compiles a single unified `Schema` validator from a primary WSDL resource and any optional 
+    /// standalone companion XSD companion documents.
+    ///
+    /// Dependencies are automatically sorted.
+    ///
+    /// @param wsdlSource the primary WSDL stream input source containing core services and inline types
+    /// @param companionXsds optional secondary standalone XSD streams containing cross-referenced definitions
+    /// @return a configured, sequentially ordered `Schema` validation instance
+    /// @throws IllegalStateException if an XML parsing error occurs, a circular schema dependency loop is found, or validator compilation fails
+    public static Schema fromWsdl(InputStreamSource wsdlSource, InputStreamSource... companionXsds) {
+        try {
             final var dbf = DocumentBuilderFactory.newInstance();
             dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
             dbf.setNamespaceAware(true);
-            final var doc = dbf.newDocumentBuilder().parse(is);
-            final var schemaNodes = doc.getElementsByTagNameNS(XMLConstants.W3C_XML_SCHEMA_NS_URI, "schema");
-            final var sai = schemasAndImports(schemaNodes);
-            final var orderedSources = orderedSources(sai);
+
+            final var result = new SchemasAndImports(new HashMap<>(), new HashMap<>());
+            try (InputStream is = wsdlSource.getInputStream()) {
+                final var doc = dbf.newDocumentBuilder().parse(is);
+                final var schemaNodes = doc.getElementsByTagNameNS(XMLConstants.W3C_XML_SCHEMA_NS_URI, "schema");
+                for (int i = 0; i != schemaNodes.getLength(); i++) {
+                    collectSchemaAndImports((Element) schemaNodes.item(i), result);
+                }
+            }
+
+            for (final var xsdSource : companionXsds) {
+                try (InputStream is = xsdSource.getInputStream()) {
+                    final var doc = dbf.newDocumentBuilder().parse(is);
+                    final var schemaElement = doc.getDocumentElement();
+                    collectSchemaAndImports(schemaElement, result);
+                }
+            }
+            final var orderedSources = orderedSources(result);
             final var sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
             sf.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
             sf.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
@@ -62,27 +83,21 @@ public class Schemas {
         }
     }
 
-    private static SchemasAndImports schemasAndImports(final NodeList schemaNodes) throws DOMException {
-        final var result = new SchemasAndImports(new HashMap<>(), new HashMap<>());
+    private static void collectSchemaAndImports(Element schemaElement, SchemasAndImports accumulator) throws DOMException {
+        final var tns = schemaElement.getAttribute("targetNamespace");
+        accumulator.nsToSchema().put(tns, schemaElement);
 
-        for (int i = 0; i != schemaNodes.getLength(); i++) {
-            final var schemaElement = (Element) schemaNodes.item(i);
-            final var tns = schemaElement.getAttribute("targetNamespace");
-            result.nsToSchema().put(tns, schemaElement);
+        final var imports = new ArrayList<String>();
+        final var importNodes = schemaElement.getElementsByTagNameNS(XMLConstants.W3C_XML_SCHEMA_NS_URI, "import");
 
-            final var imports = new ArrayList<String>();
-            final var importNodes = schemaElement.getElementsByTagNameNS(XMLConstants.W3C_XML_SCHEMA_NS_URI, "import");
-
-            for (int j = 0; j != importNodes.getLength(); j++) {
-                final var importElement = (Element) importNodes.item(j);
-                final var importedNamespace = importElement.getAttribute("namespace");
-                if (importedNamespace != null && !importedNamespace.isEmpty()) {
-                    imports.add(importedNamespace);
-                }
+        for (int j = 0; j != importNodes.getLength(); j++) {
+            final var importElement = (Element) importNodes.item(j);
+            final var importedNamespace = importElement.getAttribute("namespace");
+            if (importedNamespace != null && !importedNamespace.isEmpty()) {
+                imports.add(importedNamespace);
             }
-            result.nsToImports().put(tns, imports);
         }
-        return result;
+        accumulator.nsToImports().put(tns, imports);
     }
 
     private static Source[] orderedSources(SchemasAndImports sai) {
@@ -111,12 +126,20 @@ public class Schemas {
         orderedSources.add(new DOMSource(sai.schemaFor(namespace)));
     }
 
+    /// Compiles a combined `Schema` context directly from an ordered varargs sequence of linear, standalone XSD resource streams.
+    ///
+    /// **Note**: This method assumes that the caller provides the files manually in their required step-by-step dependency sequence.
+    ///
+    /// @param firstSchema the first xsd source
+    /// @param otherSchemas optional additional xsd sources
+    /// @return a compiled `Schema` validation instance
+    /// @throws IllegalStateException if a underlying SAX validation syntax error or environmental failure occurs
     public static Schema fromXsds(InputStreamSource firstSchema, InputStreamSource... otherSchemas) {
-
         try {
-            final SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+            final var sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
             sf.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
             sf.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+
             final var sources = Stream.concat(Stream.of(firstSchema), Stream.of(otherSchemas))
                     .map(Schemas::toSource)
                     .toArray(StreamSource[]::new);
@@ -134,5 +157,4 @@ public class Schemas {
             throw new UncheckedIOException(ex);
         }
     }
-
 }
