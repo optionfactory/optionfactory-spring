@@ -75,15 +75,18 @@ public class UnifiedValidationTest {
     public static class MethodValidationController {
 
         @GetMapping("/request-param")
-        public void requestParam(@Valid @Pattern(regexp = "[a-z]") @RequestParam("letter") String letter) {
+        public void requestParam(@Pattern(regexp = "[a-z]") @RequestParam("letter") String letter) {
+            //any @Constraint triggers the validation on arguments, no need to add @Valid
         }
 
         @PostMapping("/body-list")
-        public void bodyList(@Valid @RequestBody(required = false) @NotNull List<@Valid @NotNull Dto> request) {
+        public void bodyList(@NotNull @RequestBody(required = false) List<@Valid @NotNull Dto> request) {
+            //any @Constraint triggers the validation on arguments, no need to add @Valid
+            //nested validation triggers only if the nested type is annotated with @Valid though
         }
 
         @PostMapping("/body-list-required")
-        public void bodyListRequired(@Valid @RequestBody @NotNull List<@Valid @NotNull Dto> request) {
+        public void bodyListRequired(@NotNull @RequestBody List<@Valid @NotNull Dto> request) {
         }
 
         @PostMapping("/body-using-data-binder")
