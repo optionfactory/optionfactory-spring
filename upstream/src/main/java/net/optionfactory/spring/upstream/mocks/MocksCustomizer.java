@@ -6,6 +6,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import net.optionfactory.spring.upstream.mocks.rendering.JsonTemplateRenderer;
 import net.optionfactory.spring.upstream.mocks.rendering.MocksRenderer;
 import net.optionfactory.spring.upstream.mocks.rendering.ThymeleafRenderer;
+import org.jspecify.annotations.Nullable;
+import org.springframework.context.MessageSource;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -34,8 +36,12 @@ public class MocksCustomizer {
         return this;
     }
 
-    public MocksCustomizer defaults() {
-        return jsont().thymeleaf();
+    public MocksCustomizer defaults(@Nullable MessageSource messageSource, IDialect... dialects) {
+        return jsont().thymeleaf(messageSource, dialects);
+    }
+
+    public MocksCustomizer defaults(IDialect... dialects) {
+        return jsont().thymeleaf(dialects);
     }
 
     public MocksCustomizer jsont(String templateSuffix, JsonMapper mapper) {
@@ -51,13 +57,25 @@ public class MocksCustomizer {
         return jsont(".tpl.json", new JsonMapper());
     }
 
-    public MocksCustomizer thymeleaf(String templateSuffix, IDialect... dialects) {
-        this.renderers.add(new ThymeleafRenderer(templateSuffix, dialects));
+    public MocksCustomizer thymeleaf(@Nullable MessageSource messageSource, IDialect[] dialects, String[] templateSuffixes) {
+        this.renderers.add(new ThymeleafRenderer(messageSource, templateSuffixes, dialects));
         return this;
     }
 
+    public static final String[] DEFAULT_THYMELEAF_TEMPLATE_SUFFIXES = new String[]{
+        ".th.json",
+        ".th.xml",
+        ".th.css",
+        ".th.html",
+        ".th.txt"
+    };
+
+    public MocksCustomizer thymeleaf(@Nullable MessageSource messageSource, IDialect... dialects) {
+        return thymeleaf(messageSource, dialects, DEFAULT_THYMELEAF_TEMPLATE_SUFFIXES);
+    }
+
     public MocksCustomizer thymeleaf(IDialect... dialects) {
-        return thymeleaf(".template", dialects);
+        return thymeleaf(null, dialects, DEFAULT_THYMELEAF_TEMPLATE_SUFFIXES);
     }
 
     public MocksCustomizer response(ClientHttpResponse o) {

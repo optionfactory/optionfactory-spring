@@ -9,7 +9,7 @@ public interface ThymeleafClient {
 
     @GetExchange("/endpoint/")
     @Upstream.Endpoint("endpoint")
-    @Upstream.Mock("mock.json.template")
+    @Upstream.Mock("mock.th.json")
     Map<String, String> testEndpoint(@Upstream.Context String param);
 
 }

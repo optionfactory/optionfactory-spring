@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.GetExchange;
+import tools.jackson.core.StreamReadFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 @SpringJUnitConfig(ClientConfig.class)
@@ -32,10 +33,10 @@ public class MocksReferencingBeansTest {
 
         @Bean
         public ExampleMockClient client(ConfigurableApplicationContext ac) {
-            final JsonMapper mapper = new JsonMapper();
+            final var mapper = JsonMapper.builder().enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION).build();
 
             return UpstreamBuilder.create(ExampleMockClient.class)
-                    .requestFactoryMock(c -> c.jsont().thymeleaf())
+                    .requestFactoryMock(c -> c.jsont().thymeleaf(ac))
                     .json(mapper)
                     .applicationContext(ac)
                     .baseUri("https://hub.dummyapis.com/statuscode/")
@@ -58,7 +59,7 @@ public class MocksReferencingBeansTest {
 
         @GetExchange("/200")
         @Upstream.Endpoint("ok-endpoint")
-        @Upstream.Mock("beans.json.template")
+        @Upstream.Mock("beans.th.json")
         Map<String, String> thymeleaf(@RequestParam String id);
 
     }
