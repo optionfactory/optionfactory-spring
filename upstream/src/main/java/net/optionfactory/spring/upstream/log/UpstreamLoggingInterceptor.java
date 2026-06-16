@@ -74,7 +74,7 @@ public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
             final var parts = renderedRequest.parts();
             for (int i = 0; i != parts.size(); i++) {
                 final var part = parts.get(i);
-                logger.info("{}[t:ob][part:{}/{}]{}", prefix, i, parts.size(), typeAndBodySuffix(part.headers().getContentType(), part.body()));
+                logger.info("{}[t:ob][part:{}/{}]{}", prefix, i+1, parts.size(), typeAndBodySuffix(part.headers().getContentType(), part.body()));
             }
         }
         try {
@@ -91,7 +91,7 @@ public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
                 final var parts = renderedResponse.parts();
                 for (int i = 0; i != parts.size(); i++) {
                     final var part = parts.get(i);
-                    logger.info("{}[t:ib][ms:{}][part:{}/{}]{}", prefix, elapsed, i, parts.size(), typeAndBodySuffix(part.headers().getContentType(), part.body()));
+                    logger.info("{}[t:ib][ms:{}][part:{}/{}]{}", prefix, elapsed, i+1, parts.size(), typeAndBodySuffix(part.headers().getContentType(), part.body()));
                 }
             }
             return response;
