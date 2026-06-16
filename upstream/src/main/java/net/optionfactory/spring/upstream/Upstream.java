@@ -11,8 +11,9 @@ import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.expressions.Expressions.Type;
-import net.optionfactory.spring.upstream.rendering.BodyRendering.HeadersStrategy;
-import net.optionfactory.spring.upstream.rendering.BodyRendering.Strategy;
+import net.optionfactory.spring.upstream.rendering.PayloadsRendering.BodiesStrategy;
+import net.optionfactory.spring.upstream.rendering.PayloadsRendering.HeadersStrategy;
+import net.optionfactory.spring.upstream.rendering.PayloadsRendering.MultipartStrategy;
 import org.springframework.http.HttpStatus;
 
 /**
@@ -135,31 +136,47 @@ public @interface Upstream {
         public static final String INFIX_SCISSORS = "✂️";
         public static final int DEFAULT_MAX_SIZE = 8 * 1024;
 
-        Strategy request() default Strategy.ABBREVIATED_REDACTED;
-
-        int requestMaxSize() default DEFAULT_MAX_SIZE;
+        MultipartStrategy requestMulitpart() default MultipartStrategy.RENDER_PARTS;
 
         HeadersStrategy requestHeaders() default HeadersStrategy.SKIP;
 
-        Strategy response() default Strategy.ABBREVIATED_REDACTED;
+        BodiesStrategy requestBody() default BodiesStrategy.ABBREVIATED_REDACTED;
 
-        int responseMaxSize() default DEFAULT_MAX_SIZE;
+        int requestMaxSize() default DEFAULT_MAX_SIZE;
+
+        MultipartStrategy responseMulitpart() default MultipartStrategy.RENDER_PARTS;
 
         HeadersStrategy responseHeaders() default HeadersStrategy.SKIP;
+
+        BodiesStrategy responseBody() default BodiesStrategy.ABBREVIATED_REDACTED;
+
+        int responseMaxSize() default DEFAULT_MAX_SIZE;
 
         String infix() default INFIX_SCISSORS;
 
         public record Conf(
-                Strategy request,
-                int requestMaxSize,
+                MultipartStrategy requestMultipart,
                 HeadersStrategy requestHeaders,
-                Strategy response,
-                int responseMaxSize,
+                BodiesStrategy requestBody,
+                int requestMaxSize,
+                MultipartStrategy responseMultipart,
                 HeadersStrategy responseHeaders,
+                BodiesStrategy responseBody,
+                int responseMaxSize,
                 String infix) {
 
             public static Conf defaults() {
-                return new Conf(Strategy.ABBREVIATED_REDACTED, DEFAULT_MAX_SIZE, HeadersStrategy.SKIP, Strategy.ABBREVIATED_REDACTED, DEFAULT_MAX_SIZE, HeadersStrategy.SKIP, INFIX_SCISSORS);
+                return new Conf(
+                        MultipartStrategy.RENDER_PARTS,
+                        HeadersStrategy.SKIP,
+                        BodiesStrategy.ABBREVIATED_REDACTED,
+                        DEFAULT_MAX_SIZE,
+                        MultipartStrategy.RENDER_PARTS,
+                        HeadersStrategy.SKIP,
+                        BodiesStrategy.ABBREVIATED_REDACTED,
+                        DEFAULT_MAX_SIZE,
+                        INFIX_SCISSORS
+                );
             }
         }
 

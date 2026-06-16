@@ -16,7 +16,7 @@ import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
-import net.optionfactory.spring.upstream.rendering.BodyRendering;
+import net.optionfactory.spring.upstream.rendering.PayloadsRendering;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.client.ClientHttpRequestFactory;
@@ -34,11 +34,11 @@ public class ThreadLocalScopeHandler implements ScopeHandler {
     private final InstantSource clock;
     private final Map<Method, EndpointDescriptor> endpoints;
     private final Expressions expressions;
-    private final BodyRendering rendering;
+    private final PayloadsRendering rendering;
     private final ObservationRegistry observations;
     private final ApplicationEventPublisher publisher;
 
-    public ThreadLocalScopeHandler(Supplier<Object> principal, InstantSource clock, Map<Method, EndpointDescriptor> endpoints, Expressions expressions, BodyRendering rendering, ObservationRegistry observations, ApplicationEventPublisher publisher) {
+    public ThreadLocalScopeHandler(Supplier<Object> principal, InstantSource clock, Map<Method, EndpointDescriptor> endpoints, Expressions expressions, PayloadsRendering rendering, ObservationRegistry observations, ApplicationEventPublisher publisher) {
         this.principal = principal;
         this.clock = clock;
         this.endpoints = endpoints;

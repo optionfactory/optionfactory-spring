@@ -8,7 +8,7 @@ import java.lang.reflect.Type;
 import java.util.stream.StreamSupport;
 import net.optionfactory.spring.upstream.buffering.Buffering;
 import net.optionfactory.spring.upstream.expressions.Expressions;
-import net.optionfactory.spring.upstream.rendering.BodyRendering;
+import net.optionfactory.spring.upstream.rendering.PayloadsRendering;
 import org.springframework.core.ResolvableType;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpInputMessage;
@@ -23,7 +23,7 @@ import org.springframework.web.client.RestClientException;
 
 public record InvocationContext(
         Expressions expressions,
-        BodyRendering rendering,
+        PayloadsRendering rendering,
         MessageConverters converters,
         EndpointDescriptor endpoint,
         Object[] arguments,

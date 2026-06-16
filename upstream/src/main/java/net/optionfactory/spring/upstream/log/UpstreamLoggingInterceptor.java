@@ -15,11 +15,11 @@ import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
-import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
 import net.optionfactory.spring.upstream.expressions.Expressions;
-import net.optionfactory.spring.upstream.rendering.BodyRendering;
+import net.optionfactory.spring.upstream.rendering.PayloadsRendering;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
 
 public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
 
@@ -37,7 +37,17 @@ public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
     public void preprocess(Class<?> k, Expressions expressions, Map<Method, EndpointDescriptor> endpoints) {
         for (final var endpoint : endpoints.values()) {
             Annotations.closest(endpoint.method(), Upstream.Logging.class)
-                    .map(a -> new Upstream.Logging.Conf(a.request(), a.requestMaxSize(), a.requestHeaders(), a.response(), a.responseMaxSize(), a.responseHeaders(), a.infix()))
+                    .map(a -> new Upstream.Logging.Conf(
+                    a.requestMulitpart(),
+                    a.requestHeaders(),
+                    a.requestBody(),
+                    a.requestMaxSize(),
+                    a.responseMulitpart(),
+                    a.responseHeaders(),
+                    a.responseBody(),
+                    a.responseMaxSize(),
+                    a.infix()
+            ))
                     .ifPresent(ann -> confs.put(endpoint.method(), ann));
         }
     }
@@ -51,22 +61,38 @@ public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
         }
         final var principal = invocation.principal() == null || invocation.principal().toString().isBlank() ? "" : String.format("[user:%s]", invocation.principal());
         final var prefix = "[boot:%s][upstream:%s][ep:%s][req:%s]%s".formatted(invocation.boot(), invocation.endpoint().upstream(), invocation.endpoint().name(), invocation.id(), principal);
-        if (conf.requestHeaders() != BodyRendering.HeadersStrategy.SKIP) {
-            logger.info("{}[t:oh] headers: {}", prefix, request.headers());
+
+        final var renderedRequest = invocation.rendering().render(request, conf.requestMultipart(), conf.requestHeaders(), conf.requestBody(), conf.infix(), conf.requestMaxSize());
+
+        if (conf.requestHeaders() != PayloadsRendering.HeadersStrategy.SKIP) {
+            logger.info("{}[t:oh] headers: {}", prefix, renderedRequest.main().headers());
         }
-        if (conf.request() != BodyRendering.Strategy.SKIP) {
-            final var requestBody = request.body() == null || request.body().length == 0 ? "" : String.format(" body: %s", invocation.rendering().render(conf.request(), request.headers().getContentLength(), request.headers().getContentType(), BodySource.of(request.body()), conf.infix(), conf.requestMaxSize()));
-            logger.info("{}[t:ob] method: {} url: {}{}", prefix, request.method(), request.uri(), requestBody);
+        if (conf.requestBody() != PayloadsRendering.BodiesStrategy.SKIP) {
+
+            logger.info("{}[t:ob] method: {} url: {}{}", prefix, request.method(), renderedRequest.uri(), typeAndBodySuffix(renderedRequest.main().headers().getContentType(), renderedRequest.main().body()));
+
+            final var parts = renderedRequest.parts();
+            for (int i = 0; i != parts.size(); i++) {
+                final var part = parts.get(i);
+                logger.info("{}[t:ob][part:{}/{}]{}", prefix, i, parts.size(), typeAndBodySuffix(part.headers().getContentType(), part.body()));
+            }
         }
         try {
-            final ResponseContext response = execution.execute(invocation, request);
+            final var response = execution.execute(invocation, request);
             final long elapsed = Duration.between(request.at(), response.at()).toMillis();
-            if (conf.responseHeaders() != BodyRendering.HeadersStrategy.SKIP) {
-                logger.info("{}[t:ih][ms:{}] headers: {}", prefix, elapsed, response.headers());
+
+            final var renderedResponse = invocation.rendering().render(response, conf.responseMultipart(), conf.responseHeaders(), conf.responseBody(), conf.infix(), conf.responseMaxSize());
+
+            if (conf.responseHeaders() != PayloadsRendering.HeadersStrategy.SKIP) {
+                logger.info("{}[t:ih][ms:{}] headers: {}", prefix, elapsed, renderedResponse.main().headers());
             }
-            if (conf.response() != BodyRendering.Strategy.SKIP) {
-                final var responseBody = response.headers().getContentLength() == 0 ? "" : String.format(" type:%s body: %s", response.headers().getContentType(), invocation.rendering().render(conf.response(), response.headers().getContentLength(), response.headers().getContentType(), response.body().forInspection(false), conf.infix(), conf.responseMaxSize()));
-                logger.info("{}[t:ib][ms:{}] status: {}{}", prefix, elapsed, response.status(), responseBody);
+            if (conf.responseBody() != PayloadsRendering.BodiesStrategy.SKIP) {
+                logger.info("{}[t:ib][ms:{}] status: {}{}", prefix, elapsed, response.status(), typeAndBodySuffix(renderedResponse.main().headers().getContentType(), renderedResponse.main().body()));
+                final var parts = renderedResponse.parts();
+                for (int i = 0; i != parts.size(); i++) {
+                    final var part = parts.get(i);
+                    logger.info("{}[t:ib][ms:{}][part:{}/{}]{}", prefix, elapsed, i, parts.size(), typeAndBodySuffix(part.headers().getContentType(), part.body()));
+                }
             }
             return response;
         } catch (Exception ex) {
@@ -76,4 +102,14 @@ public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
         }
     }
 
+    private static String typeAndBodySuffix(MediaType type, String body) {
+        final var sb = new StringBuilder();
+        if (type != null) {
+            sb.append(" type: ").append(type);
+        }
+        if (!body.isEmpty()) {
+            sb.append(" body: ").append(body);
+        }
+        return sb.toString();
+    }
 }

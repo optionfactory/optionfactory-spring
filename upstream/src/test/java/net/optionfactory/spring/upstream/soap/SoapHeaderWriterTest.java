@@ -6,8 +6,8 @@ import jakarta.xml.soap.SOAPException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
-import net.optionfactory.spring.upstream.rendering.BodyRendering;
-import net.optionfactory.spring.upstream.rendering.BodyRendering.Strategy;
+import net.optionfactory.spring.upstream.rendering.PayloadsRendering;
+import net.optionfactory.spring.upstream.rendering.PayloadsRendering.BodiesStrategy;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -27,7 +27,7 @@ public class SoapHeaderWriterTest {
         soapMessage.saveChanges();
         soapMessage.writeTo(baos);
 
-        final var bodyRendering = BodyRendering.builder().build();
+        final var bodyRendering = PayloadsRendering.builder().build();
 
         final var bodySource = BodySource.of(
                 """
@@ -47,7 +47,7 @@ public class SoapHeaderWriterTest {
             <SOAP-ENV:Body/>
         </SOAP-ENV:Envelope>
         """, StandardCharsets.UTF_8);
-        final var expected = bodyRendering.render(Strategy.ABBREVIATED_REDACTED, 0, MediaType.APPLICATION_XML, bodySource, "X", 100_000);
+        final var expected = bodyRendering.renderBody(BodiesStrategy.ABBREVIATED_REDACTED, 0, MediaType.APPLICATION_XML, bodySource, "X", 100_000);
 
         Assertions.assertEquals(expected, new String(baos.toByteArrayUnsafe(), StandardCharsets.UTF_8));
     }

@@ -44,7 +44,7 @@
             td.key {
                 font-weight: 700;
                 vertical-align: top;
-                width: 150px;
+                width: 160px;
             }
             table.heading {
                 background-color: /*[(${color})]*/ #006347;
@@ -84,66 +84,99 @@
             </tr>
         </table>
         <table data-th-each="alert: ${alerts}" class="alert">
-            <tr>
-                <td colspan="2">
-                    <h2>Request [[${alert.invocation.boot}]].[[${alert.invocation.id}]]</h2>
-                    <h2>Upstream [[${alert.invocation.endpoint.upstream}]]</h2>
-                    <h2>Endpoint [[${alert.invocation.endpoint.name}]]</h2>
-                </td>
-            </tr>
-            
-            <tr data-th-if="${alert.invocation.principal != null}" data-th-with="principal=${alert.invocation.principal}" data-th-remove="tag">
-                <!--/*/ <th-block data-th-replace="${users}" /> /*/-->
-            </tr>
-            
-            <tr><td colspan="2"><h3>Request</h3></td></tr>
-            <tr>
-                <td class="key">Method:</td>
-                <td>[[${alert.request.method}]]</td>
-            </tr>
-            <tr>
-                <td class="key">URI:</td>
-                <td>[[${alert.request.uri}]]</td>
-            </tr>
-            <tr>
-                <td class="key">Sent at:</td>
-                <td>[[${alert.request.at}]]</td>
-            </tr>
-            <tr>
-                <td class="key">Body:</td>
-                <td data-th-if="${alert.request.body.length == 0}">&lt;empty&gt;</td>
-            </tr>
-            <tr data-th-if="${alert.request.body.length > 0}">
-                <td colspan="2">
-                    <pre>[[${#bodies.abbreviated(alert.invocation, alert.request, 2048)}]]</pre>                    
-                </td>
-            </tr>
-            <tbody data-th-remove="tag" data-th-if="${alert.response != null}" data-th-with="response=${alert.response}">
+            <tbody data-th-remove="tag" data-th-with="redactedRequest=${#bodies.abbreviated(alert.invocation, alert.request, 2048)}">
+                <tr>
+                    <td colspan="2">
+                        <h2>Request [[${alert.invocation.boot}]].[[${alert.invocation.id}]]</h2>
+                        <h2>Upstream [[${alert.invocation.endpoint.upstream}]]</h2>
+                        <h2>Endpoint [[${alert.invocation.endpoint.name}]]</h2>
+                    </td>
+                </tr>
+
+                <tr data-th-if="${alert.invocation.principal != null}" data-th-with="principal=${alert.invocation.principal}" data-th-remove="tag">
+                    <!--/*/ <th-block data-th-replace="${users}" /> /*/-->
+                </tr>
+
+                <tr><td colspan="2"><h3>Request</h3></td></tr>
+                <tr>
+                    <td class="key">Method:</td>
+                    <td>[[${alert.request.method}]]</td>
+                </tr>
+                <tr>
+                    <td class="key">URI:</td>
+                    <td>[[${redactedRequest.uri}]]</td>
+                </tr>
+                <tr>
+                    <td class="key">Sent at:</td>
+                    <td>[[${alert.request.at}]]</td>
+                </tr>
+                <tr>
+                    <td class="key">Body:</td>
+                    <td data-th-if="${redactedRequest.main.body.length == 0}">&lt;empty&gt;</td>
+                </tr>
+                <tr data-th-if="${redactedRequest.main.body.length > 0}">
+                    <td colspan="2">
+                        <pre>[[${redactedRequest.main.body}]]</pre>                    
+                    </td>
+                </tr>
+                <th-block data-th-remove="tag" data-th-each="part: ${redactedRequest.parts}">
+                    <tr>                        
+                        <td class="key">Content-Disposition:</td>
+                        <td>[[${part.headers.getContentDisposition()}]]</td>                    
+                    </tr>
+                    <tr>                        
+                        <td class="key">Content-Type:</td>
+                        <td>[[${part.headers.getContentType()}]]</td>                    
+                    </tr>
+                    <tr>                        
+                        <td colspan="2">
+                            <pre>[[${part.body)}]]</pre>                    
+                        </td>                    
+                    </tr>
+                </th-block>                
+            </tbody>
+
+            <tbody data-th-remove="tag" data-th-if="${alert.response != null}" data-th-with="redactedResponse=${#bodies.abbreviated(alert.invocation, alert.response, 2048)}">
 
                 <tr>
                     <td colspan="2"><h3>Response</h3></td>
                 </tr>
-                <tr data-th-if="${response.status != null}">
+                <tr data-th-if="${alert.response.status != null}">
                     <td class="key">HTTP status:</td>
-                    <td>[[${response.status}]]</td>
+                    <td>[[${alert.response.status}]]</td>
                 </tr>
-                <tr data-th-if="${response.headers != null}">
+                <tr data-th-if="${!redactedResponse.main.headers.isEmpty()}">
                     <td class="key">Content-Type:</td>
-                    <td>[[${response.headers.getContentType()}]]</td>
+                    <td>[[${redactedResponse.main.headers.getContentType()}]]</td>
                 </tr>
                 <tr>
                     <td class="key">Received at:</td>
-                    <td>[[${response.at}]]</td>
+                    <td>[[${alert.response.at}]]</td>
                 </tr>
                 <tr>
                     <td class="key">Body:</td>
                     <td></td>
                 </tr>            
-                <tr>
+                <tr data-th-if="${redactedResponse.main.body.length > 0}">
                     <td colspan="2">
-                        <pre>[[${#bodies.abbreviated(alert.invocation, alert.response, 2048)}]]</pre>                    
+                        <pre>[[${redactedResponse.main.body}]]</pre>                    
                     </td>
                 </tr>
+                <th-block data-th-remove="tag" data-th-each="part: ${redactedResponse.parts}">
+                    <tr>                        
+                        <td class="key">Content-Disposition:</td>
+                        <td>[[${part.headers.getContentDisposition()}]]</td>                    
+                    </tr>
+                    <tr>                        
+                        <td class="key">Content-Type:</td>
+                        <td>[[${part.headers.getContentType()}]]</td>                    
+                    </tr>
+                    <tr>                        
+                        <td colspan="2">
+                            <pre>[[${part.body)}]]</pre>                    
+                        </td>                    
+                    </tr>
+                </th-block>
             </tbody>
             <tbody data-th-remove="tag" data-th-if="${alert.exception != null}" data-th-with="exception=${alert.exception}">
                 <tr>

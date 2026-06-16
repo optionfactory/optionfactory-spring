@@ -9,7 +9,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.List;
 import java.util.stream.Stream;
 import net.optionfactory.spring.email.EmailMessage;
 import net.optionfactory.spring.email.EmailPaths;
@@ -28,7 +27,7 @@ import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
 import net.optionfactory.spring.upstream.expressions.Expressions;
-import net.optionfactory.spring.upstream.rendering.BodyRendering;
+import net.optionfactory.spring.upstream.rendering.PayloadsRendering;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -118,7 +117,7 @@ public class AlertsEmailsSpoolerTest {
         final var event1 = new UpstreamAlertEvent(
                 new InvocationContext(
                         new Expressions(null, null),
-                        BodyRendering.builder().build(),
+                        PayloadsRendering.builder().build(),
                         new InvocationContext.MessageConverters(HttpMessageConverters.forClient().build()),
                         new EndpointDescriptor("upstream", "endpoint", Object.class.getMethod("toString"), null),
                         new Object[0],
@@ -147,7 +146,7 @@ public class AlertsEmailsSpoolerTest {
         final var event2 = new UpstreamAlertEvent(
                 new InvocationContext(
                         new Expressions(null, null),
-                        BodyRendering.builder().build(),
+                        PayloadsRendering.builder().build(),
                         new InvocationContext.MessageConverters(HttpMessageConverters.forClient().build()),
                         new EndpointDescriptor("upstream2", "endpoint2", Object.class.getMethod("toString"), null),
                         new Object[0],

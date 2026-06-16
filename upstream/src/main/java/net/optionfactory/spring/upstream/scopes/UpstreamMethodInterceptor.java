@@ -18,7 +18,7 @@ import net.optionfactory.spring.upstream.contexts.InvocationContext.MessageConve
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
-import net.optionfactory.spring.upstream.rendering.BodyRendering;
+import net.optionfactory.spring.upstream.rendering.PayloadsRendering;
 import static net.optionfactory.spring.upstream.scopes.ScopeHandler.BOOT_ID;
 import static net.optionfactory.spring.upstream.scopes.ScopeHandler.INVOCATION_COUNTER;
 import org.aopalliance.intercept.MethodInterceptor;
@@ -37,13 +37,13 @@ public class UpstreamMethodInterceptor implements MethodInterceptor {
     private final ThreadLocal<ResponseContext> responses;
     private final Supplier<Object> principal;
     private final Expressions expressions;
-    private final BodyRendering rendering;
+    private final PayloadsRendering rendering;
     private final MessageConverters converters;
     private final ObservationRegistry observations;
     private final InstantSource clock;
     private final ApplicationEventPublisher publisher;
 
-    public UpstreamMethodInterceptor(Map<Method, EndpointDescriptor> endpoints, ThreadLocal<InvocationContext> invocations, Supplier<Object> principal, Expressions expressions, BodyRendering rendering, MessageConverters converters, ObservationRegistry observations,
+    public UpstreamMethodInterceptor(Map<Method, EndpointDescriptor> endpoints, ThreadLocal<InvocationContext> invocations, Supplier<Object> principal, Expressions expressions, PayloadsRendering rendering, MessageConverters converters, ObservationRegistry observations,
             ThreadLocal<RequestContext> requests,
             ThreadLocal<ResponseContext> responses,
             InstantSource clock,

@@ -3,7 +3,6 @@ package net.optionfactory.spring.upstream;
 import io.micrometer.observation.ObservationRegistry;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.time.InstantSource;
@@ -29,7 +28,6 @@ import net.optionfactory.spring.upstream.buffering.InputStreamHttpMessageConvert
 import net.optionfactory.spring.upstream.buffering.StreamHttpMessageConverter;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext.MessageConverters;
-import net.optionfactory.spring.upstream.errors.RestClientUpstreamException;
 import net.optionfactory.spring.upstream.errors.UpstreamErrorOnErrorStatusHandler;
 import net.optionfactory.spring.upstream.errors.UpstreamErrorOnReponseHandler;
 import net.optionfactory.spring.upstream.expressions.Expressions;
@@ -41,7 +39,7 @@ import net.optionfactory.spring.upstream.mocks.MocksCustomizer;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpRequestFactory;
 import net.optionfactory.spring.upstream.mocks.UpstreamHttpResponseFactory;
 import net.optionfactory.spring.upstream.mocks.rendering.MocksRenderer;
-import net.optionfactory.spring.upstream.rendering.BodyRendering;
+import net.optionfactory.spring.upstream.rendering.PayloadsRendering;
 import net.optionfactory.spring.upstream.scopes.ScopeHandler;
 import net.optionfactory.spring.upstream.scopes.ThreadLocalScopeHandler;
 import net.optionfactory.spring.upstream.scopes.UpstreamHttpExchangeAdapter;
@@ -61,10 +59,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.http.HttpRequest;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.ClientHttpRequestFactory;
-import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
 import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverters;
@@ -105,7 +100,7 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
     protected Supplier<Object> principal;
     protected InstantSource clock;
 
-    protected BodyRendering rendering;
+    protected PayloadsRendering rendering;
 
     protected ObservationRegistry observations;
     protected ConfigurableApplicationContext expressionsApplicationContext;
@@ -674,8 +669,8 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
      * @param customizer the customizer
      * @return this builder
      */
-    public UpstreamBuilder<T> redact(Consumer<BodyRendering.Configurer> customizer) {
-        final var builder = BodyRendering.builder();
+    public UpstreamBuilder<T> redact(Consumer<PayloadsRendering.Configurer> customizer) {
+        final var builder = PayloadsRendering.builder();
         customizer.accept(builder);
         this.rendering = builder.build();
         return this;
@@ -750,7 +745,7 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
         };
         final var expressions = new Expressions(expressionsApplicationContext, expressionVars);
 
-        final var renderingOrDefault = rendering != null ? rendering : BodyRendering.builder().build();
+        final var renderingOrDefault = rendering != null ? rendering : PayloadsRendering.builder().build();
         final var scopeHandler = new ThreadLocalScopeHandler(principalOrDefault, clockOrDefault, endpoints, expressions, renderingOrDefault, obs, pub);
 
         final var requestFactory = this.rfp.configure(scopeHandler, klass, expressions, endpoints);

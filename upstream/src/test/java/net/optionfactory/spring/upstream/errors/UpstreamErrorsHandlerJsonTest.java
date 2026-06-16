@@ -3,7 +3,6 @@ package net.optionfactory.spring.upstream.errors;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import tools.jackson.databind.json.JsonMapper;
