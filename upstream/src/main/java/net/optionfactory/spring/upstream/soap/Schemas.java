@@ -41,6 +41,10 @@ public class Schemas {
         }
     }
 
+    public record SchemaAndProtocols(Schema schema, List<SoapJaxbHttpMessageConverter.Protocol> protocols) {
+
+    }
+
     /// Compiles a single unified `Schema` validator from a primary WSDL resource and any optional 
     /// standalone companion XSD companion documents.
     ///
@@ -48,18 +52,28 @@ public class Schemas {
     ///
     /// @param wsdlSource the primary WSDL stream input source containing core services and inline types
     /// @param companionXsds optional secondary standalone XSD streams containing cross-referenced definitions
-    /// @return a configured, sequentially ordered `Schema` validation instance
+    /// @return a configured, sequentially ordered `Schema` validation instance and detected supported protocols
     /// @throws IllegalStateException if an XML parsing error occurs, a circular schema dependency loop is found, or validator compilation fails
-    public static Schema fromWsdl(InputStreamSource wsdlSource, InputStreamSource... companionXsds) {
+    public static SchemaAndProtocols fromWsdl(InputStreamSource wsdlSource, InputStreamSource... companionXsds) {
         try {
             final var dbf = DocumentBuilderFactory.newInstance();
             dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
             dbf.setNamespaceAware(true);
 
+            final var protocols = new ArrayList<SoapJaxbHttpMessageConverter.Protocol>();
+
             final var result = new SchemasAndImports(new HashMap<>(), new HashMap<>());
             try (InputStream is = wsdlSource.getInputStream()) {
                 final var doc = dbf.newDocumentBuilder().parse(is);
+
+                if (doc.getElementsByTagNameNS("http://schemas.xmlsoap.org/wsdl/soap/", "binding").getLength() > 0) {
+                    protocols.add(SoapJaxbHttpMessageConverter.Protocol.SOAP_1_1);
+                }
+                if (doc.getElementsByTagNameNS("http://schemas.xmlsoap.org/wsdl/soap12/", "binding").getLength() > 0) {
+                    protocols.add(SoapJaxbHttpMessageConverter.Protocol.SOAP_1_2);
+                }
+
                 final var schemaNodes = doc.getElementsByTagNameNS(XMLConstants.W3C_XML_SCHEMA_NS_URI, "schema");
                 for (int i = 0; i != schemaNodes.getLength(); i++) {
                     collectSchemaAndImports((Element) schemaNodes.item(i), result);
@@ -77,7 +91,7 @@ public class Schemas {
             final var sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
             sf.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
             sf.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
-            return sf.newSchema(orderedSources);
+            return new SchemaAndProtocols(sf.newSchema(orderedSources), protocols);
         } catch (Exception ex) {
             throw new IllegalStateException("Cannot load schemas from WSDL", ex);
         }
