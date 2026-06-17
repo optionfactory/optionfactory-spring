@@ -27,6 +27,7 @@ public class JavaEmitter implements SourceEmitter {
     private final Map<String, String> translations;
     private final DtoStyle dtoStyle;
     private static final ClassName NULLABLE = ClassName.get("org.jspecify.annotations", "Nullable");
+    private static final ClassName NONNULL = ClassName.get("org.jspecify.annotations", "NonNull");
 
     public enum DtoStyle {
         RECORDS, CLASSES;
@@ -90,7 +91,7 @@ public class JavaEmitter implements SourceEmitter {
         }
 
         if (root) {
-            typeBuilder.addJavadoc("Generated from {@code $L}", dtoClass.getName());
+            typeBuilder.addJavadoc("Mapped from {@code $L}", dtoClass.getName());
         } else {
             typeBuilder.addModifiers(Modifier.STATIC);
         }
@@ -104,6 +105,9 @@ public class JavaEmitter implements SourceEmitter {
                 if (field.nullable()) {
                     fieldSpecBuilder.addAnnotation(NULLABLE);
                 }
+                if (field.nonNull()) {
+                    fieldSpecBuilder.addAnnotation(NONNULL);
+                }
                 typeBuilder.addField(fieldSpecBuilder.build());
             }
         } else {
@@ -113,6 +117,9 @@ public class JavaEmitter implements SourceEmitter {
                 final var paramSpecBuilder = ParameterSpec.builder(fieldType, field.name());
                 if (field.nullable()) {
                     paramSpecBuilder.addAnnotation(NULLABLE);
+                }
+                if (field.nonNull()) {
+                    paramSpecBuilder.addAnnotation(NONNULL);
                 }
                 constructorBuilder.addParameter(paramSpecBuilder.build());
             }
@@ -138,7 +145,7 @@ public class JavaEmitter implements SourceEmitter {
         final var enumBuilder = TypeSpec.enumBuilder(simpleName).addModifiers(Modifier.PUBLIC);
 
         if (root) {
-            enumBuilder.addJavadoc("Generated from {@code $L}", enumClass.getName());
+            enumBuilder.addJavadoc("Mapped from {@code $L}", enumClass.getName());
         } else {
             enumBuilder.addModifiers(Modifier.STATIC);
         }

@@ -6,6 +6,9 @@
         <artifactId>optionfactory-spring</artifactId>
         <version>24.13-SNAPSHOT</version>
     </parent>
+    <prerequisites>
+        <maven>3.6.3</maven>
+    </prerequisites>
     <artifactId>downstream-maven-plugin</artifactId>
     <description>optionfactory-spring downstream-maven-plugin</description>
     <name>${project.groupId}:${project.artifactId}</name>

@@ -7,7 +7,6 @@ import java.lang.reflect.ParameterizedType;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Stream;
 import net.optionfactory.spring.downstream.Downstream;
 import net.optionfactory.spring.downstream.plugin.reflection.Reflection;
 
@@ -71,10 +70,9 @@ public class Payloads {
         for (final Class<?> nested : clazz.getDeclaredClasses()) {
             processClassIfPayload(result, nested);
         }
-        Reflection.superclasses(clazz, Object.class).stream()
-                .flatMap(c -> Stream.of(c.getDeclaredFields()))
-                .filter(field -> !field.isSynthetic())
-                .forEach(field -> registerIfPayload(result, field.getAnnotatedType()));
+
+        Reflection.candidateFields(clazz, Object.class)
+                .forEach(field -> registerIfPayload(result, field.annotatedType()));
     }
 
 }
