@@ -19,7 +19,7 @@ import net.optionfactory.spring.email.inliner.CssInliner;
 import net.optionfactory.spring.email.spooling.BufferedScheduledSpooler;
 import net.optionfactory.spring.thymeleaf.SingletonDialect;
 import net.optionfactory.spring.upstream.alerts.UpstreamAlertEvent;
-import net.optionfactory.spring.upstream.alerts.spooler.AlertsEmailsSpoolerTest.Conf;
+import net.optionfactory.spring.upstream.alerts.spooler.AlertsEmailsSpoolerExampleTest.Conf;
 import net.optionfactory.spring.upstream.buffering.Buffering;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
@@ -45,7 +45,7 @@ import org.springframework.scheduling.concurrent.SimpleAsyncTaskScheduler;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 @SpringJUnitConfig(Conf.class)
-public class AlertsEmailsSpoolerTest {
+public class AlertsEmailsSpoolerExampleTest {
 
     @EnableScheduling
     @EnableAsync

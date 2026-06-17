@@ -29,6 +29,14 @@
                 border-bottom: 1px solid /*[(${color})]*/ #006347;
                 margin: 18px 0;
             }
+            h4 {
+                text-align: left;
+                font-weight: 400;
+                color: /*[(${color})]*/ #006347;
+                font-size: 16px;
+                border-bottom: 1px solid /*[(${color})]*/ #006347;
+                margin: 18px 0;
+            }
             table {
                 font-family: Arial;
                 max-width: 1000px;
@@ -110,7 +118,7 @@
                     <td class="key">Sent at:</td>
                     <td>[[${alert.request.at}]]</td>
                 </tr>
-                <tr>
+                <tr data-th-if="${redactedRequest.parts.isEmpty()}">
                     <td class="key">Body:</td>
                     <td data-th-if="${redactedRequest.main.body.length == 0}">&lt;empty&gt;</td>
                 </tr>
@@ -120,17 +128,20 @@
                     </td>
                 </tr>
                 <th-block data-th-remove="tag" data-th-each="part: ${redactedRequest.parts}">
-                    <tr>                        
+                    <tr>
+                        <td colspan="2"><h4>Request part [[${partStat.index + 1}]]/[[${redactedRequest.parts.size()}]]</h4></td>
+                    </tr>
+                    <tr data-th-if="${part.headers.getContentDisposition() != null}">
                         <td class="key">Content-Disposition:</td>
                         <td>[[${part.headers.getContentDisposition()}]]</td>                    
                     </tr>
-                    <tr>                        
+                    <tr data-th-if="${part.headers.getContentType() != null}">
                         <td class="key">Content-Type:</td>
                         <td>[[${part.headers.getContentType()}]]</td>                    
                     </tr>
                     <tr>                        
                         <td colspan="2">
-                            <pre>[[${part.body)}]]</pre>                    
+                            <pre>[[${part.body}]]</pre>                    
                         </td>                    
                     </tr>
                 </th-block>                
@@ -153,7 +164,7 @@
                     <td class="key">Received at:</td>
                     <td>[[${alert.response.at}]]</td>
                 </tr>
-                <tr>
+                <tr data-th-if="${redactedResponse.parts.isEmpty()}">
                     <td class="key">Body:</td>
                     <td></td>
                 </tr>            
@@ -163,17 +174,20 @@
                     </td>
                 </tr>
                 <th-block data-th-remove="tag" data-th-each="part: ${redactedResponse.parts}">
-                    <tr>                        
+                    <tr>
+                        <td colspan="2"><h4>Response part [[${partStat.index + 1}]]/[[${redactedResponse.parts.size()}]]</h4></td>
+                    </tr>                    
+                    <tr data-th-if="${part.headers.getContentDisposition() != null}">
                         <td class="key">Content-Disposition:</td>
                         <td>[[${part.headers.getContentDisposition()}]]</td>                    
                     </tr>
-                    <tr>                        
+                    <tr data-th-if="${part.headers.getContentType() != null}">
                         <td class="key">Content-Type:</td>
                         <td>[[${part.headers.getContentType()}]]</td>                    
                     </tr>
                     <tr>                        
                         <td colspan="2">
-                            <pre>[[${part.body)}]]</pre>                    
+                            <pre>[[${part.body}]]</pre>                    
                         </td>                    
                     </tr>
                 </th-block>

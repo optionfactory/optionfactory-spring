@@ -83,16 +83,14 @@ public record EmailMessage(
          * @param dialects the dialects to be registered
          * @return the template engine
          */
-        public SpringTemplateEngine string(TemplateMode mode, MessageSource ms, IDialect... dialects) {
+        public SpringTemplateEngine string(TemplateMode mode, @Nullable MessageSource ms, IDialect... dialects) {
             final var resolver = new StringTemplateResolver();
             resolver.setOrder(1);
             resolver.setTemplateMode(mode);
             resolver.setCacheable(true);
             final var engine = new SpringTemplateEngine();
             engine.addTemplateResolver(resolver);
-            if(ms != null){
-                engine.setTemplateEngineMessageSource(ms);
-            }
+            engine.setTemplateEngineMessageSource(ms);
             return engine;
         }
 
@@ -103,7 +101,7 @@ public record EmailMessage(
          * @param dialects the dialects to be registered
          * @return the template engine
          */
-        public SpringTemplateEngine text(String prefix, MessageSource ms, IDialect... dialects) {
+        public SpringTemplateEngine text(String prefix, @Nullable MessageSource ms, IDialect... dialects) {
             final var resolver = new ClassLoaderTemplateResolver();
             resolver.setOrder(1);
             resolver.setResolvablePatterns(Set.of("*.txt"));
@@ -114,9 +112,7 @@ public record EmailMessage(
 
             final var engine = new SpringTemplateEngine();
             engine.addTemplateResolver(resolver);
-            if(ms != null){
-                engine.setTemplateEngineMessageSource(ms);
-            }            
+            engine.setTemplateEngineMessageSource(ms);
             for (IDialect dialect : dialects) {
                 engine.addDialect(dialect);
             }
@@ -130,7 +126,7 @@ public record EmailMessage(
          * @param dialects the dialects to be registered
          * @return the template engine
          */
-        public SpringTemplateEngine html(String prefix, MessageSource ms, IDialect... dialects) {
+        public SpringTemplateEngine html(String prefix, @Nullable MessageSource ms, IDialect... dialects) {
             final var resolver = new ClassLoaderTemplateResolver();
             resolver.setOrder(1);
             resolver.setResolvablePatterns(Set.of("*.html"));
@@ -141,9 +137,7 @@ public record EmailMessage(
 
             final var engine = new SpringTemplateEngine();
             engine.addTemplateResolver(resolver);
-            if(ms != null){
-                engine.setTemplateEngineMessageSource(ms);
-            }            
+            engine.setTemplateEngineMessageSource(ms);
             for (IDialect dialect : dialects) {
                 engine.addDialect(dialect);
             }
