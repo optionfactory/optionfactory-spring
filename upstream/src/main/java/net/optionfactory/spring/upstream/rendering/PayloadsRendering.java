@@ -37,12 +37,15 @@ public class PayloadsRendering {
 
     private final XsltRedactor xsltRedactor;
     private final JsonRedactor jsonRedactor;
+    private final FormUrlencodedRedactor formUrlencodedRedactor;
     private final UriRedactor uriRedactor;
+    
     private final HttpHeadersRedactor headersRedactor;
 
-    public PayloadsRendering(XsltRedactor xsltRedactor, JsonRedactor jsonRedactor, UriRedactor uriRedactor, HttpHeadersRedactor headersRedactor) {
+    public PayloadsRendering(XsltRedactor xsltRedactor, JsonRedactor jsonRedactor, FormUrlencodedRedactor formUrlencodedRedactor, UriRedactor uriRedactor, HttpHeadersRedactor headersRedactor) {
         this.xsltRedactor = xsltRedactor;
         this.jsonRedactor = jsonRedactor;
+        this.formUrlencodedRedactor = formUrlencodedRedactor;
         this.uriRedactor = uriRedactor;
         this.headersRedactor = headersRedactor;
     }
@@ -131,9 +134,12 @@ public class PayloadsRendering {
                 if ("xml".equals(subtype) || subtype.endsWith("+xml")) {
                     return xsltRedactor.redact(source);
                 }
+                if(type.equals(MediaType.APPLICATION_FORM_URLENCODED)){
+                    return formUrlencodedRedactor.redact(source);
+                }
             }
         } catch (RuntimeException ex) {
-            //fallback to oneline
+            //fallback to unredacted oneline
         }
         return new String(source.bytes(), StandardCharsets.UTF_8).replaceAll("[\r\n]+", "");
     }
@@ -213,21 +219,21 @@ public class PayloadsRendering {
         Configurer jsonPtr(String jsonPtrExpression);
 
         /**
-         * Configures a replacement for query parameter.
+         * Configures a replacement for a request parameter.
          *
          * @param qparam the query parameter
          * @param replacement the replacement
          * @return this configurer
          */
-        Configurer query(String qparam, String replacement);
+        Configurer param(String qparam, String replacement);
 
         /**
-         * Configures a replacement for query parameter.
+         * Configures a replacement for a request parameter.
          *
          * @param qparam the query parameter
          * @return this configurer
          */
-        Configurer query(String qparam);
+        Configurer param(String qparam);
 
         /**
          * Configures a replacement for an HTTP header.
@@ -256,7 +262,7 @@ public class PayloadsRendering {
         private final Map<String, String> attributes = new HashMap<>();
         private final Map<JsonPointer, String> jsonPtrs = new HashMap<>();
         private final Map<String, String> headerRedactions = new HashMap<>();
-        private final Map<String, String> uriRedactions = new HashMap<>();
+        private final Map<String, String> paramsRedactions = new HashMap<>();
 
         @Override
         public Builder namespace(String prefix, String uri) {
@@ -298,14 +304,14 @@ public class PayloadsRendering {
         }
 
         @Override
-        public Builder query(String qparam, String replacement) {
-            uriRedactions.put(qparam, replacement);
+        public Builder param(String qparam, String replacement) {
+            paramsRedactions.put(qparam, replacement);
             return this;
         }
 
         @Override
-        public Builder query(String qparam) {
-            return query(qparam, DEFAULT_REPLACEMENT);
+        public Builder param(String qparam) {
+            return param(qparam, DEFAULT_REPLACEMENT);
         }
 
         @Override
@@ -322,9 +328,10 @@ public class PayloadsRendering {
         public PayloadsRendering build() {
             final var xsltRedactor = XsltRedactor.Factory.INSTANCE.create(namespaces, attributes, tags);
             final var jsonRedactor = new JsonRedactor(new JsonMapper(), jsonPtrs);
-            final var uriRedactor = new UriRedactor(uriRedactions);
+            final var formUrlEncodedRedactor = new FormUrlencodedRedactor(paramsRedactions);
+            final var uriRedactor = new UriRedactor(paramsRedactions);
             final var headersRedactor = new HttpHeadersRedactor(headerRedactions);
-            return new PayloadsRendering(xsltRedactor, jsonRedactor, uriRedactor, headersRedactor);
+            return new PayloadsRendering(xsltRedactor, jsonRedactor, formUrlEncodedRedactor, uriRedactor, headersRedactor);
         }
     }
 

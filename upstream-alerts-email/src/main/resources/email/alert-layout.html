@@ -129,7 +129,7 @@
                 </tr>
                 <th-block data-th-remove="tag" data-th-each="part: ${redactedRequest.parts}">
                     <tr>
-                        <td colspan="2"><h4>Request part [[${partStat.index + 1}]]/[[${redactedRequest.parts.size()}]]</h4></td>
+                        <td colspan="2"><h4>Request part [[${partStat.count}]]/[[${redactedRequest.parts.size()}]]</h4></td>
                     </tr>
                     <tr data-th-if="${part.headers.getContentDisposition() != null}">
                         <td class="key">Content-Disposition:</td>
@@ -175,7 +175,7 @@
                 </tr>
                 <th-block data-th-remove="tag" data-th-each="part: ${redactedResponse.parts}">
                     <tr>
-                        <td colspan="2"><h4>Response part [[${partStat.index + 1}]]/[[${redactedResponse.parts.size()}]]</h4></td>
+                        <td colspan="2"><h4>Response part [[${partStat.count}]]/[[${redactedResponse.parts.size()}]]</h4></td>
                     </tr>                    
                     <tr data-th-if="${part.headers.getContentDisposition() != null}">
                         <td class="key">Content-Disposition:</td>
