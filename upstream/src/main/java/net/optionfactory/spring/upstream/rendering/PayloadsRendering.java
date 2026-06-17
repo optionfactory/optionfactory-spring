@@ -304,14 +304,14 @@ public class PayloadsRendering {
         }
 
         @Override
-        public Builder param(String qparam, String replacement) {
-            paramsRedactions.put(qparam, replacement);
+        public Builder param(String requestParam, String replacement) {
+            paramsRedactions.put(requestParam, replacement);
             return this;
         }
 
         @Override
-        public Builder param(String qparam) {
-            return param(qparam, DEFAULT_REPLACEMENT);
+        public Builder param(String requestParam) {
+            return param(requestParam, DEFAULT_REPLACEMENT);
         }
 
         @Override
