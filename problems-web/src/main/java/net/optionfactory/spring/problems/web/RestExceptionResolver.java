@@ -19,6 +19,8 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import net.optionfactory.spring.problems.Failure;
 import net.optionfactory.spring.problems.Problem;
+import net.optionfactory.spring.problems.web.l10n.AggregateMessageSource;
+import net.optionfactory.spring.problems.web.l10n.FallbackMessageSource;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.ResourceBundleMessageSource;
@@ -68,31 +70,17 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
     private final List<FailureTransformer> transformers;
     private final MessageSource messageSource;
 
-    public enum Options {
-        INCLUDE_DETAILS, OMIT_DETAILS;
+    public enum Details {
+        INCLUDE, OMIT;
     }
 
     public static Builder builder() {
         return new Builder();
     }
 
-    public static RestExceptionResolver withDefaults(Options options, JsonMapper mapper) {
-        final var builder = new Builder().withOptions(options);
-        if (ClassUtils.isPresent("net.optionfactory.spring.upstream.errors.RestClientUpstreamException", RestExceptionResolver.class.getClassLoader())) {
-            try {
-                builder.withTransformer((FailureTransformer) Class.forName("net.optionfactory.spring.problems.web.upstream.UpstreamFailureTransformer")
-                        .getDeclaredConstructor()
-                        .newInstance());
-            } catch (Exception ex) {
-                throw new IllegalStateException("Failed to instantiate UpstreamFailureTransformer", ex);
-            }
-        }
-        return builder.build(mapper);
-    }
-
     public static class Builder {
 
-        private Options options = Options.INCLUDE_DETAILS;
+        private Details options = Details.OMIT;
         private final List<FailureTransformer> transformers = new ArrayList<>();
         private MessageSource messageSource;
 
@@ -101,8 +89,36 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             return this;
         }
 
-        public Builder withOptions(Options options) {
+        public Builder withUpstreamTransformer() {
+            try {
+                withTransformer((FailureTransformer) Class.forName("net.optionfactory.spring.problems.web.upstream.UpstreamFailureTransformer")
+                        .getDeclaredConstructor()
+                        .newInstance());
+            } catch (Exception ex) {
+                throw new IllegalStateException("Failed to instantiate UpstreamFailureTransformer", ex);
+            }
+            return this;
+        }
+
+        public Builder withUpstreamTransformerIfPresent() {
+            if (ClassUtils.isPresent("net.optionfactory.spring.upstream.errors.RestClientUpstreamException", RestExceptionResolver.class.getClassLoader())) {
+                return withUpstreamTransformer();
+            }
+            return this;
+        }
+
+        public Builder withDetails(Details options) {
             this.options = options;
+            return this;
+        }
+
+        public Builder withDetails() {
+            this.options = Details.INCLUDE;
+            return this;
+        }
+
+        public Builder withoutDetails() {
+            this.options = Details.OMIT;
             return this;
         }
 
@@ -113,18 +129,14 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
 
         public RestExceptionResolver build(JsonMapper mapper) {
             final var fts = new ArrayList<>(transformers);
-            if (options == Options.OMIT_DETAILS) {
+            if (options == Details.OMIT) {
                 fts.add(new OmitDetails());
             }
-            final MessageSource ms;
-            if (messageSource != null) {
-                ms = messageSource;
-            } else {
-                final var defaultMessageSource = new ResourceBundleMessageSource();
-                defaultMessageSource.setBasename("optionfactory-problems-web");
-                defaultMessageSource.setDefaultEncoding("UTF-8");
-                ms = defaultMessageSource;
-            }
+            final var defaultSource = new ResourceBundleMessageSource();
+            defaultSource.setBasenames("ValidationMessages");
+            defaultSource.setDefaultEncoding("UTF-8");
+            defaultSource.setParentMessageSource(new AggregateMessageSource("ContributorValidationMessages"));
+            final MessageSource ms = messageSource == null ? defaultSource : new FallbackMessageSource(messageSource, defaultSource);
             return new RestExceptionResolver(mapper, ms, fts);
         }
 
@@ -257,6 +269,10 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             }
             case Failure failure -> {
                 logger.debug(String.format("Failure at %s", requestUri), failure);
+                for (Problem problem : failure.problems) {
+                    problem.reason = messageSource.getMessage(problem.reason, null, problem.reason, locale);
+                }
+
                 yield new HttpStatusAndProblems(annotatedStatusOr(failure, HttpStatus.BAD_REQUEST), failure.problems);
             }
             case RestClientException rce -> {

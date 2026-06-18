@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Pattern;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import net.optionfactory.spring.problems.web.RestExceptionResolver.Options;
+import net.optionfactory.spring.problems.web.RestExceptionResolver.Details;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,7 +65,7 @@ public class UnifiedValidationTest {
         public void extendHandlerExceptionResolvers(List<HandlerExceptionResolver> resolvers) {
             List<HandlerExceptionResolver> old = new ArrayList<>(resolvers);
             resolvers.removeAll(old);
-            resolvers.add(RestExceptionResolver.withDefaults(Options.INCLUDE_DETAILS, new JsonMapper()));
+            resolvers.add(RestExceptionResolver.builder().withDetails(Details.INCLUDE).build(new JsonMapper()));
             resolvers.addAll(old);
         }
 

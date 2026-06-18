@@ -4,7 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import net.optionfactory.spring.problems.web.RestExceptionResolver;
-import net.optionfactory.spring.problems.web.RestExceptionResolver.Options;
+import net.optionfactory.spring.problems.web.RestExceptionResolver.Details;
 import net.optionfactory.spring.upstream.contexts.InvocationContext.MessageConverters;
 import net.optionfactory.spring.upstream.errors.RestClientUpstreamException;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,7 +46,7 @@ public class UpstreamProblemsTest {
         public void extendHandlerExceptionResolvers(List<HandlerExceptionResolver> resolvers) {
             List<HandlerExceptionResolver> old = new ArrayList<>(resolvers);
             resolvers.removeAll(old);
-            resolvers.add(RestExceptionResolver.withDefaults(Options.INCLUDE_DETAILS, new JsonMapper()));
+            resolvers.add(RestExceptionResolver.builder().withUpstreamTransformer().build(new JsonMapper()));
             resolvers.addAll(old);
         }
 
@@ -73,7 +73,7 @@ public class UpstreamProblemsTest {
         }
 
         @GetMapping("/with-forward")
-        @UpstreamProblems.Forward(target=HttpStatus.BAD_REQUEST)
+        @UpstreamProblems.Forward(target = HttpStatus.BAD_REQUEST)
         public void withForward() {
             final var converters = new MessageConverters(HttpMessageConverters.forClient().registerDefaults().withJsonConverter(new JacksonJsonHttpMessageConverter()).build());
             final var headers = new HttpHeaders();
@@ -89,7 +89,7 @@ public class UpstreamProblemsTest {
         }
 
         @GetMapping("/with-map-context")
-        @UpstreamProblems.Forward(target=HttpStatus.BAD_REQUEST)
+        @UpstreamProblems.Forward(target = HttpStatus.BAD_REQUEST)
         @UpstreamProblems.MapContext(source = "request.")
         public void withMapContext() {
             final var converters = new MessageConverters(HttpMessageConverters.forClient().registerDefaults().withJsonConverter(new JacksonJsonHttpMessageConverter()).build());
