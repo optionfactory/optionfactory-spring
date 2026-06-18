@@ -135,6 +135,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            
             <dependency>
                 <groupId>jakarta.servlet</groupId>
                 <artifactId>jakarta.servlet-api</artifactId>
@@ -146,7 +147,11 @@
                 <artifactId>nimbus-jose-jwt</artifactId>
                 <version>10.9.1</version>
             </dependency>
-            
+            <dependency>
+                <groupId>org.jspecify</groupId>
+                <artifactId>jspecify</artifactId>
+                <version>1.0.0</version>
+            </dependency>
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-core</artifactId>

@@ -56,7 +56,7 @@ public class PagesExceptionResolver implements HandlerExceptionResolver {
         };
     }
 
-    private record ModelViewStatus(ModelAndView mav, Integer status) {
+    public record ModelViewStatus(ModelAndView mav, Integer status) {
 
     }
 

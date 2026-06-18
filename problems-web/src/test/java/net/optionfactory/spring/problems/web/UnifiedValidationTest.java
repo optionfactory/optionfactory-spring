@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Pattern;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import net.optionfactory.spring.problems.web.RestExceptionResolver.Details;
+import net.optionfactory.spring.problems.Failure;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,10 +63,9 @@ public class UnifiedValidationTest {
 
         @Override
         public void extendHandlerExceptionResolvers(List<HandlerExceptionResolver> resolvers) {
-            List<HandlerExceptionResolver> old = new ArrayList<>(resolvers);
-            resolvers.removeAll(old);
-            resolvers.add(RestExceptionResolver.builder().withDetails(Details.INCLUDE).build(new JsonMapper()));
-            resolvers.addAll(old);
+            ExceptionResolvers.configurer(resolvers)
+                    .rest(JsonMapper.builder().build(), c -> c.withDetails())
+                    .configure();
         }
 
     }
@@ -93,6 +92,11 @@ public class UnifiedValidationTest {
         public void bodyUsingDataBinder(@Valid @RequestBody ListWrapper request) {
             // Triggers MethodArgumentNotValidException because the parameter is just a plain Bean, 
             // and the DataBinder handles the nested list validation.            
+        }
+
+        @GetMapping("/manual-validation")
+        public void bodyUsingDataBinder() {
+            throw Failure.field("a.b.c", "jakarta.validation.constraints.NotNull.message");
         }
     }
 
@@ -214,6 +218,17 @@ public class UnifiedValidationTest {
                 .andExpectAll(
                         MockMvcResultMatchers.jsonPath("$.[0].type").value("FIELD_ERROR"),
                         MockMvcResultMatchers.jsonPath("$.[0].context").value("items.0.value"),
+                        MockMvcResultMatchers.jsonPath("$.[0].reason").value("non deve essere null")
+                );
+    }
+
+    @Test
+    public void manualValidationUsingFailureIsLocalized() throws Exception {
+        mvc
+                .perform(MockMvcRequestBuilders.get("/manual-validation"))
+                .andExpectAll(
+                        MockMvcResultMatchers.jsonPath("$.[0].type").value("FIELD_ERROR"),
+                        MockMvcResultMatchers.jsonPath("$.[0].context").value("a.b.c"),
                         MockMvcResultMatchers.jsonPath("$.[0].reason").value("non deve essere null")
                 );
     }

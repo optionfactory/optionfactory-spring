@@ -4,7 +4,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import net.optionfactory.spring.problems.web.RestExceptionResolver;
-import net.optionfactory.spring.problems.web.RestExceptionResolver.Details;
 import net.optionfactory.spring.upstream.contexts.InvocationContext.MessageConverters;
 import net.optionfactory.spring.upstream.errors.RestClientUpstreamException;
 import org.junit.jupiter.api.BeforeEach;

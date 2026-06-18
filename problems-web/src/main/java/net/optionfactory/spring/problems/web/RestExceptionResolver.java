@@ -71,7 +71,8 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
     private final MessageSource messageSource;
 
     public enum Details {
-        INCLUDE, OMIT;
+        INCLUDE, OMIT
+
     }
 
     public static Builder builder() {
@@ -133,7 +134,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 fts.add(new OmitDetails());
             }
             final var defaultSource = new ResourceBundleMessageSource();
-            defaultSource.setBasenames("ValidationMessages");
+            defaultSource.setBasenames("ValidationMessages", "org.hibernate.validator.ValidationMessages");
             defaultSource.setDefaultEncoding("UTF-8");
             defaultSource.setParentMessageSource(new AggregateMessageSource("ContributorValidationMessages"));
             final MessageSource ms = messageSource == null ? defaultSource : new FallbackMessageSource(messageSource, defaultSource);
@@ -206,14 +207,14 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                         pe.getFieldErrors().forEach(error -> {
                             final String field = error.getField();
                             final String path = prefix.isEmpty() ? field : prefix + "." + field;
-                            failures.add(Problem.of("FIELD_ERROR", toDottedPath(path), error.getDefaultMessage(), null));
+                            failures.add(Problem.of(Problem.TYPE_FIELD_ERROR, toDottedPath(path), error.getDefaultMessage(), null));
                         });
                     } else {
                         final boolean isRequestBody = param.hasParameterAnnotation(RequestBody.class);
                         final String path = !prefix.isEmpty() ? prefix : (isRequestBody ? null : param.getParameterName());
                         result.getResolvableErrors().forEach(error -> failures.add(path == null
-                                ? Problem.of("OBJECT_ERROR", null, error.getDefaultMessage(), null)
-                                : Problem.of("FIELD_ERROR", path, error.getDefaultMessage(), null)
+                                ? Problem.of(Problem.TYPE_OBJECT_ERROR, null, error.getDefaultMessage(), null)
+                                : Problem.of(Problem.TYPE_FIELD_ERROR, path, error.getDefaultMessage(), null)
                         ));
                     }
                 }
@@ -243,7 +244,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             }
             case MissingServletRequestParameterException msrpe -> {
                 final String reason = messageSource.getMessage("error.missing_parameter", null, "Parameter is missing", locale);
-                final Problem problem = Problem.of("FIELD_ERROR", msrpe.getParameterName(), reason, Problem.NO_DETAILS);
+                final Problem problem = Problem.of(Problem.TYPE_FIELD_ERROR, msrpe.getParameterName(), reason, Problem.NO_DETAILS);
                 logger.debug(String.format("Missing servlet RequestParameter at %s: %s", requestUri, problem));
                 yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, List.of(problem));
             }
@@ -258,7 +259,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, failures);
             }
             case MissingServletRequestPartException msrpe -> {
-                final var problem = Problem.of("FIELD_ERROR", msrpe.getRequestPartName(), "Required request part is not present", Problem.NO_DETAILS);
+                final var problem = Problem.of(Problem.TYPE_FIELD_ERROR, msrpe.getRequestPartName(), "Required request part is not present", Problem.NO_DETAILS);
                 logger.debug(String.format("Missing required part %s of multipart request: %s", msrpe.getRequestPartName(), requestUri));
                 yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, List.of(problem));
             }
@@ -371,8 +372,8 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 .collect(Collectors.joining("."));
 
         return path.isEmpty()
-                ? Problem.of("OBJECT_ERROR", null, error.getMessage(), null)
-                : Problem.of("FIELD_ERROR", path, error.getMessage(), null);
+                ? Problem.of(Problem.TYPE_OBJECT_ERROR, null, error.getMessage(), null)
+                : Problem.of(Problem.TYPE_FIELD_ERROR, path, error.getMessage(), null);
     }
 
     private static String toDottedPath(String path) {
@@ -380,11 +381,11 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
     }
 
     private static Problem fieldErrorToProblem(FieldError error) {
-        return Problem.of("FIELD_ERROR", toDottedPath(error.getField()), error.getDefaultMessage(), null);
+        return Problem.of(Problem.TYPE_FIELD_ERROR, toDottedPath(error.getField()), error.getDefaultMessage(), null);
     }
 
     private static Problem objectErrorToProblem(ObjectError error) {
-        return Problem.of("OBJECT_ERROR", null, error.getDefaultMessage(), null);
+        return Problem.of(Problem.TYPE_OBJECT_ERROR, null, error.getDefaultMessage(), null);
     }
 
     public static class SendErrorToSetStatusHttpServletResponse extends HttpServletResponseWrapper {
