@@ -29,6 +29,18 @@ public class Problem {
         return problem;
     }
 
+    public static Problem of(@NonNull String type, @Nullable String context, @Nullable String reason) {
+        return Problem.of(type, context, reason, Problem.NO_DETAILS);
+    }
+
+    public static Problem of(@NonNull String type, @Nullable String reason, @Nullable Object details) {
+        return Problem.of(type, Problem.NO_CONTEXT, reason, details);
+    }
+
+    public static Problem of(@NonNull String type, @Nullable String reason) {
+        return Problem.of(type, Problem.NO_CONTEXT, reason, Problem.NO_DETAILS);
+    }
+
     public static Problem field(@NonNull String path, @Nullable String reason, @Nullable Object details) {
         return of(Problem.TYPE_FIELD_ERROR, path, reason, details);
     }
@@ -88,9 +100,11 @@ public class Problem {
     public static Problem forbidden(@Nullable String reason, @Nullable Object details) {
         return of(Problem.TYPE_FORBIDDEN, Problem.NO_CONTEXT, reason, details);
     }
+
     public static Problem forbidden(@Nullable String reason) {
         return of(Problem.TYPE_FORBIDDEN, Problem.NO_CONTEXT, reason, Problem.NO_DETAILS);
     }
+
     public static Problem forbidden() {
         return of(Problem.TYPE_FORBIDDEN, Problem.NO_CONTEXT, null, Problem.NO_DETAILS);
     }
