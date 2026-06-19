@@ -44,6 +44,8 @@ public sealed interface Result<V> permits Result.Ok, Result.Err {
 
     V unwrapOrElse(Supplier<? extends V> fallbackSupplier);
 
+    List<Problem> unwrapErr();
+
     <R> Result<R> map(Function<? super V, ? extends R> mapper);
 
     Result<V> mapErr(Function<? super List<Problem>, ? extends List<Problem>> mapper);
@@ -82,6 +84,11 @@ public sealed interface Result<V> permits Result.Ok, Result.Err {
         @Override
         public V unwrapOrElse(Supplier<? extends V> fallbackSupplier) {
             return value;
+        }
+
+        @Override
+        public List<Problem> unwrapErr() {
+            throw new IllegalStateException("Result is a value");
         }
 
         @Override
@@ -131,6 +138,11 @@ public sealed interface Result<V> permits Result.Ok, Result.Err {
         @Override
         public V unwrapOrElse(Supplier<? extends V> fallbackSupplier) {
             return fallbackSupplier.get();
+        }
+
+        @Override
+        public List<Problem> unwrapErr() {
+            return errors;
         }
 
         @SuppressWarnings("unchecked")
