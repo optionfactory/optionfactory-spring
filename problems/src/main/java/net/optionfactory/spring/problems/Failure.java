@@ -18,7 +18,15 @@ public class Failure extends RuntimeException {
         return new Builder();
     }
 
-    public static Failure of(@NonNull String type, @Nullable String context, @Nullable String reason, @Nullable Object details) {
+    public static Failure of(@NonNull Problem problem) {
+        return new Failure(List.of(problem), null, null);
+    }
+
+    public static Failure of(@NonNull List<Problem> problems) {
+        return new Failure(problems, null, null);
+    }
+
+    public static Failure single(@NonNull String type, @Nullable String context, @Nullable String reason, @Nullable Object details) {
         return new Failure(List.of(Problem.of(type, context, reason, details)), null, null);
     }
 
@@ -36,6 +44,54 @@ public class Failure extends RuntimeException {
 
     public static Failure object(@Nullable String context, @Nullable String reason) {
         return new Failure(List.of(Problem.object(context, reason)), null, null);
+    }
+
+    public static Failure object(@Nullable String reason) {
+        return new Failure(List.of(Problem.object(null, reason)), null, null);
+    }
+
+    public static Failure request(@Nullable String context, @Nullable String reason, @Nullable Object details) {
+        return new Failure(List.of(Problem.request(context, reason, details)), null, null);
+    }
+
+    public static Failure request(@Nullable String context, @Nullable String reason) {
+        return new Failure(List.of(Problem.request(context, reason)), null, null);
+    }
+
+    public static Failure request(@Nullable String reason) {
+        return new Failure(List.of(Problem.request(reason)), null, null);
+    }
+
+    public static Failure server(@Nullable String context, @Nullable String reason, @Nullable Object details) {
+        return new Failure(List.of(Problem.server(context, reason, details)), null, null);
+    }
+
+    public static Failure server(@Nullable String context, @Nullable String reason) {
+        return new Failure(List.of(Problem.server(context, reason)), null, null);
+    }
+
+    public static Failure server(@Nullable String reason) {
+        return new Failure(List.of(Problem.server(reason)), null, null);
+    }
+
+    public static Failure upstream(@Nullable String context, @Nullable String reason, @Nullable Object details) {
+        return new Failure(List.of(Problem.upstream(context, reason, details)), null, null);
+    }
+
+    public static Failure upstream(@Nullable String context, @Nullable String reason) {
+        return new Failure(List.of(Problem.upstream(context, reason)), null, null);
+    }
+
+    public static Failure upstream(@Nullable String reason) {
+        return new Failure(List.of(Problem.upstream(reason)), null, null);
+    }
+
+    public static Failure forbidden(@Nullable String reason) {
+        return new Failure(List.of(Problem.forbidden(reason)), null, null);
+    }
+
+    public static Failure forbidden() {
+        return new Failure(List.of(Problem.forbidden()), null, null);
     }
 
     public static class Builder {
@@ -65,22 +121,82 @@ public class Failure extends RuntimeException {
         }
 
         public Builder field(@NonNull String path, @Nullable String reason, @Nullable Object details) {
-            problems.add(Problem.of(Problem.TYPE_FIELD_ERROR, path, reason, details));
+            problems.add(Problem.field(path, reason, details));
             return this;
         }
 
         public Builder field(@NonNull String path, @Nullable String reason) {
-            problems.add(Problem.of(Problem.TYPE_FIELD_ERROR, path, reason, Problem.NO_DETAILS));
+            problems.add(Problem.field(path, reason));
             return this;
         }
 
         public Builder object(@Nullable String context, @Nullable String reason, @Nullable Object details) {
-            problems.add(Problem.of(Problem.TYPE_OBJECT_ERROR, context, reason, details));
+            problems.add(Problem.object(context, reason, details));
             return this;
         }
 
         public Builder object(@Nullable String context, @Nullable String reason) {
-            problems.add(Problem.of(Problem.TYPE_OBJECT_ERROR, context, reason, Problem.NO_DETAILS));
+            problems.add(Problem.object(context, reason));
+            return this;
+        }
+
+        public Builder object(@Nullable String reason) {
+            problems.add(Problem.object(null, reason));
+            return this;
+        }
+
+        public Builder request(@Nullable String context, @Nullable String reason, @Nullable Object details) {
+            problems.add(Problem.request(context, reason, details));
+            return this;
+        }
+
+        public Builder request(@Nullable String context, @Nullable String reason) {
+            problems.add(Problem.request(context, reason));
+            return this;
+        }
+
+        public Builder request(@Nullable String reason) {
+            problems.add(Problem.request(reason));
+            return this;
+        }
+
+        public Builder server(@Nullable String context, @Nullable String reason, @Nullable Object details) {
+            problems.add(Problem.server(context, reason, details));
+            return this;
+        }
+
+        public Builder server(@Nullable String context, @Nullable String reason) {
+            problems.add(Problem.server(context, reason));
+            return this;
+        }
+
+        public Builder server(@Nullable String reason) {
+            problems.add(Problem.server(reason));
+            return this;
+        }
+
+        public Builder upstream(@Nullable String context, @Nullable String reason, @Nullable Object details) {
+            problems.add(Problem.upstream(context, reason, details));
+            return this;
+        }
+
+        public Builder upstream(@Nullable String context, @Nullable String reason) {
+            problems.add(Problem.upstream(context, reason));
+            return this;
+        }
+
+        public Builder upstream(@Nullable String reason) {
+            problems.add(Problem.upstream(reason));
+            return this;
+        }
+
+        public Builder forbidden(@Nullable String reason) {
+            problems.add(Problem.forbidden(reason));
+            return this;
+        }
+
+        public Builder forbidden() {
+            problems.add(Problem.forbidden());
             return this;
         }
 
@@ -88,13 +204,17 @@ public class Failure extends RuntimeException {
             return new Failure(problems, cause, message);
         }
 
+        public void enforce() {
+            Failure.enforce(problems, cause, message);
+        }
+
     }
 
-    public static void enforce(List<Problem> problems) {
+    public static void enforce(List<Problem> problems, Throwable cause, String reason) {
         if (problems.isEmpty()) {
             return;
         }
-        throw new Failure(problems, null, null);
+        throw new Failure(problems, cause, reason);
     }
 
     public static void enforce(List<Problem> problems, String reason) {
@@ -110,4 +230,12 @@ public class Failure extends RuntimeException {
         }
         throw new Failure(problems, cause, null);
     }
+
+    public static void enforce(List<Problem> problems) {
+        if (problems.isEmpty()) {
+            return;
+        }
+        throw new Failure(problems, null, null);
+    }
+
 }

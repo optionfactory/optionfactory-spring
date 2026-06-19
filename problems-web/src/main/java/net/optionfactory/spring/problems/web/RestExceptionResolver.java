@@ -113,6 +113,11 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             return this;
         }
 
+        public Builder withDetails(boolean include) {
+            this.options = include ? Details.INCLUDE : Details.OMIT;
+            return this;
+        }
+
         public Builder withDetails() {
             this.options = Details.INCLUDE;
             return this;
@@ -158,7 +163,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 metadata.put("in", inner.getReferringClass().getSimpleName());
 
                 final var reason = messageSource.getMessage("error.unrecognized_field", null, "Unrecognized field", locale);
-                final var problem = Problem.of("UNRECOGNIZED_PROPERTY", inner.getPropertyName(), reason, metadata);
+                final var problem = Problem.request(inner.getPropertyName(), reason, metadata);
                 logger.debug(String.format("Unrecognized property at %s: %s", requestUri, problem));
                 yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, List.of(problem));
             }
@@ -169,18 +174,18 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                     final var details = new ConcurrentHashMap<String, Object>();
                     details.put("location", inner.getLocation());
                     details.put("message", cause.getMessage());
-                    final String reason = messageSource.getMessage("error.unparseable_message", null, "Unpearsable message", locale);
-                    problem = Problem.of("UNPARSEABLE_MESSAGE", Problem.NO_CONTEXT, reason, details);
+                    final var reason = messageSource.getMessage("error.unparseable_message", null, "Unpearsable message", locale);
+                    problem = Problem.request(Problem.NO_CONTEXT, reason, details);
                 } else {
-                    final String reason = messageSource.getMessage("error.invalid_format", null, "Invalid format", locale);
-                    problem = Problem.of("INVALID_FORMAT", path, reason, inner.getMessage());
+                    final var reason = messageSource.getMessage("error.invalid_format", null, "Invalid format", locale);
+                    problem = Problem.request(path, reason, inner.getMessage());
                 }
                 logger.debug(String.format("Invalid format at %s: %s", requestUri, problem));
                 yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, List.of(problem));
             }
             case null, default -> {
-                final String reason = messageSource.getMessage("error.message_not_readable", null, "Message not readable", locale);
-                final Problem problem = Problem.of("MESSAGE_NOT_READABLE", Problem.NO_CONTEXT, reason, cause != null ? cause.getMessage() : ex.getMessage());
+                final var reason = messageSource.getMessage("error.message_not_readable", null, "Message not readable", locale);
+                final Problem problem = Problem.request(Problem.NO_CONTEXT, reason, cause != null ? cause.getMessage() : ex.getMessage());
                 logger.debug(String.format("Unreadable message at %s: %s", requestUri, problem));
                 yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, List.of(problem));
             }
@@ -243,7 +248,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, failures);
             }
             case MissingServletRequestParameterException msrpe -> {
-                final String reason = messageSource.getMessage("error.missing_parameter", null, "Parameter is missing", locale);
+                final var reason = messageSource.getMessage("error.missing_parameter", null, "Parameter is missing", locale);
                 final Problem problem = Problem.of(Problem.TYPE_FIELD_ERROR, msrpe.getParameterName(), reason, Problem.NO_DETAILS);
                 logger.debug(String.format("Missing servlet RequestParameter at %s: %s", requestUri, problem));
                 yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, List.of(problem));
@@ -254,17 +259,20 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 final var parameterType = matme.getParameter().getParameterType().toGenericString();
                 final var value = matme.getValue();
                 final var sourceType = value == null ? "null" : value.getClass().toGenericString();
-                final var failures = List.of(Problem.of("CONVERSION_ERROR", parameterName, "Conversion error", String.format("Failed to convert value of type '%s' to '%s'.", sourceType, parameterType)));
-                logger.debug(String.format("Conversion error for argument %s expected type %s found type %s at %s: %s", parameterName, parameterType, sourceType, requestUri, failures));
-                yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, failures);
+                final var reason = messageSource.getMessage("error.invalid_format", null, "Invalid format", locale);
+                final var problem = Problem.of(Problem.TYPE_FIELD_ERROR, parameterName, reason, String.format("Failed to convert value of type '%s' to '%s'.", sourceType, parameterType));
+                logger.debug(String.format("Conversion error for argument %s expected type %s found type %s at %s: %s", parameterName, parameterType, sourceType, requestUri, problem));
+                yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, List.of(problem));
             }
             case MissingServletRequestPartException msrpe -> {
-                final var problem = Problem.of(Problem.TYPE_FIELD_ERROR, msrpe.getRequestPartName(), "Required request part is not present", Problem.NO_DETAILS);
+                final var reason = messageSource.getMessage("error.missing_parameter", null, "Parameter is missing", locale);
+                final var problem = Problem.of(Problem.TYPE_FIELD_ERROR, msrpe.getRequestPartName(), reason, Problem.NO_DETAILS);
                 logger.debug(String.format("Missing required part %s of multipart request: %s", msrpe.getRequestPartName(), requestUri));
                 yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, List.of(problem));
             }
             case ResponseStatusException rse -> {
-                final var problem = Problem.of(HttpStatus.resolve(rse.getStatusCode().value()).name(), null, rse.getReason(), Problem.NO_DETAILS);
+                final var reason = messageSource.getMessage(rse.getReason(), null, rse.getReason(), locale);
+                final var problem = Problem.of(HttpStatus.resolve(rse.getStatusCode().value()).name(), null, reason, Problem.NO_DETAILS);
                 logger.debug(String.format("ResponseStatusException at %s: %s", requestUri, problem));
                 yield new HttpStatusAndProblems(HttpStatus.resolve(rse.getStatusCode().value()), List.of(problem));
             }
@@ -277,12 +285,12 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 yield new HttpStatusAndProblems(annotatedStatusOr(failure, HttpStatus.BAD_REQUEST), failure.problems);
             }
             case RestClientException rce -> {
-                final var problem = Problem.of("UPSTREAM_ERROR", null, "upstream failure", rce.getMessage());
+                final var problem = Problem.upstream(null, "upstream failure", rce.getMessage());
                 logger.warn(String.format("Upstream error %s: %s", requestUri, rce.getMessage()), rce);
                 yield new HttpStatusAndProblems(HttpStatus.BAD_GATEWAY, List.of(problem));
             }
             case AccessDeniedException ade -> {
-                final var problem = Problem.of("FORBIDDEN", null, null, ade.getMessage());
+                final var problem = Problem.forbidden(null, ade.getMessage());
                 logger.debug(String.format("Access denied at %s: %s", requestUri, problem));
                 yield new HttpStatusAndProblems(annotatedStatusOr(ade, HttpStatus.FORBIDDEN), List.of(problem));
             }
@@ -293,10 +301,10 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                     }
                     final HttpStatus currentStatus = HttpStatus.valueOf(response.getStatus());
                     logger.warn(String.format("got an unexpected error while processing request at %s", requestUri), ex);
-                    yield new HttpStatusAndProblems(annotatedStatusOr(ex, currentStatus), List.of(Problem.of("INTERNAL_ERROR", null, null, ex.getMessage())));
+                    yield new HttpStatusAndProblems(annotatedStatusOr(ex, currentStatus), List.of(Problem.of(Problem.TYPE_SERVER_ERROR, null, null, ex.getMessage())));
                 }
                 logger.error(String.format("got an unexpected error while processing request at %s", requestUri), ex);
-                yield new HttpStatusAndProblems(annotatedStatusOr(ex, HttpStatus.INTERNAL_SERVER_ERROR), List.of(Problem.of("UNEXPECTED_PROBLEM", null, null, ex.getMessage())));
+                yield new HttpStatusAndProblems(annotatedStatusOr(ex, HttpStatus.INTERNAL_SERVER_ERROR), List.of(Problem.of(Problem.TYPE_SERVER_ERROR, null, null, ex.getMessage())));
             }
         };
     }
