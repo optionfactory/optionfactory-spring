@@ -8,7 +8,7 @@ import tools.jackson.databind.json.JsonMapper;
 public class ExceptionResolvers {
 
     private final List<HandlerExceptionResolver> container;
-    private DownloadsExceptionResolver downloads;
+    private BinaryResponseExceptionResolver binaries;
     private RestExceptionResolver rest;
     private PagesExceptionResolver pages;
 
@@ -40,8 +40,8 @@ public class ExceptionResolvers {
         return this;
     }
 
-    public ExceptionResolvers downloads() {
-        this.downloads = new DownloadsExceptionResolver();
+    public ExceptionResolvers binaries() {
+        this.binaries = new BinaryResponseExceptionResolver();
         return this;
     }
 
@@ -49,8 +49,8 @@ public class ExceptionResolvers {
         if (pages != null) {
             container.addFirst(pages);
         }
-        if (downloads != null) {
-            container.addFirst(downloads);
+        if (binaries != null) {
+            container.addFirst(binaries);
         }
         if (rest != null) {
             container.addFirst(rest);

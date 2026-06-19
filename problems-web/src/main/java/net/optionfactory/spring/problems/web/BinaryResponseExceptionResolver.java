@@ -23,12 +23,13 @@ import java.io.OutputStream;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.web.server.ResponseStatusException;
 
-public class DownloadsExceptionResolver implements HandlerExceptionResolver {
+public class BinaryResponseExceptionResolver implements HandlerExceptionResolver {
 
-    private final Logger logger = LoggerFactory.getLogger(DownloadsExceptionResolver.class);
+    private final Logger logger = LoggerFactory.getLogger(BinaryResponseExceptionResolver.class);
 
-    private record EndpointConfig(boolean isDownload, Integer customStatus) {
+    private record EndpointConfig(boolean isDownload, Integer status) {
 
     }
     private static final Set<String> DETECTED_DOWNLOAD_MEDIA_TYPES = Set.of(
@@ -45,8 +46,7 @@ public class DownloadsExceptionResolver implements HandlerExceptionResolver {
             return null;
         }
         final var config = methodCache.computeIfAbsent(hm, this::inspectEndpoint);
-        final var hasDownloadHeaders = response.containsHeader(HttpHeaders.CONTENT_DISPOSITION);
-        if (!config.isDownload() && !hasDownloadHeaders) {
+        if (!config.isDownload() && !response.containsHeader(HttpHeaders.CONTENT_DISPOSITION)) {
             return null;
         }
         if (response.isCommitted()) {
@@ -54,21 +54,26 @@ public class DownloadsExceptionResolver implements HandlerExceptionResolver {
             return new ModelAndView();
         }
         response.reset();
-        if (config.customStatus() != null) {
-            response.setStatus(config.customStatus());
-        } else if (ex instanceof RestClientException) {
-            response.setStatus(HttpStatus.BAD_GATEWAY.value());
-        } else {
-            response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
-        }
+        response.setStatus(statusCode(config.status(), ex));
         logger.warn(String.format("unhandled exception while downloading in %s", hm), ex);
         return new ModelAndView();
     }
+    
+    private int statusCode(Integer configStatus, Exception ex) {
+        if(configStatus != null){
+            return configStatus;
+        }
+        return switch(ex){
+            case ResponseStatusException rse -> rse.getStatusCode().value();
+            case RestClientException rce -> HttpStatus.BAD_GATEWAY.value();
+            default-> HttpStatus.INTERNAL_SERVER_ERROR.value();
+        };
+    }
 
     private EndpointConfig inspectEndpoint(HandlerMethod hm) {
-        final var annotation = AnnotatedElementUtils.findMergedAnnotation(hm.getMethod(), ErrorAsHttpStatusOnly.class);
+        final var annotation = AnnotatedElementUtils.findMergedAnnotation(hm.getMethod(), BinaryResponseErrorStatus.class);
         if (annotation != null) {
-            return new EndpointConfig(true, annotation.status());
+            return new EndpointConfig(true, annotation.value().value());
         }
 
         final var returnType = ResolvableType.forMethodReturnType(hm.getMethod());

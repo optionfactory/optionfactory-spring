@@ -4,11 +4,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -43,6 +45,10 @@ public class PagesExceptionResolver implements HandlerExceptionResolver {
             }
         }
         return switch (ex) {
+            case ResponseStatusException rse -> {
+                response.setStatus(rse.getStatusCode().value());
+                yield defaultMav;
+            }
             case RestClientException rce -> {
                 response.setStatus(HttpStatus.BAD_GATEWAY.value());
                 logger.warn(String.format("upstream exception in %s: %s", handler, ex.getMessage()));
