@@ -190,7 +190,7 @@ public class UnifiedValidationTest {
     }
 
     @Test
-    public void nullRequestBodyIsReportedAsObjectErrorWhenRequired() throws Exception {
+    public void nullRequestBodyIsReportedAsRequestErrorWhenRequired() throws Exception {
         final var body = """
         null
         """;
@@ -198,7 +198,7 @@ public class UnifiedValidationTest {
         mvc
                 .perform(MockMvcRequestBuilders.post("/body-list-required").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpectAll(
-                        MockMvcResultMatchers.jsonPath("$.[0].type").value("MESSAGE_NOT_READABLE"),
+                        MockMvcResultMatchers.jsonPath("$.[0].type").value("REQUEST_ERROR"),
                         MockMvcResultMatchers.jsonPath("$.[0].context").value((Object) null)
                 );
     }
