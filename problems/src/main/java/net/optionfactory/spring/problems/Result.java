@@ -3,8 +3,6 @@ package net.optionfactory.spring.problems;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Result of a computation.Can be _either_ a value or an error.
@@ -12,67 +10,104 @@ import java.util.stream.Stream;
  * @author rferranti
  * @param <V>
  */
-public class Result<V> {
+public sealed interface Result<V> permits Result.Ok, Result.Err {
 
-    private final List<Problem> errors;
-    private final V value;
-    private final boolean isError;
-
-    public Result(List<Problem> error, V value, boolean isError) {
-        this.errors = error;
-        this.value = value;
-        this.isError = isError;
+    static <V> Result<V> ok(V value) {
+        return new Ok<>(value);
     }
 
-    public static <ValueType> Result<ValueType> errors(List<Problem> error) {
-        return new Result<>(error, null, true);
+    static <V> Result<V> err(List<Problem> errors) {
+        return new Err<>(errors);
     }
 
-    public static <ValueType> Result<ValueType> error(Problem error) {
-        final List<Problem> errors = new ArrayList<>();
-        errors.add(error);
-        return new Result<>(errors, null, true);
+    static <V> Result<V> err(Problem... errors) {
+        return new Err<>(List.of(errors));
     }
 
-    public static <ValueType> Result<ValueType> value(ValueType result) {
-        return new Result<>(new ArrayList<>(), result, false);
-    }
+    boolean isError();
 
-    public List<Problem> getErrors() {
-        return errors;
-    }
+    V value();
 
-    public boolean isError() {
-        return isError;
-    }
+    List<Problem> errors();
 
-    public V getValue() {
-        return value;
-    }
+    V unwrap();
 
-    public <R> Result<R> map(Function<V, R> mapper) {
-        if (isError) {
-            return Result.errors(errors);
+    <R> Result<R> map(Function<V, R> mapper);
+
+    <R> Result<R> propagate();
+
+    static List<Problem> collectProblems(Result<?> first, Result<?>... others) {
+        final var all = new ArrayList<>(first.errors());
+        for (var r : others) {
+            all.addAll(r.errors());
         }
-        return Result.value(mapper.apply(value));
+        return all;
     }
 
-    public <R> Result<R> mapErrors() {
-        if (!isError) {
-            throw new IllegalStateException("cannot call mapErrors on a valued result");
+    record Ok<V>(V value) implements Result<V> {
+
+        @Override
+        public boolean isError() {
+            return false;
         }
-        return Result.errors(errors);
+
+        @Override
+        public List<Problem> errors() {
+            return List.of();
+        }
+
+        @Override
+        public V value() {
+            return value;
+        }
+
+        @Override
+        public V unwrap() {
+            return value;
+        }
+
+        @Override
+        public <R> Result<R> map(Function<V, R> mapper) {
+            return new Ok<>(mapper.apply(value));
+        }
+
+        @Override
+        public <R> Result<R> propagate() {
+            throw new IllegalStateException("cannot propagate on a valued result");
+        }
     }
 
-    public static List<Problem> problems(Result<?> first, Result<?>... others) {
-        return Stream.concat(Stream.of(first), Stream.of(others))
-                .flatMap(r -> r.getErrors().stream())
-                .collect(Collectors.toList());
-    }
+    record Err<V>(List<Problem> errors) implements Result<V> {
 
-    @Override
-    public String toString() {
-        return "Result{" + "errors=" + errors + ", value=" + value + ", isError=" + isError + '}';
-    }
+        @Override
+        public boolean isError() {
+            return true;
+        }
 
+        @Override
+        public V value() {
+            return null;
+        }
+
+        @Override
+        public List<Problem> errors() {
+            return errors;
+        }
+
+        @Override
+        public V unwrap() {
+            throw new IllegalStateException("Result is an error");
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public <R> Result<R> map(Function<V, R> mapper) {
+            return (Result<R>) this;
+        }
+
+        @Override
+        public <R> Result<R> propagate() {
+            return new Err<>(errors);
+        }
+    }
 }
