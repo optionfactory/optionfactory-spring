@@ -19,7 +19,7 @@ public class Failure extends RuntimeException {
         return new Builder();
     }
 
-    public static Failure of(@NonNull Problem problem) {
+    public static Failure of(@NonNull Problem... problem) {
         return new Failure(List.of(problem), null, null);
     }
 
