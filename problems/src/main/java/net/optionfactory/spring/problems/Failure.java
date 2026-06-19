@@ -2,6 +2,7 @@ package net.optionfactory.spring.problems;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
@@ -120,6 +121,18 @@ public class Failure extends RuntimeException {
         public Builder message(@Nullable String m) {
             this.message = m;
             return this;
+        }
+
+        public Builder add(Supplier<@Nullable Problem> supplier) {
+            final var p = supplier.get();
+            if (p != null) {
+                problems.add(p);
+            }
+            return this;
+        }
+
+        public Builder add(boolean test, Supplier<@Nullable Problem> supplier) {
+            return test ? add(supplier) : this;
         }
 
         public Builder add(Problem p) {
