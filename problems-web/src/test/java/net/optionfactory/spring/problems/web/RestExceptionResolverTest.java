@@ -76,7 +76,7 @@ public class RestExceptionResolverTest {
 
         final MockHttpServletRequest req = new MockHttpServletRequest();
         final MockHttpServletResponse res = new MockHttpServletResponse();
-        final Exception exception = Failure.single("type", "context", "reason", "details");
+        final Exception exception = Failure.of("type", "context", "reason", "details");
 
         final ModelAndView got = er.resolveException(req, res, hm, exception);
         final Object failures = got.getModel().get("errors");

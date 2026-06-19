@@ -26,8 +26,20 @@ public class Failure extends RuntimeException {
         return new Failure(problems, null, null);
     }
 
-    public static Failure single(@NonNull String type, @Nullable String context, @Nullable String reason, @Nullable Object details) {
+    public static Failure of(@NonNull String type, @Nullable String context, @Nullable String reason, @Nullable Object details) {
         return new Failure(List.of(Problem.of(type, context, reason, details)), null, null);
+    }
+
+    public static Failure of(@NonNull String type, @Nullable String context, @Nullable String reason) {
+        return new Failure(List.of(Problem.of(type, context, reason, Problem.NO_DETAILS)), null, null);
+    }
+
+    public static Failure of(@NonNull String type, @Nullable String reason, @Nullable Object details) {
+        return new Failure(List.of(Problem.of(type, Problem.NO_CONTEXT, reason, details)), null, null);
+    }
+
+    public static Failure of(@NonNull String type, @Nullable String reason) {
+        return new Failure(List.of(Problem.of(type, Problem.NO_CONTEXT, reason, Problem.NO_DETAILS)), null, null);
     }
 
     public static Failure field(@NonNull String path, @Nullable String reason, @Nullable Object details) {
