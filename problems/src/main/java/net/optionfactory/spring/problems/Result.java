@@ -14,15 +14,27 @@ import java.util.function.Supplier;
  */
 public sealed interface Result<V> permits Result.Ok, Result.Err {
 
-    static <V> Result<V> ok(V value) {
+    static <V> Result<V> value(V value) {
         return new Ok<>(value);
     }
 
-    static <V> Result<V> err(List<Problem> errors) {
+    static <V> Result<V> error(List<Problem> errors) {
         return new Err<>(errors);
     }
 
-    static <V> Result<V> err(Problem... errors) {
+    static <V> Result<V> error(Problem... errors) {
+        return new Err<>(List.of(errors));
+    }
+
+    static <V> Ok<V> ok(V value) {
+        return new Ok<>(value);
+    }
+
+    static <V> Err<V> err(List<Problem> errors) {
+        return new Err<>(errors);
+    }
+
+    static <V> Err<V> err(Problem... errors) {
         return new Err<>(List.of(errors));
     }
 
