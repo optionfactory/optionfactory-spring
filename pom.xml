@@ -8,10 +8,8 @@
     <version>25.4-SNAPSHOT</version>
     <packaging>pom</packaging>
     <description>optionfactory-spring parent pom</description>
-
     <name>${project.groupId}:${project.artifactId}</name>
     <url>https://github.com/optionfactory/optionfactory-spring</url>
-
     <scm>
         <connection>scm:git:https://github.com/optionfactory/optionfactory-spring</connection>
         <developerConnection>scm:git:https://github.com/optionfactory/optionfactory-spring</developerConnection>
@@ -32,18 +30,6 @@
             <organizationUrl>http://optionfactory.net</organizationUrl>
         </developer>
     </developers>
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
-
-
     <modules>
         <module>marshaling-jaxb</module>
         <module>marshaling-jackson</module>
