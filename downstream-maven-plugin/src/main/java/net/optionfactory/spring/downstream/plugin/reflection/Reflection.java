@@ -57,7 +57,7 @@ public class Reflection {
 
         for (final Class<?> c : superclasses(clazz, stop)) {
 
-            final Map<String, Field> declaredFields = new HashMap<>();
+            final Map<String, Field> declaredFields = new LinkedHashMap<>();
             for (final Field f : c.getDeclaredFields()) {
                 declaredFields.put(f.getName(), f);
             }
