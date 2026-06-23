@@ -1,10 +1,12 @@
 package net.optionfactory.spring.problems;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
  * Result of a computation. Can be _either_ a value or an error.
@@ -62,6 +64,16 @@ public sealed interface Result<V> permits Result.Ok, Result.Err {
             all.addAll(err.errors());
         }
         for (var r : others) {
+            if (r instanceof Err<?> err) {
+                all.addAll(err.errors());
+            }
+        }
+        return all;
+    }
+
+    static <T> List<Problem> collectProblems(Iterable<Result<T>> results) {
+        final var all = new ArrayList<Problem>();
+        for (var r : results) {
             if (r instanceof Err<?> err) {
                 all.addAll(err.errors());
             }
