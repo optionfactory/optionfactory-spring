@@ -4,6 +4,8 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import net.optionfactory.spring.downstream.plugin.core.GenerationPipeline;
 import net.optionfactory.spring.downstream.plugin.discovery.Endpoints;
 import net.optionfactory.spring.downstream.plugin.discovery.Payloads;
@@ -30,7 +32,7 @@ public class GenerateTsMojo extends AbstractMojo {
 
     @Parameter(required = false)
     private String target;
-    
+
     @Parameter(required = true)
     private String targetClientName;
 
@@ -59,7 +61,10 @@ public class GenerateTsMojo extends AbstractMojo {
             final var payloads = new Payloads(sourceBasePackage);
             final var emitter = new TypeScriptEmitter(outputDir, translations, typeAliases);
 
-            final var pipeline = new GenerationPipeline(getLog(), endpoints, payloads, emitter);
+            final var exclusions = Stream.concat(translations.keySet().stream(), typeAliases.keySet().stream())
+                    .collect(Collectors.toSet());
+            
+            final var pipeline = new GenerationPipeline(getLog(), endpoints, payloads, emitter, exclusions);
             pipeline.execute("", nesting);
 
             getLog().info("Generated TypeScript definitions written to: " + outputDir.getAbsolutePath());

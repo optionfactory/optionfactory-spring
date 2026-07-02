@@ -7,6 +7,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import net.optionfactory.spring.downstream.plugin.core.GenerationPipeline;
 import net.optionfactory.spring.downstream.plugin.discovery.Endpoints;
 import net.optionfactory.spring.downstream.plugin.discovery.Payloads;
@@ -33,7 +35,10 @@ public class TestPipeline {
         final var payloads = new Payloads(sourcePackage);
         final var emitter = new TypeScriptEmitter(tempDir, translations, aliases);
 
-        final var pipeline = new GenerationPipeline(new SystemStreamLog(), endpoints, payloads, emitter);
+        final var exclusions = Stream.concat(translations.keySet().stream(), aliases.keySet().stream())
+                .collect(Collectors.toSet());
+        
+        final var pipeline = new GenerationPipeline(new SystemStreamLog(), endpoints, payloads, emitter, exclusions);
         pipeline.execute(targetPackage, nesting);
 
         final File file = new File(tempDir, "spec.d.ts");
@@ -44,7 +49,9 @@ public class TestPipeline {
         final var endpoints = new Endpoints(targetClient);
         final var payloads = new Payloads(sourcePackage);
         final var emitter = new JavaEmitter(tempDir, tempDir, translations, style);
-        final var pipeline = new GenerationPipeline(new SystemStreamLog(), endpoints, payloads, emitter);
+        
+        final var exclusions = translations.keySet();        
+        final var pipeline = new GenerationPipeline(new SystemStreamLog(), endpoints, payloads, emitter, exclusions);
         pipeline.execute(targetPackage, nesting);
         final var contents = new HashMap<String, String>();
 

@@ -58,7 +58,9 @@ public class GenerateDtosMojo extends AbstractMojo {
             final var payloads = new Payloads(sourceBasePackage);
             final var emitter = new JavaEmitter(outputDir, project.getBasedir(), translations, outputStyle);
 
-            final var pipeline = new GenerationPipeline(getLog(), endpoints, payloads, emitter);
+            final var exclusions = translations.keySet();
+
+            final var pipeline = new GenerationPipeline(getLog(), endpoints, payloads, emitter, exclusions);
             pipeline.execute(targetPackage, nesting);
 
             project.addCompileSourceRoot(outputDir.getAbsolutePath());
