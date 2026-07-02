@@ -46,30 +46,32 @@ public class JavaTypeTranslator {
                     elementClass = elementClass.getComponentType();
                     dimensions++;
                 }
-                TypeName componentType;
-                if (translations.containsKey(elementClass.getName())) {
-                    componentType = resolveTarget(translations.get(elementClass.getName()));
-                } else if (registry.isRegistered(elementClass)) {
-                    componentType = toClassName(registry.getTargetName(elementClass));
-                } else {
-                    componentType = TypeName.get(elementClass);
-                }
+                var componentType = resolveClassType(elementClass);
                 for (int i = 0; i < dimensions; i++) {
                     componentType = ArrayTypeName.of(componentType);
                 }
                 return componentType;
             }
-            if (translations.containsKey(clazz.getName())) {
-                return resolveTarget(translations.get(clazz.getName()));
-            }
-            if (registry.isRegistered(clazz)) {
-                return toClassName(registry.getTargetName(clazz));
-            }
-            return TypeName.get(clazz);
+            return resolveClassType(clazz);
         }
         return TypeName.get(type);
     }
 
+    private TypeName resolveClassType(Class<?> clazz) {
+        final var originalFqn = clazz.getName();
+        if (translations.containsKey(originalFqn)) {
+            final String translatedFqn = translations.get(originalFqn);
+            if (registry.isRegistered(translatedFqn)) {
+                return toClassName(registry.getTargetName(translatedFqn));
+            }
+            return resolveTarget(translatedFqn.replace('$', '.'));
+        }
+        if (registry.isRegistered(clazz)) {
+            return toClassName(registry.getTargetName(clazz));
+        }
+        return TypeName.get(clazz);
+    }
+    
     private ClassName toClassName(TargetName targetName) {
         if (targetName.names().size() == 1) {
             return ClassName.get(targetName.packageName(), targetName.names().get(0));
@@ -84,27 +86,16 @@ public class JavaTypeTranslator {
             return ArrayTypeName.of(resolveTarget(target.substring(0, target.length() - 2)));
         }
         return switch (target) {
-            case "byte" ->
-                TypeName.BYTE;
-            case "short" ->
-                TypeName.SHORT;
-            case "int" ->
-                TypeName.INT;
-            case "long" ->
-                TypeName.LONG;
-            case "float" ->
-                TypeName.FLOAT;
-            case "double" ->
-                TypeName.DOUBLE;
-            case "boolean" ->
-                TypeName.BOOLEAN;
-            case "char" ->
-                TypeName.CHAR;
-            case "void" ->
-                TypeName.VOID;
-            default ->
-                ClassName.bestGuess(target);
+            case "byte" -> TypeName.BYTE;
+            case "short" -> TypeName.SHORT;
+            case "int" -> TypeName.INT;
+            case "long" -> TypeName.LONG;
+            case "float" -> TypeName.FLOAT;
+            case "double" -> TypeName.DOUBLE;
+            case "boolean" -> TypeName.BOOLEAN;
+            case "char" -> TypeName.CHAR;
+            case "void" -> TypeName.VOID;
+            default -> ClassName.bestGuess(target);
         };
     }
-
 }

@@ -41,7 +41,7 @@ public class TypeScriptTypeTranslator {
                     if (TS_PRIMITIVES.contains(translatedRaw)) {
                         return translatedRaw;
                     }
-                    final var typeArgs=  Arrays.stream(pt.getActualTypeArguments())
+                    final var typeArgs = Arrays.stream(pt.getActualTypeArguments())
                             .map(this::translate)
                             .collect(Collectors.joining(", "));
                     return "%s<%s>".formatted(translatedRaw, typeArgs);
@@ -72,13 +72,17 @@ public class TypeScriptTypeTranslator {
             }
             final var originalFqn = clazz.getName();
             if (typeAliases.containsKey(originalFqn)) {
-                return originalFqn.substring(originalFqn.lastIndexOf('.') + 1);
+                return originalFqn.substring(Math.max(originalFqn.lastIndexOf('.'), originalFqn.lastIndexOf('$')) + 1);
             }
 
             final var fqn = translations.getOrDefault(originalFqn, originalFqn);
 
             if (!fqn.equals(originalFqn) && typeAliases.containsKey(fqn)) {
-                return fqn.substring(fqn.lastIndexOf('.') + 1);
+                return fqn.substring(Math.max(fqn.lastIndexOf('.'), fqn.lastIndexOf('$')) + 1);
+            }
+
+            if (!fqn.equals(originalFqn) && registry.isRegistered(fqn)) {
+                return registry.getTargetName(fqn).flatName();
             }
 
             if (fqn.equals(originalFqn) && (registry.isRegistered(clazz) || clazz.isEnum())) {
@@ -87,18 +91,12 @@ public class TypeScriptTypeTranslator {
                         : clazz.getSimpleName();
             }
             return switch (fqn) {
-                case "java.lang.String", "char", "java.lang.Character" ->
-                    "string";
-                case "int", "long", "double", "float", "short", "byte", "java.lang.Integer", "java.lang.Long", "java.lang.Double", "java.lang.Float", "java.lang.Short", "java.lang.Byte", "java.math.BigDecimal", "java.math.BigInteger" ->
-                    "number";
-                case "boolean", "java.lang.Boolean" ->
-                    "boolean";
-                case "java.lang.Object", "java.util.Optional" ->
-                    "any";
-                case "void", "java.lang.Void" ->
-                    "void";
-                default ->
-                    "any";
+                case "java.lang.String", "char", "java.lang.Character" -> "string";
+                case "int", "long", "double", "float", "short", "byte", "java.lang.Integer", "java.lang.Long", "java.lang.Double", "java.lang.Float", "java.lang.Short", "java.lang.Byte", "java.math.BigDecimal", "java.math.BigInteger" -> "number";
+                case "boolean", "java.lang.Boolean" -> "boolean";
+                case "java.lang.Object", "java.util.Optional" -> "any";
+                case "void", "java.lang.Void" -> "void";
+                default -> fqn.equals(originalFqn) ? "any" : fqn.substring(Math.max(fqn.lastIndexOf('.'), fqn.lastIndexOf('$')) + 1);
             };
         }
         if (type instanceof TypeVariable<?> tv) {
@@ -115,7 +113,7 @@ public class TypeScriptTypeTranslator {
 
     private boolean isAlias(String typeName) {
         return typeAliases.keySet().stream()
-                .map(fqn -> fqn.substring(fqn.lastIndexOf('.') + 1))
+                .map(fqn -> fqn.substring(Math.max(fqn.lastIndexOf('.'), fqn.lastIndexOf('$')) + 1))
                 .anyMatch(aliasSimpleName -> aliasSimpleName.equals(typeName));
     }
 }

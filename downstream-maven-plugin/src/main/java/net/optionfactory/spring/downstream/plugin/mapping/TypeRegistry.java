@@ -58,12 +58,30 @@ public class TypeRegistry {
         return dictionary.get(sourceClass);
     }
 
+    public TargetName getTargetName(String className) {
+        return allSourceClasses().stream()
+                .filter(c -> matchesName(c, className))
+                .findFirst()
+                .map(this::getTargetName)
+                .orElse(null);
+    }
+
     public Collection<Class<?>> allSourceClasses() {
         return dictionary.keySet();
     }
 
     public boolean isRegistered(Class<?> clazz) {
         return clazz != null && dictionary.containsKey(clazz);
+    }
+
+    public boolean isRegistered(String className) {
+        return allSourceClasses().stream()
+                .anyMatch(c -> matchesName(c, className));
+    }
+
+    private boolean matchesName(Class<?> clazz, String className) {
+        return clazz.getName().equals(className) || 
+               (clazz.getCanonicalName() != null && clazz.getCanonicalName().equals(className));
     }
 
     private TargetName resolveName(Class<?> clazz, String targetPackage, Nesting nesting, Set<Class<?>> allDiscovered) {

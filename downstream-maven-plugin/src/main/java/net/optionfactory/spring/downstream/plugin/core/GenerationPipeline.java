@@ -1,14 +1,15 @@
 package net.optionfactory.spring.downstream.plugin.core;
 
 import io.github.classgraph.ClassGraph;
-import java.util.Set;
-import java.util.stream.Collectors;
 import net.optionfactory.spring.downstream.plugin.discovery.Endpoints;
 import net.optionfactory.spring.downstream.plugin.discovery.Payloads;
 import net.optionfactory.spring.downstream.plugin.emit.SourceEmitter;
 import net.optionfactory.spring.downstream.plugin.mapping.TypeRegistry;
 import net.optionfactory.spring.downstream.plugin.mapping.TypeRegistry.Nesting;
 import org.apache.maven.plugin.logging.Log;
+
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class GenerationPipeline {
 
@@ -17,13 +18,13 @@ public class GenerationPipeline {
     private final Payloads payloads;
     private final SourceEmitter emitter;
     private final Set<String> exclusions;
-    
+
     public GenerationPipeline(Log log, Endpoints endpoints, Payloads payloads, SourceEmitter emitter, Set<String> exclusions) {
         this.log = log;
         this.endpoints = endpoints;
         this.payloads = payloads;
         this.emitter = emitter;
-        this.exclusions = exclusions;        
+        this.exclusions = exclusions;
     }
 
     public void execute(String targetPackage, Nesting nesting) throws Exception {
@@ -39,8 +40,8 @@ public class GenerationPipeline {
 
             final var candidates = payloads.discover(methods).stream()
                     .filter(c -> !exclusions.contains(c.getName()))
-                    .collect(Collectors.toSet());            
-            
+                    .collect(Collectors.toSet());
+
             log.info("Discovered %s target payloads (dtos/enums)".formatted(candidates.size()));
             final var registry = new TypeRegistry(candidates, targetPackage, nesting);
             final var outcomes = emitter.emit(registry);

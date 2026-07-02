@@ -37,7 +37,7 @@ public class TestPipeline {
 
         final var exclusions = Stream.concat(translations.keySet().stream(), aliases.keySet().stream())
                 .collect(Collectors.toSet());
-        
+
         final var pipeline = new GenerationPipeline(new SystemStreamLog(), endpoints, payloads, emitter, exclusions);
         pipeline.execute(targetPackage, nesting);
 
@@ -72,5 +72,4 @@ public class TestPipeline {
         }
         return contents;
     }
-
 }
