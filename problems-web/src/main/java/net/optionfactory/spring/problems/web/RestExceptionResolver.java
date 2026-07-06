@@ -218,7 +218,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                         });
                     } else {
                         final boolean isRequestBody = param.hasParameterAnnotation(RequestBody.class);
-                        final String path = !prefix.isEmpty() ? prefix : (isRequestBody ? null : param.getParameterName());
+                        final String path = !prefix.isEmpty() ? prefix : (isRequestBody ? null : (param.getParameterName() == null ? "arg" + param.getParameterIndex() : param.getParameterName()));
                         result.getResolvableErrors().forEach(error -> failures.add(path == null
                                 ? Problem.of(Problem.TYPE_OBJECT_ERROR, null, error.getDefaultMessage(), null)
                                 : Problem.of(Problem.TYPE_FIELD_ERROR, path, error.getDefaultMessage(), null)
@@ -240,7 +240,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             case ConstraintViolationException cve -> {
                 final var requestBodyParams = hm == null ? Set.<String>of() : Stream.of(hm.getMethodParameters())
                         .filter(p -> p.hasParameterAnnotation(RequestBody.class))
-                        .map(MethodParameter::getParameterName)
+                        .map(p -> p.getParameterName() != null ? p.getParameterName() : "arg" + p.getParameterIndex())
                         .collect(Collectors.toSet());
 
                 final var fieldFailures = cve.getConstraintViolations().stream()
@@ -257,7 +257,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             }
             case MethodArgumentTypeMismatchException matme -> {
                 // Handles type errors in path variables (Es. not-numeric string when expecting an int)
-                final var parameterName = matme.getParameter().getParameterName();
+                final var parameterName = matme.getParameter().getParameterName() != null ? matme.getParameter().getParameterName() : "arg" + matme.getParameter().getParameterIndex();
                 final var parameterType = matme.getParameter().getParameterType().toGenericString();
                 final var value = matme.getValue();
                 final var sourceType = value == null ? "null" : value.getClass().toGenericString();
