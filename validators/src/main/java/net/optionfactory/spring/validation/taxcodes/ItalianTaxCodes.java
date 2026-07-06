@@ -3,7 +3,6 @@ package net.optionfactory.spring.validation.taxcodes;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.Month;
-import java.time.Year;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,8 +16,6 @@ public class ItalianTaxCodes {
         CODICE_FISCALE, PARTITA_IVA, ANY;
     }
 
-    
-    
     public static String normalize(String taxcode) {
         if (taxcode == null) {
             return null;
@@ -56,7 +53,7 @@ public class ItalianTaxCodes {
         return sb.toString();
     }
 
-    public static LocalDate guessBirthDate(String value, LocalDate referenceDate) {
+    public static LocalDate guessBirthDate(String value, LocalDate referenceDate, int minAge) {
         final var fiscalCode = normalize(value);
         if (fiscalCode == null || fiscalCode.length() != CODICE_FISCALE_LENGTH) {
             return null;
@@ -75,16 +72,30 @@ public class ItalianTaxCodes {
         final var month = MONTH_CODES.get(monthChar);
         final int day = rawDayInt > 40 ? rawDayInt - 40 : rawDayInt;
 
-        final int referenceYear = referenceDate.getYear();
-        final int currentCentury = (referenceYear / 100) * 100;
-        final var firstGuessYear = currentCentury + twoDigitYear;
-        final var candidateYear = day > month.length(Year.isLeap(firstGuessYear)) ? firstGuessYear - 100 : firstGuessYear;
+        final var latestAllowedDate = referenceDate.minusYears(minAge);
+        final int latestAllowedYear = latestAllowedDate.getYear();
+
+        final int baseCentury = (latestAllowedYear / 100) * 100;
+        final int candidateYear = baseCentury + twoDigitYear;
+
+        final int centuryOffset = afterAllowedDate(latestAllowedDate, candidateYear, month, day) ? -100 : 0;
+
         try {
-            final var candidateDate = LocalDate.of(candidateYear, month, day);
-            return candidateDate.isAfter(referenceDate) ? candidateDate.minusYears(100) : candidateDate;
+            return LocalDate.of(candidateYear + centuryOffset, month, day);
         } catch (DateTimeException ex) {
             return null;
         }
+    }
+
+    private static boolean afterAllowedDate(LocalDate latestAllowed, int year, Month month, int day) {
+        if(year < latestAllowed.getYear()){
+            return false;
+        }
+        if(year > latestAllowed.getYear()){
+            return true;
+        }
+        return month.getValue() > latestAllowed.getMonthValue()
+                || (month.getValue() == latestAllowed.getMonthValue() && day > latestAllowed.getDayOfMonth());
     }
 
     public static Optional<Character> controlCodePartitaIva(String piva) {
@@ -127,7 +138,7 @@ public class ItalianTaxCodes {
 
     private static final Map<Integer, Integer> ODD_CODES = new ConcurrentHashMap<>();
     private static final Map<Integer, Integer> EVEN_CODES = new ConcurrentHashMap<>();
-    private static final Map<Character, Month> MONTH_CODES = new ConcurrentHashMap<>();    
+    private static final Map<Character, Month> MONTH_CODES = new ConcurrentHashMap<>();
     private static final Map<Character, Character> HOMOCODY = new ConcurrentHashMap<>();
     private static final Map<Character, Character> HOMOCODY_REVERSE = new ConcurrentHashMap<>();
 
@@ -206,7 +217,7 @@ public class ItalianTaxCodes {
         EVEN_CODES.put((int) 'X', 23);
         EVEN_CODES.put((int) 'Y', 24);
         EVEN_CODES.put((int) 'Z', 25);
-        
+
         MONTH_CODES.put('A', Month.JANUARY);
         MONTH_CODES.put('B', Month.FEBRUARY);
         MONTH_CODES.put('C', Month.MARCH);
