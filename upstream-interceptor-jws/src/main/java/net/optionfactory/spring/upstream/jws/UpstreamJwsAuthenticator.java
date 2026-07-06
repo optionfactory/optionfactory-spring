@@ -7,6 +7,7 @@ import com.nimbusds.jose.KeyLengthException;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -20,14 +21,16 @@ public class UpstreamJwsAuthenticator implements UpstreamHttpRequestInitializer 
     private final String jwtIssuer;
     private final MACSigner signer;
     private final String audience;
+    private final Duration duration;
     private final Function<InvocationContext, String> subjectFactory;
     private final JWSAlgorithm algorithm;
 
-    public UpstreamJwsAuthenticator(String jwtIssuer, byte[] jwtSecret, String audience, Function<InvocationContext, String> subjectFactory, JWSAlgorithm algorithm) {
+    public UpstreamJwsAuthenticator(String jwtIssuer, byte[] jwtSecret, String audience, Duration duration, Function<InvocationContext, String> subjectFactory, JWSAlgorithm algorithm) {
         this.jwtIssuer = jwtIssuer;
         this.audience = audience;
         this.subjectFactory = subjectFactory;
         this.algorithm = algorithm;
+        this.duration = duration;
         try {
             this.signer = new MACSigner(jwtSecret);
         } catch (KeyLengthException ex) {
@@ -38,7 +41,7 @@ public class UpstreamJwsAuthenticator implements UpstreamHttpRequestInitializer 
     @Override
     public void initialize(InvocationContext ctx, ClientHttpRequest request) {
         final var issuedAt = Instant.now();
-        final var expiration = issuedAt.plus(30, ChronoUnit.MINUTES);
+        final var expiration = issuedAt.plus(duration);
         
         final var claims = new JWTClaimsSet.Builder()
                 .subject(subjectFactory.apply(ctx))
