@@ -57,8 +57,8 @@ public class TypeScriptTypeTranslator {
                     final var sourceKeyType = pt.getActualTypeArguments()[0];
                     final var keyType = translate(sourceKeyType);
                     final var valType = translate(pt.getActualTypeArguments()[1]);
-                    final boolean isEnumOrRegistered = sourceKeyType instanceof Class<?> keyClass && (keyClass.isEnum() || registry.isRegistered(keyClass));
-                    final var actualKeyType = VALID_RECORD_KEY_TYPES.contains(keyType) || isAlias(keyType) || isEnumOrRegistered
+                    final var isEnum = sourceKeyType instanceof Class<?> keyClass && keyClass.isEnum();
+                    final var actualKeyType = VALID_RECORD_KEY_TYPES.contains(keyType) || isAlias(keyType) || isEnum
                             ? keyType
                             : "string";
                     return "Record<%s, %s>".formatted(actualKeyType, valType);
