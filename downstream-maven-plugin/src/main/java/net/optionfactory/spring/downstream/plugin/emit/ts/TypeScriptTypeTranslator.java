@@ -54,9 +54,13 @@ public class TypeScriptTypeTranslator {
                     return "%s[]".formatted(translate(pt.getActualTypeArguments()[0]));
                 }
                 if (Map.class.isAssignableFrom(rawClass)) {
-                    final var keyType = translate(pt.getActualTypeArguments()[0]);
+                    final var sourceKeyType = pt.getActualTypeArguments()[0];
+                    final var keyType = translate(sourceKeyType);
                     final var valType = translate(pt.getActualTypeArguments()[1]);
-                    final var actualKeyType = VALID_RECORD_KEY_TYPES.contains(keyType) || isAlias(keyType) ? keyType : "string";
+                    final boolean isEnumOrRegistered = sourceKeyType instanceof Class<?> keyClass && (keyClass.isEnum() || registry.isRegistered(keyClass));
+                    final var actualKeyType = VALID_RECORD_KEY_TYPES.contains(keyType) || isAlias(keyType) || isEnumOrRegistered
+                            ? keyType
+                            : "string";
                     return "Record<%s, %s>".formatted(actualKeyType, valType);
                 }
                 final var typeArgs = Arrays.stream(pt.getActualTypeArguments())
@@ -91,12 +95,18 @@ public class TypeScriptTypeTranslator {
                         : clazz.getSimpleName();
             }
             return switch (fqn) {
-                case "java.lang.String", "char", "java.lang.Character" -> "string";
-                case "int", "long", "double", "float", "short", "byte", "java.lang.Integer", "java.lang.Long", "java.lang.Double", "java.lang.Float", "java.lang.Short", "java.lang.Byte", "java.math.BigDecimal", "java.math.BigInteger" -> "number";
-                case "boolean", "java.lang.Boolean" -> "boolean";
-                case "java.lang.Object", "java.util.Optional" -> "any";
-                case "void", "java.lang.Void" -> "void";
-                default -> fqn.equals(originalFqn) ? "any" : fqn.substring(Math.max(fqn.lastIndexOf('.'), fqn.lastIndexOf('$')) + 1);
+                case "java.lang.String", "char", "java.lang.Character" ->
+                    "string";
+                case "int", "long", "double", "float", "short", "byte", "java.lang.Integer", "java.lang.Long", "java.lang.Double", "java.lang.Float", "java.lang.Short", "java.lang.Byte", "java.math.BigDecimal", "java.math.BigInteger" ->
+                    "number";
+                case "boolean", "java.lang.Boolean" ->
+                    "boolean";
+                case "java.lang.Object", "java.util.Optional" ->
+                    "any";
+                case "void", "java.lang.Void" ->
+                    "void";
+                default ->
+                    fqn.equals(originalFqn) ? "any" : fqn.substring(Math.max(fqn.lastIndexOf('.'), fqn.lastIndexOf('$')) + 1);
             };
         }
         if (type instanceof TypeVariable<?> tv) {
