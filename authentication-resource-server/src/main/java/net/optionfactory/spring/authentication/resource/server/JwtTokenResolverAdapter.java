@@ -28,7 +28,7 @@ public class JwtTokenResolverAdapter implements BearerTokenResolver {
                         final var accepted = predicate.test(jwt.getHeader());
                         return accepted ? Optional.of(token) : Optional.empty();
                     }catch(ParseException ex){
-                        return null;
+                        return Optional.empty();
                     }
                 })
                 .orElse(null);
