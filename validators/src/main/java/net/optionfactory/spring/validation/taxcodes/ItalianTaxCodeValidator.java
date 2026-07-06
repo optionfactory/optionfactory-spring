@@ -22,15 +22,11 @@ public class ItalianTaxCodeValidator implements ConstraintValidator<ItalianTaxCo
             return true;
         }
         final String normalized = lenient ? ItalianTaxCodes.normalize(value) : value;
-        final int len = normalized.length();
-        if (len == 0) {
-            return true;
-        }
         if (ItalianTaxCodes.isValid(normalized, type)) {
             return true;
         }
         context.disableDefaultConstraintViolation();
-        final var template = "{jakarta.validation.constraints.ItalianTaxCode.%s.message}".formatted(type);        
+        final var template = "{jakarta.validation.constraints.ItalianTaxCode.%s.message}".formatted(type);
         context.buildConstraintViolationWithTemplate(template).addConstraintViolation();
         return false;
     }

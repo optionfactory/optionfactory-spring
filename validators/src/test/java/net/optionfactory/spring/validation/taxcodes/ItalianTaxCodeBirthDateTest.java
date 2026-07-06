@@ -1,4 +1,4 @@
-package net.optionfactory.spring.validation.files.taxcodes;
+package net.optionfactory.spring.validation.taxcodes;
 
 import java.time.LocalDate;
 import java.util.stream.Stream;

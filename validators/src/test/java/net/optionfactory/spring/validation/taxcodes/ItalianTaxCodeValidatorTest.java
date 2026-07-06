@@ -1,18 +1,17 @@
-package net.optionfactory.spring.validation.files.taxcodes;
+package net.optionfactory.spring.validation.taxcodes;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import java.util.Optional;
 import java.util.stream.Stream;
-import net.optionfactory.spring.validation.taxcodes.ItalianTaxCode;
 import net.optionfactory.spring.validation.taxcodes.ItalianTaxCodes.Type;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class ItalianTaxCodeTest {
+public class ItalianTaxCodeValidatorTest {
 
     private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 

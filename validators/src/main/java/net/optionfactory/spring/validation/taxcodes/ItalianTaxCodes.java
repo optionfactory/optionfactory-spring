@@ -29,7 +29,7 @@ public class ItalianTaxCodes {
         }
         final int len = taxcode.length();
         if (len == 0) {
-            return true;
+            return false;
         }
         final char lastCharacter = taxcode.charAt(len - 1);
         if ((type == Type.PARTITA_IVA || type == Type.ANY) && len == PARTITA_IVA_LENGTH) {
