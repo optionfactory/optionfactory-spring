@@ -168,7 +168,9 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, List.of(problem));
             }
             case JacksonException inner -> {
-                final var path = inner.getPath().stream().map(p -> p.getPropertyName()).collect(Collectors.joining("."));
+                final var path = inner.getPath().stream()
+                        .map(p -> p.getPropertyName() != null ? p.getPropertyName() : Integer.toString(p.getIndex()))
+                        .collect(Collectors.joining("."));
                 final Problem problem;
                 if (path.isEmpty()) {
                     final var details = new ConcurrentHashMap<String, Object>();
