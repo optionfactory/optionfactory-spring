@@ -72,7 +72,7 @@ public class EmailSender {
                 logger.info(String.format("[send-emails] deleted %s", eml.getFileName()));
                 Files.delete(eml);
             }
-        } catch (MessagingException ex) {
+        } catch (MessagingException | RuntimeException ex) {
             logger.warn(String.format("[send-emails] failed to send email: %s", ex.getMessage()));
         } catch (IOException ex) {
             logger.error("[send-emails] failed to process sent email (move or remove)", ex);
