@@ -2,9 +2,9 @@ package net.optionfactory.spring.upstream.auth.digest;
 
 import java.net.URI;
 import net.optionfactory.spring.upstream.Upstream;
+import net.optionfactory.spring.upstream.errors.RestClientUpstreamException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.service.annotation.PostExchange;
 
 @Upstream("digest-auth-client")
@@ -20,7 +20,7 @@ public interface DigestAuthClient {
         try {
             final var challenge = challenge(uri).getFirst("WWW-Authenticate");
             return da.authHeader("POST", uri.getPath(), challenge);
-        } catch (HttpClientErrorException.Unauthorized ex) {
+        } catch (RestClientUpstreamException ex) {
             final var challenge = ex.getResponseHeaders().getFirst("WWW-Authenticate");
             return da.authHeader("POST", uri.getPath(), challenge);
         }
