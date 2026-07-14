@@ -1,6 +1,6 @@
 # optionfactory-spring/data-jpa
 
-Declarative whitelisted filters on `@Entity`.
+Declarative whitelisted filters on JPA `@Entity` types.
 
 ## Maven
 
@@ -13,35 +13,52 @@ Declarative whitelisted filters on `@Entity`.
 
 ## Usage
 
-1. Enable by using `@EnableJpaWhitelistFilteringRepositories` instead of
-   `@EnableJpaRepositories`: [Example](https://github.com/optionfactory/optionfactory-spring/blob/e42b80744775c3026908242c4c994a2727cd8bbb/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/HibernateOnPsqlTestConfig.java#L25-L29)
-2. Create a repository extending
-   `WhitelistFilteringRepository<T>`: [Example](https://github.com/optionfactory/optionfactory-spring/blob/e42b80744775c3026908242c4c994a2727cd8bbb/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/examples/PetOwnersRepository.java#L1-L8)
-3. Annotate the root entity to configure the filters you want to
-   allow: [Example](https://github.com/optionfactory/optionfactory-spring/blob/e42b80744775c3026908242c4c994a2727cd8bbb/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/examples/PetOwner.java#L17-L24)
-4. Configure the filter (possibly from user controlled data) when using the
-   repository: [Example](https://github.com/optionfactory/optionfactory-spring/blob/e42b80744775c3026908242c4c994a2727cd8bbb/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/psql/examples/PetOwnerExampleTest.java#L52-L59)
+### 1. Enable Filtering Repositories
 
-## Reduction support
+Use `@EnableJpaWhitelistFilteringRepositories` instead of `@EnableJpaRepositories`:
 
-If you need to perform a reduction with filter support:
+```java
+@Configuration
+@EnableJpaWhitelistFilteringRepositories(basePackageClasses = MyRepository.class)
+public class JpaConfig {
+}
+```
 
-1. [Create a custom Repository interface](https://github.com/optionfactory/optionfactory-spring/blob/e42b80744775c3026908242c4c994a2727cd8bbb/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/h2/reduction/ReductionNumberEntityRepository.java)
-2. [Implement it](https://github.com/optionfactory/optionfactory-spring/blob/e42b80744775c3026908242c4c994a2727cd8bbb/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/h2/reduction/ReductionNumberEntityRepositoryImpl.java)
-3. [Link in main repository (extend the interface)](https://github.com/optionfactory/optionfactory-spring/blob/e42b80744775c3026908242c4c994a2727cd8bbb/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/h2/reduction/NumberEntityRepository.java#L6)
-4. [Use it passing the FilterRequest](https://github.com/optionfactory/optionfactory-spring/blob/e42b80744775c3026908242c4c994a2727cd8bbb/data-jpa/src/test/java/net/optionfactory/spring/data/jpa/filtering/h2/reduction/ReductionTest.java#L44-L52)
+### 2. Annotate the Entity
 
----
+Configure the filters you want to allow:
 
-TODO: document annotation options (operators, sensitivity, format)
+```java
+@Entity
+@Filters({
+    @Filter(name = "name", property = "name", operators = TextCompare.Operator.EQ),
+    @Filter(name = "age", property = "age", operators = NumberCompare.Operator.GTE)
+})
+public class Person {
+    private String name;
+    private int age;
+}
+```
 
-TODO: document `QueryMode.SUBSELECT`, `QueryMode.JOIN` and implicatations
+### 3. Create a Repository
 
-TODO: document Custom Filters
+Extend `WhitelistFilteringRepository`:
 
-TODO: document `Pageable`, `Sort`, `Specification`
+```java
+public interface PersonRepository extends WhitelistFilteringRepository<Person> {
+}
+```
 
-TODO: document `SessionPolicy` and eviction
+### 4. Use the Repository
 
-TODO: reference data-jpa-web
+Configure the `FilterRequest` (e.g., from user input):
+
+```java
+FilterRequest fr = FilterRequest.builder()
+    .filter("name", "John")
+    .filter("age", "18")
+    .build();
+
+List<Person> results = personRepository.findAll(fr);
+```
 

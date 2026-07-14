@@ -1,22 +1,30 @@
-# optionfactory-spring/upstream-problems-web
+# optionfactory-spring/problems-web
 
-REST exception resolver for reporting errors in API responses (e.g.: validation).
+REST exception resolver for reporting errors in API responses (e.g., validation errors) using the `problems` module types.
 
 ## Maven
 
 ```xml
-        <dependency>
-            <groupId>net.optionfactory.spring</groupId>
-            <artifactId>problems-web</artifactId>
-        </dependency>
+<dependency>
+    <groupId>net.optionfactory.spring</groupId>
+    <artifactId>problems-web</artifactId>
+</dependency>
 ```
 
-
-Note: both `net.optionfactory.spring:problems` is a transitive dependency.
-
+Note: `net.optionfactory.spring:problems` is a transitive dependency.
 
 ## Usage
 
+Configure the exception resolvers in your `WebMvcConfigurer`:
 
-https://github.com/optionfactory/optionfactory-spring/blob/7ae2bd792233d6cde0804a630b73c3db827314ba/problems-web/src/test/java/net/optionfactory/spring/problems/web/UnifiedValidationTest.java
+```java
+@Override
+public void extendHandlerExceptionResolvers(List<HandlerExceptionResolver> resolvers) {
+    ExceptionResolvers.configurer(resolvers)
+            .rest(jsonMapper) // Registers RestExceptionResolver
+            .configure();
+}
+```
+
+This will automatically map standard Spring exceptions (like `MethodArgumentNotValidException`) and custom `Failure` exceptions to a unified JSON error response.
 

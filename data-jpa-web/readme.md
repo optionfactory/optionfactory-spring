@@ -1,37 +1,55 @@
 # optionfactory-spring/data-jpa-web
 
-Spring MVC support for data-jpa.
+Spring MVC support for `data-jpa`, including `FilterRequest` parsing and simplified `Page` serialization.
 
 ## Maven
 
 ```xml
-        <dependency>
-            <groupId>net.optionfactory.spring</groupId>
-            <artifactId>data-jpa-web</artifactId>
-        </dependency>
+<dependency>
+    <groupId>net.optionfactory.spring</groupId>
+    <artifactId>data-jpa-web</artifactId>
+</dependency>
 ```
-Note: `net.optionfactory.spring:data-jpa` is a transitive dependency
+
+Note: `net.optionfactory.spring:data-jpa` is a transitive dependency.
 
 ## Usage
 
-`FilterRequestArgumentResolver` can be configured in your `WebMvcConfigurer` to handle parsing of filter requests from requestParameters:
+### FilterRequestArgumentResolver
 
-https://github.com/optionfactory/optionfactory-spring/blob/e42b80744775c3026908242c4c994a2727cd8bbb/data-jpa-web/src/test/java/net/optionfactory/spring/data/jpa/web/examples/DataJpaWebExampleTest.java#L69-L81
+Register the `FilterRequestArgumentResolver` in your `WebMvcConfigurer` to automatically parse `FilterRequest` from request parameters:
 
+```java
+@Override
+public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
+    resolvers.add(new FilterRequestArgumentResolver());
+}
+```
 
-`PageMixin` can be configured on the jsonMapper to handle seralization of `Page`s in a simplified form:
+Now you can use `FilterRequest` in your controller methods:
 
-https://github.com/optionfactory/optionfactory-spring/blob/e42b80744775c3026908242c4c994a2727cd8bbb/data-jpa-web/src/test/java/net/optionfactory/spring/data/jpa/web/examples/DataJpaWebExampleTest.java#L47-L56
+```java
+@GetMapping("/api/people")
+public Page<Person> search(FilterRequest filter, Pageable pageable) {
+    return personRepository.findAll(filter, pageable);
+}
+```
+
+### PageMixin
+
+Configure `PageMixin` on your `JsonMapper` to serialize `Page` objects in a simplified form:
+
+```java
+JsonMapper mapper = JsonMapper.builder()
+    .addModule(new SimpleModule().setMixInAnnotation(Page.class, PageMixin.class))
+    .build();
+```
 
 Page instances will be serialized as:
 
 ```json
-[{
-    "data": [],
-    "size": 0
-}]
+{
+    "data": [...],
+    "size": 10
+}
 ```
-
-See an example usage here:
-
-https://github.com/optionfactory/optionfactory-spring/blob/e42b80744775c3026908242c4c994a2727cd8bbb/data-jpa-web/src/test/java/net/optionfactory/spring/data/jpa/web/examples/DataJpaWebExampleTest.java#L1-L135

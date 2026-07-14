@@ -1,13 +1,15 @@
 # optionfactory-spring/downstream-maven-plugin
 
+Maven plugin to generate Java DTOs (as records or classes) and TypeScript type definitions from Spring MVC controllers annotated with `@Downstream.Method`.
 
 ## Maven
 
 ```xml
-        <dependency>
-            <groupId>net.optionfactory.spring</groupId>
-            <artifactId>downstream-maven-plugin</artifactId>
-        </dependency>
+<plugin>
+    <groupId>net.optionfactory.spring</groupId>
+    <artifactId>downstream-maven-plugin</artifactId>
+    <version>${opfa.spring.version}</version>
+</plugin>
 ```
 
 
