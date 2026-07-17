@@ -1,4 +1,4 @@
-package net.optionfactory.spring.upstream.xml;
+package net.optionfactory.spring.marshaling.jaxb;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;

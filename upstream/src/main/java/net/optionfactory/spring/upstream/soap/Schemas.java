@@ -16,7 +16,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
-import net.optionfactory.spring.upstream.xml.Xml;
+import net.optionfactory.spring.marshaling.jaxb.Xml;
 import org.springframework.core.io.InputStreamSource;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Element;

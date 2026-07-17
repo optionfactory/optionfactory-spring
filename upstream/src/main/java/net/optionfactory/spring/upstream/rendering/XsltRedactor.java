@@ -14,7 +14,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
-import net.optionfactory.spring.upstream.xml.Xml;
+import net.optionfactory.spring.marshaling.jaxb.Xml;
 import org.springframework.core.io.InputStreamSource;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
@@ -94,7 +94,7 @@ public class XsltRedactor {
                 stylesheet.appendChild(template);
             }
             try {
-                return new XsltRedactor(TransformerFactory.newInstance().newTemplates(new DOMSource(document)));
+                return new XsltRedactor(Xml.transformerFactory().newTemplates(new DOMSource(document)));
             } catch (TransformerConfigurationException ex) {
                 throw new IllegalStateException(ex);
             }

@@ -10,7 +10,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
-import net.optionfactory.spring.upstream.xml.Xml;
+import net.optionfactory.spring.marshaling.jaxb.Xml;
 import org.xml.sax.SAXException;
 
 public class XmlPath {
