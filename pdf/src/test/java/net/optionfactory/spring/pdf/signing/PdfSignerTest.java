@@ -1,5 +1,6 @@
 package net.optionfactory.spring.pdf.signing;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -64,7 +65,7 @@ public class PdfSignerTest {
             final var signatureContent = pdSignature.getContents(new FileInputStream(signedFile));
             final var signedContent = pdSignature.getSignedContent(new FileInputStream(signedFile));
             final var cmsProcessableInputStream = new CMSProcessableByteArray(signedContent);
-            final var cmsSignedData = new CMSSignedData(cmsProcessableInputStream, signatureContent);
+            final var cmsSignedData = new CMSSignedData(cmsProcessableInputStream, new ByteArrayInputStream(signatureContent));
             final var signerInformationStore = cmsSignedData.getSignerInfos();
             final var signers = signerInformationStore.getSigners();
             final var signer = signers.stream().findFirst().orElseThrow();
