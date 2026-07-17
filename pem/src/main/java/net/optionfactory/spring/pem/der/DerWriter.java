@@ -7,7 +7,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import net.optionfactory.spring.pem.der.DerCursor.Tag;
 
 public class DerWriter {
@@ -19,23 +18,33 @@ public class DerWriter {
             .ofPattern("yyMMddHHmmss'Z'")
             .withZone(ZoneId.of("UTC"));
 
+    private static final byte[] NULL_BYTES = new byte[]{Tag.NULL, 0x00};
+
+    public static byte[] seq(byte[] part) throws IOException {
+        return encodeTag(Tag.SEQUENCE | CONSTRUCTED, part);
+    }
+
     public static byte[] seq(byte[]... parts) throws IOException {
         return encodeTag(Tag.SEQUENCE | CONSTRUCTED, parts);
+    }
+
+    public static byte[] set(byte[] part) throws IOException {
+        return encodeTag(Tag.SET | CONSTRUCTED, part);
     }
 
     public static byte[] set(byte[]... parts) throws IOException {
         return encodeTag(Tag.SET | CONSTRUCTED, parts);
     }
 
+    public static byte[] implicit(int tagNumber, byte[] part) throws IOException {
+        return encodeTag(CONTEXT_SPECIFIC | CONSTRUCTED | tagNumber, part);
+    }
+
     public static byte[] implicit(int tagNumber, byte[]... parts) throws IOException {
-        // Tag: Context-Specific (0x80) | Constructed (0x20) | tagNumber
-        // Example: [0] IMPLICIT -> 0xA0
         return encodeTag(CONTEXT_SPECIFIC | CONSTRUCTED | tagNumber, parts);
     }
 
     public static byte[] explicit(int tagNumber, byte[] data) throws IOException {
-        // Tag: Context-Specific (0x80) | Constructed (0x20) | tagNumber
-        // This is structurally same as implicit(), but semantically used to wrap existing DER data
         return encodeTag(CONTEXT_SPECIFIC | CONSTRUCTED | tagNumber, data);
     }
 
@@ -58,21 +67,50 @@ public class DerWriter {
     }
 
     public static byte[] nul() {
-        return new byte[]{Tag.NULL, 0x00};
+        return NULL_BYTES;
     }
 
     public static byte[] oid(String oid) throws IOException {
-        String[] parts = oid.split("\\.");
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        // First byte = 40 * first + second
-        int first = Integer.parseInt(parts[0]);
-        int second = Integer.parseInt(parts[1]);
+        final var buffer = new ByteArrayOutputStream();
+        
+        int firstDot = oid.indexOf('.');
+        int secondDot = oid.indexOf('.', firstDot + 1);
+        
+        int first = Integer.parseInt(oid, 0, firstDot, 10);
+        int second;
+        if (secondDot == -1) {
+            second = Integer.parseInt(oid, firstDot + 1, oid.length(), 10);
+        } else {
+            second = Integer.parseInt(oid, firstDot + 1, secondDot, 10);
+        }
         buffer.write(first * 40 + second);
-        for (int i = 2; i < parts.length; i++) {
-            long val = Long.parseLong(parts[i]);
+        
+        int start = secondDot + 1;
+        while (secondDot != -1) {
+            int nextDot = oid.indexOf('.', start);
+            long val;
+            if (nextDot == -1) {
+                val = Long.parseLong(oid, start, oid.length(), 10);
+                secondDot = -1;
+            } else {
+                val = Long.parseLong(oid, start, nextDot, 10);
+                start = nextDot + 1;
+                secondDot = nextDot;
+            }
             writeOidComponent(buffer, val);
         }
         return encodeTag(Tag.OBJECTID, buffer.toByteArray());
+    }
+
+    private static byte[] encodeTag(int tag, byte[] part) throws IOException {
+        int totalLength = part != null ? part.length : 0;
+        final var out = new ByteArrayOutputStream(totalLength + 5); 
+        out.write(tag);
+        writeLength(out, totalLength);
+        if (part != null) {
+            out.write(part);
+        }
+        return out.toByteArray();
     }
 
     private static byte[] encodeTag(int tag, byte[]... parts) throws IOException {
@@ -100,16 +138,24 @@ public class DerWriter {
             out.write(length);
             return;
         }
-        // Long form length
-        int bytesNeeded = 0;
-        int temp = length;
-        while (temp > 0) {
-            bytesNeeded++;
-            temp >>= 8;
-        }
-        out.write(0x80 | bytesNeeded);
-        for (int i = bytesNeeded - 1; i >= 0; i--) {
-            out.write((length >> (i * 8)) & 0xFF);
+        if (length <= 0xFF) {
+            out.write(0x81);
+            out.write(length);
+        } else if (length <= 0xFFFF) {
+            out.write(0x82);
+            out.write((length >> 8) & 0xFF);
+            out.write(length & 0xFF);
+        } else if (length <= 0xFFFFFF) {
+            out.write(0x83);
+            out.write((length >> 16) & 0xFF);
+            out.write((length >> 8) & 0xFF);
+            out.write(length & 0xFF);
+        } else {
+            out.write(0x84);
+            out.write((length >> 24) & 0xFF);
+            out.write((length >> 16) & 0xFF);
+            out.write((length >> 8) & 0xFF);
+            out.write(length & 0xFF);
         }
     }
 
@@ -118,19 +164,15 @@ public class DerWriter {
             out.write((int) val);
             return;
         }
-        // Write 7-bit chunks. Last chunk has high bit 0, others have high bit 1.
-        // Stack storage to reverse order
-        final var bytes = new ArrayList<Integer>();
-        bytes.add((int) (val & 0x7F)); // Last byte (High bit 0)
+        // A 64-bit long fits inside 10 base-128 bytes max        
+        final byte[] buf = new byte[10];
+        int idx = buf.length;
+        buf[--idx] = (byte) (val & 0x7F);
         val >>= 7;
         while (val > 0) {
-            bytes.add((int) (val & 0x7F) | 0x80); // Preceding bytes (High bit 1)
+            buf[--idx] = (byte) ((val & 0x7F) | 0x80);
             val >>= 7;
         }
-        // Big Endian
-        for (int i = bytes.size() - 1; i >= 0; i--) {
-            out.write(bytes.get(i));
-        }
+        out.write(buf, idx, buf.length - idx);
     }
-
 }
