@@ -41,19 +41,16 @@ public class OverlayEvaluationContext implements EvaluationContext {
             new EnvironmentAccessor(),
             new ReflectivePropertyAccessor()
     );
-    private static final List<IndexAccessor> INDEX_ACCESSORS = List.of(
-    
-    );
+    private static final List<IndexAccessor> INDEX_ACCESSORS = List.of();
     private static final List<ConstructorResolver> CTOR_RESOLVERS = List.of(
-        new ReflectiveConstructorResolver()
+            new ReflectiveConstructorResolver()
     );
     private static final List<MethodResolver> METHOD_RESOLVERS = List.of(
             new ReflectiveMethodResolver()
     );
     private static final TypeComparator TYPE_COMPARATOR = new StandardTypeComparator();
     private static final OperatorOverloader OPERATOR_OVERLOADER = new StandardOperatorOverloader();
-    
-    
+
     private final TypedValue rootObject;
     private final BeanResolver beanResolver;
     private final TypeLocator typeLocator;
@@ -85,11 +82,11 @@ public class OverlayEvaluationContext implements EvaluationContext {
     @Override
     public void setVariable(String name, Object value) {
         if (name != null) {
-            final var latestOveraly = this.variables.getLast();
+            final var latestOverlay = this.variables.getLast();
             if (value != null) {
-                latestOveraly.put(name, value);
+                latestOverlay.put(name, value);
             } else {
-                latestOveraly.remove(name);
+                latestOverlay.remove(name);
             }
         }
     }

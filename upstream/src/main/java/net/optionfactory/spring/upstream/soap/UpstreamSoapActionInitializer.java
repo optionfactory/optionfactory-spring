@@ -13,12 +13,12 @@ import net.optionfactory.spring.upstream.expressions.StringExpression;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
 import org.springframework.http.client.ClientHttpRequest;
 
-public class UpstreamSoapActionIninitializer implements UpstreamHttpRequestInitializer {
+public class UpstreamSoapActionInitializer implements UpstreamHttpRequestInitializer {
 
     private final Map<Method, StringExpression> soapActions = new ConcurrentHashMap<>();
     private final Protocol protocol;
 
-    public UpstreamSoapActionIninitializer(Protocol protocol) {
+    public UpstreamSoapActionInitializer(Protocol protocol) {
         this.protocol = protocol;
     }
 

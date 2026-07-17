@@ -48,7 +48,7 @@ import net.optionfactory.spring.upstream.soap.SoapHeaderWriter;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter;
 import net.optionfactory.spring.upstream.soap.SoapJaxbHttpMessageConverter.Protocol;
 import net.optionfactory.spring.upstream.soap.SoapMessageHttpMessageConverter;
-import net.optionfactory.spring.upstream.soap.UpstreamSoapActionIninitializer;
+import net.optionfactory.spring.upstream.soap.UpstreamSoapActionInitializer;
 import net.optionfactory.spring.upstream.values.UpstreamAnnotatedCookiesInterceptor;
 import net.optionfactory.spring.upstream.values.UpstreamAnnotatedHeadersInterceptor;
 import net.optionfactory.spring.upstream.values.UpstreamAnnotatedPathVariableTransformer;
@@ -404,7 +404,7 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
      * @return
      */
     public UpstreamBuilder<T> soap(Protocol protocol, @Nullable Schema schema, @Nullable SoapHeaderWriter headerWriter, JAXBContext context) {
-        this.initializer(new UpstreamSoapActionIninitializer(protocol));
+        this.initializer(new UpstreamSoapActionInitializer(protocol));
         this.messageConverters(c -> {
             c.addCustomConverter(new SoapMessageHttpMessageConverter(protocol));
             c.addCustomConverter(new SoapJaxbHttpMessageConverter(protocol, context, schema, headerWriter));
