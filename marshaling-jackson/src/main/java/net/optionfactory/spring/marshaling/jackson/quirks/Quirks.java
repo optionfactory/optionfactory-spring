@@ -14,6 +14,7 @@ import net.optionfactory.spring.marshaling.jackson.quirks.text.TrimQuirkHandler;
 import net.optionfactory.spring.marshaling.jackson.quirks.time.LocalDateAsIsoInstantQuirkHandler;
 import net.optionfactory.spring.marshaling.jackson.quirks.time.LocalDateTimeAsIsoInstantQuirkHandler;
 import net.optionfactory.spring.marshaling.jackson.quirks.time.TemporalFormatQuirkHandler;
+import net.optionfactory.spring.marshaling.jackson.quirks.time.TimestampQuirkHandler;
 import tools.jackson.core.Version;
 import tools.jackson.databind.module.SimpleModule;
 
@@ -40,6 +41,7 @@ public interface Quirks {
 
         ChronoUnit ldunit() default ChronoUnit.DAYS;
     }
+
     @Retention(RetentionPolicy.RUNTIME)
     public @interface LocalDateTimeAsIsoInstant {
 
@@ -58,6 +60,12 @@ public interface Quirks {
     public @interface TemporalFormat {
 
         String value();
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface Timestamp {
+
+        boolean millis() default true;
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -81,6 +89,7 @@ public interface Quirks {
                 .add(new LocalDateAsIsoInstantQuirkHandler())
                 .add(new LocalDateTimeAsIsoInstantQuirkHandler())
                 .add(new TemporalFormatQuirkHandler())
+                .add(new TimestampQuirkHandler())
                 .add(new ScreamQuirkHandler())
                 .add(new RenameQuirkHandler())
                 .add(new TrimQuirkHandler());

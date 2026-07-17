@@ -61,12 +61,21 @@ public class AnnotatedDeserializerModifier extends ValueDeserializerModifier {
                     }
                     return currentProp;
                 }).toArray(length -> new SettableBeanProperty[length]);
-                // configure valueInstantiator to use the modified properties
+
+                SettableBeanProperty[] delegateArgs;
+                try {
+                    final var delegateArgsField = StdValueInstantiator.class.getDeclaredField("_delegateArguments");
+                    delegateArgsField.setAccessible(true);
+                    delegateArgs = (SettableBeanProperty[]) delegateArgsField.get(vi);
+                } catch (Exception ex) {
+                    delegateArgs = null;
+                }
+
                 vi.configureFromObjectSettings(
                         vi.getDefaultCreator(),
                         vi.getDelegateCreator(),
                         vi.getDelegateType(config),
-                        new SettableBeanProperty[0] /*Not really sure what to do here*/,
+                        delegateArgs,
                         vi.getWithArgsCreator(),
                         modifiedProperties
                 );

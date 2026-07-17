@@ -64,8 +64,11 @@ public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalF
     public SettableBeanProperty deserialization(TemporalFormat ann, SettableBeanProperty sbp) {
         final var dtf = DateTimeFormatter.ofPattern(ann.value());
         final var raw = sbp.getType().getRawClass();
-
-        final var deserializer = new Deserializer(dtf, TEMPORAL_TYPE_TO_QUERY.get(raw));
+        final var query = TEMPORAL_TYPE_TO_QUERY.get(raw);
+        if (query == null) {
+            throw new IllegalStateException("Unsupported temporal type for @TemporalFormat: " + raw.getName());
+        }
+        final var deserializer = new Deserializer(dtf, query);
         return sbp.withValueDeserializer(deserializer);
     }
 
