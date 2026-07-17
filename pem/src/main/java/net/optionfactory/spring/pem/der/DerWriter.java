@@ -36,7 +36,7 @@ public class DerWriter {
     public static byte[] explicit(int tagNumber, byte[] data) throws IOException {
         // Tag: Context-Specific (0x80) | Constructed (0x20) | tagNumber
         // This is structurally same as implicit(), but semantically used to wrap existing DER data
-        return encodeTag(CONTEXT_SPECIFIC | CONSTRUCTED |tagNumber, data);
+        return encodeTag(CONTEXT_SPECIFIC | CONSTRUCTED | tagNumber, data);
     }
 
     public static byte[] integer(int value) throws IOException {

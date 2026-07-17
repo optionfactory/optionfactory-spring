@@ -12,14 +12,19 @@ import java.security.PrivateKey;
 import java.security.Signature;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.ECKey;
+import java.security.interfaces.RSAKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.SignatureInterface;
+import org.springframework.util.Assert;
 
 public class Pkcs7PdfSigner implements SignatureInterface {
 
     public static final String OID_SHA256 = "2.16.840.1.101.3.4.2.1";
     public static final String OID_RSA = "1.2.840.113549.1.1.1";
+    public static final String OID_ECDSA_WITH_SHA256 = "1.2.840.10045.4.3.2";
+
     public static final String OID_PKCS7_DATA = "1.2.840.113549.1.7.1";
     public static final String OID_PKCS7_SIGNED_DATA = "1.2.840.113549.1.7.2";
     public static final String OID_PKCS9_CONTENT_TYPE = "1.2.840.113549.1.9.3";
@@ -31,15 +36,38 @@ public class Pkcs7PdfSigner implements SignatureInterface {
     public static final String OID_AA_ETS_COMMITMENT_TYPE = "1.2.840.113549.1.9.16.2.16";
     public static final String OID_AA_ETS_SIGNER_LOCATION = "1.2.840.113549.1.9.16.2.17";
 
-
     private final PrivateKey privateKey;
     private final X509Certificate[] certificateChain;
     private final SignatureInfo signatureInfo;
+    private final String signatureAlgorithmName;
+    private final String signatureAlgorithmOid;
 
     public Pkcs7PdfSigner(PrivateKey privateKey, X509Certificate[] certificateChain, SignatureInfo signatureInfo) {
         this.privateKey = privateKey;
         this.certificateChain = certificateChain;
         this.signatureInfo = signatureInfo;
+        final String alg = privateKey.getAlgorithm();
+        switch (alg) {
+            case "EC", "ECDSA" -> {
+                if (!(privateKey instanceof ECKey ecKey)) {
+                    throw new IllegalArgumentException("Private key claims to be EC/ECDSA but does not implement ECKey.");
+                }
+                Assert.isTrue(ecKey.getParams().getOrder().bitLength() == 256, "only 256 bit ECDSA keys are supported");
+                this.signatureAlgorithmName = "SHA256withECDSA";
+                this.signatureAlgorithmOid = OID_ECDSA_WITH_SHA256;
+            }
+            case "RSA" -> {
+                if (!(privateKey instanceof RSAKey rsaKey)) {
+                    throw new IllegalArgumentException("Private key claims to be RSA but does not implement RSAKey.");
+                }
+                Assert.isTrue(rsaKey.getModulus().bitLength() >= 2048, "RSA key length must be >= 2048 bits");
+                this.signatureAlgorithmName = "SHA256withRSA";
+                this.signatureAlgorithmOid = OID_RSA;
+            }
+            default ->
+                throw new IllegalArgumentException("key must be RSA or ECDSA");
+        }
+
     }
 
     @Override
@@ -64,6 +92,10 @@ public class Pkcs7PdfSigner implements SignatureInterface {
             certBytesList.add(cert.getEncoded());
         }
         final var certsBytes = certBytesList.toArray(byte[][]::new);
+
+        final var digestEncryptionAlgorithm = OID_RSA.equals(signatureAlgorithmOid)
+                ? DerWriter.seq(DerWriter.oid(OID_RSA), DerWriter.nul())
+                : DerWriter.seq(DerWriter.oid(signatureAlgorithmOid));
 
         return DerWriter.seq(
                 DerWriter.oid(OID_PKCS7_SIGNED_DATA),
@@ -90,10 +122,7 @@ public class Pkcs7PdfSigner implements SignatureInterface {
                                                         certificateChain[0].getIssuerX500Principal().getEncoded(), // Raw encoded principal to avoid parsing DNs
                                                         DerWriter.integer(certificateChain[0].getSerialNumber())
                                                 ),
-                                                DerWriter.seq( // DigestAlgorithm
-                                                        DerWriter.oid(OID_SHA256),
-                                                        DerWriter.nul()
-                                                ),
+                                                digestEncryptionAlgorithm,
                                                 authenticatedAttributes, // AuthenticatedAttributes
                                                 DerWriter.seq( // DigestEncryptionAlgorithm
                                                         DerWriter.oid(OID_RSA),
@@ -109,7 +138,7 @@ public class Pkcs7PdfSigner implements SignatureInterface {
 
     private byte[] signAttributes(byte[] attributesSet) throws GeneralSecurityException {
         //Sign the DER encoding of authenticatedAttributes (SET tag 0x31 + length + contents)
-        final var sig = Signature.getInstance("SHA256withRSA");
+        final var sig = Signature.getInstance(signatureAlgorithmName);
         sig.initSign(privateKey);
         sig.update(attributesSet);
         return sig.sign();
@@ -144,6 +173,9 @@ public class Pkcs7PdfSigner implements SignatureInterface {
                         )
                 )
         );
+        final var protectedSignatureAlgorithm = OID_RSA.equals(signatureAlgorithmOid)
+                ? DerWriter.seq(DerWriter.oid(OID_RSA), DerWriter.nul())
+                : DerWriter.seq(DerWriter.oid(signatureAlgorithmOid));
 
         final var attrAlgorithmProtect = DerWriter.seq(
                 DerWriter.oid(OID_AA_CMS_ALGORITHM_PROTECT),
@@ -151,12 +183,9 @@ public class Pkcs7PdfSigner implements SignatureInterface {
                         DerWriter.seq(
                                 DerWriter.seq(
                                         DerWriter.oid(OID_SHA256),
-                                        DerWriter.nul() // Parameters: NULL
-                                ),
-                                DerWriter.explicit(1, DerWriter.seq( // Sequence { digestAlgorithm, signatureAlgorithm, macAlgorithm [1] OPTIONAL }
-                                        DerWriter.oid(OID_RSA),
                                         DerWriter.nul()
-                                ))
+                                ),
+                                DerWriter.explicit(1, protectedSignatureAlgorithm)
                         )
                 )
         );
@@ -169,9 +198,9 @@ public class Pkcs7PdfSigner implements SignatureInterface {
                         DerWriter.seq(
                                 DerWriter.seq(
                                         DerWriter.seq(
-                                                DerWriter.octetString(certHash) 
-                                                // TODO: IssuerSerial omitted 
-                                                // Sequence { GeneralNames (Sequence), SerialNumber (Integer) }
+                                                DerWriter.octetString(certHash)
+                                        // TODO: IssuerSerial omitted 
+                                        // Sequence { GeneralNames (Sequence), SerialNumber (Integer) }
                                         )
                                 )
                         )
