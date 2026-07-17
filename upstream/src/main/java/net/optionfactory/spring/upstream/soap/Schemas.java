@@ -11,12 +11,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.Source;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
+import net.optionfactory.spring.upstream.xml.Xml;
 import org.springframework.core.io.InputStreamSource;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Element;
@@ -56,9 +56,7 @@ public class Schemas {
     /// @throws IllegalStateException if an XML parsing error occurs, a circular schema dependency loop is found, or validator compilation fails
     public static SchemaAndProtocols fromWsdl(InputStreamSource wsdlSource, InputStreamSource... companionXsds) {
         try {
-            final var dbf = DocumentBuilderFactory.newInstance();
-            dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-            dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            final var dbf = Xml.documentBuilderFactory();
             dbf.setNamespaceAware(true);
 
             final var protocols = new ArrayList<SoapJaxbHttpMessageConverter.Protocol>();

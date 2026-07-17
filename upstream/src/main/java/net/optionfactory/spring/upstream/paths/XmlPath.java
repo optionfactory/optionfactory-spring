@@ -10,16 +10,16 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
+import net.optionfactory.spring.upstream.xml.Xml;
 import org.xml.sax.SAXException;
 
 public class XmlPath {
 
     public static final MethodHandle XPATH_BOOLEAN_METHOD_HANDLE = xpathBooleanMethodHandle();
-    private final DocumentBuilderFactory builderFactory;
+    private final DocumentBuilderFactory builderFactory = Xml.documentBuilderFactory();
     private final ResponseContext response;
 
     public XmlPath(ResponseContext response) {
-        this.builderFactory = DocumentBuilderFactory.newInstance();
         this.response = response;
     }
 
