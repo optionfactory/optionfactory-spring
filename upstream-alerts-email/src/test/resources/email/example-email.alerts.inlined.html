@@ -5,18 +5,19 @@
     </head>
     <body>
         <table id="alerts" data-th-replace="~{alert-layout.html :: alerts('Test title', ${alerts}, ~{this::#alerts/content()})}">
-            <tr><td colspan="2"><h3>User</h3></td></tr>
             <tr>
-                <td class="key" width="250">Username:</td>
-                <td>[[${principal.username}]]</td>
+                <td class="data-label">Username</td>
+                <td class="data-value">[[${principal.username}]]</td>
             </tr>
-            <tbody data-th-remove="tag" data-th-if="${principal.impersonator != null}" data-th-with="impersonator=${principal.impersonator}">
-                <tr><td colspan="2"><h3>Impersonator</h3></td></tr>            
-                <tr>
-                    <td class="key" width="250">Username:</td>
-                    <td>[[${impersonator.username}]]</td>
-                </tr>
-            </tbody>
+            <tr data-th-if="${principal.impersonator != null}" >
+                <td colspan="2" class="section-heading-cell">
+                    <p class="section-heading-text">Impersonator</p>
+                </td>                                    
+            </tr>
+            <tr data-th-if="${principal.impersonator != null}" >
+                <td class="data-label">Username</td>
+                <td class="data-value">[[${principal.impersonator.username}]]</td>
+            </tr>
         </table>
     </body>
 </html>

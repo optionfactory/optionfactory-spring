@@ -1,217 +1,403 @@
 <!DOCTYPE html>
-<html>
+<html lang="it">
     <head data-th-fragment="head(color)">
         <meta charset="UTF-8">
-        <title>Alerts</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Integration Error Report</title>
         <style data-th-inline="css" data-inlined>
-            h1,h2 {
-                text-align: center;
+
+            body {
+                margin: 0;
+                padding: 30px 15px;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+                color: #374151;
+                background-color: #f3f4f6;
+            }
+
+            .email-wrapper {
+                max-width: 900px;
+                margin: 0 auto;
+                background-color: #ffffff;
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+                border: 1px solid #e5e7eb;
+            }
+
+            .header {
+                background-color: /*[(${color})]*/ #1e293b;
+                color: #ffffff;
+                padding: 35px;
+            }
+            .header-title {
+                margin: 0;
+                font-size: 22px;
+                font-weight: 600;
+                letter-spacing: -0.3px;
+            }
+            .header-subtitle {
+                margin: 6px 0 0 0;
+                font-size: 14px;
+                color: #94a3b8;
                 font-weight: 400;
             }
 
-            h1 {
-                color: white;
-                font-size: 32px;
-                margin: 21px 0;
+            .content-body {
+                padding: 20px 35px 0 35px;
             }
 
-            h2 {
-                color: /*[(${color})]*/ #006347;
-                font-size: 24px;
-                margin: 8px 0;
+            .content-body:last-child {
+                padding-bottom: 35px;
             }
 
-            h3 {
-                text-align: left;
-                font-weight: 400;
-                color: /*[(${color})]*/ #006347;
-                font-size: 18px;
-                border-bottom: 1px solid /*[(${color})]*/ #006347;
-                margin: 18px 0;
-            }
-            h4 {
-                text-align: left;
-                font-weight: 400;
-                color: /*[(${color})]*/ #006347;
-                font-size: 16px;
-                border-bottom: 1px solid /*[(${color})]*/ #006347;
-                margin: 18px 0;
-            }
-            table {
-                font-family: Arial;
-                max-width: 1000px;
+            .master-table {
                 width: 100%;
-                margin: 20px auto;
-                padding: 20px;
-                color: #333;
-                box-shadow: 10px 10px 43px 0px rgba(224,224,224,1);
+                border-collapse: collapse;
+                margin-bottom: 20px;
             }
-            td {
-                word-break: break-all;
-            }
-            td.key {
-                font-weight: 700;
+            .master-table td {
+                padding: 10px 10px 10px 0;
                 vertical-align: top;
-                width: 160px;
+                border-bottom: 1px solid #f3f4f6;
             }
-            table.heading {
-                background-color: /*[(${color})]*/ #006347;
-            }
-
-            table.heading td {
-                color: white;
-            }
-            
-            table.heading .service {
-                
+            .master-table tr:last-child td {
+                border-bottom: none;
             }
 
-            table.alert {
-                border: 3px solid /*[(${color})]*/ #006347;
+            .section-heading-cell {
+                padding-top: 35px !important;
+                padding-bottom: 12px !important;
+                border-bottom: 2px solid #e5e7eb !important;
             }
-            pre {
-                border: 1px solid #ccc;
-                margin: 10px 0 10px 20px;
-                padding: 10px;
-                white-space: pre-wrap;
-                background-color: #ffffee;
+
+            .master-table tr:first-child .section-heading-cell {
+                padding-top: 20px !important;
+            }
+
+            .section-heading-text {
+                font-size: 13px;
+                text-transform: uppercase;
+                letter-spacing: 1.2px;
+                font-weight: 700;
+                color: #111827;
+                margin: 0;
+            }
+
+            .data-label {
+                width: 1%;
+                white-space: nowrap;
+                padding-right: 35px !important;
+                font-weight: 600;
+                font-size: 12px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                color: #6b7280;
+            }
+
+            .data-value {
+                color: #111827;
+                font-weight: 500;
+                word-break: break-word;
+            }
+
+            .highlight-text {
+                color: #0369a1;
+                font-family: Consolas, Monaco, monospace;
+                background: #f0f9ff;
+                padding: 2px 6px;
+                border-radius: 4px;
+                border: 1px solid #e0f2fe;
+                font-size: 13px;
+            }
+
+            .badge-success {
+                background-color: #f0fdf4;
+                color: #15803d;
+                border: 1px solid #bbf7d0;
+                padding: 4px 10px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 700;
+                letter-spacing: 0.5px;
+                display: inline-block;
+            }
+
+            .badge-error {
+                background-color: #fef2f2;
+                color: #b91c1c;
+                border: 1px solid #fecaca;
+                padding: 4px 10px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 700;
+                letter-spacing: 0.5px;
+                display: inline-block;
+            }
+
+            .code-panel {
+                background-color: #f9fafb;
+                border: 1px solid #e5e7eb;
+                border-radius: 6px;
+                margin-top: 8px;
+                margin-bottom: 15px;
+                border-left: 4px solid #3b82f6;
+                width: 100%;
+                box-sizing: border-box;
+                box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+            }
+
+            .code-panel.error {
+                border-left: 4px solid #e11d48;
+                background-color: #fff1f2;
+                border-color: #ffe4e6;
+            }
+
+            .code-header {
+                background-color: #f3f4f6;
+                color: #4b5563;
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                font-weight: 700;
+                padding: 8px 15px;
+                border-bottom: 1px solid #e5e7eb;
+                border-top-left-radius: 5px;
+                border-top-right-radius: 5px;
+            }
+
+            .code-panel.error .code-header {
+                background-color: #ffe4e6;
+                color: #9f1239;
+                border-bottom: 1px solid #fecdd3;
+            }
+
+            .code-info {
+                background-color: #ffffff;
+                color: #4b5563;
+                font-size: 12px;
+                font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+                padding: 6px 15px;
+                border-bottom: 1px solid #e5e7eb;
                 word-break: break-all;
             }
-            
-        </style>         
+
+            .code-panel.error .code-info {
+                background-color: #fff7f8;
+                color: #9f1239;
+                border-bottom: 1px solid #fecdd3;
+            }
+
+            .code-body {
+                padding: 15px;
+                margin: 0;
+                box-sizing: border-box;
+            }
+
+            .code-body pre {
+                margin: 0;
+                font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+                font-size: 12px;
+                color: #374151;
+                line-height: 1.6;
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                word-break: break-all;
+                max-height: 320px;
+                overflow-y: auto;
+                max-width: 100%;
+            }
+
+            .code-panel.error .code-body pre {
+                color: #881337;
+            }
+
+            .alert-separator {
+                border: none;
+                border-top: 30px solid #f3f4f6;
+                margin: 40px -40px 20px -40px;
+            }
+
+        </style>
     </head>
     <body data-th-fragment="alerts(title, alerts, users)">
-        <table class="heading">
-            <tr><td><h1>[[${title}]]</h1></td></tr>
-            <tr >
-                <td>
-                    <span data-th-if="${alerts.size() == 1}">E' stato rilevato un errore </span>
-                    <span data-th-if="${alerts.size() != 1}">Sono stati rilevati [[${alerts.size()}]] errori</span>
-                    durante l'integrazione con servizi esterni.
-                </td>
-            </tr>
-        </table>
-        <table data-th-each="alert: ${alerts}" class="alert">
-            <tbody data-th-remove="tag" data-th-with="redactedRequest=${#bodies.abbreviated(alert.invocation, alert.request, 2048)}">
-                <tr>
-                    <td colspan="2">
-                        <h2>Request [[${alert.invocation.boot}]].[[${alert.invocation.id}]]</h2>
-                        <h2>Upstream [[${alert.invocation.endpoint.upstream}]]</h2>
-                        <h2>Endpoint [[${alert.invocation.endpoint.name}]]</h2>
-                    </td>
-                </tr>
 
-                <tr data-th-if="${alert.invocation.principal != null}" data-th-with="principal=${alert.invocation.principal}" data-th-remove="tag">
-                    <!--/*/ <th-block data-th-replace="${users}" /> /*/-->
-                </tr>
+        <div class="email-wrapper">
 
-                <tr><td colspan="2"><h3>Request</h3></td></tr>
-                <tr>
-                    <td class="key">Method:</td>
-                    <td>[[${alert.request.method}]]</td>
-                </tr>
-                <tr>
-                    <td class="key">URI:</td>
-                    <td>[[${redactedRequest.uri}]]</td>
-                </tr>
-                <tr>
-                    <td class="key">Sent at:</td>
-                    <td>[[${alert.request.at}]]</td>
-                </tr>
-                <tr data-th-if="${redactedRequest.parts.isEmpty()}">
-                    <td class="key">Body:</td>
-                    <td data-th-if="${redactedRequest.main.body.length == 0}">&lt;empty&gt;</td>
-                </tr>
-                <tr data-th-if="${redactedRequest.main.body.length > 0}">
-                    <td colspan="2">
-                        <pre>[[${redactedRequest.main.body}]]</pre>                    
-                    </td>
-                </tr>
-                <th-block data-th-remove="tag" data-th-each="part: ${redactedRequest.parts}">
+            <div class="header">
+                <h1 class="header-title">[[${title}]] - System Alert</h1>
+                <p class="header-subtitle" data-th-if="${alerts.size() == 1}">
+                    An integration failure was intercepted during a routine external service call.
+                </p>
+                <p class="header-subtitle" data-th-if="${alerts.size() != 1}">
+                    [[${alerts.size()}]] integration failures were intercepted during routine external service calls.
+                </p>
+            </div>
+
+            <div class="content-body" data-th-each="alert: ${alerts}" data-th-with="redactedRequest=${#bodies.abbreviated(alert.invocation, alert.request, 2048)}">
+                <table class="master-table">
                     <tr>
-                        <td colspan="2"><h4>Request part [[${partStat.count}]]/[[${redactedRequest.parts.size()}]]</h4></td>
+                        <td colspan="2" class="section-heading-cell">
+                            <p class="section-heading-text">
+                                Alert Overview <span data-th-if="${alerts.size() > 1}">[[${alertStat.count}]]/[[${alerts.size()}]] </span>
+                            </p>
+                        </td>
                     </tr>
-                    <tr data-th-if="${part.headers.getContentDisposition() != null}">
-                        <td class="key">Content-Disposition:</td>
-                        <td>[[${part.headers.getContentDisposition()}]]</td>                    
-                    </tr>
-                    <tr data-th-if="${part.headers.getContentType() != null}">
-                        <td class="key">Content-Type:</td>
-                        <td>[[${part.headers.getContentType()}]]</td>                    
-                    </tr>
-                    <tr>                        
-                        <td colspan="2">
-                            <pre>[[${part.body}]]</pre>                    
-                        </td>                    
-                    </tr>
-                </th-block>                
-            </tbody>
-
-            <tbody data-th-remove="tag" data-th-if="${alert.response != null}" data-th-with="redactedResponse=${#bodies.abbreviated(alert.invocation, alert.response, 2048)}">
-
-                <tr>
-                    <td colspan="2"><h3>Response</h3></td>
-                </tr>
-                <tr data-th-if="${alert.response.status != null}">
-                    <td class="key">HTTP status:</td>
-                    <td>[[${alert.response.status}]]</td>
-                </tr>
-                <tr data-th-if="${!redactedResponse.main.headers.isEmpty()}">
-                    <td class="key">Content-Type:</td>
-                    <td>[[${redactedResponse.main.headers.getContentType()}]]</td>
-                </tr>
-                <tr>
-                    <td class="key">Received at:</td>
-                    <td>[[${alert.response.at}]]</td>
-                </tr>
-                <tr data-th-if="${redactedResponse.parts.isEmpty()}">
-                    <td class="key">Body:</td>
-                    <td></td>
-                </tr>            
-                <tr data-th-if="${redactedResponse.main.body.length > 0}">
-                    <td colspan="2">
-                        <pre>[[${redactedResponse.main.body}]]</pre>                    
-                    </td>
-                </tr>
-                <th-block data-th-remove="tag" data-th-each="part: ${redactedResponse.parts}">
                     <tr>
-                        <td colspan="2"><h4>Response part [[${partStat.count}]]/[[${redactedResponse.parts.size()}]]</h4></td>
+                        <td class="data-label">Request ID</td>
+                        <td class="data-value"><span class="highlight-text">[[${alert.invocation.boot}]].[[${alert.invocation.id}]]</span></td>
+                    </tr>
+                    <tr>
+                        <td class="data-label">Target Upstream</td>
+                        <td class="data-value">[[${alert.invocation.endpoint.upstream}]]</td>
+                    </tr>
+                    <tr>
+                        <td class="data-label">Target Endpoint</td>
+                        <td class="data-value">[[${alert.invocation.endpoint.name}]]</td>
+                    </tr>
+
+                    <tr data-th-if="${alert.invocation.principal != null}">
+                        <td colspan="2" class="section-heading-cell">
+                            <p class="section-heading-text">User</p>
+                        </td>
+                    </tr>
+                    <tr data-th-if="${alert.invocation.principal != null}" data-th-with="principal=${alert.invocation.principal}" data-th-remove="tag">
+                        <!--/*/ <th-block data-th-replace="${users}" /> /*/-->
                     </tr>                    
-                    <tr data-th-if="${part.headers.getContentDisposition() != null}">
-                        <td class="key">Content-Disposition:</td>
-                        <td>[[${part.headers.getContentDisposition()}]]</td>                    
+                    
+                    <tr>
+                        <td colspan="2" class="section-heading-cell">
+                            <p class="section-heading-text">Outbound Request Details</p>
+                        </td>
                     </tr>
-                    <tr data-th-if="${part.headers.getContentType() != null}">
-                        <td class="key">Content-Type:</td>
-                        <td>[[${part.headers.getContentType()}]]</td>                    
+                    <tr>
+                        <td class="data-label">Method</td>
+                        <td class="data-value"><strong>[[${alert.request.method}]]</strong></td>
                     </tr>
-                    <tr>                        
-                        <td colspan="2">
-                            <pre>[[${part.body}]]</pre>                    
-                        </td>                    
+                    <tr>
+                        <td class="data-label">URI</td>
+                        <td class="data-value">[[${redactedRequest.uri}]]</td>
                     </tr>
-                </th-block>
-            </tbody>
-            <tbody data-th-remove="tag" data-th-if="${alert.exception != null}" data-th-with="exception=${alert.exception}">
-                <tr>
-                    <td colspan="2"><h3>Exception</h3></td>
-                </tr>                
-                <tr>
-                    <td class="key">At:</td>
-                    <td>[[${exception.at}]]</td>
-                </tr>
-                <tr>
-                    <td class="key">Message:</td>
-                    <td></td>
-                </tr>            
-                <tr>
-                    <td colspan="2">
-                        <pre>[[${exception.message}]]</pre>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+                    <tr>
+                        <td class="data-label">Timestamp</td>
+                        <td class="data-value">[[${alert.request.at}]]</td>
+                    </tr>
+
+                    <tr data-th-if="${redactedRequest.parts.isEmpty()}">
+                        <td colspan="2" style="border-bottom: none; padding-bottom: 0;">
+                            <div class="code-panel">
+                                <div class="code-header">Request Payload</div>
+                                <div class="code-body" >
+                                    <pre data-th-if="${redactedRequest.main.body.length == 0}">&lt;empty&gt;</pre>
+                                    <pre data-th-if="${redactedRequest.main.body.length > 0}">[[${redactedRequest.main.body}]]</pre>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr data-th-each="part: ${redactedRequest.parts}">
+                        <td colspan="2" style="border-bottom: none; padding-bottom: 0;">
+                            <div class="code-panel">
+                                <div class="code-header">
+                                    Request part [[${partStat.count}]]/[[${redactedRequest.parts.size()}]]
+                                </div>
+                                <div class="code-info" data-th-if="${part.headers.getContentDisposition() != null}">
+                                    Content-Disposition: [[${part.headers.getContentDisposition()}]]
+                                </div>
+                                <div class="code-info" data-th-if="${part.headers.getContentType() != null}">
+                                    Content-Type: [[${part.headers.getContentType()}]]
+                                </div>
+                                <div class="code-body" >
+                                    <pre data-th-if="${part.body.length == 0}">&lt;empty&gt;</pre>
+                                    <pre data-th-if="${part.body.length > 0}">[[${part.body}]]</pre>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+
+
+                    <tbody data-th-remove="tag" data-th-if="${alert.response != null}" data-th-with="redactedResponse=${#bodies.abbreviated(alert.invocation, alert.response, 2048)}">
+                        <tr>
+                            <td colspan="2" class="section-heading-cell">
+                                <p class="section-heading-text">Inbound Response Details</p>
+                            </td>
+                        </tr>
+                        <tr data-th-if="${alert.response.status != null}">
+                            <td class="data-label">HTTP Status</td>
+                            <td class="data-value"><span data-th-class="${alert.response.status.isError() ? 'badge-error':'badge-success'}">[[${alert.response.status}]]</span></td>
+                        </tr>                        
+
+                        <tr data-th-if="${!redactedResponse.main.headers.isEmpty()}">
+                            <td class="data-label">Content-Type</td>
+                            <td class="data-value">[[${redactedResponse.main.headers.getContentType()}]]</td>
+                        </tr>                               
+
+                        <tr>
+                            <td class="data-label">Timestamp</td>
+                            <td class="data-value">[[${alert.response.at}]]</td>
+                        </tr>                               
+
+                        <tr data-th-if="${redactedResponse.parts.isEmpty()}">
+                            <td colspan="2" style="border-bottom: none; padding-bottom: 0;">
+                                <div class="code-panel error">
+                                    <div class="code-header">Response Payload</div>
+                                    <div class="code-body" >
+                                        <pre data-th-if="${redactedResponse.main.body.length == 0}">&lt;empty&gt;</pre>
+                                        <pre data-th-if="${redactedResponse.main.body.length > 0}">[[${redactedResponse.main.body}]]</pre>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>                 
+
+
+                        <tr data-th-each="part: ${redactedResponse.parts}">
+                            <td colspan="2" style="border-bottom: none; padding-bottom: 0;">
+                                <div class="code-panel error">
+                                    <div class="code-header">
+                                        Response part [[${partStat.count}]]/[[${redactedResponse.parts.size()}]]
+                                    </div>
+                                    <div class="code-info" data-th-if="${part.headers.getContentDisposition() != null}">
+                                        Content-Disposition: [[${part.headers.getContentDisposition()}]]
+                                    </div>
+                                    <div class="code-info"  data-th-if="${part.headers.getContentType() != null}">
+                                        Content-Type: [[${part.headers.getContentType()}]]
+                                    </div>
+                                    <div class="code-body" >
+                                        <pre data-th-if="${part.body.length == 0}">&lt;empty&gt;</pre>
+                                        <pre data-th-if="${part.body.length > 0}">[[${part.body}]]</pre>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tbody data-th-remove="tag" data-th-if="${alert.exception != null}" data-th-with="exception=${alert.exception}">
+                        <tr>
+                            <td colspan="2" class="section-heading-cell">
+                                <p class="section-heading-text">Exception details</p>
+                            </td>
+                        </tr>                        
+                        <tr>
+                            <td class="data-label">Timestamp</td>
+                            <td class="data-value">[[${exception.at}]]</td>
+                        </tr>                               
+                        <tr data-th-each="part: ${redactedResponse.parts}">
+                            <td colspan="2" style="border-bottom: none; padding-bottom: 0;">
+                                <div class="code-panel error">
+                                    <div class="code-header">
+                                        Stacktrace
+                                    </div>
+                                    <div class="code-body" >
+                                        <pre>[[${exception.message}]]</pre>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>                        
+                    </tbody>
+                </table>
+                <hr class="alert-separator" data-th-if="${!alertStat.last}" />
+            </div>
+        </div>
 
     </body>
 </html>
-
