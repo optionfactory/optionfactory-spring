@@ -5,6 +5,9 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerFactory;
+import javax.xml.validation.SchemaFactory;
+import org.xml.sax.SAXNotRecognizedException;
+import org.xml.sax.SAXNotSupportedException;
 
 public class Xml {
 
@@ -31,6 +34,17 @@ public class Xml {
             f.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
             return f;
         } catch (TransformerConfigurationException ex) {
+            throw new IllegalStateException(ex);
+        }
+    }
+
+    public static SchemaFactory schemaFactory() {
+        try {
+            final var sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+            sf.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+            sf.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+            return sf;
+        } catch (SAXNotRecognizedException | SAXNotSupportedException ex) {
             throw new IllegalStateException(ex);
         }
     }

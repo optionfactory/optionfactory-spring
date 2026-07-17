@@ -15,7 +15,6 @@ import javax.xml.transform.Source;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
-import javax.xml.validation.SchemaFactory;
 import net.optionfactory.spring.marshaling.jaxb.Xml;
 import org.springframework.core.io.InputStreamSource;
 import org.w3c.dom.DOMException;
@@ -86,10 +85,7 @@ public class Schemas {
                 }
             }
             final var orderedSources = orderedSources(result);
-            final var sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-            sf.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-            sf.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
-            return new SchemaAndProtocols(sf.newSchema(orderedSources), protocols);
+            return new SchemaAndProtocols(Xml.schemaFactory().newSchema(orderedSources), protocols);
         } catch (Exception ex) {
             throw new IllegalStateException("Cannot load schemas from WSDL", ex);
         }
@@ -148,15 +144,11 @@ public class Schemas {
     /// @throws IllegalStateException if a underlying SAX validation syntax error or environmental failure occurs
     public static Schema fromXsds(InputStreamSource firstSchema, InputStreamSource... otherSchemas) {
         try {
-            final var sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-            sf.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-            sf.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
-
             final var sources = Stream.concat(Stream.of(firstSchema), Stream.of(otherSchemas))
                     .map(Schemas::toSource)
                     .toArray(StreamSource[]::new);
 
-            return sf.newSchema(sources);
+            return Xml.schemaFactory().newSchema(sources);
         } catch (SAXException ex) {
             throw new IllegalStateException("Cannot load schemas", ex);
         }
