@@ -72,7 +72,7 @@ public interface JweAuthenticationConfigurer extends JwtAuthenticationConfigurer
 
         @Override
         public JweAuthenticationConfigurer matchToken(JweMatcher matcher) {
-            Assert.notNull(principal, "JweMatcher cannot be null");
+            Assert.notNull(matcher, "JweMatcher cannot be null");
             this.tokenMatcher = matcher;
             return this;
         }

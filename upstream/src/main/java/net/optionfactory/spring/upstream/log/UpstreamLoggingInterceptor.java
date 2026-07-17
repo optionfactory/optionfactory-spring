@@ -38,11 +38,11 @@ public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
         for (final var endpoint : endpoints.values()) {
             Annotations.closest(endpoint.method(), Upstream.Logging.class)
                     .map(a -> new Upstream.Logging.Conf(
-                    a.requestMulitpart(),
+                    a.requestMultipart(),
                     a.requestHeaders(),
                     a.requestBody(),
                     a.requestMaxSize(),
-                    a.responseMulitpart(),
+                    a.responseMultipart(),
                     a.responseHeaders(),
                     a.responseBody(),
                     a.responseMaxSize(),

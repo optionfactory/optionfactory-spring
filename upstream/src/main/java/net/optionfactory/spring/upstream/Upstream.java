@@ -136,7 +136,7 @@ public @interface Upstream {
         public static final String INFIX_SCISSORS = "✂️";
         public static final int DEFAULT_MAX_SIZE = 8 * 1024;
 
-        MultipartStrategy requestMulitpart() default MultipartStrategy.RENDER_PARTS;
+        MultipartStrategy requestMultipart() default MultipartStrategy.RENDER_PARTS;
 
         HeadersStrategy requestHeaders() default HeadersStrategy.SKIP;
 
@@ -144,7 +144,7 @@ public @interface Upstream {
 
         int requestMaxSize() default DEFAULT_MAX_SIZE;
 
-        MultipartStrategy responseMulitpart() default MultipartStrategy.RENDER_PARTS;
+        MultipartStrategy responseMultipart() default MultipartStrategy.RENDER_PARTS;
 
         HeadersStrategy responseHeaders() default HeadersStrategy.SKIP;
 

@@ -176,7 +176,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                     final var details = new ConcurrentHashMap<String, Object>();
                     details.put("location", inner.getLocation());
                     details.put("message", cause.getMessage());
-                    final var reason = messageSource.getMessage("error.unparseable_message", null, "Unpearsable message", locale);
+                    final var reason = messageSource.getMessage("error.unparseable_message", null, "Unparsable message", locale);
                     problem = Problem.request(Problem.NO_CONTEXT, reason, details);
                 } else {
                     final var reason = messageSource.getMessage("error.invalid_format", null, "Invalid format", locale);

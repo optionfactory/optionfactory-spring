@@ -86,7 +86,7 @@ public interface JwsAuthenticationConfigurer extends JwtAuthenticationConfigurer
 
         @Override
         public Builder verifier(JWSVerifier verifier) {
-            Assert.notNull(verifier, "JwsMatcher cannot be null");
+            Assert.notNull(verifier, "JWSVerifier cannot be null");
             this.verifier = verifier;
             return this;
         }
