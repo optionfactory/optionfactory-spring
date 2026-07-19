@@ -26,6 +26,11 @@ public class StrictContentSecurityPolicyNonceFilter extends OncePerRequestFilter
         filterChain.doFilter(request, response);
     }
 
+    @Override
+    protected boolean shouldNotFilterErrorDispatch() {
+        return false;
+    }
+
     /**
      * We are using a record instead of just the value when setting the nonce as
      * a request attribute/model attribute to always prevent the value to be
