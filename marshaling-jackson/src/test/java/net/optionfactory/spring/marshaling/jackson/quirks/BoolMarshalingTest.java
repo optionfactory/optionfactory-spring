@@ -121,15 +121,14 @@ public class BoolMarshalingTest {
                 ),
                 "canDeserializeFalseToNonnullableField"
         );
-        Assertions.assertEquals(
-                new NonnullableSiNo(false),
-                deser(NonnullableSiNo.class, true,
-                        """
-                        {"value": null}
-                        """
-                ),
-                "can deserialize null to nonnulable field"
-        );
+        Assertions.assertThrows(MismatchedInputException.class, () -> {
+            deser(NonnullableSiNo.class, true,
+                    """
+            {"value": null}
+            """
+            );
+        }, "cannot deserialize null to nonnullable field when quirks are enabled");
+
         Assertions.assertThrows(MismatchedInputException.class, () -> {
             deser(NonnullableSiNo.class, false,
                     """
@@ -216,4 +215,26 @@ public class BoolMarshalingTest {
         );
     }
 
+    @Test
+    public void rejectsArbitraryTextPayloadsWithException() {
+        Assertions.assertThrows(MismatchedInputException.class, () -> {
+            deser(NullableSiNo.class, true,
+                    """
+                    {"value": "MAYBE"}
+                    """
+            );
+        }, "Should reject text that matches neither 't' nor 'f' properties");
+    }
+
+    @Test
+    public void rejectsNativeBooleansWhenQuirksAreEnabled() {
+        // Because text matches strictly against "SI"/"NO", raw booleans are now rejected
+        Assertions.assertThrows(MismatchedInputException.class, () -> {
+            deser(NullableSiNo.class, true,
+                    """
+                    {"value": true}
+                    """
+            );
+        }, "Should reject literal boolean tokens under strict text quirk mapping profile");
+    }
 }

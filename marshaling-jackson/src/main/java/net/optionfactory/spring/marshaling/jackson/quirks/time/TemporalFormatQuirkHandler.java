@@ -16,6 +16,7 @@ import java.time.temporal.TemporalAccessor;
 import java.time.temporal.TemporalQuery;
 import java.util.HashMap;
 import java.util.Map;
+import java.time.format.DateTimeParseException;
 import net.optionfactory.spring.marshaling.jackson.quirks.QuirkHandler;
 import net.optionfactory.spring.marshaling.jackson.quirks.Quirks;
 import net.optionfactory.spring.marshaling.jackson.quirks.Quirks.TemporalFormat;
@@ -68,7 +69,7 @@ public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalF
         if (query == null) {
             throw new IllegalStateException("Unsupported temporal type for @TemporalFormat: " + raw.getName());
         }
-        final var deserializer = new Deserializer(dtf, query);
+        final var deserializer = new Deserializer(dtf, query, raw);
         return sbp.withValueDeserializer(deserializer);
     }
 
@@ -90,22 +91,30 @@ public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalF
 
         private final DateTimeFormatter dtf;
         private final TemporalQuery<?> query;
+        private final Class<?> targetType;
 
-        public Deserializer(DateTimeFormatter dtf, TemporalQuery<?> query) {
+        public Deserializer(DateTimeFormatter dtf, TemporalQuery<?> query, Class<?> targetType) {
             this.dtf = dtf;
             this.query = query;
+            this.targetType = targetType;
         }
 
         @Override
         public Object deserialize(JsonParser jp, DeserializationContext dc) {
-            return dtf.parse(jp.getString(), query);
+            final String text = jp.getValueAsString();
+            if (text.isBlank()) {
+                return dc.reportInputMismatch(targetType, "Blank text for temporal field.");
+            }
+            try {
+                return dtf.parse(text, query);
+            } catch (DateTimeParseException e) {
+                return dc.reportInputMismatch(targetType, "Text '%s' could not be parsed against pattern '%s'", text, dtf.toString());
+            }
         }
 
         @Override
         public TemporalAccessor getNullValue(DeserializationContext ctxt) {
             return null;
         }
-
     }
-
 }

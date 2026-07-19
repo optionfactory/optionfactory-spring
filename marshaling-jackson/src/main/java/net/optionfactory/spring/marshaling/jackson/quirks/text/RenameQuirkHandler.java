@@ -15,6 +15,7 @@ public class RenameQuirkHandler implements QuirkHandler<Quirks.Rename> {
 
     @Override
     public BeanPropertyWriter serialization(Quirks.Rename ann, BeanPropertyWriter bpw) {
+        final var originalName = bpw.getName();
         return bpw.rename(new NameTransformer() {
             @Override
             public String transform(String name) {
@@ -23,7 +24,7 @@ public class RenameQuirkHandler implements QuirkHandler<Quirks.Rename> {
 
             @Override
             public String reverse(String transformed) {
-                throw new UnsupportedOperationException("unused.");
+                return originalName;
             }
         });
     }
@@ -31,7 +32,5 @@ public class RenameQuirkHandler implements QuirkHandler<Quirks.Rename> {
     @Override
     public SettableBeanProperty deserialization(Quirks.Rename ann, SettableBeanProperty sbp) {
         return sbp.withSimpleName(ann.value());
-
     }
-
 }

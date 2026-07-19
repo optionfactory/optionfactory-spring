@@ -90,4 +90,24 @@ public class TimestampTest {
 
         Assertions.assertEquals(new DefaultBean(null), got);
     }
+
+    @Test
+    public void rejectsMalformedNumericStringWithException() {
+        final String json = """
+                {"value":"1784325600garbage"}
+                """;
+        Assertions.assertThrows(tools.jackson.databind.exc.MismatchedInputException.class, () -> {
+            om.readValue(json, DefaultBean.class);
+        }, "Should throw MismatchedInputException for non-numeric content inside strings");
+    }
+
+    @Test
+    public void rejectsInvalidTokenStructuresWithException() {
+        final String json = """
+                {"value": { "nested": 12345 } }
+                """;
+        Assertions.assertThrows(tools.jackson.databind.exc.MismatchedInputException.class, () -> {
+            om.readValue(json, DefaultBean.class);
+        }, "Should throw MismatchedInputException when receiving an Object token instead of number/string");
+    }
 }

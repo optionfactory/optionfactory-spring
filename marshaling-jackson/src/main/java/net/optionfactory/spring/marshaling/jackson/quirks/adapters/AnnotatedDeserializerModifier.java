@@ -49,11 +49,11 @@ public class AnnotatedDeserializerModifier extends ValueDeserializerModifier {
                 builder.addOrReplaceProperty(currentProp, true);
             }
         });
-        //see https://github.com/FasterXML/jackson-databind/issues/3981
+
+        // see https://github.com/FasterXML/jackson-databind/issues/3981
         if (builder.getValueInstantiator() instanceof StdValueInstantiator vi && vi.canCreateFromObjectWith()) {
             SettableBeanProperty[] instantiatorProperties = vi.getFromObjectArguments(config);
             if (instantiatorProperties != null && instantiatorProperties.length > 0) {
-                // replace all creator properties instantiator to use replacementDeserializer
                 final var modifiedProperties = Arrays.stream(instantiatorProperties).map(prop -> {
                     SettableBeanProperty currentProp = prop;
                     for (final var transformer : transformers) {
@@ -68,7 +68,10 @@ public class AnnotatedDeserializerModifier extends ValueDeserializerModifier {
                     delegateArgsField.setAccessible(true);
                     delegateArgs = (SettableBeanProperty[]) delegateArgsField.get(vi);
                 } catch (Exception ex) {
-                    delegateArgs = null;
+                    throw new IllegalStateException(
+                        "QuirksModule reflection hack failed. Cannot access internal Jackson field '_delegateArguments'. " +
+                        "Ensure your JVM parameters allow deep reflection access to tools.jackson.databind.", ex
+                    );
                 }
 
                 vi.configureFromObjectSettings(
@@ -83,5 +86,4 @@ public class AnnotatedDeserializerModifier extends ValueDeserializerModifier {
         }
         return builder;
     }
-
 }
