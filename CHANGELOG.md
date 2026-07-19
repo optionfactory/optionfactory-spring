@@ -1,5 +1,8 @@
 # version 26.0
 
+## downstream-maven-plugin
+New: per class `outputStyle` can now be overridden by configuring `outputStyleOverrides`.
+
 ## upstream-alerts-email
 New alert email template: used email templates can be simplified.
 
