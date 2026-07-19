@@ -24,7 +24,7 @@ Simplified `TraversalFilter`: The interface has been completely stripped of quer
  
 ### Breaking Changes
  
-Annotation Configuration Updates: The mode() element has been deleted across all built-in whitelist filtering annotations. If you have classes explicitly specifying a query routing mode on the filter itself, you must remove it:  
+* Annotation configuration: The `mode()` element has been deleted across all built-in whitelist filtering annotations. If you have classes explicitly specifying a query routing mode on the filter itself, you must remove it:  
  
  ```java
  // old (Will not compile)
@@ -35,3 +35,5 @@ Annotation Configuration Updates: The mode() element has been deleted across all
 @FilterGroup.Subselect(prefix = "leaves", reuse = true)
 @BooleanCompare(name = "flag", path = "leaves.flag")
 ```
+
+* `LowercaseUnderscoreSeparatedPhysicalNamingStrategy` has been removed, use hibernate `CamelCaseToUnderscoreNamingStrategy` 
