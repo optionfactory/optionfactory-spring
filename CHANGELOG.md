@@ -1,5 +1,8 @@
 # version 26.0
 
+## email 
+💥 `EmailcheckServerIdentity` now has a `checkServerIdentity` (defaulting to true)
+
 ## downstream-maven-plugin
 New: per class `outputStyle` can now be overridden by configuring `outputStyleOverrides`.
 
@@ -27,7 +30,7 @@ Simplified `TraversalFilter`: The interface has been completely stripped of quer
  
 ### Breaking Changes
  
-* Annotation configuration: The `mode()` element has been deleted across all built-in whitelist filtering annotations. If you have classes explicitly specifying a query routing mode on the filter itself, you must remove it:  
+* 💥 Annotation configuration: The `mode()` element has been deleted across all built-in whitelist filtering annotations. If you have classes explicitly specifying a query routing mode on the filter itself, you must remove it and replace it with `@FilterGroup`s
  
  ```java
  // old (Will not compile)
@@ -39,4 +42,4 @@ Simplified `TraversalFilter`: The interface has been completely stripped of quer
 @BooleanCompare(name = "flag", path = "leaves.flag")
 ```
 
-* `LowercaseUnderscoreSeparatedPhysicalNamingStrategy` has been removed, use hibernate `CamelCaseToUnderscoreNamingStrategy` 
+* 💥 `LowercaseUnderscoreSeparatedPhysicalNamingStrategy` has been removed, use hibernate `CamelCaseToUnderscoreNamingStrategy` 

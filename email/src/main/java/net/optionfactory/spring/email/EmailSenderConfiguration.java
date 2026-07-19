@@ -22,6 +22,7 @@ public record EmailSenderConfiguration(
         Duration writeTimeout,
         @NonNull
         Optional<SSLSocketFactory> sslSocketFactory,
+        boolean checkServerIdentity,
         @NonNull
         Optional<String> username,
         @NonNull
@@ -48,6 +49,7 @@ public record EmailSenderConfiguration(
         private Duration writeTimeout;
         private String host;
         private SSLSocketFactory sslSocketFactory;
+        private boolean checkServerIdentity = true;
         private Protocol protocol;
         private int port;
         private String username;
@@ -94,6 +96,11 @@ public record EmailSenderConfiguration(
             return this;
         }
 
+        public Builder checkServerIdentity(boolean checkServerIdentity) {
+            this.checkServerIdentity = checkServerIdentity;
+            return this;
+        }
+
         public Builder username(@Nullable String username) {
             this.username = username;
             return this;
@@ -122,6 +129,7 @@ public record EmailSenderConfiguration(
                     readTimeout != null ? readTimeout : Duration.ofSeconds(60),
                     writeTimeout != null ? writeTimeout : Duration.ofSeconds(60),
                     Optional.ofNullable(sslSocketFactory),
+                    checkServerIdentity,
                     Optional.ofNullable(username),
                     Optional.ofNullable(password),
                     Optional.ofNullable(deadAfter)

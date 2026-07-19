@@ -133,8 +133,12 @@ public class EmailSender {
             p.setProperty("mail.smtps.writetimeout", Long.toString(conf.writeTimeout().toMillis()));
             p.setProperty("mail.smtps.socketFactory.fallback", "false");
             p.setProperty("mail.smtps.ssl.protocols", "TLSv1.2 TLSv1.3");
-            p.setProperty("mail.smtps.ssl.checkserveridentity", "false");
-            p.setProperty("mail.smtps.ssl.trust", "*");
+            if (conf.checkServerIdentity()) {
+                p.setProperty("mail.smtps.ssl.checkserveridentity", "true");
+            } else {
+                p.setProperty("mail.smtps.ssl.checkserveridentity", "false");
+                p.setProperty("mail.smtps.ssl.trust", "*");
+            }
             conf.sslSocketFactory().ifPresentOrElse(sf -> {
                 p.put("mail.smtps.socketFactory", sf);
             }, () -> {
@@ -155,8 +159,12 @@ public class EmailSender {
             p.setProperty("mail.smtp.starttls.enable", "true");
             p.setProperty("mail.smtp.socketFactory.fallback", "false");
             p.setProperty("mail.smtp.ssl.protocols", "TLSv1.2 TLSv1.3");
-            p.setProperty("mail.smtp.ssl.checkserveridentity", "false");
-            p.setProperty("mail.smtp.ssl.trust", "*");
+            if (conf.checkServerIdentity()) {
+                p.setProperty("mail.smtp.ssl.checkserveridentity", "true");
+            } else {
+                p.setProperty("mail.smtp.ssl.checkserveridentity", "false");
+                p.setProperty("mail.smtp.ssl.trust", "*");
+            }
             if (conf.protocol() == Protocol.START_TLS_REQUIRED) {
                 p.setProperty("mail.smtp.starttls.required", "true");
             }
