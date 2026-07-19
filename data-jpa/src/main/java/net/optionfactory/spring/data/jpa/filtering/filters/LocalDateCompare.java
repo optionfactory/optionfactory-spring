@@ -106,9 +106,9 @@ public @interface LocalDateCompare {
                 }
                 case BETWEEN -> {
                     final String value2 = values[2];
-                    final LocalDate rhs2 = value == null ? null : LocalDate.parse(value2, formatter);
+                    final LocalDate rhs2 = value2 == null ? null : LocalDate.parse(value2, formatter);
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
-                    Filters.ensure(rhs2 != null, name, root, "value cannot be null for operator %s", operator);
+                    Filters.ensure(rhs2 != null, name, root, "value2 cannot be null for operator %s", operator);
                     final LocalDate[] sorted = Stream.of(rhs, rhs2).sorted().toArray((l) -> new LocalDate[l]);
                     yield builder.and(builder.greaterThanOrEqualTo(lhs, sorted[0]), builder.lessThanOrEqualTo(lhs, sorted[1]));
                 }
