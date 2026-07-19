@@ -76,13 +76,13 @@ public class TypeScriptTypeTranslator {
             }
             final var originalFqn = clazz.getName();
             if (typeAliases.containsKey(originalFqn)) {
-                return originalFqn.substring(Math.max(originalFqn.lastIndexOf('.'), originalFqn.lastIndexOf('$')) + 1);
+                return simpleName(originalFqn);
             }
 
             final var fqn = translations.getOrDefault(originalFqn, originalFqn);
 
             if (!fqn.equals(originalFqn) && typeAliases.containsKey(fqn)) {
-                return fqn.substring(Math.max(fqn.lastIndexOf('.'), fqn.lastIndexOf('$')) + 1);
+                return simpleName(originalFqn);                
             }
 
             if (!fqn.equals(originalFqn) && registry.isRegistered(fqn)) {
@@ -106,7 +106,7 @@ public class TypeScriptTypeTranslator {
                 case "void", "java.lang.Void" ->
                     "void";
                 default ->
-                    fqn.equals(originalFqn) ? "any" : fqn.substring(Math.max(fqn.lastIndexOf('.'), fqn.lastIndexOf('$')) + 1);
+                    fqn.equals(originalFqn) ? "any" : simpleName(fqn);
             };
         }
         if (type instanceof TypeVariable<?> tv) {
@@ -121,9 +121,16 @@ public class TypeScriptTypeTranslator {
         return "any";
     }
 
+    public static String simpleName(String fqn) {
+        if (fqn == null) {
+            return null;
+        }
+        return fqn.substring(Math.max(fqn.lastIndexOf('.'), fqn.lastIndexOf('$')) + 1);
+    }
+
     private boolean isAlias(String typeName) {
         return typeAliases.keySet().stream()
-                .map(fqn -> fqn.substring(Math.max(fqn.lastIndexOf('.'), fqn.lastIndexOf('$')) + 1))
+                .map(TypeScriptTypeTranslator::simpleName)
                 .anyMatch(aliasSimpleName -> aliasSimpleName.equals(typeName));
     }
 }
