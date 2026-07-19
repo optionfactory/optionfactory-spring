@@ -1,9 +1,9 @@
 package net.optionfactory.spring.upstream.expressions;
 
+import java.util.ArrayDeque;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import org.springframework.beans.factory.config.BeanExpressionContext;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.expression.BeanExpressionContextAccessor;
@@ -55,7 +55,8 @@ public class OverlayEvaluationContext implements EvaluationContext {
     private final BeanResolver beanResolver;
     private final TypeLocator typeLocator;
     private final TypeConverter typeConverter;
-    private final ConcurrentLinkedDeque<ConcurrentHashMap<String, Object>> variables;
+
+    private final ArrayDeque<Map<String, Object>> variables;
 
     public OverlayEvaluationContext(ConfigurableBeanFactory beanFactory) {
         this.rootObject = new TypedValue(beanFactory == null ? null : new BeanExpressionContext(beanFactory, null));
@@ -65,8 +66,9 @@ public class OverlayEvaluationContext implements EvaluationContext {
             ConversionService cs = beanFactory != null ? beanFactory.getConversionService() : null;
             return (cs != null ? cs : DefaultConversionService.getSharedInstance());
         });
-        this.variables = new ConcurrentLinkedDeque<>();
-        this.variables.add(new ConcurrentHashMap<>());
+
+        this.variables = new ArrayDeque<>();
+        this.variables.add(new HashMap<>());
     }
 
     public OverlayEvaluationContext(OverlayEvaluationContext other) {
@@ -74,9 +76,10 @@ public class OverlayEvaluationContext implements EvaluationContext {
         this.beanResolver = other.beanResolver;
         this.typeLocator = other.typeLocator;
         this.typeConverter = other.typeConverter;
-        this.variables = new ConcurrentLinkedDeque<>();
+
+        this.variables = new ArrayDeque<>();
         this.variables.addAll(other.variables);
-        this.variables.add(new ConcurrentHashMap<>());
+        this.variables.add(new HashMap<>());
     }
 
     @Override
@@ -97,7 +100,7 @@ public class OverlayEvaluationContext implements EvaluationContext {
 
     @Override
     public Object lookupVariable(String name) {
-        for (ConcurrentHashMap<String, Object> overlay : variables.reversed()) {
+        for (final var overlay : variables.reversed()) {
             final var value = overlay.get(name);
             if (value != null) {
                 return value;
