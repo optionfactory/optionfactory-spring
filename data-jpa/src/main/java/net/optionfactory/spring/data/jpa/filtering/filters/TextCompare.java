@@ -84,7 +84,7 @@ public @interface TextCompare {
         @Override
         public Predicate condition(Root<?> root, Path<String> lpath, CriteriaBuilder builder, String[] values) {
             Filters.ensure(values.length == 3 || values.length == 4, name, root, "expected operator,mode,value(s) got %s", Arrays.toString(values));
-            final Operator operator = Operator.valueOf(values[0]);
+            final Operator operator = Filters.parseEnum(Operator.class, values[0], name, root, "operator");
             Filters.ensure((values.length == 3 && operator != Operator.BETWEEN) || (values.length == 4 && operator == Operator.BETWEEN), name, root, "expected operator,mode,value(s) got %s", Arrays.toString(values));
             Filters.ensure(operators.contains(operator), name, root, "operator %s not whitelisted (%s)", operator, operators);
             final CaseSensitivity sensitivity = CaseSensitivity.valueOf(values[1]);

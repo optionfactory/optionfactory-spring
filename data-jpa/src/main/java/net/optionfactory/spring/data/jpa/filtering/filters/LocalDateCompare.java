@@ -78,7 +78,7 @@ public @interface LocalDateCompare {
 
         @Override
         public Predicate condition(Root<?> root, Path<LocalDate> lhs, CriteriaBuilder builder, String[] values) {
-            final Operator operator = Operator.valueOf(values[0]);
+            final Operator operator = Filters.parseEnum(Operator.class, values[0], name, root, "operator");
             Filters.ensure(operators.contains(operator), name, root, "operator %s not whitelisted (%s)", operator, operators);
             Filters.ensure(values.length == (operator == Operator.BETWEEN ? 3 : 2), name, root, "unexpected number of values: %d", values.length);
             final String value = values[1];

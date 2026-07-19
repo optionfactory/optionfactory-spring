@@ -78,7 +78,7 @@ public @interface NumberCompare {
 
         @Override
         public Predicate condition(Root<?> root, Path<Number> lhs, CriteriaBuilder builder, String[] values) {
-            final Operator operator = Operator.valueOf(values[0]);
+            final Operator operator = Filters.parseEnum(Operator.class, values[0], name, root, "operator");
             Filters.ensure(operators.contains(operator), name, root, "operator %s not whitelisted (%s)", operator, operators);
             final String value = values[1];
             final Number rhs = (Number) Values.convert(name, root, value, propertyClass);

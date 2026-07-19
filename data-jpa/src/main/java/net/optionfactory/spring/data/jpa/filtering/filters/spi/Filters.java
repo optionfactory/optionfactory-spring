@@ -143,6 +143,28 @@ public interface Filters {
         );
     }
 
+    /**
+     * Safely parses an untrusted string value into a target Enum, converting
+     * raw Java errors into structured, trackable InvalidFilterRequests.
+     * @param <E>
+     * @param enumClass
+     * @param filterName
+     * @param value
+     * @param root
+     * @param fieldDescription
+     * @return 
+     */
+    public static <E extends Enum<E>> E parseEnum(Class<E> enumClass, String value, String filterName, Root<?> root, String fieldDescription) {
+        if (value == null) {
+            throw new InvalidFilterRequest(filterName, root, String.format("%s parameter cannot be null", fieldDescription));
+        }
+        try {
+            return Enum.valueOf(enumClass, value);
+        } catch (IllegalArgumentException e) {
+            throw new InvalidFilterRequest(filterName, root, String.format("Unknown value '%s' for %s", value, fieldDescription));
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public static <T> Path<T> path(String filterName, Root<?> root, Traversal traversal) {
         Path<?> path = root;
