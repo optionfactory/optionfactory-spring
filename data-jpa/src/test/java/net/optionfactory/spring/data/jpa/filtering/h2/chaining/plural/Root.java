@@ -5,9 +5,11 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import java.util.List;
+import net.optionfactory.spring.data.jpa.filtering.filters.FilterGroup;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
 
 @Entity
+@FilterGroup.Join(value = "leaves")
 @TextCompare(name = "byLeafColor", path = "leaves.color")
 public class Root {
 

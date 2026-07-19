@@ -1,160 +1,186 @@
 package net.optionfactory.spring.data.jpa.filtering.filters.spi;
 
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.From;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Path;
-import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
-import jakarta.persistence.criteria.Subquery;
 import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.EntityType;
 import jakarta.persistence.metamodel.ManagedType;
 import jakarta.persistence.metamodel.PluralAttribute;
 import jakarta.persistence.metamodel.SingularAttribute;
-import jakarta.persistence.metamodel.Type;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+import java.util.UUID;
 import java.util.stream.Stream;
-import net.optionfactory.spring.data.jpa.filtering.filters.QueryMode;
+import net.optionfactory.spring.data.jpa.filtering.filters.FilterGroup;
 
 /**
- * Utility methods for defining filters.
+ * Utility methods for evaluating graph traversals and validating filter
+ * configurations.
  */
 public interface Filters {
 
-    public static final Pattern ATTRIBUTE_TRAVERSAL_PATTERN = Pattern.compile(String.format(
-            "(?:<(?<type>%s)>)?(?<attribute>.+)", Stream.of(TraversalType.values()).map(TraversalType::name).collect(Collectors.joining("|"))
-    ));
+    /**
+     * Represents a single relational hop along a nested property path graph.
+     *
+     * @param name the name of the managed attribute/relationship being
+     * traversed
+     * @param type the {@link JoinType} applied if this step is executed as a
+     * SQL join, or null if it is navigated as a basic field or embedded path
+     * component
+     * @param reuse flags whether this join can merge with an existing join node
+     * on the same context
+     */
+    record Step(String name, JoinType type, boolean reuse) {
 
-    public static Traversal traversal(Annotation annotation, EntityType<?> entity, String pathTraversalSpec) {
-        ManagedType<?> currentType = entity;
-        Attribute<?, ?> currentAttribute = null;
-        final var path = new ArrayList<AttributeTraversal>();
-
-        if (pathTraversalSpec == null || pathTraversalSpec.isEmpty()) {
-            return new Traversal(path, currentAttribute);
-        }
-
-        for (String attributeTraversalSpec : pathTraversalSpec.split("\\.")) {
-            final Matcher m = ATTRIBUTE_TRAVERSAL_PATTERN.matcher(attributeTraversalSpec);
-            ensureConf(m.matches(), annotation, entity, "invalid attribute traversal spec: %s", attributeTraversalSpec);
-            final String type = m.group("type");
-            final String attributeName = m.group("attribute");
-            ensureConf(currentType != null, annotation, entity, "referenced an attribute %s in spec %s owned by a non-managed type", attributeName, pathTraversalSpec);
-            try {
-                currentAttribute = currentType.getAttribute(attributeName);
-            } catch (IllegalArgumentException exception) {
-                throw new InvalidFilterConfiguration(annotation, entity, String.format("referenced a non-existent property %s.%s in spec %s", currentType.getJavaType().getSimpleName(), attributeName, pathTraversalSpec));
-            }
-            if (currentAttribute instanceof SingularAttribute sa) {
-                final AttributeTraversal candidate = new AttributeTraversal(attributeName, Optional.ofNullable(type).map(TraversalType::valueOf).orElse(TraversalType.GET));
-                path.add(candidate);
-                final Type targetType = sa.getType();
-                if (targetType instanceof ManagedType mt) {
-                    currentType = mt;
-                } else {
-                    currentType = null;
-                }
-                continue;
-            }
-            if (currentAttribute instanceof PluralAttribute pa) {
-                final AttributeTraversal candidate = new AttributeTraversal(attributeName, Optional.ofNullable(type).map(TraversalType::valueOf).orElse(TraversalType.INNER_JOIN_REUSE));
-                ensureConf(TraversalType.GET != candidate.type, annotation, entity, "used an invalid traversal type '%s' for plural attribute '%s' in spec: '%s'", candidate.type, candidate.name, pathTraversalSpec);
-                path.add(candidate);
-                final Type targetType = pa.getElementType();
-                if (targetType instanceof ManagedType mt) {
-                    currentType = mt;
-                } else {
-                    currentType = null;
-                }
-                continue;
-            }
-            ensureConf(false, annotation, entity, "referenced an attribute %s with spec %s which is neither a SingularAttribute nor a PluralAttribute", attributeName, pathTraversalSpec);
-        }
-        return new Traversal(path, currentAttribute);
     }
 
-    public static Class<?> ensurePropertyOfAnyType(Annotation annotation, EntityType<?> entity, Traversal traversal, Class<?>... types) {
-        final Class<?> javaType = traversal.attribute == null ? entity.getJavaType() : traversal.attribute.getJavaType();
+    /**
+     * A fully resolved path blueprint used to navigate the JPA entity graph
+     * from a root descriptor down to a specific filtering destination leaf.
+     *
+     * @param joins the ordered sequence of relational steps required to
+     * navigate to the context boundary
+     * @param leaf the final property field name where the comparison takes
+     * place
+     * @param attribute the raw JPA Metamodel descriptor for the target leaf
+     * property
+     * @param group the correlation context token used exclusively by the query
+     * planner adapter
+     */
+    record Traversal(List<Step> joins, String leaf, Attribute<?, ?> attribute, String group) {
+
+        @Override
+        public String toString() {
+            return String.format("%s.%s [Group: %s]",
+                    joins.stream().map(Step::name).collect(java.util.stream.Collectors.joining(".")),
+                    leaf(), group != null ? group : "none");
+        }
+    }
+
+    static Traversal traversal(Annotation annotation, EntityType<?> entity, String path) {
+        if (path == null || path.isEmpty()) {
+            return new Traversal(List.of(), "", null, null);
+        }
+
+        String group = null;
+        JoinType joinType = JoinType.INNER;
+        boolean reuse = true;
+
+        if (path.contains(".")) {
+            int maxMatchLength = -1;
+            Class<?> javaType = entity.getJavaType();
+
+            // subselect groups (Enforcing trailing dot normalization)
+            for (var sub : javaType.getAnnotationsByType(FilterGroup.Subselect.class)) {
+                String matchPrefix = sub.value().endsWith(".") ? sub.value() : sub.value() + ".";
+                if (path.startsWith(matchPrefix) && matchPrefix.length() > maxMatchLength) {
+                    maxMatchLength = matchPrefix.length();
+                    group = sub.reuse() ? matchPrefix : UUID.randomUUID().toString();
+                    joinType = JoinType.INNER; // Subqueries require joins to navigate plural relationships
+                    reuse = true;
+                }
+            }
+
+            // 2. Resolve Join Groups (Longest Match Wins)
+            for (var join : javaType.getAnnotationsByType(FilterGroup.Join.class)) {
+                String matchPrefix = join.value().endsWith(".") ? join.value() : join.value() + ".";
+                if (path.startsWith(matchPrefix) && matchPrefix.length() > maxMatchLength) {
+                    maxMatchLength = matchPrefix.length();
+                    group = null;
+                    joinType = join.type();
+                    reuse = join.reuse();
+                }
+            }
+
+            if (maxMatchLength == -1) {
+                throw new InvalidFilterConfiguration(annotation, entity,
+                        String.format("Path '%s' crosses a relationship boundary but does not match any declared @FilterGroup prefix.", path)
+                );
+            }
+        }
+
+        // 3. Map the Graph Hops using JPA Metamodel Inspection
+        ManagedType<?> currentType = entity;
+        Attribute<?, ?> currentAttribute = null;
+        final List<Step> pathList = new ArrayList<>();
+        String[] parts = path.split("\\.");
+
+        for (int i = 0; i < parts.length; i++) {
+            String attributeName = parts[i];
+            if (currentType != null) {
+                currentAttribute = currentType.getAttribute(attributeName);
+            }
+
+            boolean isLast = (i == parts.length - 1);
+            if (!isLast) {
+                if (currentAttribute != null && (currentAttribute.isAssociation() || currentAttribute.isCollection())) {
+                    pathList.add(new Step(attributeName, joinType, reuse));
+                } else {
+                    // Safe automated fallback for Embeddables, Records, or JSON properties
+                    pathList.add(new Step(attributeName, null, false));
+                }
+
+                if (currentAttribute instanceof SingularAttribute sa && sa.getType() instanceof ManagedType mt) {
+                    currentType = mt;
+                } else if (currentAttribute instanceof PluralAttribute pa && pa.getElementType() instanceof ManagedType mt) {
+                    currentType = mt;
+                } else {
+                    currentType = null;
+                }
+            }
+        }
+
+        String leaf = parts.length > 0 ? parts[parts.length - 1] : "";
+        return new Traversal(pathList, leaf, currentAttribute, group);
+    }
+
+    static Class<?> ensurePropertyOfAnyType(Annotation annotation, EntityType<?> entity, Traversal traversal, Class<?>... types) {
+        final Class<?> javaType = traversal.attribute() == null ? entity.getJavaType() : traversal.attribute().getJavaType();
         return Stream.of(types)
                 .filter(type -> type.isAssignableFrom(javaType))
                 .findFirst()
-                .orElseThrow(() -> new InvalidFilterConfiguration(annotation, entity, String.format("expected traversal %s to be of type %s, got %s", traversal.path, List.of(types), traversal.attribute.getJavaType().getSimpleName())));
+                .orElseThrow(() -> new InvalidFilterConfiguration(annotation, entity, String.format("expected traversal %s to be of type %s, got %s", traversal.leaf(), List.of(types), javaType.getSimpleName())));
     }
 
-    private static void ensureConf(boolean test, Annotation annotation, EntityType<?> entity, String format, Object... values) {
-        if (!test) {
-            throw new InvalidFilterConfiguration(annotation, entity, String.format(format, values));
-        }
-    }
-
-    public static void ensure(boolean test, String filterName, Root<?> root, String format, Object... values) {
+    static void ensure(boolean test, String filterName, Root<?> root, String format, Object... values) {
         if (!test) {
             throw new InvalidFilterRequest(filterName, root, String.format(format, values));
         }
     }
 
-    private static Path<?> join(String filterName, Root<?> root, Path<?> path, String attribute, JoinType jt, boolean reuse) {
+    private static From<?, ?> join(String filterName, Root<?> root, From<?, ?> from, String attribute, JoinType jt, boolean reuse) {
         if (!reuse) {
-            return ((From<?, ?>) path).join(attribute, jt);
+            return from.join(attribute, jt);
         }
-        final var from = ((From<?, ?>) path);
-        return from
-                .getJoins()
-                .stream()
+        return from.getJoins().stream()
                 .filter(j -> j.getAttribute().getName().equals(attribute))
-                .peek(j -> ensure(j.getJoinType() == jt, filterName, root, "Inconsistent join in filter: Requested join:(%s,%s) Former join:(%s,%s)", attribute, jt, j.getAttribute().getName(), j.getJoinType()))
+                .peek(j -> ensure(j.getJoinType() == jt, filterName, root, "Inconsistent join configuration requested: %s", attribute))
                 .findFirst()
                 .orElseGet(() -> from.join(attribute, jt));
     }
 
-    public record ModalQuery(CriteriaBuilder builder, Root<?> root, Root<?> conditionRoot, Subquery<Integer> sq) {
-
-    }
-
-    public static ModalQuery prepare(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, QueryMode mode) {
-        if (mode == QueryMode.JOIN) {
-            return new ModalQuery(builder, root, root, null);
+    @SuppressWarnings("unchecked")
+    static <T> Path<T> path(String filterName, Root<?> root, Traversal traversal) {
+        Path<?> current = root;
+        for (Step step : traversal.joins()) {
+            if (step.type() == null) {
+                // navigate embeddables, records, and JSON fields
+                current = current.get(step.name());
+            } else {
+                // cross an entity relationship boundary using a SQL Join
+                current = join(filterName, root, (From<?, ?>) current, step.name(), step.type(), step.reuse());
+            }
         }
-        final Subquery<Integer> sq = query.subquery(Integer.class);
-        final Root<?> conditionRoot = sq.from(root.getJavaType());
-        return new ModalQuery(builder, root, conditionRoot, sq);
-    }
-
-    public static Predicate apply(ModalQuery mq, Predicate condition) {
-        final var builder = mq.builder();
-        final var subquery = mq.sq();
-        if (subquery == null) {
-            return condition;
+        if (traversal.leaf() == null || traversal.leaf().isEmpty()) {
+            return (Path<T>) current;
         }
-        return builder.exists(
-                subquery.select(builder.literal(1))
-                        .where(builder.and(
-                                builder.equal(mq.conditionRoot(), mq.root()),
-                                condition
-                        ))
-        );
+        return (Path<T>) current.get(traversal.leaf());
     }
 
-    /**
-     * Safely parses an untrusted string value into a target Enum, converting
-     * raw Java errors into structured, trackable InvalidFilterRequests.
-     * @param <E>
-     * @param enumClass
-     * @param filterName
-     * @param value
-     * @param root
-     * @param fieldDescription
-     * @return 
-     */
-    public static <E extends Enum<E>> E parseEnum(Class<E> enumClass, String value, String filterName, Root<?> root, String fieldDescription) {
+    static <E extends Enum<E>> E parseEnum(Class<E> enumClass, String value, String filterName, Root<?> root, String fieldDescription) {
         if (value == null) {
             throw new InvalidFilterRequest(filterName, root, String.format("%s parameter cannot be null", fieldDescription));
         }
@@ -164,53 +190,4 @@ public interface Filters {
             throw new InvalidFilterRequest(filterName, root, String.format("Unknown value '%s' for %s", value, fieldDescription));
         }
     }
-
-    @SuppressWarnings("unchecked")
-    public static <T> Path<T> path(String filterName, Root<?> root, Traversal traversal) {
-        Path<?> path = root;
-        for (final var part : traversal.path()) {
-            switch (part.type()) {
-                case GET ->
-                    path = path.get(part.name());
-                case INNER_JOIN ->
-                    path = join(filterName, root, path, part.name(), JoinType.INNER, false);
-                case INNER_JOIN_REUSE ->
-                    path = join(filterName, root, path, part.name(), JoinType.INNER, true);
-                case LEFT_JOIN ->
-                    path = join(filterName, root, path, part.name(), JoinType.LEFT, false);
-                case LEFT_JOIN_REUSE ->
-                    path = join(filterName, root, path, part.name(), JoinType.LEFT, true);
-                default ->
-                    ensure(false, filterName, root, "Unsupported TraversalType: %s for %s in traversal %s", part.type(), part.name(), traversal);
-            }
-        }
-        return (Path<T>) path;
-    }
-
-    public enum TraversalType {
-        LEFT_JOIN,
-        INNER_JOIN,
-        INNER_JOIN_REUSE,
-        LEFT_JOIN_REUSE,
-        GET;
-    }
-
-    public record Traversal(List<AttributeTraversal> path, Attribute<?, ?> attribute) {
-
-        @Override
-        public String toString() {
-            return String.format("%s(%s)", path(), attribute().getJavaType());
-        }
-
-    }
-
-    public record AttributeTraversal(String name, TraversalType type) {
-
-        @Override
-        public String toString() {
-            return String.format("%s(%s)", name(), type());
-        }
-
-    }
-
 }

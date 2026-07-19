@@ -41,8 +41,6 @@ public @interface LocalDateCompare {
 
     String name();
 
-    QueryMode mode() default QueryMode.JOIN;
-
     Operator[] operators() default {
         Operator.EQ, Operator.NEQ, Operator.LT, Operator.GT, Operator.LTE, Operator.GTE, Operator.BETWEEN
     };
@@ -62,14 +60,12 @@ public @interface LocalDateCompare {
     public static class LocalDateCompareFilter implements TraversalFilter<LocalDate> {
 
         private final String name;
-        private final QueryMode mode;
         private final EnumSet<Operator> operators;
         private final DateTimeFormatter formatter;
         private final Traversal traversal;
 
         public LocalDateCompareFilter(LocalDateCompare annotation, EntityType<?> entity) {
             this.name = annotation.name();
-            this.mode = annotation.mode();
             this.traversal = Filters.traversal(annotation, entity, annotation.path());
             Filters.ensurePropertyOfAnyType(annotation, entity, traversal, LocalDate.class);
             this.operators = EnumSet.of(annotation.operators()[0], annotation.operators());
@@ -120,11 +116,6 @@ public @interface LocalDateCompare {
         @Override
         public String name() {
             return name;
-        }
-
-        @Override
-        public QueryMode mode() {
-            return mode;
         }
 
         @Override

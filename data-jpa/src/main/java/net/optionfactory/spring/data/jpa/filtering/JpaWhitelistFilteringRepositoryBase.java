@@ -64,7 +64,7 @@ public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> ext
 
     public <R> Stream<R> findAll(@Nullable Specification<T> base, FilterRequest filters, Sort sort, int fetchSize, BiFunction<SessionPolicy, T, R> callback) {
         final AtomicLong counter = new AtomicLong(-1);
-        final SessionPolicy policy = new SessionPolicy(entityManager, counter);        
+        final SessionPolicy policy = new SessionPolicy(entityManager, counter);
         return getQuery(where(base).and(filter(filters)), getDomainClass(), sort)
                 .setHint(AvailableHints.HINT_FETCH_SIZE, fetchSize)
                 .getResultStream()
@@ -105,16 +105,14 @@ public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> ext
     }
 
     /*
-     * 4. Centralized Interceptor Engine
      * This runs exclusively when building data retrieval queries.
      * We dynamically inject the sorting specification here and pass Sort.unsorted() 
      * down to the super method to prevent Spring Data from clobbering the chain.
      */
     @Override
     protected <S extends T> TypedQuery<S> getQuery(@Nullable Specification<S> spec, Class<S> domainClass, Sort sort) {
-        Specification<S> sortingSpec = new WhitelistSortingSpecificationAdapter<>(sort, allowedSorters);
-        Specification<S> combinedQuerySpec = spec == null ? sortingSpec : spec.and(sortingSpec);
-        
+        final var sortingSpec = new WhitelistSortingSpecificationAdapter<S>(sort, allowedSorters);
+        final var combinedQuerySpec = spec == null ? sortingSpec : spec.and(sortingSpec);
         return super.getQuery(combinedQuerySpec, domainClass, Sort.unsorted());
     }
 

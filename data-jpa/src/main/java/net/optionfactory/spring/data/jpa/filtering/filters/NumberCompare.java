@@ -43,8 +43,6 @@ public @interface NumberCompare {
 
     String name();
 
-    QueryMode mode() default QueryMode.JOIN;
-
     Operator[] operators() default {
         Operator.EQ, Operator.NEQ, Operator.LT, Operator.GT, Operator.LTE, Operator.GTE, Operator.BETWEEN
     };
@@ -62,7 +60,6 @@ public @interface NumberCompare {
     public static class NumberCompareFilter implements TraversalFilter<Number> {
 
         private final String name;
-        private final QueryMode mode;
         private final EnumSet<Operator> operators;
         private final Class<? extends Number> propertyClass;
         private final Traversal traversal;
@@ -70,7 +67,6 @@ public @interface NumberCompare {
         @SuppressWarnings("unchecked")
         public NumberCompareFilter(NumberCompare annotation, EntityType<?> entity) {
             this.name = annotation.name();
-            this.mode = annotation.mode();
             this.traversal = Filters.traversal(annotation, entity, annotation.path());
             this.propertyClass = (Class<? extends Number>) Filters.ensurePropertyOfAnyType(annotation, entity, traversal, Number.class, byte.class, short.class, int.class, long.class, float.class, double.class, char.class);
             this.operators = EnumSet.of(annotation.operators()[0], annotation.operators());
@@ -119,11 +115,6 @@ public @interface NumberCompare {
         @Override
         public String name() {
             return name;
-        }
-
-        @Override
-        public QueryMode mode() {
-            return mode;
         }
 
         @Override

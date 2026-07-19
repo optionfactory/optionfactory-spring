@@ -44,8 +44,6 @@ public @interface TextCompare {
 
     String name();
 
-    QueryMode mode() default QueryMode.JOIN;
-
     Operator[] operators() default {
         Operator.EQ, Operator.NEQ, Operator.LT, Operator.GT, Operator.LTE, Operator.GTE, Operator.BETWEEN, Operator.CONTAINS, Operator.STARTS_WITH, Operator.ENDS_WITH
     };
@@ -67,14 +65,12 @@ public @interface TextCompare {
     public static class TextCompareFilter implements TraversalFilter<String> {
 
         private final String name;
-        private final QueryMode mode;
         private final EnumSet<Operator> operators;
         private final EnumSet<CaseSensitivity> caseSensitivity;
         private final Traversal traversal;
 
         public TextCompareFilter(TextCompare annotation, EntityType<?> entity) {
             this.name = annotation.name();
-            this.mode = annotation.mode();
             this.operators = EnumSet.of(annotation.operators()[0], annotation.operators());
             this.caseSensitivity = EnumSet.of(annotation.caseSensitivity()[0], annotation.caseSensitivity());
             this.traversal = Filters.traversal(annotation, entity, annotation.path());
@@ -137,25 +133,20 @@ public @interface TextCompare {
                     throw new IllegalStateException("unreachable");
             };
         }
-        
+
         private static final char LIKE_ESCAPE_CHAR = '\\';
         private static final String LIKE_ESCAPE_STR = String.valueOf(LIKE_ESCAPE_CHAR);
-        
-        public static String escapeForLike(String input){
+
+        public static String escapeForLike(String input) {
             return input
                     .replace(LIKE_ESCAPE_STR, LIKE_ESCAPE_STR + LIKE_ESCAPE_STR)
-                .replace("%", LIKE_ESCAPE_STR + "%")
-                .replace("_", LIKE_ESCAPE_STR + "_");            
+                    .replace("%", LIKE_ESCAPE_STR + "%")
+                    .replace("_", LIKE_ESCAPE_STR + "_");
         }
 
         @Override
         public String name() {
             return name;
-        }
-
-        @Override
-        public QueryMode mode() {
-            return mode;
         }
 
         @Override

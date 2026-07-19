@@ -38,8 +38,6 @@ public @interface InEnum {
 
     String name();
 
-    QueryMode mode() default QueryMode.JOIN;
-
     Class<? extends Enum<?>> type();
 
     String path();
@@ -57,14 +55,12 @@ public @interface InEnum {
     public static class InEnumFilter implements TraversalFilter<Enum<?>> {
 
         private final String name;
-        private final QueryMode mode;
         private final boolean nullable;
         private final Class<? extends Enum> type;
         private final Traversal traversal;
 
         public InEnumFilter(InEnum annotation, EntityType<?> entity) {
             this.name = annotation.name();
-            this.mode = annotation.mode();
             this.nullable = annotation.nullable();
             this.type = annotation.type();
             this.traversal = Filters.traversal(annotation, entity, annotation.path());
@@ -89,11 +85,6 @@ public @interface InEnum {
         @Override
         public String name() {
             return name;
-        }
-
-        @Override
-        public QueryMode mode() {
-            return mode;
         }
 
         @Override

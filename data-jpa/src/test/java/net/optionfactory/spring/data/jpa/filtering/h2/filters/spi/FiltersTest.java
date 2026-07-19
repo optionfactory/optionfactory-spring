@@ -31,7 +31,7 @@ public class FiltersTest {
         final Specification<EntityA> specification = new Specification<EntityA>() {
             @Override
             public Predicate toPredicate(Root<EntityA> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
-                final Traversal ts = Filters.traversal(null, root.getModel(), "");
+                final var ts = Filters.traversal(null, root.getModel(), "");
                 final Path<?> path = Filters.path("myFilter", root, ts);
                 Assertions.assertEquals(EntityA.class, path.getJavaType());
                 return null;
@@ -45,7 +45,7 @@ public class FiltersTest {
         final Specification<EntityA> specification = new Specification<EntityA>() {
             @Override
             public Predicate toPredicate(Root<EntityA> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
-                final Traversal ts = Filters.traversal(null, root.getModel(), "b.c.i.n");
+                final var ts = Filters.traversal(null, root.getModel(), "b.c.i.n");                
                 final Expression<Object> path = Filters.path("myFilter", root, ts);
                 Assertions.assertEquals(Long.class, path.getJavaType());
                 return null;
@@ -59,7 +59,7 @@ public class FiltersTest {
         final Specification<EntityA> specification = new Specification<EntityA>() {
             @Override
             public Predicate toPredicate(Root<EntityA> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
-                final Traversal ts = Filters.traversal(null, root.getModel(), "b.x.id");
+                final var ts = Filters.traversal(null, root.getModel(), "b.x.id");                                
                 final Expression<Object> nonExistant = Filters.path("myFilter", root, ts);
                 return null;
             }

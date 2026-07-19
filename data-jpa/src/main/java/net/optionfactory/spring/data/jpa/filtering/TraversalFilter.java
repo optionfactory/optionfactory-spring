@@ -5,13 +5,10 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
-import net.optionfactory.spring.data.jpa.filtering.filters.QueryMode;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
 
 public interface TraversalFilter<T> extends Filter {
-
-    QueryMode mode();
 
     Traversal traversal();
 
@@ -19,10 +16,7 @@ public interface TraversalFilter<T> extends Filter {
 
     @Override
     default Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
-        final var mq = Filters.prepare(root, query, builder, mode());
-        final var path = Filters.<T>path(name(), mq.conditionRoot(), traversal());
-        final var condition = condition(root, path, builder, values);
-        return Filters.apply(mq, condition);
+        final Path<T> path = Filters.path(name(), root, traversal());
+        return condition(root, path, builder, values);
     }
-
 }

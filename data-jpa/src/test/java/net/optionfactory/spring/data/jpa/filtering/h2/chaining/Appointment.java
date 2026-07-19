@@ -5,10 +5,13 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
+import net.optionfactory.spring.data.jpa.filtering.filters.FilterGroup;
 import net.optionfactory.spring.data.jpa.filtering.filters.InEnum;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
 
 @Entity
+@FilterGroup.Join(value="performer")
+@FilterGroup.Join(value="activity")
 @TextCompare(name = "performerName", path = "performer.name")
 @InEnum(name = "activitySeason", path = "activity.season", type = Activity.Season.class)
 @InEnum(name = "status", path = "status", type = Appointment.Status.class)

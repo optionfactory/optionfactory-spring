@@ -8,11 +8,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import java.util.List;
 import net.optionfactory.spring.data.jpa.filtering.filters.BooleanCompare;
-import net.optionfactory.spring.data.jpa.filtering.filters.QueryMode;
+import net.optionfactory.spring.data.jpa.filtering.filters.FilterGroup;
 
 @Entity
-@BooleanCompare(name = "flag1", path = "leaves.flag1", mode = QueryMode.JOIN)
-@BooleanCompare(name = "flag2", path = "leaves.flag2", mode = QueryMode.JOIN)
+@FilterGroup.Join(value = "leaves")
+@BooleanCompare(name = "flag1", path = "leaves.flag1")
+@BooleanCompare(name = "flag2", path = "leaves.flag2")
 public class RootEntityWithJoinFilters {
 
     @Id

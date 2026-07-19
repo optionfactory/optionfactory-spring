@@ -4,10 +4,11 @@ import jakarta.persistence.Embeddable;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import net.optionfactory.spring.data.jpa.filtering.filters.FilterGroup;
 import net.optionfactory.spring.data.jpa.filtering.filters.NumberCompare;
 
-
 @Entity
+@FilterGroup.Join(value = "container")
 @NumberCompare(name = "maxPersons", path = "maxPersons")
 @NumberCompare(name = "rating", path = "rating")
 @NumberCompare(name = "container.value", path = "container.value")
@@ -23,6 +24,7 @@ public class EntityForNumberCompare {
 
     @Embeddable
     public static class NumericEmbeddedContainer {
+
         public Integer value;
     }
 }

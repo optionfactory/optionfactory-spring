@@ -45,8 +45,6 @@ public @interface InstantCompare {
 
     String name();
 
-    QueryMode mode() default QueryMode.JOIN;
-
     Operator[] operators() default {
         Operator.EQ, Operator.NEQ, Operator.LT, Operator.GT, Operator.LTE, Operator.GTE, Operator.BETWEEN
     };
@@ -66,14 +64,12 @@ public @interface InstantCompare {
     public static class InstantCompareFilter implements TraversalFilter<Instant> {
 
         private final String name;
-        private final QueryMode mode;
         private final EnumSet<Operator> operators;
         private final Format format;
         private final Traversal traversal;
 
         public InstantCompareFilter(InstantCompare annotation, EntityType<?> entity) {
             this.name = annotation.name();
-            this.mode = annotation.mode();
             this.traversal = Filters.traversal(annotation, entity, annotation.path());
             Filters.ensurePropertyOfAnyType(annotation, entity, traversal, Instant.class);
             this.operators = EnumSet.of(annotation.operators()[0], annotation.operators());
@@ -145,11 +141,6 @@ public @interface InstantCompare {
         @Override
         public String name() {
             return name;
-        }
-
-        @Override
-        public QueryMode mode() {
-            return mode;
         }
 
         @Override

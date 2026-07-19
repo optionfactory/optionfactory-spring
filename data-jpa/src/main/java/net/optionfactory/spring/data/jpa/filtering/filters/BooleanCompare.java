@@ -38,8 +38,6 @@ public @interface BooleanCompare {
 
     String name();
 
-    QueryMode mode() default QueryMode.JOIN;
-
     Operator[] operators() default {
         Operator.EQ, Operator.NEQ
     };
@@ -61,7 +59,6 @@ public @interface BooleanCompare {
     public static class BooleanCompareFilter implements TraversalFilter<Boolean> {
 
         private final String name;
-        private final QueryMode mode;
         private final EnumSet<Operator> operators;
         private final String trueValue;
         private final Set<String> validValues;
@@ -69,7 +66,6 @@ public @interface BooleanCompare {
 
         public BooleanCompareFilter(BooleanCompare annotation, EntityType<?> entity) {
             this.name = annotation.name();
-            this.mode = annotation.mode();
             this.trueValue = annotation.trueValue();
             this.validValues = Set.of(annotation.trueValue(), annotation.falseValue());
             this.traversal = Filters.traversal(annotation, entity, annotation.path());
@@ -93,11 +89,6 @@ public @interface BooleanCompare {
         @Override
         public String name() {
             return name;
-        }
-
-        @Override
-        public QueryMode mode() {
-            return mode;
         }
 
         @Override
