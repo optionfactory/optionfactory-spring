@@ -56,7 +56,7 @@ public class TranslationToRegisteredTypeTest {
                 OldType.class.getName(), NewType.class.getName()
         );
 
-        final var emitter = new JavaEmitter(tempDir, tempDir, translations, DtoStyle.RECORDS);
+        final var emitter = new JavaEmitter(tempDir, tempDir, translations, DtoStyle.RECORDS, Set.of());
         emitter.emit(registry);
 
         final var file = new File(tempDir, "net/generated/User.java");

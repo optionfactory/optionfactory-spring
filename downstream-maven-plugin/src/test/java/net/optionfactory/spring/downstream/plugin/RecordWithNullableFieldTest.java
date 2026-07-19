@@ -41,7 +41,7 @@ public class RecordWithNullableFieldTest {
         final Set<Class<?>> payloads = Set.of(Account.class);
         final var registry = new TypeRegistry(payloads, "net.generated", Nesting.FLATTEN);
 
-        final var emitter = new JavaEmitter(tempDir, tempDir, Map.of(), DtoStyle.RECORDS);
+        final var emitter = new JavaEmitter(tempDir, tempDir, Map.of(), DtoStyle.RECORDS, Set.of());
         emitter.emit(registry);
 
         final var file = new File(tempDir, "net/generated/Account.java");

@@ -2,8 +2,10 @@ package net.optionfactory.spring.downstream.plugin;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import net.optionfactory.spring.downstream.plugin.core.GenerationPipeline;
 import net.optionfactory.spring.downstream.plugin.discovery.Endpoints;
 import net.optionfactory.spring.downstream.plugin.discovery.Payloads;
@@ -44,6 +46,9 @@ public class GenerateDtosMojo extends AbstractMojo {
     @Parameter(defaultValue = "RECORDS", required = true)
     private DtoStyle outputStyle;
 
+    @Parameter
+    private Set<String> outputStyleOverrides = new HashSet<>();
+
     @Override
     public void execute() throws MojoExecutionException {
         try {
@@ -56,7 +61,7 @@ public class GenerateDtosMojo extends AbstractMojo {
 
             final var endpoints = new Endpoints(targetClientName);
             final var payloads = new Payloads(sourceBasePackage);
-            final var emitter = new JavaEmitter(outputDir, project.getBasedir(), translations, outputStyle);
+            final var emitter = new JavaEmitter(outputDir, project.getBasedir(), translations, outputStyle, outputStyleOverrides);
 
             final var exclusions = translations.keySet();
 

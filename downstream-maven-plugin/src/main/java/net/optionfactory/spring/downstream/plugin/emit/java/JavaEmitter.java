@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.lang.model.element.Modifier;
 import net.optionfactory.spring.downstream.plugin.emit.SourceEmitter;
 import net.optionfactory.spring.downstream.plugin.emit.SourceEmitter.GenerateOutcome;
@@ -26,6 +27,7 @@ public class JavaEmitter implements SourceEmitter {
     private final File projectBaseDir;
     private final Map<String, String> translations;
     private final DtoStyle dtoStyle;
+    private final Set<String> outputStyleOverrides;
     private static final ClassName NULLABLE = ClassName.get("org.jspecify.annotations", "Nullable");
     private static final ClassName NONNULL = ClassName.get("org.jspecify.annotations", "NonNull");
 
@@ -33,11 +35,12 @@ public class JavaEmitter implements SourceEmitter {
         RECORDS, CLASSES;
     }
 
-    public JavaEmitter(File outputDir, File projectBaseDir, Map<String, String> translations, DtoStyle dtoStyle) {
+    public JavaEmitter(File outputDir, File projectBaseDir, Map<String, String> translations, DtoStyle dtoStyle, Set<String> outputStyleOverrides) {
         this.outputDir = outputDir;
         this.projectBaseDir = projectBaseDir;
         this.translations = translations;
         this.dtoStyle = dtoStyle;
+        this.outputStyleOverrides = outputStyleOverrides;
     }
 
     @Override
@@ -76,10 +79,10 @@ public class JavaEmitter implements SourceEmitter {
     private TypeSpec buildDtoSpec(Class<?> dtoClass, TypeRegistry registry, JavaTypeTranslator translator, boolean root) {
         final var targetName = registry.getTargetName(dtoClass);
         final var simpleName = targetName.names().getLast();
+        final var isStyleOverridden = outputStyleOverrides.contains(dtoClass.getName());
+        final var useClasses = (this.dtoStyle == DtoStyle.CLASSES) ^ isStyleOverridden;
 
-        final var typeBuilder = (DtoStyle.CLASSES == dtoStyle
-                ? TypeSpec.classBuilder(simpleName)
-                : TypeSpec.recordBuilder(simpleName))
+        final var typeBuilder = (useClasses ? TypeSpec.classBuilder(simpleName) : TypeSpec.recordBuilder(simpleName))
                 .addModifiers(Modifier.PUBLIC);
 
         for (final var typeParam : dtoClass.getTypeParameters()) {

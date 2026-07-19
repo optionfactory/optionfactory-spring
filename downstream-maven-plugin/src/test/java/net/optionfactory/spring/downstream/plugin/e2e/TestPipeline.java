@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.optionfactory.spring.downstream.plugin.core.GenerationPipeline;
@@ -48,7 +49,7 @@ public class TestPipeline {
     public Map<String, String> java(File tempDir, Nesting nesting, DtoStyle style, Map<String, String> translations) throws Exception {
         final var endpoints = new Endpoints(targetClient);
         final var payloads = new Payloads(sourcePackage);
-        final var emitter = new JavaEmitter(tempDir, tempDir, translations, style);
+        final var emitter = new JavaEmitter(tempDir, tempDir, translations, style, Set.of());
         
         final var exclusions = translations.keySet();        
         final var pipeline = new GenerationPipeline(new SystemStreamLog(), endpoints, payloads, emitter, exclusions);

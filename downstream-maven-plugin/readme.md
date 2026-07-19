@@ -43,8 +43,9 @@ Generates types in `target/generated-sources/downstream-{target}`
 | `targetPackage`    | `true`    | N/A       | The package where DTOs and enums are generated
 | `targetClientName` | `false`   | `null`    | The client name used to filter `@Downstream.Method`s for this execution
 | `nesting`          | `true`    | `NESTED`  | The nesting strategy to use when generating code: `NESTED` tries keeping inner classes as inner classes, `FLATTEN` moves them to the root. 
-| `outputStyle`      | `false`   | `RECORDS` | The strategy used to generate Java DTOs: Can either be `RECORDS` or  `CLASSES`
 | `translations`     | `false`   | N/A       | Type translations to apply
+| `outputStyle`      | `false`   | `RECORDS` | The strategy used to generate Java DTOs: Can either be `RECORDS` or  `CLASSES`
+| `outputStyleOverrides`      | `false`   | `empty set` | Classes that should use the non default outputStyle
 
 ### Example
 
@@ -64,7 +65,7 @@ Generates types in `target/generated-sources/downstream-{target}`
                 <translations>
                     <org.springframework.web.multipart.MultipartFile>byte[]</org.springframework.web.multipart.MultipartFile>
                     <java.time.LocalDate>java.lang.String</java.time.LocalDate>
-                </translations>                                
+                </translations>            
             </configuration>
         </execution>
     </executions>
