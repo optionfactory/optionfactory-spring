@@ -2,15 +2,15 @@ package net.optionfactory.spring.pdf.signing;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.GregorianCalendar;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
-import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
-import org.springframework.util.FastByteArrayOutputStream;
 
 public class PdfSigner {
 
@@ -37,14 +37,31 @@ public class PdfSigner {
         }
     }
 
-    public Resource sign(Resource pdf, SignatureInfo sinfo) {
+    public TemporaryFileSystemResource sign(Resource pdf, SignatureInfo sinfo) {
         try {
-            final var bytes = pdf.getContentAsByteArray();
-            try (final var reloaded = Loader.loadPDF(bytes)) {
-                sign(reloaded, sinfo);
-                final var signed = new FastByteArrayOutputStream(64 * 1024);
-                reloaded.saveIncremental(signed);
-                return new ByteArrayResource(signed.toByteArrayUnsafe());
+            final var tempInput = Files.createTempFile("pdf-sign-in-", ".pdf");
+            try {
+                try (final var is = pdf.getInputStream()) {
+                    Files.copy(is, tempInput, StandardCopyOption.REPLACE_EXISTING);
+                }
+                final var tempOutput = new TemporaryFileSystemResource("pdf-sign-out-", ".pdf");
+                try {
+                    try (final var reloaded = Loader.loadPDF(tempInput.toFile())) {
+                        sign(reloaded, sinfo);
+                        try (final var fos = Files.newOutputStream(tempOutput.getFile().toPath())) {
+                            reloaded.saveIncremental(fos);
+                        }
+                    }
+                    return tempOutput;
+                } catch (IOException | RuntimeException ex) {
+                    tempOutput.discard();
+                    throw ex;
+                }
+            } finally {
+                try {
+                    Files.deleteIfExists(tempInput);
+                } catch (IOException ignored) {
+                }
             }
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
