@@ -109,7 +109,7 @@ public @interface NumberCompare {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
                     Filters.ensure(rhs2 != null, name, root, "value2 cannot be null for operator %s", operator);
                     final Number[] sorted = Stream.of(rhs, rhs2).sorted().toArray((l) -> new Number[l]);
-                    yield builder.and(builder.ge(lhs, sorted[0]), builder.lt(lhs, sorted[1]));
+                    yield builder.and(builder.ge(lhs, sorted[0]), builder.le(lhs, sorted[1]));
                 }
                 default ->
                     throw new IllegalStateException("unreachable");

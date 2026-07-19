@@ -114,7 +114,7 @@ public @interface InstantCompare {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
                     Filters.ensure(rhs2 != null, name, root, "value2 cannot be null for operator %s", operator);
                     final Instant[] instants = Stream.of(rhs, rhs2).sorted().toArray((l) -> new Instant[l]);
-                    yield builder.and(builder.greaterThanOrEqualTo(lhs, instants[0]), builder.lessThan(lhs, instants[1]));
+                    yield builder.and(builder.greaterThanOrEqualTo(lhs, instants[0]), builder.lessThanOrEqualTo(lhs, instants[1]));
                 }
                 default ->
                     throw new IllegalStateException("unreachable");

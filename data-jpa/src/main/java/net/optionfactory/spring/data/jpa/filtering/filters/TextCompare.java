@@ -119,7 +119,7 @@ public @interface TextCompare {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
                     Filters.ensure(rhs2 != null, name, root, "value2 cannot be null for operator %s", operator);
                     final String[] sorted = Stream.of(rhs, rhs2).sorted().toArray((l) -> new String[l]);
-                    yield builder.and(builder.greaterThanOrEqualTo(lhs, sorted[0]), builder.lessThan(lhs, sorted[1]));
+                    yield builder.and(builder.greaterThanOrEqualTo(lhs, sorted[0]), builder.lessThanOrEqualTo(lhs, sorted[1]));
                 }
                 case CONTAINS -> {
                     Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
