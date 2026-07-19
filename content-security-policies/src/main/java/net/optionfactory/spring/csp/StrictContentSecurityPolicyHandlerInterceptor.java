@@ -10,7 +10,7 @@ public class StrictContentSecurityPolicyHandlerInterceptor implements HandlerInt
 
     @Override
     public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView mav) throws Exception {
-        if (mav == null | isRedirect(mav)) {
+        if (mav == null || isRedirect(mav)) {
             return;
         }
         mav.addObject("csp", request.getAttribute("csp"));
