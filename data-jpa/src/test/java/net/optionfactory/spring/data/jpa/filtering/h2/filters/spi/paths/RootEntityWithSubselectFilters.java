@@ -8,10 +8,10 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import java.util.List;
 import net.optionfactory.spring.data.jpa.filtering.filters.BooleanCompare;
-import net.optionfactory.spring.data.jpa.filtering.filters.FilterGroup;
+import net.optionfactory.spring.data.jpa.filtering.filters.FilterTraversal;
 
 @Entity
-@FilterGroup.Subselect(value = "leaves", reuse = false)
+@FilterTraversal(path = "leaves", reuse = false)
 @BooleanCompare(name = "flag1", path = "leaves.flag1")
 @BooleanCompare(name = "flag2", path = "leaves.flag2")
 public class RootEntityWithSubselectFilters {

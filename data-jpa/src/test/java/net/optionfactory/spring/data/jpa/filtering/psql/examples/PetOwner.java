@@ -7,7 +7,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import java.util.List;
-import net.optionfactory.spring.data.jpa.filtering.filters.FilterGroup;
 import net.optionfactory.spring.data.jpa.filtering.filters.InEnum;
 import net.optionfactory.spring.data.jpa.filtering.filters.LocalDateCompare;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
@@ -16,8 +15,6 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 @Entity
-@FilterGroup.Join(value="address")
-@FilterGroup.Join(value="pets")
 @TextCompare(name = "byFirstName", path = "firstName")
 @TextCompare(name = "byLastName", path = "lastName")
 @TextCompare(name = "byState", path = "address.state")

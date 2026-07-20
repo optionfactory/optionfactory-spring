@@ -9,125 +9,115 @@ import jakarta.persistence.metamodel.EntityType;
 import jakarta.persistence.metamodel.ManagedType;
 import jakarta.persistence.metamodel.PluralAttribute;
 import jakarta.persistence.metamodel.SingularAttribute;
-import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import net.optionfactory.spring.data.jpa.filtering.filters.FilterGroup;
+import net.optionfactory.spring.data.jpa.filtering.filters.FilterTraversal;
 
-/**
- * Utility methods for evaluating graph traversals and validating filter
- * configurations.
- */
+/// Utility methods for evaluating entity graph traversals and validating filter runtime requests.
 public interface Filters {
 
-    /**
-     * Represents a single relational hop along a nested property path graph.
-     *
-     * @param name the name of the managed attribute/relationship being
-     * traversed
-     * @param type the {@link JoinType} applied if this step is executed as a
-     * SQL join, or null if it is navigated as a basic field or embedded path
-     * component
-     * @param reuse flags whether this join can merge with an existing join node
-     * on the same context
-     */
-    record Step(String name, JoinType type, boolean reuse) {
+    record Step(String name, JoinType type) {
 
     }
 
-    /**
-     * A fully resolved path blueprint used to navigate the JPA entity graph
-     * from a root descriptor down to a specific filtering destination leaf.
-     *
-     * @param joins the ordered sequence of relational steps required to
-     * navigate to the context boundary
-     * @param leaf the final property field name where the comparison takes
-     * place
-     * @param attribute the raw JPA Metamodel descriptor for the target leaf
-     * property
-     * @param group the correlation context token used exclusively by the query
-     * planner adapter
-     */
     record Traversal(List<Step> joins, String leaf, Attribute<?, ?> attribute, String group) {
 
         @Override
         public String toString() {
             return String.format("%s.%s [Group: %s]",
-                    joins.stream().map(Step::name).collect(java.util.stream.Collectors.joining(".")),
+                    joins.stream().map(Step::name).collect(Collectors.joining(".")),
                     leaf(), group != null ? group : "none");
         }
     }
 
+    /// Evaluates a dot-notated property path relative to a root JPA Entity and builds a fully 
+    /// resolved execution map.
+    /// 
+    /// ### Metamodel Parsing & Nuances
+    /// 
+    /// This method evaluates paths segment-by-segment against the JPA Metamodel to auto-deduce 
+    /// query execution strategies:
+    /// 
+    /// - **Singular Associations (`@ManyToOne`, `@OneToOne`):** Paths crossing singular relations 
+    ///   default to `JoinType.LEFT` to prevent data truncation during negation or null-checking operations.
+    /// - **Plural Associations (`@OneToMany`, `@ManyToMany`):** Paths crossing collection boundaries 
+    ///   automatically assign a `group` token, flagging the query planner adapter to compile these 
+    ///   constraints within a correlated `EXISTS` subquery node.
+    /// - **Non-Relational Paths (Embeddables, Records, JSON columns):** Non-association properties 
+    ///   assign a `null` join type. This lets downstream components safely navigate basic attributes 
+    ///   using structural dot-notation without spawning redundant SQL `JOIN` declarations.
+    /// 
+    /// ### Subquery Context Management (`group` assignments)
+    /// 
+    /// Collection query contexts are managed dynamically via a three-tiered state check:
+    /// 
+    /// 1. **Context Initialization (`group == null`):** The first plural attribute encountered on 
+    ///    a path starts a new query group named after the current path segment string.
+    /// 2. **Context Folding (`reuse = true`):** Deep nested collection paths (e.g., `departments.employees`) 
+    ///    naturally retain the active `group` identifier. This folds child conditions into the 
+    ///    parent's existing `EXISTS` block, validating constraints collectively within the same table correlation.
+    /// 3. **Context Isolation (`reuse = false`):** If a user explicitly registers a configuration override 
+    ///    disabling reuse, the engine assigns an isolated random `UUID` string. This forces the query 
+    ///    compiler to break away from parent folding and isolate that segment into its own distinct, standalone 
+    ///    `EXISTS` block.
+    /// 
+    /// @param entity the JPA root metamodel descriptor
+    /// @param filterName the alphanumeric identifier of the filter being evaluated
+    /// @param path the raw dot-separated target path (e.g., `"departments.employees.name"`)
+    /// @return a fully compiled graph traversal specification
     static Traversal traversal(EntityType<?> entity, String filterName, String path) {
         if (path == null || path.isEmpty()) {
             return new Traversal(List.of(), "", null, null);
         }
 
-        String group = null;
-        JoinType joinType = JoinType.INNER;
-        boolean reuse = true;
+        // overrides by @FilterTraversal annotation
+        final Map<String, FilterTraversal> overrides = Stream.of(entity.getJavaType().getAnnotationsByType(FilterTraversal.class))
+                .collect(Collectors.toMap(FilterTraversal::path, ft -> ft));
 
-        boolean missingFilterGroup = path.contains(".");
-
-        if (path.contains(".")) {
-            int maxMatchLength = -1;
-            Class<?> javaType = entity.getJavaType();
-
-            // subselect groups (longest match wins)
-            for (var sub : javaType.getAnnotationsByType(FilterGroup.Subselect.class)) {
-                String matchPrefix = sub.value().endsWith(".") ? sub.value() : sub.value() + ".";
-                if (path.startsWith(matchPrefix) && matchPrefix.length() > maxMatchLength) {
-                    maxMatchLength = matchPrefix.length();
-                    group = sub.reuse() ? matchPrefix : UUID.randomUUID().toString();
-                    joinType = JoinType.INNER;
-                    reuse = true;
-                }
-            }
-
-            // join groups (longest match wins)
-            for (var join : javaType.getAnnotationsByType(FilterGroup.Join.class)) {
-                String matchPrefix = join.value().endsWith(".") ? join.value() : join.value() + ".";
-                if (path.startsWith(matchPrefix) && matchPrefix.length() > maxMatchLength) {
-                    maxMatchLength = matchPrefix.length();
-                    group = null;
-                    joinType = join.type();
-                    reuse = join.reuse();
-                }
-            }
-
-            if (maxMatchLength != -1) {
-                missingFilterGroup = false;
-            }
-        }
-
-        // 3. Map the Graph Hops using JPA Metamodel Inspection
         ManagedType<?> currentType = entity;
         Attribute<?, ?> currentAttribute = null;
         final List<Step> pathList = new ArrayList<>();
-        String[] parts = path.split("\\.");
+        final var parts = path.split("\\.");
+        String group = null;
+        final var currentPath = new StringBuilder();
 
         for (int i = 0; i < parts.length; i++) {
-            String attributeName = parts[i];
-
+            final var attributeName = parts[i];
             if (currentType != null) {
                 currentAttribute = currentType.getAttribute(attributeName);
             }
 
-            boolean isLast = (i == parts.length - 1);
+            final var isLast = (i == parts.length - 1);
             if (isLast) {
                 break;
             }
 
+            currentPath.append(currentPath.length() > 0 ? "." : "").append(attributeName);
+            final String pathString = currentPath.toString();
+
             if (currentAttribute != null && (currentAttribute.isAssociation() || currentAttribute.isCollection())) {
-                if (missingFilterGroup) {
-                    throw new InvalidFilterConfiguration(filterName, entity, "path crosses a relationship boundary but does not match any declared @FilterGroup prefix.");
+                FilterTraversal override = overrides.get(pathString);
+                JoinType resolvedJoinType = override != null ? override.joinType() : JoinType.LEFT;
+                boolean reuse = override != null ? override.reuse() : true;
+
+                if (currentAttribute instanceof PluralAttribute) {
+                    if (group == null) {
+                        // first plural attribute encountered: we start a new subquery group.
+                        group = reuse ? pathString : UUID.randomUUID().toString();
+                    } else if (!reuse) {
+                        // already inside a subquery, but user explicitly requested to break out.
+                        group = UUID.randomUUID().toString();
+                    }
+                    // if group is not null and reuse is true, we do nothing and inherit the parent's subquery group.
                 }
-                pathList.add(new Step(attributeName, joinType, reuse));
+                pathList.add(new Step(attributeName, resolvedJoinType));
             } else {
-                // Safe automated fallback for Embeddables, Records, or JSON properties
-                pathList.add(new Step(attributeName, null, false));
+                // fallback for embeddables, records, or JSON properties]
+                pathList.add(new Step(attributeName, null));
             }
 
             if (currentAttribute instanceof SingularAttribute sa && sa.getType() instanceof ManagedType mt) {
@@ -139,7 +129,7 @@ public interface Filters {
             }
         }
 
-        String leaf = parts.length > 0 ? parts[parts.length - 1] : "";
+        final var leaf = parts.length > 0 ? parts[parts.length - 1] : "";
         return new Traversal(pathList, leaf, currentAttribute, group);
     }
 
@@ -157,10 +147,7 @@ public interface Filters {
         }
     }
 
-    private static From<?, ?> join(Root<?> root, String filterName, From<?, ?> from, String attribute, JoinType jt, boolean reuse) {
-        if (!reuse) {
-            return from.join(attribute, jt);
-        }
+    private static From<?, ?> join(Root<?> root, String filterName, From<?, ?> from, String attribute, JoinType jt) {
         return from.getJoins().stream()
                 .filter(j -> j.getAttribute().getName().equals(attribute))
                 .peek(j -> ensure(j.getJoinType() == jt, root, filterName, "Inconsistent join configuration requested: %s", attribute))
@@ -173,11 +160,9 @@ public interface Filters {
         Path<?> current = root;
         for (Step step : traversal.joins()) {
             if (step.type() == null) {
-                // navigate embeddables, records, and JSON fields
                 current = current.get(step.name());
             } else {
-                // cross an entity relationship boundary using a SQL Join
-                current = join(root, filterName, (From<?, ?>) current, step.name(), step.type(), step.reuse());
+                current = join(root, filterName, (From<?, ?>) current, step.name(), step.type());
             }
         }
         if (traversal.leaf() == null || traversal.leaf().isEmpty()) {

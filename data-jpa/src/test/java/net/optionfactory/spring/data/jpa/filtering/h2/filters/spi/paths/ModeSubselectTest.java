@@ -38,12 +38,12 @@ public class ModeSubselectTest {
     public void filtersOnJoinedEntity() {
         //usually when using multiple filters on a PluralAttribute what you
         //want is any root where the filters apply at least once for any
-        
+        // this can be achieved by configuring @FilterTraversal(path = "leaves", reuse = false)
         final var fr = FilterRequest.builder()
                 .bool("flag1", f -> f.eq(Boolean.TRUE))
                 .bool("flag2", f -> f.eq(Boolean.TRUE))
                 .build();
-        
+
         Assertions.assertEquals(2, roots.findAll(null, fr).size());
     }
 }
