@@ -381,11 +381,11 @@
                             <td class="data-label">Timestamp</td>
                             <td class="data-value">[[${exception.at}]]</td>
                         </tr>                               
-                        <tr data-th-each="part: ${redactedResponse.parts}">
+                        <tr>
                             <td colspan="2" style="border-bottom: none; padding-bottom: 0;">
                                 <div class="code-panel error">
                                     <div class="code-header">
-                                        Stacktrace
+                                        Exception message
                                     </div>
                                     <div class="code-body" >
                                         <pre>[[${exception.message}]]</pre>
