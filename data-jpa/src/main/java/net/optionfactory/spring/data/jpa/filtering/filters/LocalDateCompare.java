@@ -66,17 +66,17 @@ public @interface LocalDateCompare {
 
         public LocalDateCompareFilter(LocalDateCompare annotation, EntityType<?> entity) {
             this.name = annotation.name();
-            this.traversal = Filters.traversal(annotation, entity, annotation.path());
-            Filters.ensurePropertyOfAnyType(annotation, entity, traversal, LocalDate.class);
+            this.traversal = Filters.traversal(entity, annotation.name(), annotation.path());
+            Filters.ensurePropertyOfAnyType(entity, annotation.name(), traversal, LocalDate.class);
             this.operators = EnumSet.of(annotation.operators()[0], annotation.operators());
             this.formatter = DateTimeFormatter.ofPattern(annotation.datePattern());
         }
 
         @Override
         public Predicate condition(Root<?> root, Path<LocalDate> lhs, CriteriaBuilder builder, String[] values) {
-            final Operator operator = Filters.parseEnum(Operator.class, values[0], name, root, "operator");
-            Filters.ensure(operators.contains(operator), name, root, "operator %s not whitelisted (%s)", operator, operators);
-            Filters.ensure(values.length == (operator == Operator.BETWEEN ? 3 : 2), name, root, "unexpected number of values: %d", values.length);
+            final Operator operator = Filters.parseEnum(root, name, "operator", Operator.class, values[0]);
+            Filters.ensure(operators.contains(operator), root, name, "operator %s not whitelisted (%s)", operator, operators);
+            Filters.ensure(values.length == (operator == Operator.BETWEEN ? 3 : 2), root, name, "unexpected number of values: %d", values.length);
             final String value = values[1];
             final LocalDate rhs = value == null ? null : LocalDate.parse(value, formatter);
             return switch (operator) {
@@ -85,26 +85,26 @@ public @interface LocalDateCompare {
                 case NEQ ->
                     rhs == null ? lhs.isNotNull() : builder.or(lhs.isNull(), builder.notEqual(lhs, rhs));
                 case LT -> {
-                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
+                    Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
                     yield builder.lessThan(lhs, rhs);
                 }
                 case GT -> {
-                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
+                    Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
                     yield builder.greaterThan(lhs, rhs);
                 }
                 case LTE -> {
-                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
+                    Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
                     yield builder.lessThanOrEqualTo(lhs, rhs);
                 }
                 case GTE -> {
-                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
+                    Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
                     yield builder.greaterThanOrEqualTo(lhs, rhs);
                 }
                 case BETWEEN -> {
                     final String value2 = values[2];
                     final LocalDate rhs2 = value2 == null ? null : LocalDate.parse(value2, formatter);
-                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
-                    Filters.ensure(rhs2 != null, name, root, "value2 cannot be null for operator %s", operator);
+                    Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
+                    Filters.ensure(rhs2 != null, root, name, "value2 cannot be null for operator %s", operator);
                     final LocalDate[] sorted = Stream.of(rhs, rhs2).sorted().toArray((l) -> new LocalDate[l]);
                     yield builder.and(builder.greaterThanOrEqualTo(lhs, sorted[0]), builder.lessThanOrEqualTo(lhs, sorted[1]));
                 }

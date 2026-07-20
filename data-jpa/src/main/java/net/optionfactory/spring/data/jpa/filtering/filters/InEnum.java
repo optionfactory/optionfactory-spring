@@ -63,14 +63,14 @@ public @interface InEnum {
             this.name = annotation.name();
             this.nullable = annotation.nullable();
             this.type = annotation.type();
-            this.traversal = Filters.traversal(annotation, entity, annotation.path());
-            Filters.ensurePropertyOfAnyType(annotation, entity, traversal, type);
+            this.traversal = Filters.traversal(entity, annotation.name(), annotation.path());
+            Filters.ensurePropertyOfAnyType(entity, annotation.name(), traversal, type);
         }
 
         @Override
         public Predicate condition(Root<?> root, Path<Enum<?>> path, CriteriaBuilder builder, String[] values) {
             final boolean hasNull = Stream.of(values).anyMatch(Objects::isNull);
-            Filters.ensure(!hasNull || nullable, name, root, "null enum filter values is not whitelisted");
+            Filters.ensure(!hasNull || nullable, root, name, "null enum filter values is not whitelisted");
             @SuppressWarnings("unchecked")
             final Set<Enum> requested = Stream.of(values)
                     .filter(Objects::nonNull)

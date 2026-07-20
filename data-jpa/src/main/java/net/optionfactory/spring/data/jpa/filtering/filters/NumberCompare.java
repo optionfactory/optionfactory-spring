@@ -67,15 +67,15 @@ public @interface NumberCompare {
         @SuppressWarnings("unchecked")
         public NumberCompareFilter(NumberCompare annotation, EntityType<?> entity) {
             this.name = annotation.name();
-            this.traversal = Filters.traversal(annotation, entity, annotation.path());
-            this.propertyClass = (Class<? extends Number>) Filters.ensurePropertyOfAnyType(annotation, entity, traversal, Number.class, byte.class, short.class, int.class, long.class, float.class, double.class, char.class);
+            this.traversal = Filters.traversal(entity, annotation.name(), annotation.path());
+            this.propertyClass = (Class<? extends Number>) Filters.ensurePropertyOfAnyType(entity, annotation.name(), traversal, Number.class, byte.class, short.class, int.class, long.class, float.class, double.class, char.class);
             this.operators = EnumSet.of(annotation.operators()[0], annotation.operators());
         }
 
         @Override
         public Predicate condition(Root<?> root, Path<Number> lhs, CriteriaBuilder builder, String[] values) {
-            final Operator operator = Filters.parseEnum(Operator.class, values[0], name, root, "operator");
-            Filters.ensure(operators.contains(operator), name, root, "operator %s not whitelisted (%s)", operator, operators);
+            final Operator operator = Filters.parseEnum(root, name, "operator", Operator.class, values[0]);
+            Filters.ensure(operators.contains(operator), root, name, "operator %s not whitelisted (%s)", operator, operators);
             final String value = values[1];
             final Number rhs = (Number) Values.convert(name, root, value, propertyClass);
             return switch (operator) {
@@ -84,26 +84,26 @@ public @interface NumberCompare {
                 case NEQ ->
                     rhs == null ? lhs.isNotNull() : builder.or(lhs.isNull(), builder.notEqual(lhs, rhs));
                 case LT -> {
-                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
+                    Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
                     yield builder.lt(lhs, rhs);
                 }
                 case GT -> {
-                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
+                    Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
                     yield builder.gt(lhs, rhs);
                 }
                 case LTE -> {
-                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
+                    Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
                     yield builder.le(lhs, rhs);
                 }
                 case GTE -> {
-                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
+                    Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
                     yield builder.ge(lhs, rhs);
                 }
                 case BETWEEN -> {
                     final String value2 = values[2];
                     final Number rhs2 = (Number) Values.convert(name, root, value2, propertyClass);
-                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
-                    Filters.ensure(rhs2 != null, name, root, "value2 cannot be null for operator %s", operator);
+                    Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
+                    Filters.ensure(rhs2 != null, root, name, "value2 cannot be null for operator %s", operator);
                     final Number[] sorted = Stream.of(rhs, rhs2).sorted().toArray((l) -> new Number[l]);
                     yield builder.and(builder.ge(lhs, sorted[0]), builder.le(lhs, sorted[1]));
                 }

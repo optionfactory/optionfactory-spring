@@ -54,8 +54,8 @@ public @interface InList {
 
         public InListFilter(InList annotation, EntityType<?> entity) {
             this.name = annotation.name();
-            this.traversal = Filters.traversal(annotation, entity, annotation.path());
-            Filters.ensurePropertyOfAnyType(annotation, entity, traversal, String.class, Number.class, byte.class, short.class, int.class, long.class, float.class, double.class, char.class);
+            this.traversal = Filters.traversal(entity, annotation.name(), annotation.path());
+            Filters.ensurePropertyOfAnyType(entity, annotation.name(), traversal, String.class, Number.class, byte.class, short.class, int.class, long.class, float.class, double.class, char.class);
         }
 
         @Override

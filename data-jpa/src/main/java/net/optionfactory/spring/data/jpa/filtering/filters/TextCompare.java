@@ -73,18 +73,18 @@ public @interface TextCompare {
             this.name = annotation.name();
             this.operators = EnumSet.of(annotation.operators()[0], annotation.operators());
             this.caseSensitivity = EnumSet.of(annotation.caseSensitivity()[0], annotation.caseSensitivity());
-            this.traversal = Filters.traversal(annotation, entity, annotation.path());
-            Filters.ensurePropertyOfAnyType(annotation, entity, traversal, String.class);
+            this.traversal = Filters.traversal(entity, annotation.name(), annotation.path());
+            Filters.ensurePropertyOfAnyType(entity, annotation.name(), traversal, String.class);
         }
 
         @Override
         public Predicate condition(Root<?> root, Path<String> lpath, CriteriaBuilder builder, String[] values) {
-            Filters.ensure(values.length == 3 || values.length == 4, name, root, "expected operator,mode,value(s) got %s", Arrays.toString(values));
-            final Operator operator = Filters.parseEnum(Operator.class, values[0], name, root, "operator");
-            Filters.ensure((values.length == 3 && operator != Operator.BETWEEN) || (values.length == 4 && operator == Operator.BETWEEN), name, root, "expected operator,mode,value(s) got %s", Arrays.toString(values));
-            Filters.ensure(operators.contains(operator), name, root, "operator %s not whitelisted (%s)", operator, operators);
+            Filters.ensure(values.length == 3 || values.length == 4, root, name, "expected operator,mode,value(s) got %s", Arrays.toString(values));
+            final Operator operator = Filters.parseEnum(root, name, "operator", Operator.class, values[0]);
+            Filters.ensure((values.length == 3 && operator != Operator.BETWEEN) || (values.length == 4 && operator == Operator.BETWEEN), root, name, "expected operator,mode,value(s) got %s", Arrays.toString(values));
+            Filters.ensure(operators.contains(operator), root, name, "operator %s not whitelisted (%s)", operator, operators);
             final CaseSensitivity sensitivity = CaseSensitivity.valueOf(values[1]);
-            Filters.ensure(caseSensitivity.contains(sensitivity), name, root, "mode %s not whitelisted (%s)", sensitivity, caseSensitivity);
+            Filters.ensure(caseSensitivity.contains(sensitivity), root, name, "mode %s not whitelisted (%s)", sensitivity, caseSensitivity);
             final String value = values[2];
             final Expression<String> lhs = sensitivity == CaseSensitivity.CASE_SENSITIVE ? lpath : builder.lower(lpath);
             final String rhs = sensitivity == CaseSensitivity.CASE_SENSITIVE || value == null ? value : value.toLowerCase();
@@ -94,39 +94,39 @@ public @interface TextCompare {
                 case NEQ ->
                     rhs == null ? lhs.isNotNull() : builder.or(lhs.isNull(), builder.notEqual(lhs, rhs));
                 case LT -> {
-                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
+                    Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
                     yield builder.lessThan(lhs, rhs);
                 }
                 case GT -> {
-                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
+                    Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
                     yield builder.greaterThan(lhs, rhs);
                 }
                 case LTE -> {
-                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
+                    Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
                     yield builder.lessThanOrEqualTo(lhs, rhs);
                 }
                 case GTE -> {
-                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
+                    Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
                     yield builder.greaterThanOrEqualTo(lhs, rhs);
                 }
                 case BETWEEN -> {
                     final String value2 = values[3];
                     final String rhs2 = sensitivity == CaseSensitivity.CASE_SENSITIVE || value2 == null ? null : value2.toLowerCase();
-                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
-                    Filters.ensure(rhs2 != null, name, root, "value2 cannot be null for operator %s", operator);
+                    Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
+                    Filters.ensure(rhs2 != null, root, name, "value2 cannot be null for operator %s", operator);
                     final String[] sorted = Stream.of(rhs, rhs2).sorted().toArray((l) -> new String[l]);
                     yield builder.and(builder.greaterThanOrEqualTo(lhs, sorted[0]), builder.lessThanOrEqualTo(lhs, sorted[1]));
                 }
                 case CONTAINS -> {
-                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
+                    Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
                     yield builder.like(lhs, "%" + escapeForLike(rhs) + "%", LIKE_ESCAPE_CHAR);
                 }
                 case STARTS_WITH -> {
-                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
+                    Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
                     yield builder.like(lhs, escapeForLike(rhs) + "%", LIKE_ESCAPE_CHAR);
                 }
                 case ENDS_WITH -> {
-                    Filters.ensure(rhs != null, name, root, "value cannot be null for operator %s", operator);
+                    Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
                     yield builder.like(lhs, "%" + escapeForLike(rhs), LIKE_ESCAPE_CHAR);
                 }
                 default ->

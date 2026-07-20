@@ -68,21 +68,21 @@ public @interface BooleanCompare {
             this.name = annotation.name();
             this.trueValue = annotation.trueValue();
             this.validValues = Set.of(annotation.trueValue(), annotation.falseValue());
-            this.traversal = Filters.traversal(annotation, entity, annotation.path());
-            Filters.ensurePropertyOfAnyType(annotation, entity, this.traversal, Boolean.class, boolean.class);
+            this.traversal = Filters.traversal(entity, annotation.name(), annotation.path());
+            Filters.ensurePropertyOfAnyType(entity, annotation.name(), this.traversal, Boolean.class, boolean.class);
             this.operators = EnumSet.of(annotation.operators()[0], annotation.operators());
         }
 
         @Override
         public Predicate condition(Root<?> root, Path<Boolean> path, CriteriaBuilder builder, String[] values) {
-            final Operator operator = Filters.parseEnum(Operator.class, values[0], name, root, "operator");
-            Filters.ensure(operators.contains(operator), name, root, "operator %s not whitelisted (%s)", operator, operators);
-            Filters.ensure(values.length == 2, name, root, "missing value for comparison");
+            final Operator operator = Filters.parseEnum(root, name, "operator", Operator.class, values[0]);
+            Filters.ensure(operators.contains(operator), root, name, "operator %s not whitelisted (%s)", operator, operators);
+            Filters.ensure(values.length == 2, root, name, "missing value for comparison");
             final String value = values[1];
             if (value == null) {
                 return operator == Operator.EQ ? path.isNull() : path.isNotNull();
             }
-            Filters.ensure(validValues.contains(value), name, root, "value does not match valid values: %s", validValues);
+            Filters.ensure(validValues.contains(value), root, name, "value does not match valid values: %s", validValues);
             return operator == Operator.EQ == trueValue.equals(value) ? builder.isTrue(path) : builder.isFalse(path);
         }
 

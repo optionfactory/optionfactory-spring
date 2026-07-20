@@ -43,7 +43,7 @@ public class WhitelistFilteringSpecificationAdapter<T> implements Specification<
                 subselectGroups.computeIfAbsent(tf.traversal().group(), k -> new ArrayList<>()).add(e);
             } else if (spec instanceof TraversalFilter tf) {
                 // route standard path-based queries directly inline
-                final Path path = Filters.path(name, root, tf.traversal());
+                final Path path = Filters.path(root, name, tf.traversal());
                 predicates.add(tf.condition(root, path, builder, e.getValue()));
             } else {
                 // route custom filters
@@ -61,7 +61,7 @@ public class WhitelistFilteringSpecificationAdapter<T> implements Specification<
 
             for (Map.Entry<String, String[]> e : group) {
                 final TraversalFilter tf = (TraversalFilter) whitelisted.get(e.getKey());
-                final Path path = Filters.path(e.getKey(), conditionRoot, tf.traversal());
+                final Path path = Filters.path(conditionRoot, e.getKey(), tf.traversal());
                 groupPredicates.add(tf.condition(root, path, builder, e.getValue()));
             }
 

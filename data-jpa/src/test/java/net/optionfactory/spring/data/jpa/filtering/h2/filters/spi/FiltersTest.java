@@ -31,8 +31,8 @@ public class FiltersTest {
         final Specification<EntityA> specification = new Specification<EntityA>() {
             @Override
             public Predicate toPredicate(Root<EntityA> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
-                final var ts = Filters.traversal(null, root.getModel(), "");
-                final Path<?> path = Filters.path("myFilter", root, ts);
+                final var ts = Filters.traversal(root.getModel(), "myFilter", "");
+                final Path<?> path = Filters.path(root, "myFilter", ts);
                 Assertions.assertEquals(EntityA.class, path.getJavaType());
                 return null;
             }
@@ -45,8 +45,8 @@ public class FiltersTest {
         final Specification<EntityA> specification = new Specification<EntityA>() {
             @Override
             public Predicate toPredicate(Root<EntityA> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
-                final var ts = Filters.traversal(null, root.getModel(), "b.c.i.n");                
-                final Expression<Object> path = Filters.path("myFilter", root, ts);
+                final var ts = Filters.traversal(root.getModel(), "myFilter", "b.c.i.n");
+                final Expression<Object> path = Filters.path(root, "myFilter", ts);
                 Assertions.assertEquals(Long.class, path.getJavaType());
                 return null;
             }
@@ -59,8 +59,8 @@ public class FiltersTest {
         final Specification<EntityA> specification = new Specification<EntityA>() {
             @Override
             public Predicate toPredicate(Root<EntityA> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
-                final var ts = Filters.traversal(null, root.getModel(), "b.x.id");                                
-                final Expression<Object> nonExistant = Filters.path("myFilter", root, ts);
+                final var ts = Filters.traversal(root.getModel(), "myFilter", "b.x.id");
+                final Expression<Object> nonExistant = Filters.path(root, "myFilter", ts);
                 return null;
             }
         };
@@ -72,13 +72,13 @@ public class FiltersTest {
 
     @Test
     public void ensureAcceptsTruePrecondition() {
-        Filters.ensure(true, "name", null, "");
+        Filters.ensure(true, null, "name", "");
     }
 
     @Test
     public void ensureThrowsOnFalsePrecondition() {
         Assertions.assertThrows(InvalidFilterRequest.class, () -> {
-            Filters.ensure(false, "name", null, "");
+            Filters.ensure(false, null, "name", "");
         });
     }
 

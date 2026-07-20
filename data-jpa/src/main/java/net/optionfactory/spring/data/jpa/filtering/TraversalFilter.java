@@ -16,7 +16,7 @@ public interface TraversalFilter<T> extends Filter {
 
     @Override
     default Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
-        final Path<T> path = Filters.path(name(), root, traversal());
+        final Path<T> path = Filters.path(root, name(), traversal());
         return condition(root, path, builder, values);
     }
 }

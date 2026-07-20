@@ -60,7 +60,7 @@ public interface Filters {
         }
     }
 
-    static Traversal traversal(Annotation annotation, EntityType<?> entity, String path) {
+    static Traversal traversal(EntityType<?> entity, String filterName, String path) {
         if (path == null || path.isEmpty()) {
             return new Traversal(List.of(), "", null, null);
         }
@@ -122,9 +122,7 @@ public interface Filters {
 
             if (currentAttribute != null && (currentAttribute.isAssociation() || currentAttribute.isCollection())) {
                 if (missingFilterGroup) {
-                    throw new InvalidFilterConfiguration(annotation, entity,
-                            String.format("in @Entity '%s' Path '%s' crosses a relationship boundary but does not match any declared @FilterGroup prefix.", entity.getName(), path)
-                    );
+                    throw new InvalidFilterConfiguration(filterName, entity, "path crosses a relationship boundary but does not match any declared @FilterGroup prefix.");
                 }
                 pathList.add(new Step(attributeName, joinType, reuse));
             } else {
@@ -145,33 +143,33 @@ public interface Filters {
         return new Traversal(pathList, leaf, currentAttribute, group);
     }
 
-    static Class<?> ensurePropertyOfAnyType(Annotation annotation, EntityType<?> entity, Traversal traversal, Class<?>... types) {
+    static Class<?> ensurePropertyOfAnyType(EntityType<?> entity, String filterName, Traversal traversal, Class<?>... types) {
         final Class<?> javaType = traversal.attribute() == null ? entity.getJavaType() : traversal.attribute().getJavaType();
         return Stream.of(types)
                 .filter(type -> type.isAssignableFrom(javaType))
                 .findFirst()
-                .orElseThrow(() -> new InvalidFilterConfiguration(annotation, entity, String.format("expected traversal %s to be of type %s, got %s", traversal.leaf(), List.of(types), javaType.getSimpleName())));
+                .orElseThrow(() -> new InvalidFilterConfiguration(filterName, entity, String.format("expected traversal %s to be of type %s, got %s", traversal.leaf(), List.of(types), javaType.getSimpleName())));
     }
 
-    static void ensure(boolean test, String filterName, Root<?> root, String format, Object... values) {
+    static void ensure(boolean test, Root<?> root, String filterName, String format, Object... values) {
         if (!test) {
             throw new InvalidFilterRequest(filterName, root, String.format(format, values));
         }
     }
 
-    private static From<?, ?> join(String filterName, Root<?> root, From<?, ?> from, String attribute, JoinType jt, boolean reuse) {
+    private static From<?, ?> join(Root<?> root, String filterName, From<?, ?> from, String attribute, JoinType jt, boolean reuse) {
         if (!reuse) {
             return from.join(attribute, jt);
         }
         return from.getJoins().stream()
                 .filter(j -> j.getAttribute().getName().equals(attribute))
-                .peek(j -> ensure(j.getJoinType() == jt, filterName, root, "Inconsistent join configuration requested: %s", attribute))
+                .peek(j -> ensure(j.getJoinType() == jt, root, filterName, "Inconsistent join configuration requested: %s", attribute))
                 .findFirst()
                 .orElseGet(() -> from.join(attribute, jt));
     }
 
     @SuppressWarnings("unchecked")
-    static <T> Path<T> path(String filterName, Root<?> root, Traversal traversal) {
+    static <T> Path<T> path(Root<?> root, String filterName, Traversal traversal) {
         Path<?> current = root;
         for (Step step : traversal.joins()) {
             if (step.type() == null) {
@@ -179,7 +177,7 @@ public interface Filters {
                 current = current.get(step.name());
             } else {
                 // cross an entity relationship boundary using a SQL Join
-                current = join(filterName, root, (From<?, ?>) current, step.name(), step.type(), step.reuse());
+                current = join(root, filterName, (From<?, ?>) current, step.name(), step.type(), step.reuse());
             }
         }
         if (traversal.leaf() == null || traversal.leaf().isEmpty()) {
@@ -188,7 +186,7 @@ public interface Filters {
         return (Path<T>) current.get(traversal.leaf());
     }
 
-    static <E extends Enum<E>> E parseEnum(Class<E> enumClass, String value, String filterName, Root<?> root, String fieldDescription) {
+    static <E extends Enum<E>> E parseEnum(Root<?> root, String filterName, String fieldDescription, Class<E> enumClass, String value) {
         if (value == null) {
             throw new InvalidFilterRequest(filterName, root, String.format("%s parameter cannot be null", fieldDescription));
         }
