@@ -69,22 +69,24 @@ public interface Filters {
         JoinType joinType = JoinType.INNER;
         boolean reuse = true;
 
+        boolean missingFilterGroup = path.contains(".");
+
         if (path.contains(".")) {
             int maxMatchLength = -1;
             Class<?> javaType = entity.getJavaType();
 
-            // subselect groups (Enforcing trailing dot normalization)
+            // subselect groups (longest match wins)
             for (var sub : javaType.getAnnotationsByType(FilterGroup.Subselect.class)) {
                 String matchPrefix = sub.value().endsWith(".") ? sub.value() : sub.value() + ".";
                 if (path.startsWith(matchPrefix) && matchPrefix.length() > maxMatchLength) {
                     maxMatchLength = matchPrefix.length();
                     group = sub.reuse() ? matchPrefix : UUID.randomUUID().toString();
-                    joinType = JoinType.INNER; // Subqueries require joins to navigate plural relationships
+                    joinType = JoinType.INNER;
                     reuse = true;
                 }
             }
 
-            // 2. Resolve Join Groups (Longest Match Wins)
+            // join groups (longest match wins)
             for (var join : javaType.getAnnotationsByType(FilterGroup.Join.class)) {
                 String matchPrefix = join.value().endsWith(".") ? join.value() : join.value() + ".";
                 if (path.startsWith(matchPrefix) && matchPrefix.length() > maxMatchLength) {
@@ -95,10 +97,8 @@ public interface Filters {
                 }
             }
 
-            if (maxMatchLength == -1) {
-                throw new InvalidFilterConfiguration(annotation, entity,
-                        String.format("Path '%s' crosses a relationship boundary but does not match any declared @FilterGroup prefix.", path)
-                );
+            if (maxMatchLength != -1) {
+                missingFilterGroup = false;
             }
         }
 
@@ -110,26 +110,34 @@ public interface Filters {
 
         for (int i = 0; i < parts.length; i++) {
             String attributeName = parts[i];
+
             if (currentType != null) {
                 currentAttribute = currentType.getAttribute(attributeName);
             }
 
             boolean isLast = (i == parts.length - 1);
-            if (!isLast) {
-                if (currentAttribute != null && (currentAttribute.isAssociation() || currentAttribute.isCollection())) {
-                    pathList.add(new Step(attributeName, joinType, reuse));
-                } else {
-                    // Safe automated fallback for Embeddables, Records, or JSON properties
-                    pathList.add(new Step(attributeName, null, false));
-                }
+            if (isLast) {
+                break;
+            }
 
-                if (currentAttribute instanceof SingularAttribute sa && sa.getType() instanceof ManagedType mt) {
-                    currentType = mt;
-                } else if (currentAttribute instanceof PluralAttribute pa && pa.getElementType() instanceof ManagedType mt) {
-                    currentType = mt;
-                } else {
-                    currentType = null;
+            if (currentAttribute != null && (currentAttribute.isAssociation() || currentAttribute.isCollection())) {
+                if (missingFilterGroup) {
+                    throw new InvalidFilterConfiguration(annotation, entity,
+                            String.format("in @Entity '%s' Path '%s' crosses a relationship boundary but does not match any declared @FilterGroup prefix.", entity.getName(), path)
+                    );
                 }
+                pathList.add(new Step(attributeName, joinType, reuse));
+            } else {
+                // Safe automated fallback for Embeddables, Records, or JSON properties
+                pathList.add(new Step(attributeName, null, false));
+            }
+
+            if (currentAttribute instanceof SingularAttribute sa && sa.getType() instanceof ManagedType mt) {
+                currentType = mt;
+            } else if (currentAttribute instanceof PluralAttribute pa && pa.getElementType() instanceof ManagedType mt) {
+                currentType = mt;
+            } else {
+                currentType = null;
             }
         }
 

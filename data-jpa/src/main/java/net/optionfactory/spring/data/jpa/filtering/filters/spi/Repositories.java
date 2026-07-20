@@ -1,6 +1,7 @@
 package net.optionfactory.spring.data.jpa.filtering.filters.spi;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.metamodel.EntityType;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -12,6 +13,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.optionfactory.spring.data.jpa.filtering.Filter;
+import net.optionfactory.spring.data.jpa.filtering.TraversalFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.Sortable;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -21,12 +23,34 @@ import org.springframework.data.util.Pair;
 public interface Repositories {
 
     public static <T> Map<String, Filter> allowedFilters(JpaEntityInformation<T, ?> ei, EntityManager em) {
-        return Stream
+        final var filters = Stream
                 .of(ei.getJavaType().getAnnotations())
                 .flatMap(repeatableAnnotation -> flattenRepeatables(repeatableAnnotation))
                 .filter(annotation -> null != AnnotationUtils.findAnnotation(annotation.annotationType(), WhitelistedFilter.class))
                 .map(annotation -> createFilterFromAnnotation(annotation, ei, em))
                 .collect(Collectors.toMap(fspec -> fspec.name(), fspec -> fspec));
+        validateJoinTypes(filters, ei.getJavaType());
+        return filters;
+    }
+
+    private static void validateJoinTypes(Map<String, Filter> filters, Class<?> entityType) {
+        final Map<String, JoinType> resolvedJoinTypes = new HashMap<>();
+        for (Filter filter : filters.values()) {
+            if (!(filter instanceof TraversalFilter<?> tf)) {
+                continue;
+            }
+            var currentPath = "";
+            for (Filters.Step step : tf.traversal().joins()) {
+                currentPath = currentPath.isEmpty() ? step.name() : currentPath + "." + step.name();
+                if (step.type() == null || !step.reuse()) {
+                    continue;
+                }
+                final var existing = resolvedJoinTypes.putIfAbsent(currentPath, step.type());
+                if (existing != null && existing != step.type()) {
+                    throw new IllegalStateException(String.format("Inconsistent JoinType configuration on entity '%s' for shared path '%s': %s vs %s", entityType.getSimpleName(), currentPath, existing, step.type()));
+                }
+            }
+        }
     }
 
     public static <T> Map<String, String> allowedSorters(JpaEntityInformation<T, ?> ei, EntityManager em) {
