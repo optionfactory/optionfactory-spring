@@ -22,6 +22,7 @@ import net.optionfactory.spring.upstream.alerts.UpstreamAlertEvent;
 import net.optionfactory.spring.upstream.alerts.spooler.AlertsEmailsSpoolerExampleTest.Conf;
 import net.optionfactory.spring.upstream.buffering.Buffering;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
+import net.optionfactory.spring.upstream.contexts.ExceptionContext;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
@@ -173,8 +174,33 @@ public class AlertsEmailsSpoolerExampleTest {
                 ),
                 null);
 
+        final var event3 = new UpstreamAlertEvent(
+                new InvocationContext(
+                        new Expressions(null, null),
+                        PayloadsRendering.builder().build(),
+                        new InvocationContext.MessageConverters(HttpMessageConverters.forClient().build()),
+                        new EndpointDescriptor("my-upstream", "my-endpoint", Object.class.getMethod("toString"), null),
+                        new Object[0],
+                        "boot",
+                        0,
+                        new TestPrincipal("test3@example.com", new TestPrincipal("impers3@example.com", null)),
+                        Buffering.BUFFERED
+                ),
+                new RequestContext(
+                        Instant.now(),
+                        HttpMethod.GET,
+                        URI.create("https://www.example.com"),
+                        HttpHeaders.EMPTY,
+                        new HashMap<>(),
+                        "test request".getBytes(StandardCharsets.UTF_8)),
+                null,
+                new ExceptionContext(Instant.now(), "exception message")
+        );        
+        
+
         publisher.publishEvent(event1);
         publisher.publishEvent(event2);
+        publisher.publishEvent(event3);
 
         Thread.sleep(Duration.ofMillis(1500));
         Assertions.assertEquals(1, emlsIn(paths.sent()).count());

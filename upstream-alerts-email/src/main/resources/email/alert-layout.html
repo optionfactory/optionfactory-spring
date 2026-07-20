@@ -31,13 +31,13 @@
                 color: #ffffff;
                 padding: 35px;
             }
-            .header-title {
+            .header .header-title {
                 margin: 0;
                 font-size: 22px;
                 font-weight: 600;
                 letter-spacing: -0.3px;
             }
-            .header-subtitle {
+            .header .header-subtitle {
                 margin: 6px 0 0 0;
                 font-size: 14px;
                 color: #94a3b8;
@@ -66,26 +66,28 @@
                 border-bottom: none;
             }
 
-            .section-heading-cell {
+            .master-table td[colspan="2"] {
+                border-bottom: none !important;
+                padding-bottom: 0 !important;
+            }
+
+            .master-table th {
                 padding-top: 35px !important;
                 padding-bottom: 12px !important;
                 border-bottom: 2px solid #e5e7eb !important;
-            }
-
-            .master-table tr:first-child .section-heading-cell {
-                padding-top: 20px !important;
-            }
-
-            .section-heading-text {
+                text-align: left;
                 font-size: 13px;
                 text-transform: uppercase;
                 letter-spacing: 1.2px;
                 font-weight: 700;
                 color: #111827;
-                margin: 0;
             }
 
-            .data-label {
+            .master-table tr:first-child th {
+                padding-top: 20px !important;
+            }
+
+            .master-table td:first-of-type:not([colspan="2"]) {
                 width: 1%;
                 white-space: nowrap;
                 padding-right: 35px !important;
@@ -96,7 +98,7 @@
                 color: #6b7280;
             }
 
-            .data-value {
+            .master-table td:nth-of-type(2) {
                 color: #111827;
                 font-weight: 500;
                 word-break: break-word;
@@ -154,7 +156,7 @@
                 border-color: #ffe4e6;
             }
 
-            .code-header {
+            .code-panel .code-header {
                 background-color: #f3f4f6;
                 color: #4b5563;
                 font-size: 11px;
@@ -173,7 +175,7 @@
                 border-bottom: 1px solid #fecdd3;
             }
 
-            .code-info {
+            .code-panel .code-info {
                 background-color: #ffffff;
                 color: #4b5563;
                 font-size: 12px;
@@ -189,13 +191,13 @@
                 border-bottom: 1px solid #fecdd3;
             }
 
-            .code-body {
+            .code-panel .code-body {
                 padding: 15px;
                 margin: 0;
                 box-sizing: border-box;
             }
 
-            .code-body pre {
+            .code-panel .code-body pre {
                 margin: 0;
                 font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
                 font-size: 12px;
@@ -213,10 +215,13 @@
                 color: #881337;
             }
 
-            .alert-separator {
+            hr {
                 border: none;
-                border-top: 30px solid #f3f4f6;
-                margin: 40px -40px 20px -40px;
+                border-top: 1px solid #e5e7eb;
+                border-bottom: 1px solid #e5e7eb;
+                background-color: #f3f4f6;
+                height: 40px;
+                margin: 40px -35px 20px -35px;
             }
 
         </style>
@@ -238,11 +243,9 @@
             <div class="content-body" data-th-each="alert: ${alerts}" data-th-with="redactedRequest=${#bodies.abbreviated(alert.invocation, alert.request, 2048)}">
                 <table class="master-table">
                     <tr>
-                        <td colspan="2" class="section-heading-cell">
-                            <p class="section-heading-text">
-                                Alert Overview <span data-th-if="${alerts.size() > 1}">[[${alertStat.count}]]/[[${alerts.size()}]] </span>
-                            </p>
-                        </td>
+                        <th colspan="2" scope="rowgroup">
+                            Alert Overview <span data-th-if="${alerts.size() > 1}">[[${alertStat.count}]]/[[${alerts.size()}]] </span>
+                        </th>
                     </tr>
                     <tr>
                         <td class="data-label">Request ID</td>
@@ -258,18 +261,14 @@
                     </tr>
 
                     <tr data-th-if="${alert.invocation.principal != null}">
-                        <td colspan="2" class="section-heading-cell">
-                            <p class="section-heading-text">User</p>
-                        </td>
+                        <th colspan="2" scope="rowgroup">User</th>
                     </tr>
                     <tr data-th-if="${alert.invocation.principal != null}" data-th-with="principal=${alert.invocation.principal}" data-th-remove="tag">
                         <!--/*/ <th-block data-th-replace="${users}" /> /*/-->
                     </tr>                    
-                    
+
                     <tr>
-                        <td colspan="2" class="section-heading-cell">
-                            <p class="section-heading-text">Outbound Request Details</p>
-                        </td>
+                        <th colspan="2" scope="rowgroup">Outbound Request Details</th>
                     </tr>
                     <tr>
                         <td class="data-label">Method</td>
@@ -285,7 +284,7 @@
                     </tr>
 
                     <tr data-th-if="${redactedRequest.parts.isEmpty()}">
-                        <td colspan="2" style="border-bottom: none; padding-bottom: 0;">
+                        <td colspan="2">
                             <div class="code-panel">
                                 <div class="code-header">Request Payload</div>
                                 <div class="code-body" >
@@ -296,7 +295,7 @@
                         </td>
                     </tr>
                     <tr data-th-each="part: ${redactedRequest.parts}">
-                        <td colspan="2" style="border-bottom: none; padding-bottom: 0;">
+                        <td colspan="2">
                             <div class="code-panel">
                                 <div class="code-header">
                                     Request part [[${partStat.count}]]/[[${redactedRequest.parts.size()}]]
@@ -319,9 +318,7 @@
 
                     <tbody data-th-remove="tag" data-th-if="${alert.response != null}" data-th-with="redactedResponse=${#bodies.abbreviated(alert.invocation, alert.response, 2048)}">
                         <tr>
-                            <td colspan="2" class="section-heading-cell">
-                                <p class="section-heading-text">Inbound Response Details</p>
-                            </td>
+                            <th colspan="2" scope="rowgroup">Inbound Response Details</th>
                         </tr>
                         <tr data-th-if="${alert.response.status != null}">
                             <td class="data-label">HTTP Status</td>
@@ -339,7 +336,7 @@
                         </tr>                               
 
                         <tr data-th-if="${redactedResponse.parts.isEmpty()}">
-                            <td colspan="2" style="border-bottom: none; padding-bottom: 0;">
+                            <td colspan="2">
                                 <div class="code-panel error">
                                     <div class="code-header">Response Payload</div>
                                     <div class="code-body" >
@@ -352,7 +349,7 @@
 
 
                         <tr data-th-each="part: ${redactedResponse.parts}">
-                            <td colspan="2" style="border-bottom: none; padding-bottom: 0;">
+                            <td colspan="2">
                                 <div class="code-panel error">
                                     <div class="code-header">
                                         Response part [[${partStat.count}]]/[[${redactedResponse.parts.size()}]]
@@ -373,16 +370,14 @@
                     </tbody>
                     <tbody data-th-remove="tag" data-th-if="${alert.exception != null}" data-th-with="exception=${alert.exception}">
                         <tr>
-                            <td colspan="2" class="section-heading-cell">
-                                <p class="section-heading-text">Exception details</p>
-                            </td>
+                            <th colspan="2" scope="rowgroup">Exception details</th>
                         </tr>                        
                         <tr>
                             <td class="data-label">Timestamp</td>
                             <td class="data-value">[[${exception.at}]]</td>
                         </tr>                               
                         <tr>
-                            <td colspan="2" style="border-bottom: none; padding-bottom: 0;">
+                            <td colspan="2">
                                 <div class="code-panel error">
                                     <div class="code-header">
                                         Exception message
@@ -395,7 +390,7 @@
                         </tr>                        
                     </tbody>
                 </table>
-                <hr class="alert-separator" data-th-if="${!alertStat.last}" />
+                <hr data-th-if="${!alertStat.last}" />
             </div>
         </div>
 
