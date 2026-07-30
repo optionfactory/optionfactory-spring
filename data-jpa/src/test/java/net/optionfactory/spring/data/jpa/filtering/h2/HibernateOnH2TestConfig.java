@@ -25,12 +25,8 @@ import tools.jackson.databind.json.JsonMapper;
 public class HibernateOnH2TestConfig {
 
     @Bean
-    public JsonMapper hibernateMapper() {
-        return new JsonMapper();
-    }
-
-    @Bean
-    public LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource dataSource, JsonMapper hibernateMapper) {
+    public LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource dataSource) {
+        final var hibernateMapper = JsonMapper.builder().build();
         final var properties = new Properties();
         properties.put(AvailableSettings.HBM2DDL_AUTO, "update");
         properties.put(AvailableSettings.SHOW_SQL, true);

@@ -1,20 +1,20 @@
 package net.optionfactory.spring.data.jpa.filtering.h2.reduction;
 
+import jakarta.inject.Inject;
 import java.util.Arrays;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
+import net.optionfactory.spring.data.jpa.filtering.PerMethodTransactional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-import org.springframework.transaction.annotation.Transactional;
 
 @SpringJUnitConfig(HibernateOnH2TestConfig.class)
-@Transactional
+@PerMethodTransactional
 public class ReductionTest {
 
-    @Autowired
+    @Inject
     public NumberEntityRepository repo;
 
     @BeforeEach

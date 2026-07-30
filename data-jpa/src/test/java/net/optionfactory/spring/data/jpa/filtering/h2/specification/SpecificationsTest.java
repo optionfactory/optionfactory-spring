@@ -1,41 +1,57 @@
 package net.optionfactory.spring.data.jpa.filtering.h2.specification;
 
+import jakarta.inject.Inject;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 import java.util.List;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
+import net.optionfactory.spring.data.jpa.filtering.PerMethodTransactional;
+import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository;
+import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
 import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
+@SpringJUnitConfig(HibernateOnH2TestConfig.class)
+@PerMethodTransactional
 public class SpecificationsTest {
 
+    @Entity
+    @TextCompare(name = "byDesc", path = "description")
+    public static class EntityForSpecification {
+
+        @Id
+        public long id;
+        public String name;
+        public String description;
+    }
+
+    public interface EntityForSpecificationRepository extends JpaRepository<EntityForSpecification, Long>, WhitelistFilteringRepository<EntityForSpecification> {
+
+        default List<EntityForSpecification> findAllByName(String name, FilterRequest fr) {
+            return findAll((root, query, cb) -> cb.equal(root.get("name"), name), fr);
+        }
+    }
+
+    @Inject
     private EntityForSpecificationRepository repo;
-    private TransactionTemplate tx;
 
     @BeforeEach
     public void setup() {
-        final AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
-        ctx.register(HibernateOnH2TestConfig.class);
-        ctx.refresh();
-        this.repo = ctx.getBean(EntityForSpecificationRepository.class);
-        this.tx = ctx.getBean(TransactionTemplate.class);
-        tx.execute(txs -> {
-            repo.deleteAll();
-            final EntityForSpecification a = new EntityForSpecification();
-            a.id = 1;
-            a.name = "name1";
-            a.description = "description";
-            repo.save(a);
-            final EntityForSpecification b = new EntityForSpecification();
-            b.id = 2;
-            b.name = "name2";
-            b.description = "description";
-            repo.save(b);
-
-            return null;
-        });
+        repo.deleteAll();
+        final EntityForSpecification a = new EntityForSpecification();
+        a.id = 1;
+        a.name = "name1";
+        a.description = "description";
+        repo.save(a);
+        final EntityForSpecification b = new EntityForSpecification();
+        b.id = 2;
+        b.name = "name2";
+        b.description = "description";
+        repo.save(b);
     }
 
     @Test
@@ -43,7 +59,7 @@ public class SpecificationsTest {
         final var fr = FilterRequest.builder()
                 .text("byDesc", f -> f.eq("description"))
                 .build();
-        List<EntityForSpecification> page = tx.execute(txs -> repo.findAllByName("name2", fr));
+        List<EntityForSpecification> page = repo.findAllByName("name2", fr);
         Assertions.assertEquals(1, page.size());
     }
 }

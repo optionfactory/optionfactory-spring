@@ -1,5 +1,8 @@
 package net.optionfactory.spring.data.jpa.filtering.h2.sorting;
 
+import jakarta.inject.Inject;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
@@ -8,22 +11,41 @@ import java.util.List;
 import java.util.stream.Collectors;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
+import net.optionfactory.spring.data.jpa.filtering.PerMethodTransactional;
+import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository;
+import net.optionfactory.spring.data.jpa.filtering.filters.Sortable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-import org.springframework.transaction.annotation.Transactional;
 
 @SpringJUnitConfig(HibernateOnH2TestConfig.class)
-@Transactional
+@PerMethodTransactional
 public class SortTest {
 
-    @Autowired
+    @Entity
+    @Sortable(name = "byA", path = "a")
+    @Sortable(name = "byB", path = "b")
+    public static class EntityForSort {
+
+        @Id
+        public long id;
+
+        public long a;
+
+        public String b;
+    }
+
+    public interface EntityForSortRepository extends JpaRepository<EntityForSort, Long>, WhitelistFilteringRepository<EntityForSort>, JpaSpecificationExecutor<EntityForSort> {
+    }
+
+    @Inject
     private EntityForSortRepository repo;
 
     @BeforeEach
@@ -107,7 +129,7 @@ public class SortTest {
                                             // Therefore, we have to use the CriteriaBuilder.function() method instead, with the "mod" function name.
                                             // It would be nicer to have CriteriaBuilder implementing mod for Long expressions as well.
                                             criteriaBuilder.function("mod", Long.class, root.get("id"), criteriaBuilder.literal(2L)),
-                                            0),0)
+                                            0), 0)
                                     .otherwise(1)
                     )
             );

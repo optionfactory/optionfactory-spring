@@ -46,12 +46,8 @@ public class HibernateOnPsqlTestConfig {
     }
 
     @Bean
-    public JsonMapper hibernateMapper() {
-        return new JsonMapper();
-    }
-    
-    @Bean
-    public LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource dataSource, JsonMapper hibernateMapper) {
+    public LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource dataSource) {
+        final var hibernateMapper = JsonMapper.builder().build();
         final var properties = new Properties();
         properties.put(AvailableSettings.HBM2DDL_AUTO, "update");
         properties.put(AvailableSettings.SHOW_SQL, false);
@@ -70,14 +66,12 @@ public class HibernateOnPsqlTestConfig {
         factory.setDataSource(dataSource);
         factory.setJpaProperties(properties);
         return factory;
-    }    
-
+    }
 
     @Bean
     public PlatformTransactionManager transactionManager(EntityManagerFactory entityManagerFactory) {
         return new JpaTransactionManager(entityManagerFactory);
     }
-
 
     @Bean
     public TransactionTemplate tt(PlatformTransactionManager htt) {
