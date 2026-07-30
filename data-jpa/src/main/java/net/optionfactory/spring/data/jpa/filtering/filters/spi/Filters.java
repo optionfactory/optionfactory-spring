@@ -161,8 +161,10 @@ public interface Filters {
         for (Step step : traversal.joins()) {
             if (step.type() == null) {
                 current = current.get(step.name());
+            } else if (current instanceof From<?, ?> from) {
+                current = join(root, filterName, from, step.name(), step.type());
             } else {
-                current = join(root, filterName, (From<?, ?>) current, step.name(), step.type());
+                current = current.get(step.name());
             }
         }
         if (traversal.leaf() == null || traversal.leaf().isEmpty()) {

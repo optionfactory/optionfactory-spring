@@ -1,8 +1,10 @@
 package net.optionfactory.spring.data.jpa.filtering.h2.repro;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
@@ -12,7 +14,6 @@ import net.optionfactory.spring.data.jpa.filtering.filters.NumberCompare;
 @NumberCompare(name = "byLeafId", path = "a.b.id")
 public class JoinThroughEmbeddableEntity {
 
-    @GeneratedValue
     @Id
     public long id;
 
@@ -22,14 +23,13 @@ public class JoinThroughEmbeddableEntity {
     @Embeddable
     public static class MyEmbeddable {
 
-        @ManyToOne
+        @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
         public MyLeaf b;
     }
 
     @Entity
     public static class MyLeaf {
 
-        @GeneratedValue
         @Id
         public long id;
     }
