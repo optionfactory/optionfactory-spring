@@ -24,12 +24,12 @@ public interface Filters {
 
     }
 
-    record Traversal(List<Step> joins, String leaf, Attribute<?, ?> attribute, String group) {
+    record Traversal(List<Step> steps, String leaf, Attribute<?, ?> attribute, String group) {
 
         @Override
         public String toString() {
             return String.format("%s.%s [Group: %s]",
-                    joins.stream().map(Step::name).collect(Collectors.joining(".")),
+                    steps.stream().map(Step::name).collect(Collectors.joining(".")),
                     leaf(), group != null ? group : "none");
         }
     }
@@ -47,10 +47,12 @@ public interface Filters {
     /// - **Plural Associations (`@OneToMany`, `@ManyToMany`):** Paths crossing collection boundaries 
     ///   automatically assign a `group` token, flagging the query planner adapter to compile these 
     ///   constraints within a correlated `EXISTS` subquery node.
-    /// - **Non-Relational Paths (Embeddables, Records, JSON columns):** Non-association properties 
-    ///   assign a `null` join type. This lets downstream components safely navigate basic attributes 
-    ///   using structural dot-notation without spawning redundant SQL `JOIN` declarations.
-    /// 
+    /// - **Non-Relational Paths (Embeddables, Records, JSON columns):** Terminal or scalar non-association 
+    ///   properties assign a `null` join type, allowing downstream components to safely navigate basic 
+    ///   attributes via dot-notation without spawning redundant SQL `JOIN` declarations. However, if an 
+    ///   embeddable property sits in the path leading to a relational association, it is automatically 
+    ///   promoted to an SQM join using `JoinType.LEFT`.
+    ///
     /// ### Subquery Context Management (`group` assignments)
     /// 
     /// Collection query contexts are managed dynamically via a three-tiered state check:
@@ -95,8 +97,7 @@ public interface Filters {
             if (isLast) {
                 break;
             }
-
-            currentPath.append(currentPath.length() > 0 ? "." : "").append(attributeName);
+            currentPath.append(currentPath.isEmpty() ? "" : ".").append(attributeName);
             final String pathString = currentPath.toString();
 
             if (currentAttribute != null && (currentAttribute.isAssociation() || currentAttribute.isCollection())) {
@@ -106,7 +107,7 @@ public interface Filters {
 
                 if (currentAttribute instanceof PluralAttribute) {
                     if (group == null) {
-                        // first plural attribute encountered: we start a new subquery group.
+                        // first plural attribute encountered: we start a new subquery group.                        
                         group = reuse ? pathString : UUID.randomUUID().toString();
                     } else if (!reuse) {
                         // already inside a subquery, but user explicitly requested to break out.
@@ -114,9 +115,18 @@ public interface Filters {
                     }
                     // if group is not null and reuse is true, we do nothing and inherit the parent's subquery group.
                 }
+                // Embedded hops leading to an association must be promoted to JoinType.LEFT.
+                // In SQL, @Embedded properties share the parent table, so using JoinType.LEFT 
+                // for the embeddable hop emits zero extra SQL joins while preventing join-type 
+                // collisions when sibling associations within the same embeddable use different JoinTypes.
+                for (int j = 0; j != pathList.size(); j++) {
+                    if (pathList.get(j).type() == null) {
+                        pathList.set(j, new Step(pathList.get(j).name(), JoinType.LEFT));
+                    }
+                }
                 pathList.add(new Step(attributeName, resolvedJoinType));
             } else {
-                // fallback for embeddables, records, or JSON properties]
+                // fallback for embeddables, records, or JSON propertie
                 pathList.add(new Step(attributeName, null));
             }
 
@@ -147,7 +157,7 @@ public interface Filters {
         }
     }
 
-    private static From<?, ?> join(Root<?> root, String filterName, From<?, ?> from, String attribute, JoinType jt) {
+    private static From<?, ?> step(Root<?> root, String filterName, From<?, ?> from, String attribute, JoinType jt) {
         return from.getJoins().stream()
                 .filter(j -> j.getAttribute().getName().equals(attribute))
                 .peek(j -> ensure(j.getJoinType() == jt, root, filterName, "Inconsistent join configuration requested: %s", attribute))
@@ -158,11 +168,10 @@ public interface Filters {
     @SuppressWarnings("unchecked")
     static <T> Path<T> path(Root<?> root, String filterName, Traversal traversal) {
         Path<?> current = root;
-        for (Step step : traversal.joins()) {
-            if (step.type() == null) {
-                current = current.get(step.name());
-            } else if (current instanceof From<?, ?> from) {
-                current = join(root, filterName, from, step.name(), step.type());
+
+        for (Step step : traversal.steps()) {
+            if (step.type() != null && current instanceof From<?, ?> from) {
+                current = step(root, filterName, from, step.name(), step.type());
             } else {
                 current = current.get(step.name());
             }
