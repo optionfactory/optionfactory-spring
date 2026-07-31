@@ -1,16 +1,17 @@
-package net.optionfactory.spring.data.jpa.filtering.h2.filters.spi.paths;
+package net.optionfactory.spring.data.jpa.filtering.h2.paths;
 
 import jakarta.inject.Inject;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Embeddable;
-import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
+import java.util.List;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository;
-import net.optionfactory.spring.data.jpa.filtering.filters.NumberCompare;
+import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
 import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
 import net.optionfactory.spring.data.jpa.filtering.PerMethodTransactional;
 import org.junit.Assert;
@@ -22,66 +23,68 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 @SpringJUnitConfig(HibernateOnH2TestConfig.class)
 @PerMethodTransactional
-public class DeepEmbeddableTest {
+public class ElementCollectionEmbeddableAssociationTest {
 
-    public interface DeepEmbeddableRepository extends JpaRepository<Root, Long>, WhitelistFilteringRepository<Root> {
+    public interface ElementCollectionEmbeddableAssociationRepository extends JpaRepository<Person, Long>, WhitelistFilteringRepository<Person> {
     }
 
     @Inject
-    private DeepEmbeddableRepository repo;
+    private ElementCollectionEmbeddableAssociationRepository repo;
 
     @BeforeEach
     public void setup() {
         repo.deleteAll();
-        final var entity = new Root();
-        entity.id = 1;
-        entity.emb1 = new Emb1();
-        entity.emb1.emb2 = new Emb2();
-        entity.emb1.emb2.leaf = new Leaf();
-        entity.emb1.emb2.leaf.id = 100;
-        repo.save(entity);
+
+        final var country = new Country();
+        country.id = 1;
+        country.name = "Italy";
+
+        final var address = new Address();
+        address.street = "Via Roma";
+        address.country = country;
+
+        final var user = new Person();
+        user.id = 10;
+        user.addresses = List.of(address);
+
+        repo.save(user);
     }
 
     @Test
-    public void canFilterThroughDeeplyNestedEmbeddableAssociation() {
+    public void canFilterThroughElementCollectionOfEmbeddablesWithAssociation() {
         final var fr = FilterRequest.builder()
-                .number("byLeafId", f -> f.of(NumberCompare.Operator.EQ, "100"))
+                .text("byCountryName", f -> f.eq("Italy"))
                 .build();
         final var page = repo.findAll(fr, Pageable.unpaged());
         Assert.assertEquals(1, page.getTotalElements());
     }
 
     @Entity
-    @NumberCompare(name = "byLeafId", path = "emb1.emb2.leaf.id")
-    public static class Root {
+    @TextCompare(name = "byCountryName", path = "addresses.country.name")
+    public static class Person {
 
         @Id
         public long id;
 
-        @Embedded
-        public Emb1 emb1;
+        @ElementCollection
+        public List<Address> addresses;
 
     }
 
     @Embeddable
-    public static class Emb1 {
+    public static class Address {
 
-        @Embedded
-        public Emb2 emb2;
-    }
-
-    @Embeddable
-    public static class Emb2 {
+        public String street;
 
         @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-        public Leaf leaf;
+        public Country country;
     }
 
     @Entity
-    public static class Leaf {
+    public static class Country {
 
         @Id
         public long id;
+        public String name;
     }
-
 }

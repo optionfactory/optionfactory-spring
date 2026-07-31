@@ -1,4 +1,4 @@
-package net.optionfactory.spring.data.jpa.filtering.h2.sorting;
+package net.optionfactory.spring.data.jpa.filtering.h2;
 
 import jakarta.inject.Inject;
 import jakarta.persistence.Entity;

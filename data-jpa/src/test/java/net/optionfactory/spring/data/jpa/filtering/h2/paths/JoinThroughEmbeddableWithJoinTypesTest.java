@@ -1,4 +1,4 @@
-package net.optionfactory.spring.data.jpa.filtering.h2.filters.spi.paths;
+package net.optionfactory.spring.data.jpa.filtering.h2.paths;
 
 import jakarta.inject.Inject;
 import jakarta.persistence.CascadeType;

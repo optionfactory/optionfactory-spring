@@ -1,4 +1,4 @@
-package net.optionfactory.spring.data.jpa.filtering.h2.filters.spi.paths;
+package net.optionfactory.spring.data.jpa.filtering.h2.paths;
 
 import jakarta.inject.Inject;
 import jakarta.persistence.CascadeType;
@@ -8,10 +8,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.criteria.JoinType;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository;
-import net.optionfactory.spring.data.jpa.filtering.filters.FilterTraversal;
 import net.optionfactory.spring.data.jpa.filtering.filters.NumberCompare;
 import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
 import net.optionfactory.spring.data.jpa.filtering.PerMethodTransactional;
@@ -24,52 +22,59 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 @SpringJUnitConfig(HibernateOnH2TestConfig.class)
 @PerMethodTransactional
-public class EmbeddableTraversalOverrideTest {
+public class DeepEmbeddableTest {
 
-    public interface EmbeddableTraversalOverrideRepository extends JpaRepository<Root, Long>, WhitelistFilteringRepository<Root> {
+    public interface DeepEmbeddableRepository extends JpaRepository<Root, Long>, WhitelistFilteringRepository<Root> {
     }
 
     @Inject
-    private EmbeddableTraversalOverrideRepository repo;
+    private DeepEmbeddableRepository repo;
 
     @BeforeEach
     public void setup() {
         repo.deleteAll();
         final var entity = new Root();
         entity.id = 1;
-        entity.a = new Embed();
-        entity.a.b = new Leaf();
-        entity.a.b.id = 42;
+        entity.emb1 = new Emb1();
+        entity.emb1.emb2 = new Emb2();
+        entity.emb1.emb2.leaf = new Leaf();
+        entity.emb1.emb2.leaf.id = 100;
         repo.save(entity);
     }
 
     @Test
-    public void respectsFilterTraversalOverrideOnEmbeddablePrefix() {
+    public void canFilterThroughDeeplyNestedEmbeddableAssociation() {
         final var fr = FilterRequest.builder()
-                .number("byLeafId", f -> f.of(NumberCompare.Operator.EQ, "42"))
+                .number("byLeafId", f -> f.of(NumberCompare.Operator.EQ, "100"))
                 .build();
         final var page = repo.findAll(fr, Pageable.unpaged());
         Assert.assertEquals(1, page.getTotalElements());
     }
 
     @Entity
-    @FilterTraversal(path = "a", joinType = JoinType.INNER) // Explicit user override on @Embedded hop
-    @NumberCompare(name = "byLeafId", path = "a.b.id")
+    @NumberCompare(name = "byLeafId", path = "emb1.emb2.leaf.id")
     public static class Root {
 
         @Id
         public long id;
 
         @Embedded
-        public Embed a;
+        public Emb1 emb1;
 
     }
 
     @Embeddable
-    public static class Embed {
+    public static class Emb1 {
+
+        @Embedded
+        public Emb2 emb2;
+    }
+
+    @Embeddable
+    public static class Emb2 {
 
         @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-        public Leaf b;
+        public Leaf leaf;
     }
 
     @Entity

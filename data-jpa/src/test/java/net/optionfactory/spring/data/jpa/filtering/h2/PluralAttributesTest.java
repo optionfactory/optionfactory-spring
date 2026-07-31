@@ -1,4 +1,4 @@
-package net.optionfactory.spring.data.jpa.filtering.h2.chaining;
+package net.optionfactory.spring.data.jpa.filtering.h2;
 
 import jakarta.inject.Inject;
 import jakarta.persistence.CascadeType;
@@ -12,6 +12,7 @@ import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
 import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
 import net.optionfactory.spring.data.jpa.filtering.PerMethodTransactional;
+import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -126,7 +126,7 @@ public interface Filters {
                 }
                 pathList.add(new Step(attributeName, resolvedJoinType));
             } else {
-                // fallback for embeddables, records, or JSON propertie
+                // fallback for embeddables, records, or JSON properties
                 pathList.add(new Step(attributeName, null));
             }
 
