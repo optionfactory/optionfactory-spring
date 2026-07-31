@@ -1,4 +1,4 @@
-package net.optionfactory.spring.data.jpa.filtering.psql.json;
+package net.optionfactory.spring.data.jpa.filtering.psql;
 
 import jakarta.inject.Inject;
 import jakarta.persistence.Embeddable;
@@ -13,6 +13,7 @@ import net.optionfactory.spring.data.jpa.filtering.psql.HibernateOnPsqlTestConfi
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
@@ -63,21 +64,24 @@ public class PsqlEntityEmbeddedJsonTest {
 
     }
 
-    public interface PsqlEntityEmbeddedJsonRepository extends JpaRepository<Root, Long>, WhitelistFilteringRepository<Root> {
+    public interface RootsRepository extends JpaRepository<Root, Long>, WhitelistFilteringRepository<Root> {
     }
 
     @Inject
-    private PsqlEntityEmbeddedJsonRepository entities;
+    private RootsRepository entities;
 
-    @Test
-    public void canFilterOnAnEmbeddableRecordSerializedAsJsonb() {
+    @BeforeEach
+    public void setup() {
         final var e1 = new Root();
         e1.embedded = new Embed("e1a", "e1b", "e1c");
         final var e2 = new Root();
         e1.embedded = new Embed("e2a", "e2b", "e2c");
         entities.save(e1);
         entities.save(e2);
+    }
 
+    @Test
+    public void canFilterOnAnEmbeddableRecordSerializedAsJsonb() {
         final var fr = FilterRequest.builder()
                 .text("a", f -> f.eq("e2a"))
                 .build();

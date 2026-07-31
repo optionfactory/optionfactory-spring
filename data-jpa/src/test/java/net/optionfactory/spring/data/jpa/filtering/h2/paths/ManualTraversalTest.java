@@ -24,31 +24,6 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 @PerMethodTransactional
 public class ManualTraversalTest {
 
-    public interface RootEntityWithManualTraversalFiltersRepository extends JpaRepository<Root, Long>, WhitelistFilteringRepository<Root> {
-    }
-
-    @Entity
-    @FilterTraversal(path = "leaves", reuse = false)
-    @BooleanCompare(name = "flag1", path = "leaves.flag1")
-    @BooleanCompare(name = "flag2", path = "leaves.flag2")
-    public static class Root {
-
-        @Id
-        @GeneratedValue
-        public long id;
-
-        @OneToMany(cascade = CascadeType.ALL)
-        @JoinColumn(name = "rootId")
-        public List<Leaf> leaves;
-
-        public static Root of(Leaf... leaves) {
-            final var re = new Root();
-            re.leaves = List.of(leaves);
-            return re;
-        }
-
-    }
-
     @Entity
     public static class Leaf {
 
@@ -85,6 +60,31 @@ public class ManualTraversalTest {
         roots.save(Root.of(Leaf.of(true, false),
                 Leaf.of(false, false)
         ));
+    }
+
+    public interface RootEntityWithManualTraversalFiltersRepository extends JpaRepository<Root, Long>, WhitelistFilteringRepository<Root> {
+    }
+
+    @Entity
+    @FilterTraversal(path = "leaves", reuse = false)
+    @BooleanCompare(name = "flag1", path = "leaves.flag1")
+    @BooleanCompare(name = "flag2", path = "leaves.flag2")
+    public static class Root {
+
+        @Id
+        @GeneratedValue
+        public long id;
+
+        @OneToMany(cascade = CascadeType.ALL)
+        @JoinColumn(name = "rootId")
+        public List<Leaf> leaves;
+
+        public static Root of(Leaf... leaves) {
+            final var re = new Root();
+            re.leaves = List.of(leaves);
+            return re;
+        }
+
     }
 
     @Test

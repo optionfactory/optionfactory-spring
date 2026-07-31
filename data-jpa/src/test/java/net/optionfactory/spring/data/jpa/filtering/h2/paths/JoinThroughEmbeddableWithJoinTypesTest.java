@@ -26,15 +26,6 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 @PerMethodTransactional
 public class JoinThroughEmbeddableWithJoinTypesTest {
 
-    public interface JoinThroughEmbeddableWithJoinTypesRepository
-            extends JpaRepository<Root, Long>,
-            WhitelistFilteringRepository<Root> {
-
-    }
-
-    @Inject
-    private JoinThroughEmbeddableWithJoinTypesRepository repo;
-
     @Entity
     @FilterTraversal(path = "a.b", joinType = JoinType.INNER)
     @FilterTraversal(path = "a.c", joinType = JoinType.LEFT)
@@ -64,6 +55,13 @@ public class JoinThroughEmbeddableWithJoinTypesTest {
         public long id;
         public Integer val;
     }
+
+    public interface RootsRepository extends JpaRepository<Root, Long>, WhitelistFilteringRepository<Root> {
+
+    }
+
+    @Inject
+    private RootsRepository repo;
 
     @BeforeEach
     public void setup() {

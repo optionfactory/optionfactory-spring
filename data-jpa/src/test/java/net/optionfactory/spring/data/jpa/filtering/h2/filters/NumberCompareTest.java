@@ -30,7 +30,7 @@ public class NumberCompareTest {
     @NumberCompare(name = "maxPersons", path = "maxPersons")
     @NumberCompare(name = "rating", path = "rating")
     @NumberCompare(name = "container.value", path = "container.value")
-    public static class EntityForNumberCompare {
+    public static class Root {
 
         @Id
         public long id;
@@ -38,21 +38,22 @@ public class NumberCompareTest {
         public double rating;
 
         @Embedded
-        public NumericEmbeddedContainer container;
+        public Embed container;
 
-        @Embeddable
-        public static class NumericEmbeddedContainer {
-
-            public Integer value;
-        }
     }
 
-    public interface EntityForNumberCompareRepository extends JpaRepository<EntityForNumberCompare, Long>, WhitelistFilteringRepository<EntityForNumberCompare> {
+    @Embeddable
+    public static class Embed {
+
+        public Integer value;
+    }
+
+    public interface RootsRepository extends JpaRepository<Root, Long>, WhitelistFilteringRepository<Root> {
 
     }
 
     @Inject
-    public EntityForNumberCompareRepository repo;
+    public RootsRepository repo;
 
     @BeforeEach
     public void setup() {
@@ -66,7 +67,7 @@ public class NumberCompareTest {
 
     @Test
     public void canFilterEqualityByNullValue() {
-        final Page<EntityForNumberCompare> page = repo.findAll(null, filter("maxPersons", NumberCompare.Operator.EQ, null), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter("maxPersons", NumberCompare.Operator.EQ, null), Pageable.unpaged());
         Assertions.assertEquals(Set.of(1L), idsIn(page));
     }
 
@@ -102,8 +103,8 @@ public class NumberCompareTest {
 
     @Test
     public void filteringWithNeqIncludesNullValues() {
-        final Page<EntityForNumberCompare> all = repo.findAll(Pageable.unpaged());
-        final Page<EntityForNumberCompare> page = repo.findAll(null, filter("maxPersons", NumberCompare.Operator.NEQ, "9999"), Pageable.unpaged());
+        final Page<Root> all = repo.findAll(Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter("maxPersons", NumberCompare.Operator.NEQ, "9999"), Pageable.unpaged());
         Assertions.assertEquals(all.getTotalElements(), page.getTotalElements());
     }
 
@@ -113,16 +114,16 @@ public class NumberCompareTest {
                 .build();
     }
 
-    private static Set<Long> idsIn(Page<EntityForNumberCompare> page) {
+    private static Set<Long> idsIn(Page<Root> page) {
         return page.getContent().stream().map(flag -> flag.id).collect(Collectors.toSet());
     }
 
-    private static EntityForNumberCompare entity(long id, Integer maxPersons, double rating, Integer containerValue) {
-        final EntityForNumberCompare e = new EntityForNumberCompare();
+    private static Root entity(long id, Integer maxPersons, double rating, Integer containerValue) {
+        final Root e = new Root();
         e.id = id;
         e.maxPersons = maxPersons;
         e.rating = rating;
-        e.container = new EntityForNumberCompare.NumericEmbeddedContainer();
+        e.container = new Embed();
         e.container.value = containerValue;
         return e;
     }

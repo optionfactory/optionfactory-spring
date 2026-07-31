@@ -24,11 +24,43 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 @PerMethodTransactional
 public class DeepEmbeddableTest {
 
-    public interface DeepEmbeddableRepository extends JpaRepository<Root, Long>, WhitelistFilteringRepository<Root> {
+
+    @Entity
+    @NumberCompare(name = "byLeafId", path = "emb1.emb2.leaf.id")
+    public static class Root {
+
+        @Id
+        public long id;
+
+        @Embedded
+        public Emb1 emb1;
+
+    }
+
+    @Embeddable
+    public static class Emb1 {
+        @Embedded
+        public Emb2 emb2;
+    }
+
+    @Embeddable
+    public static class Emb2 {
+        @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+        public Leaf leaf;
+    }
+
+    @Entity
+    public static class Leaf {
+
+        @Id
+        public long id;
+    }    
+    
+    public interface RootsRepository extends JpaRepository<Root, Long>, WhitelistFilteringRepository<Root> {
     }
 
     @Inject
-    private DeepEmbeddableRepository repo;
+    private RootsRepository repo;
 
     @BeforeEach
     public void setup() {
@@ -51,37 +83,5 @@ public class DeepEmbeddableTest {
         Assert.assertEquals(1, page.getTotalElements());
     }
 
-    @Entity
-    @NumberCompare(name = "byLeafId", path = "emb1.emb2.leaf.id")
-    public static class Root {
-
-        @Id
-        public long id;
-
-        @Embedded
-        public Emb1 emb1;
-
-    }
-
-    @Embeddable
-    public static class Emb1 {
-
-        @Embedded
-        public Emb2 emb2;
-    }
-
-    @Embeddable
-    public static class Emb2 {
-
-        @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-        public Leaf leaf;
-    }
-
-    @Entity
-    public static class Leaf {
-
-        @Id
-        public long id;
-    }
 
 }

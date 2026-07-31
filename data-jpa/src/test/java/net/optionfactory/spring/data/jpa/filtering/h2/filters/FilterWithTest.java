@@ -39,7 +39,7 @@ public class FilterWithTest {
         private final String name;
 
         public CustomFilter(Filterable annotation, EntityType<?> entity) {
-            if (!CustomEntity.class.isAssignableFrom(entity.getJavaType())) {
+            if (!RootAgg.class.isAssignableFrom(entity.getJavaType())) {
                 throw new InvalidFilterConfiguration(annotation.name(), entity, String.format("Unsupported entity type for filter %s", annotation.filter().getSimpleName()));
             }
             this.name = annotation.name();
@@ -74,14 +74,14 @@ public class FilterWithTest {
 
     @Entity
     @Filterable(name = "custom", filter = CustomFilter.class)
-    public static class CustomEntity {
+    public static class RootAgg {
 
         @Id
         public long id;
         public long x;
     }
 
-    public interface CustomsRepository extends JpaRepository<CustomEntity, Long>, WhitelistFilteringRepository<CustomEntity> {
+    public interface CustomsRepository extends JpaRepository<RootAgg, Long>, WhitelistFilteringRepository<RootAgg> {
     }
 
     @Inject
@@ -99,8 +99,8 @@ public class FilterWithTest {
         ));
     }
 
-    private static CustomEntity custom(long id, long x) {
-        final CustomEntity custom = new CustomEntity();
+    private static RootAgg custom(long id, long x) {
+        final RootAgg custom = new RootAgg();
         custom.id = id;
         custom.x = x;
         return custom;
@@ -117,7 +117,7 @@ public class FilterWithTest {
     @Test
     public void canApplyCustomFilterWithParameter() {
         final var fr = FilterRequest.builder().with("custom", CustomFilter.Check.LESS.name()).build();
-        final Page<CustomEntity> page = customs.findAll(null, fr, Pageable.unpaged());
+        final Page<RootAgg> page = customs.findAll(null, fr, Pageable.unpaged());
         Assertions.assertEquals(Set.of(3L, 5L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 }

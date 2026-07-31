@@ -4,7 +4,6 @@ import jakarta.inject.Inject;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
-import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
 import net.optionfactory.spring.data.jpa.filtering.PerMethodTransactional;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository;
 import org.junit.jupiter.api.Assertions;

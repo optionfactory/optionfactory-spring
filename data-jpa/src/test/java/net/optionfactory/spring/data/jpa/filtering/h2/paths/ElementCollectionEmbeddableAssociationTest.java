@@ -25,6 +25,35 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 @PerMethodTransactional
 public class ElementCollectionEmbeddableAssociationTest {
 
+    @Entity
+    @TextCompare(name = "byCountryName", path = "addresses.country.name")
+    public static class Person {
+
+        @Id
+        public long id;
+
+        @ElementCollection
+        public List<Address> addresses;
+
+    }
+
+    @Embeddable
+    public static class Address {
+
+        public String street;
+
+        @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+        public Country country;
+    }
+
+    @Entity
+    public static class Country {
+
+        @Id
+        public long id;
+        public String name;
+    }
+
     public interface ElementCollectionEmbeddableAssociationRepository extends JpaRepository<Person, Long>, WhitelistFilteringRepository<Person> {
     }
 
@@ -59,32 +88,4 @@ public class ElementCollectionEmbeddableAssociationTest {
         Assert.assertEquals(1, page.getTotalElements());
     }
 
-    @Entity
-    @TextCompare(name = "byCountryName", path = "addresses.country.name")
-    public static class Person {
-
-        @Id
-        public long id;
-
-        @ElementCollection
-        public List<Address> addresses;
-
-    }
-
-    @Embeddable
-    public static class Address {
-
-        public String street;
-
-        @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-        public Country country;
-    }
-
-    @Entity
-    public static class Country {
-
-        @Id
-        public long id;
-        public String name;
-    }
 }

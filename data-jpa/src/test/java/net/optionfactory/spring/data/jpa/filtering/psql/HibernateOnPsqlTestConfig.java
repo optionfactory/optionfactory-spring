@@ -50,7 +50,7 @@ public class HibernateOnPsqlTestConfig {
         final var hibernateMapper = JsonMapper.builder().build();
         final var properties = new Properties();
         properties.put(AvailableSettings.HBM2DDL_AUTO, "update");
-        properties.put(AvailableSettings.SHOW_SQL, false);
+        properties.put(AvailableSettings.SHOW_SQL, true);
         properties.put(AvailableSettings.FORMAT_SQL, false);
         properties.put(AvailableSettings.USE_SQL_COMMENTS, false);
         properties.put(AvailableSettings.GENERATE_STATISTICS, false);

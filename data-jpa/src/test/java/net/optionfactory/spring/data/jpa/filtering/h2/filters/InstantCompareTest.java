@@ -30,18 +30,18 @@ public class InstantCompareTest {
     @InstantCompare(name = "instantUnixS", path = "instant", format = InstantCompare.Format.UNIX_S)
     @InstantCompare(name = "instantUnixMS", path = "instant", format = InstantCompare.Format.UNIX_MS)
     @InstantCompare(name = "instantUnixNS", path = "instant", format = InstantCompare.Format.UNIX_NS)
-    public static class EntityForInstant {
+    public static class Root {
 
         @Id
         public long id;
         public Instant instant;
     }
 
-    public interface EntityForInstantRepository extends JpaRepository<EntityForInstant, Long>, WhitelistFilteringRepository<EntityForInstant> {
+    public interface RootsRepository extends JpaRepository<Root, Long>, WhitelistFilteringRepository<Root> {
     }
 
     @Inject
-    private EntityForInstantRepository repo;
+    private RootsRepository repo;
 
     @BeforeEach
     public void setup() {
@@ -58,122 +58,122 @@ public class InstantCompareTest {
 
     @Test
     public void canFilterInstantsFromIsoInstant() {
-        final Page<EntityForInstant> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.GTE, "1970-01-01T00:00:01Z"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.GTE, "1970-01-01T00:00:01Z"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(3L, 4L, 5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void canFilterInstantsFromUnixSecond() {
-        final Page<EntityForInstant> page = repo.findAll(null, filter("instantUnixS", InstantCompare.Operator.GTE, "1000"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter("instantUnixS", InstantCompare.Operator.GTE, "1000"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(4L, 5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void canFilterInstantsFromUnixMillisecond() {
-        final Page<EntityForInstant> page = repo.findAll(null, filter("instantUnixMS", InstantCompare.Operator.GTE, "1000"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter("instantUnixMS", InstantCompare.Operator.GTE, "1000"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(3L, 4L, 5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void canFilterInstantsFromUnixNanosecond() {
-        final Page<EntityForInstant> page = repo.findAll(null, filter("instantUnixNS", InstantCompare.Operator.GTE, "1000"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter("instantUnixNS", InstantCompare.Operator.GTE, "1000"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(2L, 3L, 4L, 5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void canFilterInstantsBeforeIsoInstant() {
-        final Page<EntityForInstant> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.LT, "1970-01-01T00:00:01Z"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.LT, "1970-01-01T00:00:01Z"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(1L, 2L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void canFilterInstantsBeforeUnixSecond() {
-        final Page<EntityForInstant> page = repo.findAll(null, filter("instantUnixS", InstantCompare.Operator.LT, "1000"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter("instantUnixS", InstantCompare.Operator.LT, "1000"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(1L, 2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void canFilterInstantsBeforeUnixMillisecond() {
-        final Page<EntityForInstant> page = repo.findAll(null, filter("instantUnixMS", InstantCompare.Operator.LT, "1000"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter("instantUnixMS", InstantCompare.Operator.LT, "1000"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(1L, 2L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void canFilterInstantsBeforeUnixNanosecond() {
-        final Page<EntityForInstant> page = repo.findAll(null, filter("instantUnixNS", InstantCompare.Operator.LT, "1000"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter("instantUnixNS", InstantCompare.Operator.LT, "1000"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(1L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void canFilterInstantsBetweenIsoInstant() {
-        final Page<EntityForInstant> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.BETWEEN, "1970-01-01T00:00:00Z", "1970-01-01T00:00:01Z"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.BETWEEN, "1970-01-01T00:00:00Z", "1970-01-01T00:00:01Z"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(1L, 2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void canFilterInstantsBetweenUnixSecond() {
-        final Page<EntityForInstant> page = repo.findAll(null, filter("instantUnixS", InstantCompare.Operator.BETWEEN, "0", "1000"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter("instantUnixS", InstantCompare.Operator.BETWEEN, "0", "1000"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(1L, 2L, 3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void canFilterInstantsBetweenUnixMillisecond() {
-        final Page<EntityForInstant> page = repo.findAll(null, filter("instantUnixMS", InstantCompare.Operator.BETWEEN, "0", "1000"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter("instantUnixMS", InstantCompare.Operator.BETWEEN, "0", "1000"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(1L, 2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void canFilterInstantsBetweenUnixNanosecond() {
-        final Page<EntityForInstant> page = repo.findAll(null, filter("instantUnixNS", InstantCompare.Operator.BETWEEN, "0", "1000"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter("instantUnixNS", InstantCompare.Operator.BETWEEN, "0", "1000"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(1L, 2L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void filterFromIsInclusiveOnInputWithLessPrecision() {
-        final Page<EntityForInstant> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.GTE, "1970-01-01T12:00:00.123Z"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.GTE, "1970-01-01T12:00:00.123Z"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void filterBeforeIsExclusiveOnInputWithLessPrecision() {
-        final Page<EntityForInstant> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.LT, "1970-01-01T12:00:00.123Z"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.LT, "1970-01-01T12:00:00.123Z"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(1L, 2L, 3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void filterBetweenIsLeftInclusiveOnInputWithLessPrecision() {
-        final Page<EntityForInstant> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.BETWEEN, "1970-01-01T12:00:00.123Z", "1970-01-01T12:00:00.124Z"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.BETWEEN, "1970-01-01T12:00:00.123Z", "1970-01-01T12:00:00.124Z"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void filterBetweenIsRightExclusiveOnInputWithLessPrecision() {
-        final Page<EntityForInstant> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.BETWEEN, "1970-01-01T12:00:00.122Z", "1970-01-01T12:00:00.123Z"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.BETWEEN, "1970-01-01T12:00:00.122Z", "1970-01-01T12:00:00.123Z"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(5L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void filterFromIsInclusiveOnInputWithMorePrecision() {
-        final Page<EntityForInstant> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.GTE, "1970-01-01T12:00:00.123456Z"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.GTE, "1970-01-01T12:00:00.123456Z"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void filterBeforeIsExclusiveOnInputWithMorePrecision() {
-        final Page<EntityForInstant> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.LT, "1970-01-01T12:00:00.123456Z"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.LT, "1970-01-01T12:00:00.123456Z"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(1L, 2L, 3L, 4L, 5L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void filterBetweenIsRightExclusiveOnInputWithMorePrecision() {
-        final Page<EntityForInstant> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.BETWEEN, "1970-01-01T12:00:00.123455Z", "1970-01-01T12:00:00.123456Z"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.BETWEEN, "1970-01-01T12:00:00.123455Z", "1970-01-01T12:00:00.123456Z"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void filteringWithNeqIncludesNullValues() {
-        final Page<EntityForInstant> all = repo.findAll(Pageable.unpaged());
-        final Page<EntityForInstant> page = repo.findAll(null, filter("instantIso", Operator.NEQ, "2222-02-02T02:02:02.222Z"), Pageable.unpaged());
+        final Page<Root> all = repo.findAll(Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter("instantIso", Operator.NEQ, "2222-02-02T02:02:02.222Z"), Pageable.unpaged());
         Assertions.assertEquals(all.getTotalElements(), page.getTotalElements());
     }
 
@@ -183,8 +183,8 @@ public class InstantCompareTest {
                 .build();
     }
 
-    private static EntityForInstant entity(long id, Instant instant) {
-        final EntityForInstant e = new EntityForInstant();
+    private static Root entity(long id, Instant instant) {
+        final Root e = new Root();
         e.id = id;
         e.instant = instant;
         return e;

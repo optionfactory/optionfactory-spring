@@ -5,10 +5,10 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Id;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import net.optionfactory.spring.data.jpa.filtering.Filter;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
-import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
 import net.optionfactory.spring.data.jpa.filtering.PerMethodTransactional;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringSpecificationAdapter;
@@ -34,11 +34,11 @@ public class ReductionTest {
         public long number;
     }
 
-    public interface NumberEntityRepository extends JpaRepository<NumberEntity, Long>, WhitelistFilteringRepository<NumberEntity>, ReductionNumberEntityRepository {
+    public interface JpaReductionRepository extends JpaRepository<NumberEntity, Long>, WhitelistFilteringRepository<NumberEntity>, ReductionRepository {
 
     }
 
-    public interface ReductionNumberEntityRepository {
+    public interface ReductionRepository {
 
         Reduction reduce(FilterRequest request);
 
@@ -47,13 +47,13 @@ public class ReductionTest {
         }
     }
 
-    public static class ReductionNumberEntityRepositoryImpl implements ReductionNumberEntityRepository {
+    public static class ReductionRepositoryImpl implements ReductionRepository {
 
         private final EntityManager entityManager;
         private final Map<String, Filter> allowedFilters;
         private final Map<String, String> allowedSorters;
 
-        public ReductionNumberEntityRepositoryImpl(EntityManager em) {
+        public ReductionRepositoryImpl(EntityManager em) {
             final var ei = JpaEntityInformationSupport.getEntityInformation(NumberEntity.class, em);
             this.entityManager = em;
             this.allowedFilters = Repositories.allowedFilters(ei, em);
@@ -81,7 +81,7 @@ public class ReductionTest {
         }
     }
     @Inject
-    public NumberEntityRepository repo;
+    public JpaReductionRepository repo;
 
     @BeforeEach
     public void setup() {
@@ -95,7 +95,7 @@ public class ReductionTest {
 
     @Test
     public void canPerformReductionWithoutFiltering() {
-        final ReductionNumberEntityRepository.Reduction reduced = repo.reduce(FilterRequest.builder().build());
+        final ReductionRepository.Reduction reduced = repo.reduce(FilterRequest.builder().build());
         Assertions.assertEquals(4, reduced.count());
         Assertions.assertEquals(3, reduced.min());
         Assertions.assertEquals(15, reduced.max());
@@ -104,7 +104,7 @@ public class ReductionTest {
 
     @Test
     public void canPerformReductionWithFiltering() {
-        final ReductionNumberEntityRepository.Reduction reduced = repo.reduce(FilterRequest.builder()
+        final ReductionRepository.Reduction reduced = repo.reduce(FilterRequest.builder()
                 .number("number", filter -> filter.gt(8))
                 .build());
         Assertions.assertEquals(2, reduced.count());

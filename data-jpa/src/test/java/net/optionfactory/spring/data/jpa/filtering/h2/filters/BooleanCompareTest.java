@@ -28,14 +28,14 @@ public class BooleanCompareTest {
     @BooleanCompare(name = "javaBoolean", path = "data")
     @BooleanCompare(name = "yesNoBoolean", path = "data", trueValue = "yes", falseValue = "no")
     @BooleanCompare(name = "YNMatchCaseBoolean", path = "data", trueValue = "Y", falseValue = "N")
-    public static class Flag {
+    public static class Root {
 
         @Id
         public long id;
         public boolean data;
     }
 
-    public interface FlagsRepository extends JpaRepository<Flag, Long>, WhitelistFilteringRepository<Flag> {
+    public interface FlagsRepository extends JpaRepository<Root, Long>, WhitelistFilteringRepository<Root> {
     }
 
     @Inject
@@ -43,10 +43,10 @@ public class BooleanCompareTest {
 
     @BeforeEach
     public void setup() {
-        final Flag trueFlag = new Flag();
+        final Root trueFlag = new Root();
         trueFlag.id = 1;
         trueFlag.data = true;
-        final Flag falseFlag = new Flag();
+        final Root falseFlag = new Root();
         falseFlag.id = 2;
         falseFlag.data = false;
         flags.saveAll(Arrays.asList(trueFlag, falseFlag));
@@ -77,7 +77,7 @@ public class BooleanCompareTest {
                 .build();
     }
 
-    private static Set<Long> idsIn(Page<Flag> page) {
+    private static Set<Long> idsIn(Page<Root> page) {
         return page.getContent().stream().map(flag -> flag.id).collect(Collectors.toSet());
     }
 }

@@ -24,6 +24,21 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 @PerMethodTransactional
 public class JoinThroughEmbeddableTest {
 
+    @Embeddable
+    public static class Embed {
+
+        @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+        public Leaf b;
+    }
+
+    @Entity
+    public static class Leaf {
+
+        @Id
+        public long id;
+        public Integer val;
+    }
+
     public interface JoinThroughEmbeddableRepository extends JpaRepository<JoinThroughEmbeddableEntity, Long>, WhitelistFilteringRepository<JoinThroughEmbeddableEntity> {
 
     }
@@ -38,21 +53,6 @@ public class JoinThroughEmbeddableTest {
         @Embedded
         public Embed a;
 
-    }
-
-    @Embeddable
-    public static class Embed {
-
-        @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-        public Leaf b;
-    }
-
-    @Entity
-    public static class Leaf {
-
-        @Id
-        public long id;
-        public Integer val;
     }
 
     @Inject

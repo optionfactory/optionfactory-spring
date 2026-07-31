@@ -26,7 +26,7 @@ public class InListTest {
     @InList(name = "nameIn", path = "name")
     @InList(name = "maxPersonsIn", path = "maxPersons")
     @InList(name = "ratingIn", path = "rating")
-    public static class EntityForInList {
+    public static class Root {
 
         @Id
         public long id;
@@ -36,12 +36,12 @@ public class InListTest {
 
     }
 
-    public interface EntityForInListRepository extends JpaRepository<EntityForInList, Long>, WhitelistFilteringRepository<EntityForInList> {
+    public interface RootsRepository extends JpaRepository<Root, Long>, WhitelistFilteringRepository<Root> {
 
     }
 
     @Inject
-    private EntityForInListRepository repo;
+    private RootsRepository repo;
 
     @BeforeEach
     public void setup() {
@@ -57,7 +57,7 @@ public class InListTest {
                 .inList("nameIn", "walking", "skiing", "sleeping")
                 .build();
         final Pageable pr = Pageable.unpaged();
-        final Page<EntityForInList> page = repo.findAll(null, fr, pr);
+        final Page<Root> page = repo.findAll(null, fr, pr);
         Assertions.assertEquals(Set.of(2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
@@ -68,7 +68,7 @@ public class InListTest {
                 .build();
 
         final Pageable pr = Pageable.unpaged();
-        final Page<EntityForInList> page = repo.findAll(null, fr, pr);
+        final Page<Root> page = repo.findAll(null, fr, pr);
         Assertions.assertEquals(0L, page.getTotalElements());
     }
 
@@ -79,7 +79,7 @@ public class InListTest {
                 .build();
 
         final Pageable pr = Pageable.unpaged();
-        final Page<EntityForInList> page = repo.findAll(null, fr, pr);
+        final Page<Root> page = repo.findAll(null, fr, pr);
         Assertions.assertEquals(Set.of(1L, 2L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
@@ -90,7 +90,7 @@ public class InListTest {
                 .build();
 
         final Pageable pr = Pageable.unpaged();
-        final Page<EntityForInList> page = repo.findAll(null, fr, pr);
+        final Page<Root> page = repo.findAll(null, fr, pr);
         Assertions.assertEquals(Set.of(3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
@@ -101,12 +101,12 @@ public class InListTest {
                 .build();
 
         final Pageable pr = Pageable.unpaged();
-        final Page<EntityForInList> page = repo.findAll(null, fr, pr);
+        final Page<Root> page = repo.findAll(null, fr, pr);
         Assertions.assertEquals(Set.of(3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
-    private static EntityForInList entity(long id, String name, double rating, Integer maxPersons) {
-        final EntityForInList activity = new EntityForInList();
+    private static Root entity(long id, String name, double rating, Integer maxPersons) {
+        final Root activity = new Root();
         activity.id = id;
         activity.name = name;
         activity.maxPersons = maxPersons;

@@ -25,7 +25,7 @@ public class TextCompareTest {
     @TextCompare(name = "byName", path = "name")
     @TextCompare(name = "byDesc", path = "description")
     @TextCompare(name = "byTitle", path = "title")
-    public static class EntityForTextCompare {
+    public static class Root {
 
         @Id
         public long id;
@@ -35,17 +35,17 @@ public class TextCompareTest {
 
     }
 
-    public interface EntityForTextCompareRepository extends JpaRepository<EntityForTextCompare, Long>, WhitelistFilteringRepository<EntityForTextCompare> {
+    public interface RootsRepository extends JpaRepository<Root, Long>, WhitelistFilteringRepository<Root> {
 
     }
 
     @Inject
-    private EntityForTextCompareRepository repo;
+    private RootsRepository repo;
 
     @BeforeEach
     public void setup() {
         repo.deleteAll();
-        final EntityForTextCompare a = new EntityForTextCompare();
+        final Root a = new Root();
         a.id = 123;
         a.name = "asd";
         a.description = "test";
@@ -60,7 +60,7 @@ public class TextCompareTest {
                 .build();
 
         final Pageable pr = Pageable.unpaged();
-        Page<EntityForTextCompare> page = repo.findAll(null, fr, pr);
+        Page<Root> page = repo.findAll(null, fr, pr);
         Assertions.assertEquals(123L, page.getContent().get(0).id);
     }
 
@@ -70,7 +70,7 @@ public class TextCompareTest {
                 .text("byName", f -> f.eq(CaseSensitivity.IGNORE_CASE, "ASD"))
                 .build();
         final Pageable pr = Pageable.unpaged();
-        Page<EntityForTextCompare> page = repo.findAll(null, fr, pr);
+        Page<Root> page = repo.findAll(null, fr, pr);
         Assertions.assertEquals(123L, page.getContent().get(0).id);
     }
 
@@ -80,7 +80,7 @@ public class TextCompareTest {
                 .text("byName", f -> f.contains("s"))
                 .build();
         final Pageable pr = Pageable.unpaged();
-        Page<EntityForTextCompare> page = repo.findAll(null, fr, pr);
+        Page<Root> page = repo.findAll(null, fr, pr);
         Assertions.assertEquals(123L, page.getContent().get(0).id);
     }
 
@@ -91,7 +91,7 @@ public class TextCompareTest {
                 .build();
 
         final Pageable pr = Pageable.unpaged();
-        Page<EntityForTextCompare> page = repo.findAll(null, fr, pr);
+        Page<Root> page = repo.findAll(null, fr, pr);
         Assertions.assertEquals(123L, page.getContent().get(0).id);
     }
 
@@ -102,7 +102,7 @@ public class TextCompareTest {
                 .build();
 
         final Pageable pr = Pageable.unpaged();
-        Page<EntityForTextCompare> page = repo.findAll(null, fr, pr);
+        Page<Root> page = repo.findAll(null, fr, pr);
         Assertions.assertEquals(123L, page.getContent().get(0).id);
     }
 
@@ -114,7 +114,7 @@ public class TextCompareTest {
                 .build();
 
         final Pageable pr = Pageable.unpaged();
-        Page<EntityForTextCompare> page = repo.findAll(null, fr, pr);
+        Page<Root> page = repo.findAll(null, fr, pr);
         Assertions.assertEquals(123L, page.getContent().get(0).id);
     }
 
@@ -126,7 +126,7 @@ public class TextCompareTest {
                 .build();
 
         final Pageable pr = Pageable.unpaged();
-        Page<EntityForTextCompare> page = repo.findAll(null, fr, pr);
+        Page<Root> page = repo.findAll(null, fr, pr);
         Assertions.assertEquals(123L, page.getContent().get(0).id);
     }
 
@@ -136,7 +136,7 @@ public class TextCompareTest {
                 .text("byName", f -> f.endsWith(CaseSensitivity.IGNORE_CASE, "D"))
                 .build();
         final Pageable pr = Pageable.unpaged();
-        Page<EntityForTextCompare> page = repo.findAll(null, fr, pr);
+        Page<Root> page = repo.findAll(null, fr, pr);
         Assertions.assertEquals(123L, page.getContent().get(0).id);
     }
 
@@ -147,8 +147,8 @@ public class TextCompareTest {
                 .text("byTitle", f -> f.neq(CaseSensitivity.IGNORE_CASE, "D"))
                 .build();
 
-        final Page<EntityForTextCompare> all = repo.findAll(Pageable.unpaged());
-        final Page<EntityForTextCompare> page = repo.findAll(null, fr, Pageable.unpaged());
+        final Page<Root> all = repo.findAll(Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, fr, Pageable.unpaged());
         Assertions.assertEquals(all.getTotalElements(), page.getTotalElements());
     }
 }

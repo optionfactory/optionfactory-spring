@@ -3,7 +3,6 @@ package net.optionfactory.spring.data.jpa.filtering.h2;
 import jakarta.inject.Inject;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
 import net.optionfactory.spring.data.jpa.filtering.PerMethodTransactional;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository;
 import org.junit.jupiter.api.Assertions;
@@ -21,7 +20,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 public class SliceTest {
 
     @Entity
-    public static class EntityForSlice {
+    public static class Root {
 
         @Id
         public long id;
@@ -29,21 +28,14 @@ public class SliceTest {
 
     }
 
-    public interface EntityForSliceRepository extends JpaRepository<EntityForSlice, Long>, WhitelistFilteringRepository<EntityForSlice> {
+    public interface SliceRepository extends JpaRepository<Root, Long>, WhitelistFilteringRepository<Root> {
 
-        Slice<EntityForSlice> findByName(String name, Pageable pr);
+        Slice<Root> findByName(String name, Pageable pr);
 
     }
 
     @Inject
-    private EntityForSliceRepository repo;
-
-    private EntityForSlice entity(long id, String name) {
-        final var entity = new EntityForSlice();
-        entity.id = id;
-        entity.name = name;
-        return entity;
-    }
+    private SliceRepository repo;
 
     @BeforeEach
     public void setup() {
@@ -59,7 +51,7 @@ public class SliceTest {
     @Test
     public void firstSliceHasNoPrevious() {
         Pageable p = PageRequest.of(0, 2, Sort.by("id"));
-        Slice<EntityForSlice> findByName = repo.findByName("TEST", p);
+        Slice<Root> findByName = repo.findByName("TEST", p);
         Assertions.assertFalse(findByName.hasPrevious());
         Assertions.assertTrue(findByName.hasContent());
     }
@@ -67,7 +59,7 @@ public class SliceTest {
     @Test
     public void firstSliceHasNext() {
         Pageable p = PageRequest.of(0, 2, Sort.by("id"));
-        Slice<EntityForSlice> findByName = repo.findByName("TEST", p);
+        Slice<Root> findByName = repo.findByName("TEST", p);
         Assertions.assertTrue(findByName.hasNext());
         Assertions.assertTrue(findByName.hasContent());
     }
@@ -75,8 +67,16 @@ public class SliceTest {
     @Test
     public void secondSliceHasPrevious() {
         Pageable p = PageRequest.of(1, 2, Sort.by("id"));
-        Slice<EntityForSlice> findByName = repo.findByName("TEST", p);
+        Slice<Root> findByName = repo.findByName("TEST", p);
         Assertions.assertTrue(findByName.hasPrevious());
         Assertions.assertTrue(findByName.hasContent());
     }
+
+    private Root entity(long id, String name) {
+        final var entity = new Root();
+        entity.id = id;
+        entity.name = name;
+        return entity;
+    }
+
 }

@@ -26,19 +26,19 @@ public class LocalDateCompareTest {
 
     @Entity
     @LocalDateCompare(name = "date", path = "date")
-    public static class EntityForLocalDate {
+    public static class Root {
 
         @Id
         public long id;
         public LocalDate date;
     }
 
-    public interface EntityForLocalDateRepository extends JpaRepository<EntityForLocalDate, Long>, WhitelistFilteringRepository<EntityForLocalDate> {
+    public interface RootsRepository extends JpaRepository<Root, Long>, WhitelistFilteringRepository<Root> {
 
     }
 
     @Inject
-    private EntityForLocalDateRepository repo;
+    private RootsRepository repo;
 
     @BeforeEach
     public void setup() {
@@ -54,44 +54,44 @@ public class LocalDateCompareTest {
 
     @Test
     public void canFilterByLocalDateEquality() {
-        final Page<EntityForLocalDate> page = repo.findAll(null, filter(LocalDateCompare.Operator.EQ, "2019-01-11"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter(LocalDateCompare.Operator.EQ, "2019-01-11"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void canFilterByLocalDateLessThan() {
-        final Page<EntityForLocalDate> page = repo.findAll(null, filter(LocalDateCompare.Operator.LT, "2019-01-11"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter(LocalDateCompare.Operator.LT, "2019-01-11"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(1L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void canFilterByLocalDateGreaterThan() {
-        final Page<EntityForLocalDate> page = repo.findAll(null, filter(LocalDateCompare.Operator.GT, "2019-01-11"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter(LocalDateCompare.Operator.GT, "2019-01-11"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(4L, 5L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void canFilterByLocalDateLessThanOrEqualTo() {
-        final Page<EntityForLocalDate> page = repo.findAll(null, filter(LocalDateCompare.Operator.LTE, "2019-01-11"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter(LocalDateCompare.Operator.LTE, "2019-01-11"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(1L, 2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void canFilterByLocalDateGreaterThanOrEqualTo() {
-        final Page<EntityForLocalDate> page = repo.findAll(null, filter(LocalDateCompare.Operator.GTE, "2019-01-11"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter(LocalDateCompare.Operator.GTE, "2019-01-11"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(2L, 3L, 4L, 5L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void canFilterByLocalDateBetween() {
-        final Page<EntityForLocalDate> page = repo.findAll(null, filter(LocalDateCompare.Operator.BETWEEN, "2019-01-11", "2019-09-30"), Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter(LocalDateCompare.Operator.BETWEEN, "2019-01-11", "2019-09-30"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(2L, 3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
     @Test
     public void filteringWithNeqIncludesNullValues() {
-        final Page<EntityForLocalDate> all = repo.findAll(Pageable.unpaged());
-        final Page<EntityForLocalDate> page = repo.findAll(null, filter(LocalDateCompare.Operator.NEQ, "2222-02-02"), Pageable.unpaged());
+        final Page<Root> all = repo.findAll(Pageable.unpaged());
+        final Page<Root> page = repo.findAll(null, filter(LocalDateCompare.Operator.NEQ, "2222-02-02"), Pageable.unpaged());
         Assertions.assertEquals(all.getTotalElements(), page.getTotalElements());
     }
 
@@ -101,8 +101,8 @@ public class LocalDateCompareTest {
                 .build();
     }
 
-    private static EntityForLocalDate entity(long id, LocalDate date) {
-        final EntityForLocalDate e = new EntityForLocalDate();
+    private static Root entity(long id, LocalDate date) {
+        final Root e = new Root();
         e.id = id;
         e.date = date;
         return e;

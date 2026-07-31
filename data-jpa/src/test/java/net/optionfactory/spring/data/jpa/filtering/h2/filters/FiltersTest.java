@@ -30,56 +30,53 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 public class FiltersTest {
 
     @Entity
-    public static class EntityA {
+    public static class RootAgg {
 
         @Id
         public long id;
-
         @ManyToOne
-        public EntityB b;
+        public Branch b;
     }
 
     @Entity
-    public static class EntityB {
+    public static class Branch {
 
         @Id
         public long id;
-
         @ManyToOne
-        public EntityC c;
+        public Leaf c;
     }
 
     @Entity
-    public static class EntityC {
+    public static class Leaf {
 
         @Id
         public long id;
-
         @Embedded
-        public Inner i;
+        public Embed i;
 
     }
 
     @Embeddable
-    public static class Inner {
+    public static class Embed {
 
         public long n;
     }
 
-    public interface EntityARepository extends JpaRepository<EntityA, Long>, WhitelistFilteringRepository<EntityA> {
+    public interface RootsRepository extends JpaRepository<RootAgg, Long>, WhitelistFilteringRepository<RootAgg> {
     }
 
     @Inject
-    private EntityARepository repository;
+    private RootsRepository repository;
 
     @Test
     public void canSpecifyEmptyTraversal() {
-        final Specification<EntityA> specification = new Specification<EntityA>() {
+        final Specification<RootAgg> specification = new Specification<RootAgg>() {
             @Override
-            public Predicate toPredicate(Root<EntityA> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
+            public Predicate toPredicate(Root<RootAgg> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
                 final var ts = Filters.traversal(root.getModel(), "myFilter", "");
                 final Path<?> path = Filters.path(root, "myFilter", ts);
-                Assertions.assertEquals(EntityA.class, path.getJavaType());
+                Assertions.assertEquals(RootAgg.class, path.getJavaType());
                 return null;
             }
         };
@@ -88,9 +85,9 @@ public class FiltersTest {
 
     @Test
     public void canTraversePropertyChain() {
-        final Specification<EntityA> specification = new Specification<EntityA>() {
+        final Specification<RootAgg> specification = new Specification<RootAgg>() {
             @Override
-            public Predicate toPredicate(Root<EntityA> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
+            public Predicate toPredicate(Root<RootAgg> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
                 final var ts = Filters.traversal(root.getModel(), "myFilter", "b.c.i.n");
                 final Expression<Object> path = Filters.path(root, "myFilter", ts);
                 Assertions.assertEquals(Long.class, path.getJavaType());
@@ -102,9 +99,9 @@ public class FiltersTest {
 
     @Test
     public void throwsWhenNonExistantPropertyIsReferencedInPropertyChain() {
-        final Specification<EntityA> specification = new Specification<EntityA>() {
+        final Specification<RootAgg> specification = new Specification<RootAgg>() {
             @Override
-            public Predicate toPredicate(Root<EntityA> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
+            public Predicate toPredicate(Root<RootAgg> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
                 final var ts = Filters.traversal(root.getModel(), "myFilter", "b.x.id");
                 final Expression<Object> nonExistant = Filters.path(root, "myFilter", ts);
                 return null;

@@ -36,9 +36,7 @@ public class SortTest {
 
         @Id
         public long id;
-
         public long a;
-
         public String b;
     }
 
