@@ -2,7 +2,7 @@
 schema_version: 1
 project:
   name: "optionfactory-spring"
-  tier: tier3
+  tier: tier2
   lifecycle: active
   type: library
   stewards:
