@@ -15,7 +15,7 @@ import net.optionfactory.spring.data.jpa.filtering.filters.FilterTraversal;
 import net.optionfactory.spring.data.jpa.filtering.filters.NumberCompare;
 import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
 import net.optionfactory.spring.data.jpa.filtering.PerMethodTransactional;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Pageable;
@@ -76,7 +76,7 @@ public class EmbeddableTraversalOverrideTest {
                 .number("byLeafId", f -> f.of(NumberCompare.Operator.EQ, "42"))
                 .build();
         final var page = repo.findAll(fr, Pageable.unpaged());
-        Assert.assertEquals(1, page.getTotalElements());
+        Assertions.assertEquals(1, page.getTotalElements());
     }
 
 }
