@@ -114,7 +114,12 @@ public class EmailSender {
                 logger.info(String.format("[send-emails] removed %s: dead", eml.getFileName()));
             }
         } catch (IOException ex) {
-            logger.warn(String.format("[send-emails] failed to process dead email: %s", eml), ex);
+            logger.error(String.format("[send-emails] failed to archive dead email %s, deleting from spool to prevent re-send", eml.getFileName()), ex);
+            try {
+                Files.deleteIfExists(eml);
+            } catch (IOException ex2) {
+                logger.error(String.format("[send-emails] failed to delete dead %s after archive failure", eml.getFileName()), ex2);
+            }
         }
     }
 

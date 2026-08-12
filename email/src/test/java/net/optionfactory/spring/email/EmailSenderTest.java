@@ -89,4 +89,35 @@ public class EmailSenderTest {
         Assertions.assertTrue(Files.list(dead).anyMatch(p -> filename.equals(p.getFileName().toString())));
     }
 
+    @Test
+    public void deadEmailIsNotResentWhenMoveToDeadFails() throws IOException, InterruptedException {
+        final Path spool = Path.of("target/test-dead-fail/spool/");
+        final Path sent = Path.of("target/test-dead-fail/sent/");
+        final Path dead = Path.of("target/test-dead-fail/dead/");
+        final var paths = EmailPaths.provide(spool, sent, dead);
+        final var configuration = EmailSenderConfiguration
+                .builder()
+                .placebo(true)
+                .host("example.com")
+                .port(25)
+                .protocol(EmailSenderConfiguration.Protocol.PLAIN)
+                .deadAfter(Duration.ofMillis(100))
+                .build();
+        final var sender = new EmailSender(paths, configuration);
+
+        final var filename = String.format("%s.eml", UUID.randomUUID().toString());
+        spool.resolve(filename).toFile().createNewFile();
+        Thread.sleep(101);
+        try (var stream = Files.walk(dead, 1)) {
+            stream.sorted(java.util.Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
+        }
+
+        sender.processSpool();
+
+        Assertions.assertFalse(Files.exists(sent.resolve(filename)),
+                "dead email was re-sent (moved to sent) instead of being discarded");
+        Assertions.assertFalse(Files.exists(spool.resolve(filename)),
+                "dead email left in spool would be re-sent on the next tick");
+    }
+
 }
