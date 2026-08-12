@@ -5,10 +5,11 @@ import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.ParseException;
+import java.util.Locale;
 
 public class XsdDecimalToLongCents extends XmlAdapter<String, Long> {
 
-    private static final DecimalFormatSymbols XSD_DECIMAL_SYMBOLS = new DecimalFormatSymbols();
+    private static final DecimalFormatSymbols XSD_DECIMAL_SYMBOLS = DecimalFormatSymbols.getInstance(Locale.ROOT);
 
     static {
         XSD_DECIMAL_SYMBOLS.setDecimalSeparator('.');
