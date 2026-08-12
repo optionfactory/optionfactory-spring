@@ -63,19 +63,27 @@ public class EmailSender {
                     javaMail.send(message);
                 }
             }
-            logger.info(String.format("[send-emails] sent%s: %s", placebo ? "(placebo)" : "", eml.getFileName()));
+        } catch (MessagingException | RuntimeException | IOException ex) {
+            logger.warn(String.format("[send-emails] failed to send email: %s", eml.getFileName()), ex);
+            return;
+        }
+        logger.info(String.format("[send-emails] sent%s: %s", placebo ? "(placebo)" : "", eml.getFileName()));
+        try {
             if (paths.sent() != null) {
                 Path target = paths.sent().resolve(eml.getFileName());
                 Files.move(eml, target, StandardCopyOption.ATOMIC_MOVE);
                 logger.info(String.format("[send-emails] moved %s to sent directory", eml.getFileName()));
             } else {
-                logger.info(String.format("[send-emails] deleted %s", eml.getFileName()));
                 Files.delete(eml);
+                logger.info(String.format("[send-emails] deleted %s", eml.getFileName()));
             }
-        } catch (MessagingException | RuntimeException ex) {
-            logger.warn(String.format("[send-emails] failed to send email: %s", ex.getMessage()));
         } catch (IOException ex) {
-            logger.error("[send-emails] failed to process sent email (move or remove)", ex);
+            logger.error(String.format("[send-emails] sent but failed to archive %s, deleting from spool to prevent re-send", eml.getFileName()), ex);
+            try {
+                Files.deleteIfExists(eml);
+            } catch (IOException ex2) {
+                logger.error(String.format("[send-emails] failed to delete %s after archive failure", eml.getFileName()), ex2);
+            }
         }
     }
 
