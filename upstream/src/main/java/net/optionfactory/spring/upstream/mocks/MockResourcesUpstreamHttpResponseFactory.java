@@ -110,6 +110,9 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
 
     private static String[] headerFromLine(String headerLine) {
         final var kv = headerLine.split(":", 2);
+        if (kv.length < 2) {
+            throw new RestClientException(String.format("malformed mock header line (missing ':'): %s", headerLine));
+        }
         return new String[]{
             kv[0].trim(), kv[1].trim()
         };
