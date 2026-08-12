@@ -57,7 +57,7 @@ public class UpstreamJwsAuthenticator implements UpstreamHttpRequestInitializer 
         } catch (JOSEException ex) {
             throw new IllegalStateException(ex);
         }
-        request.getHeaders().add("Authorization", String.format("Bearer %s", jws.serialize()));        
+        request.getHeaders().set("Authorization", String.format("Bearer %s", jws.serialize()));        
     }
 
 }
