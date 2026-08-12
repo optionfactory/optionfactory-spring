@@ -83,7 +83,7 @@ public class DerWriter {
         } else {
             second = Integer.parseInt(oid, firstDot + 1, secondDot, 10);
         }
-        buffer.write(first * 40 + second);
+        writeOidComponent(buffer, first * 40L + second);
         
         int start = secondDot + 1;
         while (secondDot != -1) {
