@@ -18,18 +18,33 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import org.springframework.core.io.InputStreamSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class EmailMarshaller {
 
+    private final Logger logger = LoggerFactory.getLogger(EmailMarshaller.class);
+
     public Path marshalToSpool(EmailMessage emailMessage, EmailPaths paths, String prefix) {
+        final Path tempPath;
         try {
-            final Path tempPath = Files.createTempFile(paths.spool(), prefix, ".tmp");
+            tempPath = Files.createTempFile(paths.spool(), prefix, ".tmp");
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
+        try {
             marshal(emailMessage, tempPath);
             final Path targetPath = paths.spool().resolve(tempPath.getFileName().toString().replace(".tmp", ".eml"));
             Files.move(tempPath, targetPath, StandardCopyOption.ATOMIC_MOVE);
             return targetPath;
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
+        } finally {
+            try {
+                Files.deleteIfExists(tempPath);
+            } catch (IOException ex) {
+                logger.warn(String.format("failed to delete temp file %s after marshal failure", tempPath), ex);
+            }
         }
     }
 
