@@ -42,8 +42,8 @@ public class RolesGroupsAndScopesFromClaims implements JwtAuthoritiesConverter {
         if (claim == null) {
             return List.of();
         }
-        if (claim instanceof String spaceSeparetedScopes) {
-            return Stream.of(spaceSeparetedScopes.split(" "))
+        if (claim instanceof String spaceSeparatedScopes) {
+            return Stream.of(spaceSeparatedScopes.split(" "))
                     .map(String::strip)
                     .filter(String::isEmpty)
                     .toList();

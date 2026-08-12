@@ -29,7 +29,7 @@ import net.optionfactory.spring.upstream.buffering.StreamHttpMessageConverter;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext.MessageConverters;
 import net.optionfactory.spring.upstream.errors.UpstreamErrorOnErrorStatusHandler;
-import net.optionfactory.spring.upstream.errors.UpstreamErrorOnReponseHandler;
+import net.optionfactory.spring.upstream.errors.UpstreamErrorOnResponseHandler;
 import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.hc5.HcRequestFactories;
 import net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor;
@@ -776,7 +776,7 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
 
         rcb.requestInterceptor(scopeHandler.adapt(initializedInterceptors));
 
-        Stream.concat(responseErrorHandlers.stream(), Stream.of(new UpstreamErrorOnErrorStatusHandler(), new UpstreamErrorOnReponseHandler()))
+        Stream.concat(responseErrorHandlers.stream(), Stream.of(new UpstreamErrorOnErrorStatusHandler(), new UpstreamErrorOnResponseHandler()))
                 .peek(i -> i.preprocess(klass, expressions, endpoints))
                 .map(scopeHandler::adapt)
                 .forEach(rcb::defaultStatusHandler);

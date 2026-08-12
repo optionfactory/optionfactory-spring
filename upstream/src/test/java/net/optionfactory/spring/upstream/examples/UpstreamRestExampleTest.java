@@ -115,7 +115,7 @@ public class UpstreamRestExampleTest {
     private ExampleRestClient client;
 
     @Test
-    public void canUseClientConfiredWithMocks() throws Exception {
+    public void canUseClientConfiguredWithMocks() throws Exception {
         final var got = client.ok("1");
 
         Assertions.assertEquals(Map.of("mocked", "response"), got);

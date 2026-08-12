@@ -10,7 +10,7 @@ import tools.jackson.databind.json.JsonMapper;
 public class UpstreamErrorsHandlerJsonTest {
 
     @Test
-    public void matchinErrorAnnotationYieldsRestClientUpstreamException() {
+    public void matchingErrorAnnotationYieldsRestClientUpstreamException() {
         final var client = UpstreamBuilder.create(UpstreamErrorsJsonClient.class)
                 .requestFactoryMock(c -> {
                     c.response(MediaType.APPLICATION_JSON,
@@ -32,7 +32,7 @@ public class UpstreamErrorsHandlerJsonTest {
     }
 
     @Test
-    public void nonMatchinErrorAnnotationYieldsResult() {
+    public void nonMatchingErrorAnnotationYieldsResult() {
         final var response = UpstreamBuilder.create(UpstreamErrorsJsonClient.class)
                 .requestFactoryMock(c -> {
                     c.response(MediaType.APPLICATION_JSON,

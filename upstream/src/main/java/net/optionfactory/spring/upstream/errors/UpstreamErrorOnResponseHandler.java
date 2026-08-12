@@ -21,7 +21,7 @@ import org.springframework.expression.EvaluationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatus.Series;
 
-public class UpstreamErrorOnReponseHandler implements UpstreamResponseErrorHandler {
+public class UpstreamErrorOnResponseHandler implements UpstreamResponseErrorHandler {
 
     private record AnnotatedValues(Set<HttpStatus.Series> series, BooleanExpression predicate, StringExpression message) {
 
