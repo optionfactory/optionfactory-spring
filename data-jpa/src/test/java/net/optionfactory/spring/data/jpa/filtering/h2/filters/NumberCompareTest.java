@@ -108,6 +108,19 @@ public class NumberCompareTest {
         Assertions.assertEquals(all.getTotalElements(), page.getTotalElements());
     }
 
+    @Test
+    public void canFilterByBetweenRange() {
+        final Set<Long> expected = Set.of(2L, 3L);
+        Assertions.assertEquals(expected, idsIn(repo.findAll(null, between("maxPersons", "10", "15"), Pageable.unpaged())));
+        Assertions.assertEquals(expected, idsIn(repo.findAll(null, between("maxPersons", "15", "10"), Pageable.unpaged())));
+    }
+
+    private static FilterRequest between(String filterName, String lo, String hi) {
+        return FilterRequest.builder()
+                .number(filterName, f -> f.of(NumberCompare.Operator.BETWEEN, lo, hi))
+                .build();
+    }
+
     private static FilterRequest filter(String filterName, NumberCompare.Operator operator, String value) {
         return FilterRequest.builder()
                 .number(filterName, f -> f.of(operator, value))
