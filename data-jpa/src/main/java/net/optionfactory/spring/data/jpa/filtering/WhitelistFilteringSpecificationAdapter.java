@@ -62,7 +62,7 @@ public class WhitelistFilteringSpecificationAdapter<T> implements Specification<
             for (Map.Entry<String, String[]> e : group) {
                 final TraversalFilter tf = (TraversalFilter) whitelisted.get(e.getKey());
                 final Path path = Filters.path(conditionRoot, e.getKey(), tf.traversal());
-                groupPredicates.add(tf.condition(root, path, builder, e.getValue()));
+                groupPredicates.add(tf.condition(conditionRoot, path, builder, e.getValue()));
             }
 
             sq.select(builder.literal(1)).where(groupPredicates.toArray(Predicate[]::new));
