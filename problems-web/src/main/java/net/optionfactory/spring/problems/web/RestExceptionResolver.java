@@ -273,10 +273,12 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, List.of(problem));
             }
             case ResponseStatusException rse -> {
+                final HttpStatusCode statusCode = rse.getStatusCode();
+                final HttpStatus resolved = HttpStatus.resolve(statusCode.value());
                 final var reason = messageSource.getMessage(rse.getReason(), null, rse.getReason(), locale);
-                final var problem = Problem.of(HttpStatus.resolve(rse.getStatusCode().value()).name(), null, reason, Problem.NO_DETAILS);
+                final var problem = Problem.of(resolved != null ? resolved.name() : String.format("HTTP_%d", statusCode.value()), null, reason, Problem.NO_DETAILS);
                 logger.debug(String.format("ResponseStatusException at %s: %s", requestUri, problem));
-                yield new HttpStatusAndProblems(HttpStatus.resolve(rse.getStatusCode().value()), List.of(problem));
+                yield new HttpStatusAndProblems(statusCode, List.of(problem));
             }
             case Failure failure -> {
                 logger.debug(String.format("Failure at %s", requestUri), failure);

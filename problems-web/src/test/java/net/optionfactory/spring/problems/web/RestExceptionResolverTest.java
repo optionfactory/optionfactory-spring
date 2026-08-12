@@ -7,6 +7,7 @@ import net.optionfactory.spring.problems.web.RestExceptionResolver.Details;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -72,16 +73,32 @@ public class RestExceptionResolverTest {
     public void detailsAreSerializedWhenOptionsIsIncludeDetails() throws NoSuchMethodException {
         final var mapper = new JsonMapper();
         final var er = RestExceptionResolver.builder().withDetails(Details.INCLUDE).build(mapper);
-        final HandlerMethod hm = new HandlerMethod(new RestExceptionResolverTest(), RestExceptionResolverTest.class.getMethod("fakeControllerMethod"));
+        final var handlerMethod = new HandlerMethod(new RestExceptionResolverTest(), RestExceptionResolverTest.class.getMethod("fakeControllerMethod"));
 
         final MockHttpServletRequest req = new MockHttpServletRequest();
         final MockHttpServletResponse res = new MockHttpServletResponse();
         final Exception exception = Failure.of("type", "context", "reason", "details");
 
-        final ModelAndView got = er.resolveException(req, res, hm, exception);
+        final ModelAndView got = er.resolveException(req, res, handlerMethod, exception);
         final Object failures = got.getModel().get("errors");
         final Problem problem = (Problem) ((List) failures).get(0);
         Assertions.assertEquals("details", problem.details);
+    }
+
+    @Test
+    public void responseStatusExceptionWithNonStandardStatusCodeIsHandledWithoutNpe() throws NoSuchMethodException {
+        final var mapper = new JsonMapper();
+        final var er = RestExceptionResolver.builder().withDetails(Details.INCLUDE).build(mapper);
+        final var handlerMethod = new HandlerMethod(new RestExceptionResolverTest(), RestExceptionResolverTest.class.getMethod("fakeControllerMethod"));
+
+        final MockHttpServletRequest req = new MockHttpServletRequest();
+        final MockHttpServletResponse res = new MockHttpServletResponse();
+        // 599 is not in the HttpStatus enum: HttpStatus.resolve(599) returns null
+        final Exception exception = new ResponseStatusException(HttpStatusCode.valueOf(599), "custom");
+
+        final ModelAndView got = er.resolveException(req, res, handlerMethod, exception);
+
+        Assertions.assertNotNull(got);
     }
 
 }
