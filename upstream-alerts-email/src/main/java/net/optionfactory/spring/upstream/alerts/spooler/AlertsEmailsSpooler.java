@@ -22,6 +22,14 @@ public class AlertsEmailsSpooler implements Spooler<List<UpstreamAlertEvent>> {
         this.emailMessagePrototype = emailMessagePrototype;
     }
 
+    /**
+     * Best-effort: marshals the alerts into a single email on the spool. If
+     * marshalling fails (e.g. a broken template or marshal error), the failure is
+     * logged at WARN and an empty list is returned, so the affected alerts are
+     * dropped and never retried. A persistent template/config error therefore
+     * silently disables alert delivery until it is fixed; monitor the
+     * {@code [spool-emails][alerts] failed to dump email} log line.
+     */
     @Override
     public List<Path> spool(List<UpstreamAlertEvent> alerts) {
         try {
