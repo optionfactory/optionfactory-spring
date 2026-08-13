@@ -7,35 +7,42 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParserFactory;
 import javax.xml.transform.Templates;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.sax.SAXSource;
 import javax.xml.transform.stream.StreamResult;
-import javax.xml.transform.stream.StreamSource;
 import net.optionfactory.spring.marshaling.jaxb.Xml;
 import org.springframework.core.io.InputStreamSource;
 import org.w3c.dom.Document;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 public class XsltRedactor {
 
     private final Templates templates;
+    private final SAXParserFactory saxParserFactory;
 
     public XsltRedactor(Templates templates) {
         this.templates = templates;
+        final var f = Xml.saxParserFactory();
+        f.setNamespaceAware(true);
+        this.saxParserFactory = f;
     }
 
     public String redact(InputStreamSource source) {
         try (final var is = source.getInputStream(); final var writer = new StringWriter()) {
+            final var reader = saxParserFactory.newSAXParser().getXMLReader();
             final var transformer = templates.newTransformer();
             transformer.setOutputProperty("omit-xml-declaration", "yes");
-            transformer.transform(new StreamSource(is), new StreamResult(writer));
+            transformer.transform(new SAXSource(reader, new InputSource(is)), new StreamResult(writer));
             return writer.toString();
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
-        } catch (TransformerException ex) {
+        } catch (TransformerException | ParserConfigurationException | SAXException ex) {
             throw new IllegalStateException(ex);
         }
     }

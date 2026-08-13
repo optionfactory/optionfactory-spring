@@ -74,4 +74,23 @@ public class SchemasTest {
         );
         Assertions.assertNotNull(schema, "expected schema to be successfully compiled from source xsds");
     }
+
+    @Test
+    public void fromWsdlRejectsDoctypeBasedXxe() {
+        final var xxe = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE wsdl:definitions [
+              <!ENTITY xxe SYSTEM "file:///etc/passwd" >
+            ]>
+            <wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+                <wsdl:types>
+                    <xs:schema targetNamespace="http://example.com/root">
+                        <xs:element name="Root" type="xs:string"/>
+                    </xs:schema>
+                </wsdl:types>
+            </wsdl:definitions>
+        """.stripLeading();
+        Assertions.assertThrows(IllegalStateException.class, () ->
+                Schemas.fromWsdl(new ByteArrayResource(xxe.getBytes())));
+    }
 }

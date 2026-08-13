@@ -2,6 +2,7 @@ package net.optionfactory.spring.upstream.rendering;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ByteArrayResource;
 
@@ -18,5 +19,19 @@ public class XsltRedactorTest {
         """;
         final var output = redactor.redact(new ByteArrayResource(input.getBytes(StandardCharsets.UTF_8)));
         System.out.println(output);
+    }
+
+    @Test
+    public void redactRejectsDoctypeBasedXxe() {
+        final var redactor = XsltRedactor.Factory.INSTANCE.create(Map.of(), Map.of(), Map.of());
+        final var xxe = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE r [
+          <!ENTITY xxe SYSTEM "file:///etc/passwd" >
+        ]>
+        <request>&xxe;</request>
+        """;
+        Assertions.assertThrows(IllegalStateException.class, () ->
+                redactor.redact(new ByteArrayResource(xxe.getBytes(StandardCharsets.UTF_8))));
     }
 }
