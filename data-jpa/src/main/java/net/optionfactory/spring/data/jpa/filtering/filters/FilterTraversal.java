@@ -22,6 +22,11 @@ import java.lang.annotation.Target;
 /// - **Plural Relationships:** Points crossing a `PluralAttribute` boundary (like `@OneToMany`) 
 ///   automatically trigger a correlated `EXISTS` subquery. This shields the query from 
 ///   Cartesian row-multiplication and prevents Spring Data pagination structures from failing.
+/// - **Embedded Components:** `@Embedded` (embeddable) attributes are inlined into the owning
+///   entity's table and emit no SQL join of their own. They are therefore always traversed as
+///   [JoinType#LEFT], and a `@FilterTraversal` whose [path()] resolves to an embedded hop has no
+///   effect: its [joinType()] is silently ignored. Only genuine association/collection hops
+///   (`@ManyToOne`, `@OneToMany`, ...) can be customized this way.
 /// 
 /// ### How Subselects Work & The Role of JoinType
 /// 

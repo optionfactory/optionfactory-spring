@@ -27,7 +27,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 public class EmbeddableTraversalOverrideTest {
 
     @Entity
-    @FilterTraversal(path = "a", joinType = JoinType.INNER) // Explicit user override on @Embedded hop
+    @FilterTraversal(path = "a", joinType = JoinType.INNER) // redundant: overrides on @Embedded hops are ignored (no SQL join); kept to assert traversal tolerates it
     @NumberCompare(name = "byLeafId", path = "a.b.id")
     public static class Root {
 
@@ -71,7 +71,7 @@ public class EmbeddableTraversalOverrideTest {
     }
 
     @Test
-    public void respectsFilterTraversalOverrideOnEmbeddablePrefix() {
+    public void redundantOverrideOnEmbeddedHopIsTolerated() {
         final var fr = FilterRequest.builder()
                 .number("byLeafId", f -> f.of(NumberCompare.Operator.EQ, "42"))
                 .build();
