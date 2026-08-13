@@ -23,6 +23,7 @@ import net.optionfactory.spring.marshaling.jackson.quirks.Quirks.TemporalFormat;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
 import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.ValueDeserializer;
@@ -101,8 +102,11 @@ public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalF
 
         @Override
         public Object deserialize(JsonParser jp, DeserializationContext dc) {
+            if (!jp.hasToken(JsonToken.VALUE_STRING)) {
+                return dc.reportInputMismatch(targetType, "Expected a string text token for @TemporalFormat field, got: %s", jp.currentToken());
+            }
             final String text = jp.getValueAsString();
-            if (text.isBlank()) {
+            if (text == null || text.isBlank()) {
                 return dc.reportInputMismatch(targetType, "Blank text for temporal field.");
             }
             try {
