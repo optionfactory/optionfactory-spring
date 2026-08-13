@@ -66,31 +66,29 @@ public class Expressions {
         return ctx;
     }
 
-    public OverlayEvaluationContext context(InvocationContext invocation) {
+    private OverlayEvaluationContext baseContext(InvocationContext invocation) {
         final var ctx = context();
         ctx.setVariable("invocation", invocation);
         ctx.setVariable("upstream", invocation.endpoint().upstream());
         ctx.setVariable("endpoint", invocation.endpoint().name());
+        return ctx;
+    }
+
+    public OverlayEvaluationContext context(InvocationContext invocation) {
+        final var ctx = baseContext(invocation);
         bindArgs(ctx, invocation);
         return ctx;
     }
 
     public OverlayEvaluationContext context(InvocationContext invocation, RequestContext request) {
-        final var ctx = context();
-        ctx.setVariable("invocation", invocation);
-        ctx.setVariable("upstream", invocation.endpoint().upstream());
-        ctx.setVariable("endpoint", invocation.endpoint().name());
+        final var ctx = baseContext(invocation);
         ctx.setVariable("request", request);
-
         bindArgs(ctx, invocation);
         return ctx;
     }
 
     public OverlayEvaluationContext context(InvocationContext invocation, RequestContext request, ResponseContext response) {
-        final var ctx = context();
-        ctx.setVariable("invocation", invocation);
-        ctx.setVariable("upstream", invocation.endpoint().upstream());
-        ctx.setVariable("endpoint", invocation.endpoint().name());
+        final var ctx = baseContext(invocation);
         ctx.setVariable("request", request);
         ctx.setVariable("response", response);
         ctx.setVariable("json_path", JsonPath.boundMethodHandle(invocation.converters(), response));
@@ -100,10 +98,7 @@ public class Expressions {
     }
 
     public OverlayEvaluationContext context(InvocationContext invocation, RequestContext request, ExceptionContext exception) {
-        final var ctx = context();
-        ctx.setVariable("invocation", invocation);
-        ctx.setVariable("upstream", invocation.endpoint().upstream());
-        ctx.setVariable("endpoint", invocation.endpoint().name());
+        final var ctx = baseContext(invocation);
         ctx.setVariable("request", request);
         ctx.setVariable("exception", exception);
         bindArgs(ctx, invocation);
