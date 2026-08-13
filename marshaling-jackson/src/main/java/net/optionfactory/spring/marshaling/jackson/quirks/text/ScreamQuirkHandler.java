@@ -1,6 +1,7 @@
 package net.optionfactory.spring.marshaling.jackson.quirks.text;
 
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import net.optionfactory.spring.marshaling.jackson.quirks.QuirkHandler;
 import net.optionfactory.spring.marshaling.jackson.quirks.Quirks;
@@ -46,7 +47,7 @@ public class ScreamQuirkHandler implements QuirkHandler<Quirks.Scream> {
 
         @Override
         public String reverse(@NonNull String transformed) {
-            final var s = transformed.toLowerCase();
+            final var s = transformed.toLowerCase(Locale.ROOT);
             if (!s.contains("_")) {
                 return s;
             }

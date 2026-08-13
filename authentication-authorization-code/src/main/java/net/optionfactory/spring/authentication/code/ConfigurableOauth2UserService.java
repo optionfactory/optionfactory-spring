@@ -2,6 +2,7 @@ package net.optionfactory.spring.authentication.code;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -44,7 +45,7 @@ public class ConfigurableOauth2UserService<U extends OidcUser> implements OAuth2
         final List<String> groups = oidcUser.getAttribute("groups");
         if (groups != null) {
             final var additionalAuthorities = groups.stream()
-                    .map(g -> String.format("ROLE_GROUP_%s", g.toUpperCase().replace("-", "_")))
+                    .map(g -> String.format("ROLE_GROUP_%s", g.toUpperCase(Locale.ROOT).replace("-", "_")))
                     .map(SimpleGrantedAuthority::new)
                     .collect(Collectors.toSet());
             augmentedAuthorities.addAll(additionalAuthorities);

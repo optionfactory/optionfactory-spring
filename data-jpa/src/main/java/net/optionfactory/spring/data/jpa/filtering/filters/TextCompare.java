@@ -14,6 +14,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.Locale;
 import java.util.stream.Stream;
 import net.optionfactory.spring.data.jpa.filtering.TraversalFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare.RepeatableTextCompare;
@@ -87,7 +88,7 @@ public @interface TextCompare {
             Filters.ensure(caseSensitivity.contains(sensitivity), root, name, "mode %s not whitelisted (%s)", sensitivity, caseSensitivity);
             final String value = values[2];
             final Expression<String> lhs = sensitivity == CaseSensitivity.CASE_SENSITIVE ? lpath : builder.lower(lpath);
-            final String rhs = sensitivity == CaseSensitivity.CASE_SENSITIVE || value == null ? value : value.toLowerCase();
+            final String rhs = sensitivity == CaseSensitivity.CASE_SENSITIVE || value == null ? value : value.toLowerCase(Locale.ROOT);
             return switch (operator) {
                 case EQ ->
                     rhs == null ? lhs.isNull() : builder.equal(lhs, rhs);
@@ -111,7 +112,7 @@ public @interface TextCompare {
                 }
                 case BETWEEN -> {
                     final String value2 = values[3];
-                    final String rhs2 = sensitivity == CaseSensitivity.CASE_SENSITIVE || value2 == null ? null : value2.toLowerCase();
+                    final String rhs2 = sensitivity == CaseSensitivity.CASE_SENSITIVE || value2 == null ? null : value2.toLowerCase(Locale.ROOT);
                     Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
                     Filters.ensure(rhs2 != null, root, name, "value2 cannot be null for operator %s", operator);
                     final String[] sorted = Stream.of(rhs, rhs2).sorted().toArray((l) -> new String[l]);

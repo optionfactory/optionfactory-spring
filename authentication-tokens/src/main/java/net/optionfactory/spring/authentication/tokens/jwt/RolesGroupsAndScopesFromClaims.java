@@ -4,6 +4,7 @@ import com.nimbusds.jose.Header;
 import com.nimbusds.jwt.JWTClaimsSet;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Stream;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.GrantedAuthority;
@@ -57,8 +58,8 @@ public class RolesGroupsAndScopesFromClaims implements JwtAuthoritiesConverter {
     }
 
     private static SimpleGrantedAuthority makeAuthority(String type, String value) {
-        final var suffix = value.toUpperCase().replace('-', '_');
-        return new SimpleGrantedAuthority(String.format("%s_%s", type.toUpperCase(), suffix));
+        final var suffix = value.toUpperCase(Locale.ROOT).replace('-', '_');
+        return new SimpleGrantedAuthority(String.format("%s_%s", type.toUpperCase(Locale.ROOT), suffix));
     }
 
 }

@@ -5,6 +5,7 @@ import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 import jakarta.servlet.http.HttpServletRequest;
 import java.text.ParseException;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Predicate;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
@@ -36,7 +37,7 @@ public class JwtTokenResolverAdapter implements BearerTokenResolver {
 
     public static Optional<String> searchToken(HttpServletRequest request, String headerName, String authScheme) {
         return Optional.ofNullable(request.getHeader(headerName))
-                .filter(value -> value.toUpperCase().startsWith(authScheme))
+                .filter(value -> value.toUpperCase(Locale.ROOT).startsWith(authScheme))
                 .map(value -> value.substring(authScheme.length()).trim());
     }
 }

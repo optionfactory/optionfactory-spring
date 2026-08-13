@@ -3,6 +3,7 @@ package net.optionfactory.spring.validation.taxcodes;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.Month;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,7 +21,7 @@ public class ItalianTaxCodes {
         if (taxcode == null) {
             return null;
         }
-        return taxcode.trim().toUpperCase().replaceAll("[^A-Z0-9]", "");
+        return taxcode.trim().toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "");
     }
 
     public static boolean isValid(String taxcode, Type type) {

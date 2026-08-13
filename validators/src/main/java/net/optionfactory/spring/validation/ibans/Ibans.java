@@ -1,5 +1,6 @@
 package net.optionfactory.spring.validation.ibans;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
@@ -101,14 +102,14 @@ public class Ibans {
         if (iban == null) {
             return null;
         }
-        return iban.trim().toUpperCase().replaceAll("[^A-Z0-9]", "");
+        return iban.trim().toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "");
     }    
     
     public static boolean isValid(String value) {
         if (value == null) {
             return false;
         }
-        final String trimmed = value.trim().toUpperCase();
+        final String trimmed = value.trim().toUpperCase(Locale.ROOT);
         if (trimmed.length() < 4) {
             return false;
         }
