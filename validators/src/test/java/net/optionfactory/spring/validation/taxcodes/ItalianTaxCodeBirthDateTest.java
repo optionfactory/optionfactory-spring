@@ -28,6 +28,9 @@ public class ItalianTaxCodeBirthDateTest {
                 Arguments.of("ABCDEF85TU1H501X", null, LocalDate.parse("2026-07-06"), 0),
                 Arguments.of("ABCDEFUUMVVH501X", null, LocalDate.parse("2026-07-06"), 0),
                 Arguments.of("RSSMRA01B29H501X", null, LocalDate.parse("2026-07-06"), 0),
+                // non-homocody letters in year/day segments: gracefully null, not NumberFormatException
+                Arguments.of("AAAAAAAAAAAAAAA0", null, LocalDate.parse("2026-07-06"), 0),
+                Arguments.of("AAAAAA80AAAAAAA0", null, LocalDate.parse("2026-07-06"), 0),
                 // centenarians and infants
                 Arguments.of("RSSMRA25A01H501X", LocalDate.parse("2025-01-01"), LocalDate.parse("2026-07-06"), 0),
                 Arguments.of("RSSMRA25A01H501X", LocalDate.parse("1925-01-01"), LocalDate.parse("2026-07-06"), 18),

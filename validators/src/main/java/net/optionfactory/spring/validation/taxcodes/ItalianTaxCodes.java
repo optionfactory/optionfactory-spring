@@ -64,26 +64,25 @@ public class ItalianTaxCodes {
         final var monthChar = fiscalCode.charAt(8);
         final var dayChars = fiscalCode.substring(9, 11);
 
-        final int twoDigitYear = Integer.parseInt(unmapHomocody(yearChars));
-        final int rawDayInt = Integer.parseInt(unmapHomocody(dayChars));
-
-        if (!MONTH_CODES.containsKey(monthChar)) {
-            return null;
-        }
-        final var month = MONTH_CODES.get(monthChar);
-        final int day = rawDayInt > 40 ? rawDayInt - 40 : rawDayInt;
-
-        final var latestAllowedDate = referenceDate.minusYears(minAge);
-        final int latestAllowedYear = latestAllowedDate.getYear();
-
-        final int baseCentury = (latestAllowedYear / 100) * 100;
-        final int candidateYear = baseCentury + twoDigitYear;
-
-        final int centuryOffset = afterAllowedDate(latestAllowedDate, candidateYear, month, day) ? -100 : 0;
-
         try {
+            final int twoDigitYear = Integer.parseInt(unmapHomocody(yearChars));
+            final int rawDayInt = Integer.parseInt(unmapHomocody(dayChars));
+            if (!MONTH_CODES.containsKey(monthChar)) {
+                return null;
+            }
+            final var month = MONTH_CODES.get(monthChar);
+            final int day = rawDayInt > 40 ? rawDayInt - 40 : rawDayInt;
+
+            final var latestAllowedDate = referenceDate.minusYears(minAge);
+            final int latestAllowedYear = latestAllowedDate.getYear();
+
+            final int baseCentury = (latestAllowedYear / 100) * 100;
+            final int candidateYear = baseCentury + twoDigitYear;
+
+            final int centuryOffset = afterAllowedDate(latestAllowedDate, candidateYear, month, day) ? -100 : 0;
+
             return LocalDate.of(candidateYear + centuryOffset, month, day);
-        } catch (DateTimeException ex) {
+        } catch (DateTimeException | NumberFormatException ex) {
             return null;
         }
     }
