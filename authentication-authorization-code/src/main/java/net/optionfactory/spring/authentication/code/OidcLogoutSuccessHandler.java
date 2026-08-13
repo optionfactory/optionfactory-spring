@@ -8,7 +8,6 @@ import java.net.URI;
 import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
-import org.springframework.web.util.ForwardedHeaderUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
 public class OidcLogoutSuccessHandler implements LogoutSuccessHandler {
@@ -28,8 +27,7 @@ public class OidcLogoutSuccessHandler implements LogoutSuccessHandler {
         final ServletServerHttpRequest sRequest = new ServletServerHttpRequest(request);
         final var builder = UriComponentsBuilder.fromUri(oidcServerBaseUri)
                 .path("/logout")
-                .queryParam("redirect_uri", ForwardedHeaderUtils
-                        .adaptFromForwardedHeaders(sRequest.getURI(), sRequest.getHeaders())
+                .queryParam("redirect_uri", UriComponentsBuilder.fromUri(sRequest.getURI())
                         .replacePath(path)
                         .toUriString());
 
