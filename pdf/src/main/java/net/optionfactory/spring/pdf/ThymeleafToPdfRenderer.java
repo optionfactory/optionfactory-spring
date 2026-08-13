@@ -57,7 +57,7 @@ public class ThymeleafToPdfRenderer {
                     .toStream(nonSigned);
 
             fonts.forEach(font -> {
-                builder.useFont(new ClassPathFontSupplier(font.path), font.family, font.weight, font.style, font.subset);
+                builder.useFont(new ClassPathFontSupplier(font.path()), font.family(), font.weight(), font.style(), font.subset());
             });
             try (final var renderer = builder.buildPdfRenderer()) {
                 renderer.layout();

@@ -21,7 +21,7 @@ public class EnumsLocalizazionServiceTest {
 
         final List<LocalizedEnumResponse> result = ecs.values(Optional.empty(), Locale.ENGLISH);
         final boolean foundExpectedTranslation = result.stream()
-                .anyMatch(r -> "AnEnum".equals(r.category) && "VALUE_1".equals(r.name) && "Translated".equals(r.value));
+                .anyMatch(r -> "AnEnum".equals(r.category()) && "VALUE_1".equals(r.name()) && "Translated".equals(r.value()));
 
         Assertions.assertTrue(foundExpectedTranslation);
     }

@@ -29,7 +29,7 @@ public class LocalizedEnums {
     }
 
     public boolean in(LocalizedEnumResponse le, Collection<Enum<?>> haystack) {
-        return haystack.stream().anyMatch(e -> e.name().equals(le.name));
+        return haystack.stream().anyMatch(e -> e.name().equals(le.name()));
     }
 
 }

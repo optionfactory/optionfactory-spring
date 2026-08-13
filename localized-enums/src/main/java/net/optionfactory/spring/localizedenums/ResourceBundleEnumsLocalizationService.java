@@ -47,7 +47,7 @@ public class ResourceBundleEnumsLocalizationService implements EnumsLocalization
 
     @Override
     public List<LocalizedEnumResponse> values(Optional<String> category, Locale locale) {
-        return keys.stream().filter(sc -> category.map(t -> t.equals(sc.category)).orElse(true)).map(ek -> ek.toLabel(resolve(bundle, ek, locale))).collect(Collectors.toList());
+        return keys.stream().filter(sc -> category.map(t -> t.equals(sc.category())).orElse(true)).map(ek -> ek.toLabel(resolve(bundle, ek, locale))).collect(Collectors.toList());
     }
 
     @Override
@@ -62,9 +62,9 @@ public class ResourceBundleEnumsLocalizationService implements EnumsLocalization
     }
 
     private String resolve(ResourceBundleMessageSource bundle, EnumKey ek, Locale locale) {
-        final String bundleCode = String.format("%s.%s.%s", this.prefix, ek.category, ek.name);
+        final String bundleCode = String.format("%s.%s.%s", this.prefix, ek.category(), ek.name());
         final Object[] args = new Object[0];
-        final String defaultMessage = mode == ResolutionMode.MISSING_AS_NAME ? ek.name : null;
+        final String defaultMessage = mode == ResolutionMode.MISSING_AS_NAME ? ek.name() : null;
         return bundle.getMessage(bundleCode, args, defaultMessage, locale);
     }
 

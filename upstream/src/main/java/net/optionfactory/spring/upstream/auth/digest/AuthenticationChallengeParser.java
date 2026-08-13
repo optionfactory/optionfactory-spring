@@ -17,9 +17,7 @@ public class AuthenticationChallengeParser {
         if (scheme == null) {
             throw new IllegalStateException("Empty authentication challenge");
         }
-        final AuthenticationChallenge result = new AuthenticationChallenge();
-        result.scheme = scheme.toLowerCase();
-        result.params = new HashMap<>();
+        final Map<String, String> params = new HashMap<>();
         String key;
         String value;
         while (state.more()) {
@@ -33,10 +31,10 @@ public class AuthenticationChallengeParser {
                 state.pos++; // consume ','
             }
             if (key != null && !(key.equals("") && value == null)) {
-                result.params.put(key, value);
+                params.put(key, value);
             }
         }
-        return result;
+        return new AuthenticationChallenge(scheme.toLowerCase(), params);
     }
     
 
@@ -83,10 +81,7 @@ public class AuthenticationChallengeParser {
         return stripped;
     }    
 
-    public static class AuthenticationChallenge {
-
-        public String scheme;
-        public Map<String, String> params;
+    public record AuthenticationChallenge(String scheme, Map<String, String> params) {
     }
 
     private static class ParserState {
