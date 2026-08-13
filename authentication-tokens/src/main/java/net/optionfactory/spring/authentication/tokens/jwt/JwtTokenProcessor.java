@@ -1,5 +1,6 @@
 package net.optionfactory.spring.authentication.tokens.jwt;
 
+import com.nimbusds.jose.Header;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWEDecrypter;
 import com.nimbusds.jose.JWSVerifier;
@@ -84,7 +85,7 @@ public class JwtTokenProcessor implements TokenProcessor {
             for (JweProcessor proc : jweProcessors) {
                 if(!hs.equals(proc.hs())){
                     continue;
-                }                
+                }
                 final var match = proc.matcher().matches(jwe.getHeader(), jwe);
                 if (match == Match.SKIP) {
                     continue;
@@ -94,28 +95,61 @@ public class JwtTokenProcessor implements TokenProcessor {
                 } catch (JOSEException | RuntimeException ex) {
                     if (match == Match.STRICT) {
                         throw new BadCredentialsException("invalid jwe");
-                    }                    
+                    }
                     return null;
                 }
                 final JWTClaimsSet claims;
-                try {
-                    claims = jwe.getJWTClaimsSet();
-                } catch (ParseException ex) {
-                    throw new BadCredentialsException("unparseable claims", ex);
+                final Header header;
+                if (proc.innerVerifier() != null) {
+                    // Nested JWS (JWE(JWS)): required for asymmetric JWE, since JWE only proves the token
+                    // was encrypted to us, not who authored it. The inner signature authenticates the issuer.
+                    final SignedJWT inner;
+                    try {
+                        inner = SignedJWT.parse(jwe.getPayload().toString());
+                    } catch (ParseException ex) {
+                        if (match == Match.STRICT) {
+                            throw new BadCredentialsException("inner payload is not a signed jwt", ex);
+                        }
+                        return null;
+                    }
+                    try {
+                        if (!inner.verify(proc.innerVerifier())) {
+                            throw new BadCredentialsException("invalid inner token signature");
+                        }
+                    } catch (JOSEException | RuntimeException ex) {
+                        if (match == Match.STRICT) {
+                            throw new BadCredentialsException("invalid inner token", ex);
+                        }
+                        return null;
+                    }
+                    try {
+                        claims = inner.getJWTClaimsSet();
+                    } catch (ParseException ex) {
+                        throw new BadCredentialsException("unparseable claims", ex);
+                    }
+                    header = inner.getHeader();
+                } else {
+                    // Symmetric JWE over raw claims: the shared secret is the trust root, no inner signature.
+                    try {
+                        claims = jwe.getJWTClaimsSet();
+                    } catch (ParseException ex) {
+                        throw new BadCredentialsException("unparseable claims", ex);
+                    }
+                    header = jwe.getHeader();
                 }
                 try {
                     proc.claimsVerifier().verify(claims, null);
                 } catch (BadJWTException ex) {
                     throw new BadCredentialsException("invalid claims", ex);
                 }
-                final var principal = proc.principal().convert(jwe.getHeader(), claims);
+                final var principal = proc.principal().convert(header, claims);
                 if (principal == null) {
                     if (match == Match.STRICT) {
                         throw new BadCredentialsException("null principal");
                     }
                     return null;
                 }
-                final var authorities = proc.authorities().convert(jwe.getHeader(), claims);
+                final var authorities = proc.authorities().convert(header, claims);
                 return new PrincipalAndAuthorities(principal, authorities);
             }
             return null;
@@ -128,7 +162,7 @@ public class JwtTokenProcessor implements TokenProcessor {
 
     }
 
-    public record JweProcessor(HeaderAndScheme hs, JweMatcher matcher, JWEDecrypter decrypter, JWTClaimsSetVerifier<SecurityContext> claimsVerifier, JwtAuthoritiesConverter authorities, JwtPrincipalConverter principal) {
+    public record JweProcessor(HeaderAndScheme hs, JweMatcher matcher, JWEDecrypter decrypter, JWSVerifier innerVerifier, JWTClaimsSetVerifier<SecurityContext> claimsVerifier, JwtAuthoritiesConverter authorities, JwtPrincipalConverter principal) {
 
     }
 

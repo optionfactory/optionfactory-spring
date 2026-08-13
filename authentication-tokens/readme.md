@@ -41,3 +41,38 @@ public SecurityFilterChain security(HttpSecurity http) throws Exception {
 }
 ```
 
+### JWE Authentication
+
+Encrypted JWTs are supported in two modes, selected automatically from the configured decrypter.
+
+**Symmetric** — the shared secret is the trust root; the payload is read as raw claims (no inner signature):
+
+```java
+c.jwe(jc -> {
+    jc.decrypt(SHARED_AES_KEY);                       // AESDecrypter / DirectDecrypter
+    jc.claims(Duration.ofSeconds(60), claims -> {
+        claims.audience("example.com");
+        claims.exact("iss", "my-issuer");
+    });
+    jc.principal("service-name");
+    jc.authorities("ROLE_M2M");
+});
+```
+
+**Asymmetric** — the token is encrypted to our public key, so the issuer is authenticated by a nested signed JWT (`JWE(JWS(claims))`):
+
+```java
+c.jwe(jc -> {
+    jc.decrypt(recipientEcPrivateKey);                // ECDHDecrypter (encryption to us)
+    jc.verify(issuerRsaPublicKey);                    // verifies the inner JWS (issuer authenticity)
+    jc.claims(Duration.ofSeconds(60), claims -> {
+        claims.audience("example.com");
+        claims.exact("iss", "my-issuer");
+    });
+    jc.principal("service-name");
+    jc.authorities("ROLE_M2M");
+});
+```
+
+JWE only provides confidentiality, so an asymmetric decrypter (`ECDHDecrypter`/`RSADecrypter`) **requires** `verify(...)` — anyone holding the recipient's public key can encrypt, and only the inner signature proves the issuer. Symmetric decrypters read raw claims and rely on the secrecy of the shared key; do not set `verify(...)` unless you want the nested-JWS path. The issuer must produce asymmetric tokens as sign-then-encrypt.
+
