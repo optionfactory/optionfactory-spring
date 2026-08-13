@@ -70,6 +70,19 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
     private final List<FailureTransformer> transformers;
     private final MessageSource messageSource;
 
+    /**
+     * Controls whether problem {@code details} (e.g. raw exception messages) are
+     * serialized in error responses.
+     * <p>
+     * {@link #OMIT} is the default and <strong>must be used in production</strong>:
+     * it strips any internal detail (exception messages, SQL state, class names,
+     * file paths) so that only the localized {@code reason} is exposed to clients.
+     * <p>
+     * {@link #INCLUDE} is intended for <strong>development and debugging only</strong>:
+     * it preserves the original {@code details} to help diagnose failures, but those
+     * details may carry sensitive internal information and must never be exposed in a
+     * production deployment.
+     */
     public enum Details {
         INCLUDE, OMIT
 
