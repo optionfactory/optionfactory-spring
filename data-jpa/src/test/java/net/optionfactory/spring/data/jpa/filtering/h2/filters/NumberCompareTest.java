@@ -115,6 +115,24 @@ public class NumberCompareTest {
         Assertions.assertEquals(expected, idsIn(repo.findAll(null, between("maxPersons", "15", "10"), Pageable.unpaged())));
     }
 
+    @Test
+    public void emptyValuesYieldsInvalidFilterRequestNotArrayIndexOutOfBounds() {
+        final var fr = FilterRequest.builder()
+                .number("maxPersons", f -> new String[0])
+                .build();
+        final var thrown = Assertions.assertThrows(Exception.class, () -> repo.findAll(null, fr, Pageable.unpaged()));
+        Throwable t = thrown;
+        boolean foundInvalidFilterRequest = false;
+        while (t != null) {
+            if (t instanceof net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequest) {
+                foundInvalidFilterRequest = true;
+                break;
+            }
+            t = t.getCause();
+        }
+        Assertions.assertTrue(foundInvalidFilterRequest, "expected InvalidFilterRequest, got: " + thrown);
+    }
+
     private static FilterRequest between(String filterName, String lo, String hi) {
         return FilterRequest.builder()
                 .number(filterName, f -> f.of(NumberCompare.Operator.BETWEEN, lo, hi))

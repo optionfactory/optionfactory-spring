@@ -77,6 +77,7 @@ public @interface InstantCompare {
 
         @Override
         public Predicate condition(Root<?> root, Path<Instant> lhs, CriteriaBuilder builder, String[] values) {
+            Filters.ensure(values.length > 0, root, name, "missing operator");
             final Operator operator = Filters.parseEnum(root, name, "operator", Operator.class, values[0]);
             Filters.ensure(operators.contains(operator), root, name, "operator %s not whitelisted (%s)", operator, operators);
             Filters.ensure(values.length == (operator == Operator.BETWEEN ? 3 : 2), root, name, "unexpected number of values: %d", values.length);

@@ -75,9 +75,9 @@ public @interface BooleanCompare {
 
         @Override
         public Predicate condition(Root<?> root, Path<Boolean> path, CriteriaBuilder builder, String[] values) {
+            Filters.ensure(values.length == 2, root, name, "expected operator and value, got %d values", values.length);
             final Operator operator = Filters.parseEnum(root, name, "operator", Operator.class, values[0]);
             Filters.ensure(operators.contains(operator), root, name, "operator %s not whitelisted (%s)", operator, operators);
-            Filters.ensure(values.length == 2, root, name, "missing value for comparison");
             final String value = values[1];
             if (value == null) {
                 return operator == Operator.EQ ? path.isNull() : path.isNotNull();

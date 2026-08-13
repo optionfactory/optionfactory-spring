@@ -74,8 +74,10 @@ public @interface NumberCompare {
 
         @Override
         public Predicate condition(Root<?> root, Path<Number> lhs, CriteriaBuilder builder, String[] values) {
+            Filters.ensure(values.length > 0, root, name, "missing operator");
             final Operator operator = Filters.parseEnum(root, name, "operator", Operator.class, values[0]);
             Filters.ensure(operators.contains(operator), root, name, "operator %s not whitelisted (%s)", operator, operators);
+            Filters.ensure(values.length == (operator == Operator.BETWEEN ? 3 : 2), root, name, "unexpected number of values: %d", values.length);
             final String value = values[1];
             final Number rhs = (Number) Values.convert(name, root, value, propertyClass);
             return switch (operator) {
