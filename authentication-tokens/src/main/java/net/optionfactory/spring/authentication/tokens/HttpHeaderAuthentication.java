@@ -228,7 +228,10 @@ public class HttpHeaderAuthentication {
 
             @Override
             public HttpHeaderAuthentication.PrincipalAndAuthorities process(HeaderAndScheme hs, String token) {
-                if (this.hs.equals(hs) && !this.token.equals(token)) {
+                if (!this.hs.equals(hs)) {
+                    return null;
+                }
+                if (!this.token.equals(token)) {
                     throw new BadCredentialsException("unknown token");
                 }
                 return paa;
