@@ -29,12 +29,12 @@ public class DigestAuth {
 
     public String authHeader(String method, String uriPath, String serverChallenge) {
         final AuthenticationChallengeParser.AuthenticationChallenge challenge = new AuthenticationChallengeParser().parse(serverChallenge);
-        if (!"digest".equalsIgnoreCase(challenge.scheme)) {
+        if (!"digest".equalsIgnoreCase(challenge.scheme())) {
             throw new IllegalStateException("Not a Digest challenge: " + serverChallenge);
         }
-        final String serverRealm = challenge.params.get("realm");
-        final String serverNonce = challenge.params.get("nonce");
-        final String serverOpaque = challenge.params.get("opaque");
+        final String serverRealm = challenge.params().get("realm");
+        final String serverNonce = challenge.params().get("nonce");
+        final String serverOpaque = challenge.params().get("opaque");
         final String nc = "00000001";
         final String clientNonce = String.format("%08x", clientNonceFactory.get());
         final String ha1 = md5LowercaseHex(String.format("%s:%s:%s", clientId, serverRealm, clientSecret));
