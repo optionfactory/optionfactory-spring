@@ -132,7 +132,7 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
 
             return headers;
         } catch (IOException ex) {
-            throw new RestClientException(String.format("unreadable mock headers resource %s for %s:%s", hp, invocation.endpoint().upstream(), invocation.endpoint().name()));
+            throw new RestClientException(String.format("unreadable mock headers resource %s for %s:%s", hp, invocation.endpoint().upstream(), invocation.endpoint().name()), ex);
         }
     }
 
