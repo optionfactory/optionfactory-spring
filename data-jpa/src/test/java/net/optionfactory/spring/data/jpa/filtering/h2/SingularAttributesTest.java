@@ -137,6 +137,24 @@ public class SingularAttributesTest {
         Assertions.assertEquals(Set.of(4L, 5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
 
+    @Test
+    public void unknownEnumValueYieldsInvalidFilterRequestNotRawIllegalArgument() {
+        final var fr = FilterRequest.builder()
+                .inEnum("status", f -> new String[]{"NOT_A_REAL_STATUS"})
+                .build();
+        final var thrown = Assertions.assertThrows(Exception.class, () -> appointments.findAll(null, fr, Pageable.unpaged()));
+        Throwable t = thrown;
+        boolean foundInvalidFilterRequest = false;
+        while (t != null) {
+            if (t instanceof net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequest) {
+                foundInvalidFilterRequest = true;
+                break;
+            }
+            t = t.getCause();
+        }
+        Assertions.assertTrue(foundInvalidFilterRequest, "expected InvalidFilterRequest in cause chain, got: " + thrown);
+    }
+
     private static Activity activity(long id, String name, Activity.Season season) {
         final Activity activity = new Activity();
         activity.id = id;

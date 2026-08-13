@@ -74,7 +74,7 @@ public @interface InEnum {
             @SuppressWarnings("unchecked")
             final Set<Enum> requested = Stream.of(values)
                     .filter(Objects::nonNull)
-                    .map(value -> Enum.valueOf(type, value))
+                    .map(value -> Filters.parseEnum(root, name, "value", type, value))
                     .collect(Collectors.toSet());
             if (requested.isEmpty()) {
                 return hasNull ? path.isNull() : builder.disjunction();
