@@ -90,6 +90,31 @@ public class EmailSenderTest {
     }
 
     @Test
+    public void archivedEmailIsNotLostOnNameCollision() throws IOException {
+        final Path sent = Path.of("target/test-collision/sent/");
+        final Path spool = Path.of("target/test-collision/spool/");
+        final var paths = EmailPaths.provide(spool, sent, null);
+        final var configuration = EmailSenderConfiguration
+                .builder()
+                .placebo(true)
+                .host("example.com")
+                .port(25)
+                .protocol(EmailSenderConfiguration.Protocol.PLAIN)
+                .deadAfter(Duration.ofHours(1))
+                .build();
+        final var sender = new EmailSender(paths, configuration);
+
+        final var filename = String.format("%s.eml", UUID.randomUUID().toString());
+        Files.writeString(sent.resolve(filename), "stale");
+
+        spool.resolve(filename).toFile().createNewFile();
+        sender.processSpool();
+
+        Assertions.assertTrue(Files.list(spool).noneMatch(p -> filename.equals(p.getFileName().toString())));
+        Assertions.assertTrue(Files.list(sent).anyMatch(p -> filename.equals(p.getFileName().toString())));
+    }
+
+    @Test
     public void deadEmailIsNotResentWhenMoveToDeadFails() throws IOException, InterruptedException {
         final Path spool = Path.of("target/test-dead-fail/spool/");
         final Path sent = Path.of("target/test-dead-fail/sent/");

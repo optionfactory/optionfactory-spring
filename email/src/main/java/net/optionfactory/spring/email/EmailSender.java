@@ -71,7 +71,7 @@ public class EmailSender {
         try {
             if (paths.sent() != null) {
                 Path target = paths.sent().resolve(eml.getFileName());
-                Files.move(eml, target, StandardCopyOption.ATOMIC_MOVE);
+                Files.move(eml, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
                 logger.info(String.format("[send-emails] moved %s to sent directory", eml.getFileName()));
             } else {
                 Files.delete(eml);
@@ -106,7 +106,7 @@ public class EmailSender {
         try {
             if (paths.dead() != null) {
                 Path target = paths.dead().resolve(eml.getFileName());
-                Files.move(eml, target, StandardCopyOption.ATOMIC_MOVE);
+                Files.move(eml, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
                 logger.info(String.format("[send-emails] moved %s to dead directory", eml.getFileName()));
 
             } else {
