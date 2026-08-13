@@ -112,7 +112,7 @@ public @interface TextCompare {
                 }
                 case BETWEEN -> {
                     final String value2 = values[3];
-                    final String rhs2 = sensitivity == CaseSensitivity.CASE_SENSITIVE || value2 == null ? null : value2.toLowerCase(Locale.ROOT);
+                    final String rhs2 = sensitivity == CaseSensitivity.CASE_SENSITIVE || value2 == null ? value2 : value2.toLowerCase(Locale.ROOT);
                     Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
                     Filters.ensure(rhs2 != null, root, name, "value2 cannot be null for operator %s", operator);
                     final String[] sorted = Stream.of(rhs, rhs2).sorted().toArray((l) -> new String[l]);

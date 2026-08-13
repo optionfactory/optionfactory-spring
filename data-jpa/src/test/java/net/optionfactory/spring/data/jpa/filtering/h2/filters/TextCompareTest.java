@@ -65,6 +65,26 @@ public class TextCompareTest {
     }
 
     @Test
+    public void textCompareBetweenCaseSensitive() {
+        final var fr = FilterRequest.builder()
+                .text("byName", f -> f.between(CaseSensitivity.CASE_SENSITIVE, "a", "z"))
+                .build();
+        final Pageable pr = Pageable.unpaged();
+        Page<Root> page = repo.findAll(null, fr, pr);
+        Assertions.assertEquals(123L, page.getContent().get(0).id);
+    }
+
+    @Test
+    public void textCompareBetweenIgnoreCase() {
+        final var fr = FilterRequest.builder()
+                .text("byName", f -> f.between(CaseSensitivity.IGNORE_CASE, "A", "Z"))
+                .build();
+        final Pageable pr = Pageable.unpaged();
+        Page<Root> page = repo.findAll(null, fr, pr);
+        Assertions.assertEquals(123L, page.getContent().get(0).id);
+    }
+
+    @Test
     public void textCompareEqualsIgnoreCase() {
         final var fr = FilterRequest.builder()
                 .text("byName", f -> f.eq(CaseSensitivity.IGNORE_CASE, "ASD"))
