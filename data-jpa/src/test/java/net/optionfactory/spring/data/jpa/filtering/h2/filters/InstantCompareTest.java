@@ -147,7 +147,7 @@ public class InstantCompareTest {
     }
 
     @Test
-    public void filterBetweenIsRightExclusiveOnInputWithLessPrecision() {
+    public void filterBetweenIsRightInclusiveOnInputWithLessPrecision() {
         final Page<Root> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.BETWEEN, "1970-01-01T12:00:00.122Z", "1970-01-01T12:00:00.123Z"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(5L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }
@@ -165,7 +165,7 @@ public class InstantCompareTest {
     }
 
     @Test
-    public void filterBetweenIsRightExclusiveOnInputWithMorePrecision() {
+    public void filterBetweenIsRightInclusiveOnInputWithMorePrecision() {
         final Page<Root> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.BETWEEN, "1970-01-01T12:00:00.123455Z", "1970-01-01T12:00:00.123456Z"), Pageable.unpaged());
         Assertions.assertEquals(Set.of(6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
     }

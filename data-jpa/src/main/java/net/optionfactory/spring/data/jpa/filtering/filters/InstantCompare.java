@@ -25,8 +25,7 @@ import net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter
 /**
  * Compares an {@link Instant} property. The first argument must be a
  * whitelisted {@link Operator}. Operators accept a single argument, while
- * {@link Operator#BETWEEN} (left inclusive and right exclusive) accepts a
- * range.
+ * {@link Operator#BETWEEN} (inclusive on both bounds) accepts a range.
  */
 @Documented
 @Target(value = ElementType.TYPE)
