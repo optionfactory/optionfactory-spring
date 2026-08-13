@@ -99,6 +99,9 @@ public class ItalianTaxCodes {
     }
 
     public static Optional<Character> controlCodePartitaIva(String piva) {
+        if (piva == null || !piva.chars().allMatch(Character::isDigit)) {
+            return Optional.empty();
+        }
         var x = IntStream.of(0, 2, 4, 6, 8)
                 .map(piva::charAt)
                 .map(c -> Character.digit(c, 10))
