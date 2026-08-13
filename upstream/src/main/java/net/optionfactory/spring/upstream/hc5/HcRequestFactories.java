@@ -162,42 +162,43 @@ public class HcRequestFactories {
             return clientBuilder(c -> c.disableRedirectHandling());
         }
 
+        private HttpComponentsClientHttpRequestFactory buildFactory(
+                Duration connTimeout, Duration sockTimeout,
+                int maxConnTotal, int maxConnPerRoute,
+                Consumer<HttpClientBuilder> clientConfigurer) {
+            final var socketConfigBuilder = SocketConfig.custom().setSoKeepAlive(true);
+            for (final var socketConfigCustomizer : socketConfigCustomizers) {
+                socketConfigCustomizer.accept(socketConfigBuilder);
+            }
+            final var connectionConfigBuilder = ConnectionConfig.custom()
+                    .setConnectTimeout(connTimeout.toSeconds(), TimeUnit.SECONDS)
+                    .setSocketTimeout((int) sockTimeout.toSeconds(), TimeUnit.SECONDS);
+            for (final var connectionConfigCustomizer : connectionConfigCustomizers) {
+                connectionConfigCustomizer.accept(connectionConfigBuilder);
+            }
+            final var connectionManagerBuilder = PoolingHttpClientConnectionManagerBuilder.create()
+                    .setDefaultConnectionConfig(connectionConfigBuilder.build())
+                    .setDefaultSocketConfig(socketConfigBuilder.build())
+                    .setMaxConnTotal(maxConnTotal)
+                    .setMaxConnPerRoute(maxConnPerRoute);
+            for (final var connectionManagerCustomizer : connectionManagerCustomizers) {
+                connectionManagerCustomizer.accept(connectionManagerBuilder);
+            }
+            final var clientBuilder = HttpClientBuilder.create().setConnectionManager(connectionManagerBuilder.build());
+            clientConfigurer.accept(clientBuilder);
+            for (final var clientBuilderCustomizer : clientBuilderCustomizers) {
+                clientBuilderCustomizer.accept(clientBuilder);
+            }
+            return new HttpComponentsClientHttpRequestFactory(clientBuilder.build());
+        }
+
         public ClientHttpRequestFactory build(Buffering buffering) {
             final var defaults = AnnotationUtils.synthesizeAnnotation(HttpComponents.class);
             final var connTimeout = Duration.parse(defaults.connectionTimeout());
             final var sockTimeout = Duration.parse(defaults.socketTimeout());
             final var maxConnections = Integer.parseInt(defaults.maxConnections());
             final var maxConnectionsPerRoute = Integer.parseInt(defaults.maxConnectionsPerRoute());
-
-            final var socketConfigBuilder = SocketConfig.custom().setSoKeepAlive(true);
-
-            for (final var socketConfigCustomizer : socketConfigCustomizers) {
-                socketConfigCustomizer.accept(socketConfigBuilder);
-            }
-
-            final var connectionConfigBuilder = ConnectionConfig.custom()
-                    .setConnectTimeout(connTimeout.toSeconds(), TimeUnit.SECONDS)
-                    .setSocketTimeout((int) sockTimeout.toSeconds(), TimeUnit.SECONDS);
-
-            for (final var connectionConfigCustomizer : connectionConfigCustomizers) {
-                connectionConfigCustomizer.accept(connectionConfigBuilder);
-            }
-
-            final var connectionManagerBuilder = PoolingHttpClientConnectionManagerBuilder.create()
-                    .setDefaultConnectionConfig(connectionConfigBuilder.build())
-                    .setDefaultSocketConfig(socketConfigBuilder.build())
-                    .setMaxConnTotal(maxConnections)
-                    .setMaxConnPerRoute(maxConnectionsPerRoute);
-
-            for (final var connectionManagerCustomizer : connectionManagerCustomizers) {
-                connectionManagerCustomizer.accept(connectionManagerBuilder);
-            }
-
-            final var clientBuilder = HttpClientBuilder.create().setConnectionManager(connectionManagerBuilder.build());
-            for (final var clientBuilderCustomizer : clientBuilderCustomizers) {
-                clientBuilderCustomizer.accept(clientBuilder);
-            }
-            final var f = new HttpComponentsClientHttpRequestFactory(clientBuilder.build());
+            final var f = buildFactory(connTimeout, sockTimeout, maxConnections, maxConnectionsPerRoute, cb -> {});
             return switch (buffering) {
                 case BUFFERED ->
                     new BufferingClientHttpRequestFactory(f);
@@ -214,56 +215,29 @@ public class HcRequestFactories {
                 final var maxConnections = expressions.parse(conf.maxConnections()).getValue(expressions.context(), int.class);
                 final var maxConnectionsPerRoute = expressions.parse(conf.maxConnectionsPerRoute()).getValue(expressions.context(), int.class);
 
-                final var socketConfigBuilder = SocketConfig.custom().setSoKeepAlive(true);
-
-                for (final var socketConfigCustomizer : socketConfigCustomizers) {
-                    socketConfigCustomizer.accept(socketConfigBuilder);
-                }
-
-                final var connectionConfigBuilder = ConnectionConfig.custom()
-                        .setConnectTimeout(connTimeout.toSeconds(), TimeUnit.SECONDS)
-                        .setSocketTimeout((int) sockTimeout.toSeconds(), TimeUnit.SECONDS);
-
-                for (final var connectionConfigCustomizer : connectionConfigCustomizers) {
-                    connectionConfigCustomizer.accept(connectionConfigBuilder);
-                }
-
-                final var connectionManagerBuilder = PoolingHttpClientConnectionManagerBuilder.create()
-                        .setDefaultConnectionConfig(connectionConfigBuilder.build())
-                        .setDefaultSocketConfig(socketConfigBuilder.build())
-                        .setMaxConnTotal(maxConnections)
-                        .setMaxConnPerRoute(maxConnectionsPerRoute);
-
-                for (final var connectionManagerCustomizer : connectionManagerCustomizers) {
-                    connectionManagerCustomizer.accept(connectionManagerBuilder);
-                }
-
-                final var clientBuilder = HttpClientBuilder.create().setConnectionManager(connectionManagerBuilder.build());
-                if (conf.disableAuthCaching()) {
-                    clientBuilder.disableAuthCaching();
-                }
-                if (conf.disableAutomaticRetries()) {
-                    clientBuilder.disableAutomaticRetries();
-                }
-                if (conf.disableConnectionState()) {
-                    clientBuilder.disableConnectionState();
-                }
-                if (conf.disableContentCompression()) {
-                    clientBuilder.disableContentCompression();
-                }
-                if (conf.disableCookieManagement()) {
-                    clientBuilder.disableCookieManagement();
-                }
-                if (conf.disableDefaultUserAgent()) {
-                    clientBuilder.disableDefaultUserAgent();
-                }
-                if (conf.disableRedirectHandling()) {
-                    clientBuilder.disableRedirectHandling();
-                }
-                for (final var clientBuilderCustomizer : clientBuilderCustomizers) {
-                    clientBuilderCustomizer.accept(clientBuilder);
-                }
-                final var f = new HttpComponentsClientHttpRequestFactory(clientBuilder.build());
+                final var f = buildFactory(connTimeout, sockTimeout, maxConnections, maxConnectionsPerRoute, cb -> {
+                    if (conf.disableAuthCaching()) {
+                        cb.disableAuthCaching();
+                    }
+                    if (conf.disableAutomaticRetries()) {
+                        cb.disableAutomaticRetries();
+                    }
+                    if (conf.disableConnectionState()) {
+                        cb.disableConnectionState();
+                    }
+                    if (conf.disableContentCompression()) {
+                        cb.disableContentCompression();
+                    }
+                    if (conf.disableCookieManagement()) {
+                        cb.disableCookieManagement();
+                    }
+                    if (conf.disableDefaultUserAgent()) {
+                        cb.disableDefaultUserAgent();
+                    }
+                    if (conf.disableRedirectHandling()) {
+                        cb.disableRedirectHandling();
+                    }
+                });
                 return switch (buffering) {
                     case UNBUFFERED ->
                         f;
