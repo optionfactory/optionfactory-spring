@@ -20,7 +20,7 @@ public class StaticTokenAuthenticator implements UpstreamHttpRequestInitializer 
 
     @Override
     public void initialize(InvocationContext invocation, ClientHttpRequest request) {
-        request.getHeaders().add(header, String.format("%s %s", scheme, token));
+        request.getHeaders().set(header, String.format("%s %s", scheme, token));
     }
 
     public static StaticTokenAuthenticator authorization(String scheme, String token) {
