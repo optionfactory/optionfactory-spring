@@ -48,6 +48,9 @@ public @interface MultipartFilenameMaxLength {
                 return true;
             }
             final var filename = value.getOriginalFilename();
+            if (filename == null) {
+                return false;
+            }
             return !(filename.length() >= annotation.value());
         }
     }

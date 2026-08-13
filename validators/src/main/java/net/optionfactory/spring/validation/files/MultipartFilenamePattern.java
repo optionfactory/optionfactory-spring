@@ -48,7 +48,11 @@ public @interface MultipartFilenamePattern {
             if (value == null) {
                 return true;
             }
-            return pattern.matcher(value.getOriginalFilename()).matches();
+            final var filename = value.getOriginalFilename();
+            if (filename == null) {
+                return false;
+            }
+            return pattern.matcher(filename).matches();
         }
     }
 }
