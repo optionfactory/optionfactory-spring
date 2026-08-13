@@ -75,7 +75,7 @@ public class PsqlEntityEmbeddedJsonTest {
         final var e1 = new Root();
         e1.embedded = new Embed("e1a", "e1b", "e1c");
         final var e2 = new Root();
-        e1.embedded = new Embed("e2a", "e2b", "e2c");
+        e2.embedded = new Embed("e2a", "e2b", "e2c");
         entities.save(e1);
         entities.save(e2);
     }
