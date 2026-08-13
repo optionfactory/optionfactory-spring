@@ -93,6 +93,6 @@ private PemEntry entry():
     <BEGIN_PREFIX> (bl=<BEGIN_LABEL>)? <BEGIN_SUFFIX>
     (b64=<BASE64_FRAGMENT> { b64s.append(b64.image); })+
     <END_PREFIX> (<END_LABEL>)? <END_SUFFIX>
-    { return new PemEntry(bl.image, metadata, b64s.toString()); }
+    { return new PemEntry(bl != null ? bl.image : null, metadata, b64s.toString()); }
 }
 
