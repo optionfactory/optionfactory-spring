@@ -106,6 +106,7 @@ public class DerCursor {
         }
         final var tag = tag();
         final int length = length();
+        DerException.ensure(length <= to - pos, "declared length %d exceeds available bytes", length);
         final var value = new DerValue(tag, pos, pos + length);
         if (n == Navigation.FLAT || tag.isPrimitive()) {
             //we don't advance the pos for containers so nested elements are yielded
@@ -121,6 +122,7 @@ public class DerCursor {
     }
 
     private int length() {
+        DerException.ensure(pos < to, "truncated length");
         int prefix = source[pos++];
         DerException.ensure((prefix & 0xff) != 0x80, "indeterminate lenght in DER encoding");
         if ((prefix & 0x080) == 0x00) {
@@ -129,6 +131,7 @@ public class DerCursor {
         }
         // long form
         int lenInBytes = prefix & 0x07f;
+        DerException.ensure(pos + lenInBytes <= to, "truncated length");
         int length = 0;
         for (int b = 0; b != lenInBytes; ++b) {
             length <<= 8;
