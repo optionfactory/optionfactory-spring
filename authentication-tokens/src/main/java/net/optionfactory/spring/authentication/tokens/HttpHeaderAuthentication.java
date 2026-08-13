@@ -2,6 +2,7 @@ package net.optionfactory.spring.authentication.tokens;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.*;
 import java.util.stream.Stream;
 import net.optionfactory.spring.authentication.tokens.jwt.JweAuthenticationConfigurer;
@@ -210,7 +211,7 @@ public class HttpHeaderAuthentication {
 
             @Override
             public HttpHeaderAuthentication.PrincipalAndAuthorities process(HeaderAndScheme hs, String token) {
-                return this.hs.equals(hs) && this.token.equals(token) ? paa : null;
+                return this.hs.equals(hs) && constantTimeEquals(this.token, token) ? paa : null;
             }
         }
 
@@ -231,13 +232,22 @@ public class HttpHeaderAuthentication {
                 if (!this.hs.equals(hs)) {
                     return null;
                 }
-                if (!this.token.equals(token)) {
+                if (!constantTimeEquals(this.token, token)) {
                     throw new BadCredentialsException("unknown token");
                 }
                 return paa;
             }
         }
 
+    }
+
+    private static boolean constantTimeEquals(String a, String b) {
+        if (a == null || b == null) {
+            return a == b;
+        }
+        return MessageDigest.isEqual(
+                a.getBytes(StandardCharsets.UTF_8),
+                b.getBytes(StandardCharsets.UTF_8));
     }
 
 }
