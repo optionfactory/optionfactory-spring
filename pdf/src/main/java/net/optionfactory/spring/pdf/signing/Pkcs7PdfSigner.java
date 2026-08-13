@@ -93,7 +93,7 @@ public class Pkcs7PdfSigner implements SignatureInterface {
         }
         final var certsBytes = certBytesList.toArray(byte[][]::new);
 
-        final var digestEncryptionAlgorithm = OID_RSA.equals(signatureAlgorithmOid)
+        final var signatureAlgorithm = OID_RSA.equals(signatureAlgorithmOid)
                 ? DerWriter.seq(DerWriter.oid(OID_RSA), DerWriter.nul())
                 : DerWriter.seq(DerWriter.oid(signatureAlgorithmOid));
 
@@ -122,13 +122,13 @@ public class Pkcs7PdfSigner implements SignatureInterface {
                                                         certificateChain[0].getIssuerX500Principal().getEncoded(), // Raw encoded principal to avoid parsing DNs
                                                         DerWriter.integer(certificateChain[0].getSerialNumber())
                                                 ),
-                                                digestEncryptionAlgorithm,
-                                                authenticatedAttributes, // AuthenticatedAttributes
-                                                DerWriter.seq( // DigestEncryptionAlgorithm
-                                                        DerWriter.oid(OID_RSA),
+                                                DerWriter.seq( // digestAlgorithm (SHA-256, the content/message digest)
+                                                        DerWriter.oid(OID_SHA256),
                                                         DerWriter.nul()
                                                 ),
-                                                DerWriter.octetString(signatureBytes) // EncryptedDigest
+                                                authenticatedAttributes, // SignedAttributes [0] IMPLICIT
+                                                signatureAlgorithm, // signatureAlgorithm (per key type: RSA or ECDSA-with-SHA256)
+                                                DerWriter.octetString(signatureBytes) // Signature (EncryptedDigest)
                                         )
                                 )
                         )
@@ -173,9 +173,11 @@ public class Pkcs7PdfSigner implements SignatureInterface {
                         )
                 )
         );
+        // CMSAlgorithmProtection (RFC 6211) is defined with IMPLICIT TAGS, so signatureAlgorithm is
+        // [1] IMPLICIT AlgorithmIdentifier: the [1] tag directly wraps {oid, params}, not a SEQUENCE.
         final var protectedSignatureAlgorithm = OID_RSA.equals(signatureAlgorithmOid)
-                ? DerWriter.seq(DerWriter.oid(OID_RSA), DerWriter.nul())
-                : DerWriter.seq(DerWriter.oid(signatureAlgorithmOid));
+                ? DerWriter.implicit(1, DerWriter.oid(OID_RSA), DerWriter.nul())
+                : DerWriter.implicit(1, DerWriter.oid(signatureAlgorithmOid));
 
         final var attrAlgorithmProtect = DerWriter.seq(
                 DerWriter.oid(OID_AA_CMS_ALGORITHM_PROTECT),
@@ -185,7 +187,7 @@ public class Pkcs7PdfSigner implements SignatureInterface {
                                         DerWriter.oid(OID_SHA256),
                                         DerWriter.nul()
                                 ),
-                                DerWriter.explicit(1, protectedSignatureAlgorithm)
+                                protectedSignatureAlgorithm
                         )
                 )
         );
