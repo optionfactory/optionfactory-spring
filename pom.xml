@@ -17,8 +17,8 @@
     </scm>
     <licenses>
         <license>
-            <name>Simplified BSD License</name>
-            <url>http://www.opensource.org/licenses/BSD-3-Clause</url>
+            <name>BSD 3-Clause License</name>
+            <url>https://opensource.org/licenses/BSD-3-Clause</url>
             <distribution>repo</distribution>
         </license>
     </licenses>

@@ -37,4 +37,4 @@ Opinionated Spring Framework extension libraries.
 
 ## License
 
-Simplified BSD License. See [license.md](license.md) for details.
+BSD 3-Clause License. See [license.md](license.md) for details.
