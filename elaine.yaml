@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/optionfactory/elaine/refs/heads/master/schema/elaine-v1.schema.json
+schema_version: 1
+name: optionfactory-spring
+tier: tier2
+lifecycle: active
+type: library
+stewards:
+  - Roberto Ferranti
