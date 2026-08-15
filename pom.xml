@@ -117,7 +117,7 @@
             <dependency>
                 <groupId>tools.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
-                <version>3.2.1</version>
+                <version>3.2.2</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -228,7 +228,7 @@
             <dependency>
                 <groupId>com.googlecode.libphonenumber</groupId>
                 <artifactId>libphonenumber</artifactId>
-                <version>9.0.36</version>
+                <version>9.0.37</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -396,5 +396,4 @@
             </build>
         </profile>
     </profiles>
-
 </project>
