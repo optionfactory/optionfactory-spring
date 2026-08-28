@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
-import net.optionfactory.spring.data.jpa.filtering.PerMethodTransactional;
+import net.optionfactory.spring.data.jpa.test.TransactionalPhases;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository;
 import net.optionfactory.spring.data.jpa.filtering.filters.Sortable;
 import org.junit.jupiter.api.Assertions;
@@ -26,7 +26,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 @SpringJUnitConfig(HibernateOnH2TestConfig.class)
-@PerMethodTransactional
+@TransactionalPhases
 public class SortTest {
 
     @Entity

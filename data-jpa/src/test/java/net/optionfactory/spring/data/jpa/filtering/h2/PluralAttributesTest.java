@@ -10,7 +10,7 @@ import java.util.List;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
-import net.optionfactory.spring.data.jpa.filtering.PerMethodTransactional;
+import net.optionfactory.spring.data.jpa.test.TransactionalPhases;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,7 +20,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 @SpringJUnitConfig(HibernateOnH2TestConfig.class)
-@PerMethodTransactional
+@TransactionalPhases
 public class PluralAttributesTest {
 
     @Entity

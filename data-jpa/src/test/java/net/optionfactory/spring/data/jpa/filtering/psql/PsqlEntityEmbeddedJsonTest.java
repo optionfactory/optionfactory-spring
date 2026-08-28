@@ -8,8 +8,8 @@ import jakarta.persistence.Id;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
-import net.optionfactory.spring.data.jpa.filtering.PerMethodTransactional;
-import net.optionfactory.spring.data.jpa.filtering.psql.HibernateOnPsqlTestConfig;
+import net.optionfactory.spring.data.jpa.test.TransactionalPhases;
+import net.optionfactory.spring.data.jpa.test.containers.SharedContainer;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.junit.jupiter.api.Assertions;
@@ -18,8 +18,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
+@SharedContainer(HibernateOnPsqlTestConfig.Postgres.class)
 @SpringJUnitConfig(HibernateOnPsqlTestConfig.class)
-@PerMethodTransactional
+@TransactionalPhases
 public class PsqlEntityEmbeddedJsonTest {
 
     @Entity

@@ -1,3 +1,19 @@
+# version 27.7
+
+## `data-jpa-test`: new module
+Test-scoped library for JPA integration tests, extracted from `data-jpa`'s own test sources:
+
+*   **`@SharedContainer` / `ContainerDefinition`:** Testcontainers shared by every test in the JVM, started lazily
+    before the first test class declaring them and stopped once after the last test (JUnit root store close).
+    With Spring, the definition's `properties()` are exposed to the test `Environment` with `@DynamicPropertySource`
+    precedence via an auto-registered `ContextCustomizerFactory`.
+*   **`@TransactionalPhases` / `TransactionalPhasesTestExecutionListener`:** moved from `data-jpa` test sources,
+    where they were `@PerMethodTransactional` / `PerPhaseTransactionListener` in package
+    `net.optionfactory.spring.data.jpa.filtering`, to `net.optionfactory.spring.data.jpa.test`.
+    Runs `@BeforeEach`, `@Test` and `@AfterEach` in separate transactions, each committing unless that phase
+    throws or marks the transaction rollback-only. **Behaviour change:** the `@AfterEach` phase used to always
+    roll back; it now commits, so cleanup performed there sticks.
+
 # version 27.0
 
 ## `spring-data-jpa`: Whitelist Filtering Optimization

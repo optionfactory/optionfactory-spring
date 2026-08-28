@@ -19,8 +19,9 @@ import net.optionfactory.spring.data.jpa.filtering.filters.InEnum;
 import net.optionfactory.spring.data.jpa.filtering.filters.LocalDateCompare;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare.CaseSensitivity;
-import net.optionfactory.spring.data.jpa.filtering.PerMethodTransactional;
+import net.optionfactory.spring.data.jpa.test.TransactionalPhases;
 import net.optionfactory.spring.data.jpa.filtering.psql.HibernateOnPsqlTestConfig;
+import net.optionfactory.spring.data.jpa.test.containers.SharedContainer;
 import net.optionfactory.spring.data.jpa.filtering.psql.examples.PetOwnerExampleTest.Pet.PetType;
 import net.optionfactory.spring.data.jpa.filtering.psql.examples.PetOwnerExampleTest.PetOwner.Address;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -34,8 +35,9 @@ import org.testcontainers.shaded.com.fasterxml.jackson.core.JsonProcessingExcept
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 
+@SharedContainer(HibernateOnPsqlTestConfig.Postgres.class)
 @SpringJUnitConfig(HibernateOnPsqlTestConfig.class)
-@PerMethodTransactional
+@TransactionalPhases
 public class PetOwnerExampleTest {
 
     @Entity

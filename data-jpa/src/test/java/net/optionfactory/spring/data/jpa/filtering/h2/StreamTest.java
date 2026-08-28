@@ -4,7 +4,7 @@ import jakarta.inject.Inject;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
-import net.optionfactory.spring.data.jpa.filtering.PerMethodTransactional;
+import net.optionfactory.spring.data.jpa.test.TransactionalPhases;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,7 +14,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 @SpringJUnitConfig(HibernateOnH2TestConfig.class)
-@PerMethodTransactional
+@TransactionalPhases
 public class StreamTest {
 
     @Entity

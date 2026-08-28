@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 import net.optionfactory.spring.data.jpa.filtering.Filter;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
-import net.optionfactory.spring.data.jpa.filtering.PerMethodTransactional;
+import net.optionfactory.spring.data.jpa.test.TransactionalPhases;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringSpecificationAdapter;
 import net.optionfactory.spring.data.jpa.filtering.filters.NumberCompare;
@@ -22,7 +22,7 @@ import org.springframework.data.jpa.repository.support.JpaEntityInformationSuppo
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 @SpringJUnitConfig(HibernateOnH2TestConfig.class)
-@PerMethodTransactional
+@TransactionalPhases
 public class ReductionTest {
 
     @Entity

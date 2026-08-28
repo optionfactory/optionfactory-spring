@@ -16,6 +16,7 @@ Opinionated Spring Framework extension libraries.
 | [`context`](context/readme.md)                                                       | Property sources, direct field access, and devtools.               |
 | [`context-web`](context-web/readme.md)                                               | Web property sources, conditional beans, and direct field access.  |
 | [`data-jpa`](data-jpa/readme.md)                                                     | Declarative whitelisted filters on JPA `@Entity` types.            |
+| [`data-jpa-test`](data-jpa-test/readme.md)                                           | Shared Testcontainers and per-phase transactions for JPA tests.    |
 | [`data-jpa-web`](data-jpa-web/readme.md)                                             | Spring MVC support for `data-jpa` filtering and pagination.        |
 | [`downstream`](downstream/readme.md)                                                 | Annotations for client code generation (Java DTOs / TypeScript).   |
 | [`downstream-maven-plugin`](downstream-maven-plugin/readme.md)                       | Maven plugin to generate Java DTOs or TypeScript types.            |
