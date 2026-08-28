@@ -30,7 +30,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 public class JwtTokenProcessorJweNestedTest {
 
@@ -56,9 +55,7 @@ public class JwtTokenProcessorJweNestedTest {
         b.decrypter(new ECDHDecrypter(recipientPrivate));
         b.verify(issuerPublic);
         b.principal((header, claims) -> claims.getSubject());
-        b.authorities((header, claims) -> ((List<String>) claims.getClaim("roles")).stream()
-                .map(r -> new SimpleGrantedAuthority("ROLE_" + r))
-                .toList());
+        b.authorities(new RolesGroupsAndScopesFromClaims(List.of()));
         final JweProcessor jweProc = b.build();
         this.processor = new JwtTokenProcessor(List.of(), List.of(jweProc));
     }
@@ -86,9 +83,7 @@ public class JwtTokenProcessorJweNestedTest {
         b.matchToken((header, jwe) -> Match.STRICT);
         b.decrypter(new com.nimbusds.jose.crypto.AESDecrypter(aesKey));
         b.principal((header, claims) -> claims.getSubject());
-        b.authorities((header, claims) -> ((List<String>) claims.getClaim("roles")).stream()
-                .map(r -> new SimpleGrantedAuthority("ROLE_" + r))
-                .toList());
+        b.authorities(new RolesGroupsAndScopesFromClaims(List.of()));
         final var processor = new JwtTokenProcessor(List.of(), List.of(b.build()));
 
         final var claims = new JWTClaimsSet.Builder()
