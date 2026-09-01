@@ -85,4 +85,18 @@ public interface OauthClient {
         return authenticate(params);
     }
 
+    /// Exchanges a signed assertion for an access token using the RFC 7523
+    /// JWT-bearer grant.
+    ///
+    /// @param assertion the serialized, JWS-signed assertion
+    ///
+    /// @return the token endpoint's response, carrying at least an
+    /// `access_token` and its `expires_in`
+    default JsonNode jwtBearer(String assertion) {
+        return authenticate(Map.of(
+                "grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                "assertion", assertion
+        ));
+    }
+
 }

@@ -1,3 +1,24 @@
+# version 27.9
+
+## `upstream-interceptor-jws`: RFC 7523 JWT-bearer grant support
+
+*   **New `UpstreamJwtBearerGrantAuthenticator`:** signs an assertion (`iss`/`sub`/`aud`/`iat`/`exp`/`jti`/`scope`
+    claims, `typ: JWT` header, RS256 by default), exchanges it for an access token at the token endpoint via the
+    `upstream` module's `OauthClient`, and attaches the token as the `Authorization: Bearer` header value. The
+    access token is cached thread-safely and refreshed 60 seconds (configurable) before the `expires_in` declared
+    by the token endpoint. `sub` defaults to `iss` (service accounts) and is overridable for domain-wide
+    delegation. This is the flow Google uses for service accounts.
+*   **`UpstreamJwsAuthenticator` accepts asymmetric signers: 💥 Breaking** the `byte[]`-secret constructor has
+    been replaced by a `JWSSigner`-based one (HMAC users pass a `new MACSigner(secret)`), enabling
+    RS256/RS384/RS512 and ES256 signatures; a `builder(...)` is also available, and the produced JWTs now carry
+    a `typ: JWT` header.
+
+## `upstream`: `OauthClient` jwt-bearer grant
+
+*   **`jwtBearer(assertion)`:** exchanges a signed assertion for an access token using the RFC 7523
+    `urn:ietf:params:oauth:grant-type:jwt-bearer` grant, alongside the existing client_credentials, password and
+    authorization_code grants.
+
 # version 27.7
 
 ## `data-jpa-test`: new module
