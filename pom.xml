@@ -5,7 +5,7 @@
 
     <groupId>net.optionfactory.spring</groupId>
     <artifactId>optionfactory-spring</artifactId>
-    <version>27.8</version>
+    <version>27.9-SNAPSHOT</version>
     <packaging>pom</packaging>
     <description>optionfactory-spring parent pom</description>
     <name>${project.groupId}:${project.artifactId}</name>
@@ -70,7 +70,7 @@
         <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
         <maven.compiler.proc>none</maven.compiler.proc>
         <!-- added to make build reproducible https://maven.apache.org/guides/mini/guide-reproducible-builds.html -->
-        <project.build.outputTimestamp>2026-08-28T10:40:22Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2026-09-01T15:05:05Z</project.build.outputTimestamp>
     </properties>
     <dependencyManagement>
         <dependencies>
