@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import org.springframework.web.multipart.MultipartFile;
 
 public class ByteArrayMultipartFile implements MultipartFile {
@@ -59,7 +60,7 @@ public class ByteArrayMultipartFile implements MultipartFile {
 
     @Override
     public void transferTo(File dest) throws IOException, IllegalStateException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        Files.write(dest.toPath(), bytes);
     }
 
 }

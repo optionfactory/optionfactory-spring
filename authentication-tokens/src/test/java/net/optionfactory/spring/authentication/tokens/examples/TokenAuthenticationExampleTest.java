@@ -1,9 +1,25 @@
 package net.optionfactory.spring.authentication.tokens.examples;
 
+import com.nimbusds.jose.EncryptionMethod;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JOSEObjectType;
+import com.nimbusds.jose.JWEAlgorithm;
+import com.nimbusds.jose.JWEHeader;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.AESEncrypter;
+import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jwt.EncryptedJWT;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Base64;
+import java.util.Date;
 import java.util.HexFormat;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import net.optionfactory.spring.authentication.UnauthorizedStatusEntryPoint;
 import net.optionfactory.spring.authentication.tokens.HttpHeaderAuthentication;
 import net.optionfactory.spring.authentication.tokens.examples.TokenAuthenticationExampleTest.SecurityConfig;
@@ -39,10 +55,46 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @WebAppConfiguration
 public class TokenAuthenticationExampleTest {
 
+    private static final String SERVICE_TOKEN_HEADER = "X-Service-Token";
+    private static final String SERVICE_TOKEN_SCHEME = "Token";
+
     private static final byte[] HEX_ENCODED_HS256_KEY = HexFormat.of().parseHex("7465737400000000000000000000000000000000000000000000000000000000");
+    private static final byte[] SERVICE_HS256_KEY = HexFormat.of().parseHex("7365727669636500000000000000000000000000000000000000000000000000");
+    private static final SecretKey JWE_AES_KEY = new SecretKeySpec(HexFormat.of().parseHex("a2f03b180c4e9d5271a6f8e4d3c2b1095867e0d4f2c1a3b5c7d9e1f30456789a"), "AES");
 
     private static final String VALID_HS256_JWS = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJleGFtcGxlLWlzc3VlciIsImlhdCI6MTczNTY4OTYwMCwiZXhwIjo0ODkxMzYzMjAwLCJhdWQiOiJleGFtcGxlLmNvbSIsInN1YiI6InRlc3RAZXhhbXBsZS5jb20ifQ.nKzo23z0ToCMPF5FhFtaKbQSDUwBSWRslIrOdolbqJA";
     private static final String WRONG_AUDIENCE_HS256_JWS = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJleGFtcGxlLWlzc3VlciIsImlhdCI6MTczNTY4OTYwMCwiZXhwIjo0ODkxMzYzMjAwLCJhdWQiOiJ3cm9uZy1hdWRpZW5jZSIsInN1YiI6InRlc3RAZXhhbXBsZS5jb20ifQ.iWgphK1jW3rvRb77dnGiINmdVZ3H2usAjSilV35mHd0";
+    private static final String VALID_SERVICE_HS256_JWS = signedHs256Jws(SERVICE_HS256_KEY);
+    private static final String VALID_A128GCM_JWE = encryptedA256KwJwe(JWE_AES_KEY);
+
+    private static JWTClaimsSet.Builder exampleClaims() {
+        return new JWTClaimsSet.Builder()
+                .issuer("example-issuer")
+                .audience("example.com")
+                .subject("test@example.com")
+                .issueTime(Date.from(Instant.ofEpochSecond(1735689600)))
+                .expirationTime(Date.from(Instant.ofEpochSecond(4891363200L)));
+    }
+
+    private static String signedHs256Jws(byte[] key) {
+        try {
+            final var jws = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.HS256).type(JOSEObjectType.JWT).build(), exampleClaims().build());
+            jws.sign(new MACSigner(key));
+            return jws.serialize();
+        } catch (JOSEException ex) {
+            throw new IllegalStateException(ex);
+        }
+    }
+
+    private static String encryptedA256KwJwe(SecretKey key) {
+        try {
+            final var jwe = new EncryptedJWT(new JWEHeader(JWEAlgorithm.A256KW, EncryptionMethod.A128GCM), exampleClaims().build());
+            jwe.encrypt(new AESEncrypter(key));
+            return jwe.serialize();
+        } catch (JOSEException ex) {
+            throw new IllegalStateException(ex);
+        }
+    }
 
     @Configuration
     @EnableWebSecurity
@@ -61,6 +113,24 @@ public class TokenAuthenticationExampleTest {
                         claims.exact("iss", "example-issuer");
                     });
                     jc.principal("jws-principal");
+                    jc.authorities("ROLE_M2M");
+                });
+                c.jwe(jc -> {
+                    jc.matchHeader(HttpHeaders.AUTHORIZATION, "Bearer"); //this is already the default
+                    jc.match(Match.STRICT); //this is already the default
+                    jc.decrypt(JWE_AES_KEY);
+                    jc.claims(Duration.ofSeconds(60), claims -> {
+                        claims.audience("example.com");
+                        claims.exact("iss", "example-issuer");
+                    });
+                    jc.principal("jwe-principal");
+                    jc.authorities("ROLE_M2M");
+                });
+                c.jws(jc -> {
+                    jc.matchHeader(SERVICE_TOKEN_HEADER, SERVICE_TOKEN_SCHEME);
+                    jc.matchToken(Match.STRICT); //this is already the default
+                    jc.verify(SERVICE_HS256_KEY);
+                    jc.principal("service-principal");
                     jc.authorities("ROLE_M2M");
                 });
                 c.bearer("M2M_SECRET", "principal1", "ROLE_M2M");
@@ -149,7 +219,44 @@ public class TokenAuthenticationExampleTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    // TODO: ensure jws / jwe check tokenSelector
+    @Test
+    public void validJweTokenOnConfiguredHeaderYields200() throws Exception {
+        mvc.perform(get("/api/m2m").header("Authorization", String.format("Bearer %s", VALID_A128GCM_JWE)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void validJweTokenOnHeaderNotSelectedByJweProcessorYields401() throws Exception {
+        //the token is decryptable and claim-valid for the Authorization: Bearer JWE processor, but it is
+        //presented on X-Service-Token: Token, which only the service JWS processor selected: no processor
+        //may authenticate it
+        mvc.perform(get("/api/m2m").header(SERVICE_TOKEN_HEADER, String.format("%s %s", SERVICE_TOKEN_SCHEME, VALID_A128GCM_JWE)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void validServiceJwsOnConfiguredHeaderYields200() throws Exception {
+        mvc.perform(get("/api/m2m").header(SERVICE_TOKEN_HEADER, String.format("%s %s", SERVICE_TOKEN_SCHEME, VALID_SERVICE_HS256_JWS)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void validServiceJwsOnHeaderNotSelectedByItsProcessorYields401() throws Exception {
+        //the token's signature and claims are fully valid for the service processor, but it is presented
+        //on Authorization: Bearer, which the service processor did not select: only the Bearer JWS
+        //processor may run, and it verifies with a different key
+        mvc.perform(get("/api/m2m").header("Authorization", String.format("Bearer %s", VALID_SERVICE_HS256_JWS)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void validBearerJwsOnHeaderNotSelectedByItsProcessorYields401() throws Exception {
+        //symmetric to validServiceJwsOnHeaderNotSelectedByItsProcessorYields401: the Bearer JWS is fully
+        //valid for its processor, but on X-Service-Token: Token only the service processor may run,
+        //and it verifies with a different key
+        mvc.perform(get("/api/m2m").header(SERVICE_TOKEN_HEADER, String.format("%s %s", SERVICE_TOKEN_SCHEME, VALID_HS256_JWS)))
+                .andExpect(status().isUnauthorized());
+    }
 
     @Test
     public void validBasicAuthYields200() throws Exception {
