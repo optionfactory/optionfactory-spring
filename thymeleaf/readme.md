@@ -41,4 +41,36 @@ public SingletonDialect moneyDialect() {
 }
 ```
 
+### VersionedResourceDialect
 
+This dialect adds a versioning attribute to `href` or `src` attributes to ensure that resources are not cached by the browser across deployments.
+
+You can make this dialect available by adding it to the Thymeleaf engine:
+```java
+final SpringTemplateEngine engine = new SpringTemplateEngine();
+engine.addDialect(new VersionedResourceDialect(() -> version));
+
+```
+
+
+
+By adding `version:append` to a `href` or `src` attribute, the version will be appended to the URL:
+
+```html
+<script type="text/javascript" src="/path/to/resource.js" version:append></script>
+```
+or
+```html
+<script type="text/javascript" src="/path/to/resource.js" data-version-append></script>
+```
+
+will be rendered as
+
+```html
+<script type="text/javascript" src="/path/to/resource.js?version=xxxx"></script>
+```
+
+Notes:
+* if a query string is already present the version parameter will be concatenated using &amp;
+* an already present `version` parameter will not be overridden
+* empty `src`/`href` attributes will not be updated
