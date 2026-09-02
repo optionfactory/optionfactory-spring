@@ -87,15 +87,11 @@ public class AlertsEmailsSpoolerExampleTest {
                     .htmlBodyPostprocessor(new CssInliner())
                     .prototype();
 
-            return AlertsEmailsSpooler.bufferedScheduled(
-                    paths,
-                    messagePrototype,
-                    ac,
-                    ts,
-                    Duration.ofSeconds(0),
-                    Duration.ofSeconds(10),
-                    Duration.ofSeconds(10)
-            );
+            return AlertsEmailsSpooler.builder(paths, ac, ts)
+                    .initialDelay(Duration.ofSeconds(0))
+                    .rate(Duration.ofSeconds(10))
+                    .gracePeriod(Duration.ofSeconds(10))
+                    .bufferedScheduled(messagePrototype);
 
         }
 
