@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -63,7 +64,7 @@ public class ClientReportFilter<ET> extends OncePerRequestFilter {
         try (final var is = req.getInputStream(); final var baos = new ByteArrayOutputStream()) {
             StreamUtils.copyRange(is, baos, 0, maxBodySize);
             return mapper.readValue(baos.toByteArray(), JsonNode.class);
-        } catch (IOException ex) {
+        } catch (IOException | JacksonException ex) {
             return mapper.getNodeFactory().stringNode("unparseable report");
         }
     }
