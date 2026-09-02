@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+    <head data-th-replace="~{alert-layout.html :: head('#123456')}">
+        <title>Alerts</title>
+    </head>
+    <body>
+        <table id="alerts" data-th-replace="~{alert-layout.html :: alerts('Elsewhere', ${alerts}, ~{this::#alerts/content()})}">
+            <tr>
+                <td class="data-label">Principal</td>
+                <td class="data-value">[[${principal}]]</td>
+            </tr>
+        </table>
+    </body>
+</html>

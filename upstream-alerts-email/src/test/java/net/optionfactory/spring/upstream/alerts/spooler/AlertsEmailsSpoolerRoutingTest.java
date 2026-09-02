@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import net.optionfactory.spring.email.EmailMessage;
 import net.optionfactory.spring.email.EmailPaths;
-import net.optionfactory.spring.thymeleaf.SingletonDialect;
 import net.optionfactory.spring.upstream.alerts.UpstreamAlertEvent;
 import net.optionfactory.spring.upstream.buffering.Buffering;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
@@ -95,12 +94,33 @@ public class AlertsEmailsSpoolerRoutingTest {
         Assertions.assertEquals(1, spooled.size(), "a selector failure must not discard the whole drained batch");
     }
 
+    @Test
+    public void theLayoutResolvesForATemplateKeptUnderAnyPrefix() throws Exception {
+        final var paths = EmailPaths.provide(Files.createDirectories(tmp.resolve("spool")), null, null);
+        // the including template lives nowhere near the layout's own /email/ prefix
+        final var engine = AlertsEmailsSpooler.templateEngine("/elsewhere/deeply/nested/", null);
+        final var prototype = EmailMessage.builder()
+                .sender("test@example.com", null)
+                .recipient("recipient@example.com")
+                .subject("subject")
+                .htmlBodyEngine(engine)
+                .htmlBodyTemplate("my-alerts.html")
+                .spooling(paths, "alerts.", null)
+                .prototype();
+
+        final var eml = new String(prototype.builder().variable("alerts", List.of(alert("upstream-a"))).marshal(), StandardCharsets.UTF_8);
+
+        Assertions.assertTrue(eml.contains("Elsewhere"), "the layout rendered the title it was given");
+        Assertions.assertTrue(eml.contains("upstream-a"), "the layout iterated the alerts");
+        Assertions.assertTrue(eml.contains("an-endpoint"), "the layout rendered a field only it emits");
+    }
+
     private static EmailMessage.Prototype prototype(EmailPaths paths, String template) {
         return EmailMessage.builder()
                 .sender("test@example.com", null)
                 .recipient("recipient@example.com")
                 .subject("subject")
-                .htmlBodyEngine(f -> f.html("/email/", null, new SingletonDialect("bodies", new AlertBodiesFunctions())))
+                .htmlBodyEngine(f -> AlertsEmailsSpooler.templateEngine("/email/", null))
                 .htmlBodyTemplate(template)
                 .spooling(paths, "alerts.", null)
                 .prototype();

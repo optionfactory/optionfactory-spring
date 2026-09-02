@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import net.optionfactory.spring.email.EmailMessage;
@@ -12,11 +13,18 @@ import net.optionfactory.spring.email.EmailPaths;
 import net.optionfactory.spring.email.spooling.BufferedScheduledSpooler;
 import net.optionfactory.spring.email.spooling.Spooler;
 import net.optionfactory.spring.upstream.alerts.UpstreamAlertEvent;
+import net.optionfactory.spring.thymeleaf.SingletonDialect;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.MessageSource;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.util.Assert;
+import org.thymeleaf.dialect.IDialect;
+import org.thymeleaf.spring6.SpringTemplateEngine;
+import org.thymeleaf.templatemode.TemplateMode;
+import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
 /// Renders batches of intercepted {@link UpstreamAlertEvent}s into email files and
 /// writes them to the spool directory of an {@link EmailPaths} — *spooling* here
@@ -134,6 +142,54 @@ public class AlertsEmailsSpooler implements Spooler<List<UpstreamAlertEvent>> {
             logger.warn("[spool-emails][alerts] failed to dump email for {} alerts", group.size(), ex);
             return null;
         }
+    }
+
+    /// The layout this module ships, which an alert template includes as
+    /// `~{alert-layout.html :: alerts(...)}`.
+    public static final String LAYOUT = "alert-layout.html";
+
+    /// Builds a template engine that can render an alert template kept anywhere on
+    /// the classpath, not only alongside the layout.
+    ///
+    /// A Thymeleaf fragment reference is resolved against the engine's resolvers, so
+    /// an engine holding a single resolver rooted at the application's own prefix
+    /// cannot find {@link #LAYOUT}, which this module ships under `/email/`. That
+    /// forces the including template to live under `/email/` too. The engine returned
+    /// here resolves the layout from this module and everything else from `prefix`,
+    /// so an application is free to keep its alert template wherever its other
+    /// templates live.
+    ///
+    /// Resolution is decided by resolvable patterns rather than by trying and failing,
+    /// so no existence checks are involved: only {@link #LAYOUT} reaches the module's
+    /// resolver, and every other name reaches the application's.
+    ///
+    /// The `bodies` expression object the layout needs is registered for you.
+    ///
+    /// @param prefix the classpath prefix holding the application's alert template
+    /// @param ms message source for `#{...}` lookups, may be null
+    /// @param dialects further dialects to register
+    /// @return an engine that resolves both the application's templates and the layout
+    public static SpringTemplateEngine templateEngine(String prefix, @Nullable MessageSource ms, IDialect... dialects) {
+        final var engine = new SpringTemplateEngine();
+        engine.addTemplateResolver(resolver(1, "/email/", Set.of(LAYOUT)));
+        engine.addTemplateResolver(resolver(2, prefix, Set.of("*.html")));
+        engine.setTemplateEngineMessageSource(ms);
+        engine.addDialect(new SingletonDialect("bodies", new AlertBodiesFunctions()));
+        for (IDialect dialect : dialects) {
+            engine.addDialect(dialect);
+        }
+        return engine;
+    }
+
+    private static ClassLoaderTemplateResolver resolver(int order, String prefix, Set<String> patterns) {
+        final var resolver = new ClassLoaderTemplateResolver();
+        resolver.setOrder(order);
+        resolver.setResolvablePatterns(patterns);
+        resolver.setPrefix(prefix);
+        resolver.setTemplateMode(TemplateMode.HTML);
+        resolver.setCharacterEncoding("utf-8");
+        resolver.setCacheable(true);
+        return resolver;
     }
 
     /// Starts configuring a spooler and the {@link BufferedScheduledSpooler} that
