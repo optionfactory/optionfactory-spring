@@ -20,7 +20,8 @@ import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -32,28 +33,26 @@ public class HibernateOnPsqlTestConfig {
      * Postgres shared by every test declaring {@code @SharedContainer(Postgres.class)}: started before the first
      * one, stopped after the last one; its coordinates are exposed to the environment as {@code db.*}.
      */
-    public static class Postgres implements ContainerDefinition<PostgreSQLContainer> {
+    public static class Postgres implements ContainerDefinition<GenericContainer> {
 
         @Override
-        public PostgreSQLContainer start() throws Exception {
-            final var image = DockerImageName.parse("optionfactory/debian13-postgres18:235").asCompatibleSubstituteFor("postgres");
-            final var container = new PostgreSQLContainer(image)
-                    .withExposedPorts(5432)
-                    .withUsername("postgres")
-                    .withDatabaseName("test");
+        public GenericContainer start() throws Exception {
+            final var image = DockerImageName.parse("optionfactory/debian13-postgres18:235");
+            final var container = new GenericContainer(image).withExposedPorts(5432)
+                    .waitingFor(Wait.forLogMessage(".*database system is ready to accept connections.*", 2));
             container.start();
-            /* the image ignores POSTGRES_* env: align the server with what the container reports */
             container.execInContainer("psql", "-U", "postgres", "-c", "ALTER USER postgres PASSWORD 'test'");
             container.execInContainer("psql", "-U", "postgres", "-c", "CREATE DATABASE test");
             return container;
         }
 
         @Override
-        public Map<String, Object> properties(PostgreSQLContainer container) {
+        public Map<String, Object> properties(GenericContainer container) {
+            
             return Map.of(
-                    "db.jdbc.url", container.getJdbcUrl(),
-                    "db.username", container.getUsername(),
-                    "db.password", container.getPassword()
+                    "db.jdbc.url", "jdbc:postgresql://%s:%s/test?loggerLevel=OFF".formatted(container.getHost(), container.getMappedPort(5432)),
+                    "db.username", "postgres",
+                    "db.password", "test"
             );
         }
     }

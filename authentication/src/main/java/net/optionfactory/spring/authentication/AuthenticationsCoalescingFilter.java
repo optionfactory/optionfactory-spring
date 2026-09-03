@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationTrustResolver;
 import org.springframework.security.core.Authentication;
@@ -45,10 +46,22 @@ public class AuthenticationsCoalescingFilter<R> extends OncePerRequestFilter {
         }
 
         final var mappedPrincipal = mapPrincipal(mappers, auth, auth.getPrincipal());
+        final var anonymous = authenticationTrustResolver.isAnonymous(auth);
 
-        final Authentication newAuth = authenticationTrustResolver.isAnonymous(auth)
-                ? new AnonymousAuthenticationToken("anon-auth-key", mappedPrincipal, auth.getAuthorities())
-                : new CoalescingAuthentication(auth, mappedPrincipal);
+        if (mappedPrincipal.isEmpty()) {
+            if (!anonymous) {
+                throw new IllegalStateException(String.format("unmappable principal '%s'", auth.getPrincipal()));
+            }
+            // an anonymous request carries no identity to normalise, so it is left as spring made
+            // it: an application should not have to invent a principal for callers that have not
+            // authenticated
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        final Authentication newAuth = anonymous
+                ? new AnonymousAuthenticationToken("anon-auth-key", mappedPrincipal.get(), auth.getAuthorities())
+                : new CoalescingAuthentication(auth, mappedPrincipal.get());
 
         final var sctx = securityContextHolderStrategy.createEmptyContext();
         sctx.setAuthentication(newAuth);
@@ -60,14 +73,14 @@ public class AuthenticationsCoalescingFilter<R> extends OncePerRequestFilter {
     }
 
     @SuppressWarnings("unchecked")
-    private static <R> R mapPrincipal(List<PrincipalMappingStrategy<?, R>> mappers, Authentication auth, Object principal) {
+    private static <R> Optional<R> mapPrincipal(List<PrincipalMappingStrategy<?, R>> mappers, Authentication auth, Object principal) {
         for (final var mapper : mappers) {
             if (mapper.supports(auth, principal)) {
                 final var tmapper = (PrincipalMappingStrategy<Object, R>) mapper;
-                return tmapper.map(auth, principal);
+                return Optional.ofNullable(tmapper.map(auth, principal));
             }
         }
-        throw new IllegalStateException(String.format("unmappable principal '%s'", principal));
+        return Optional.empty();
     }
 
 }

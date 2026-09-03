@@ -1,5 +1,29 @@
 # version 27.10
 
+## `authentication`
+
+*   [FIX] **An anonymous request no longer needs a principal mapping.** `AuthenticationsCoalescingFilter`
+    threw `IllegalStateException: unmappable principal 'anonymousUser'` for spring's anonymous
+    authentication unless the application registered a mapping for it, so adding
+    `Principals.coalescing(...)` broke every request to a `permitAll` endpoint until that was
+    discovered. An anonymous request carries no identity to normalise and is now left as spring made
+    it. Registering a mapping for it still works, for applications that do want a guest principal of
+    their own type, and an *authenticated* principal that nothing maps is still an
+    `IllegalStateException` — that remains a misconfiguration worth failing on.
+
+## `authentication-resource-server`
+
+*   [DOC] **`JwtTokenResolverAdapter` now says what it is for.** It existed undocumented, and the
+    reason it exists is not obvious: `BearerTokenAuthenticationFilter` claims every bearer token its
+    resolver returns, hands it to the configured `JwtDecoder` and fails the request when the decoder
+    cannot verify it, without checking whether another mechanism already authenticated the caller. So
+    a resource server sharing the `Authorization` header with `authentication-tokens` rejects the
+    static integration tokens and locally signed jws that its neighbour has just accepted — removing
+    the resolver from one application here failed 6 of its 9 authentication tests with
+    `JwtDecoderInitializationException`. The class docs now carry that, the caveat that the predicate
+    reads an unverified header and must therefore route rather than decide, and a usage example.
+    `searchToken` is documented too.
+
 ## `authentication-tokens`
 
 *   [FIX] **A schemeless header now matches.** `HeaderAndScheme` composed its matcher as
