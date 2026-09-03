@@ -63,14 +63,14 @@ public class HttpHeaderAuthentication {
         }
 
         public Configurer token(String headerName, String authScheme, String token, Object principal, Collection<? extends GrantedAuthority> authorities) {
-            final var hs = new HeaderAndScheme(headerName, authScheme.toUpperCase(Locale.ROOT).trim() + " ");
+            final var hs = new HeaderAndScheme(headerName, authScheme);
             headerAndSchemes.add(hs);
             processors.add(new TokenProcessor.StaticLax(hs, token, new PrincipalAndAuthorities(principal, authorities)));
             return this;
         }
 
         public Configurer tokenStrict(String headerName, String authScheme, String token, Object principal, Collection<? extends GrantedAuthority> authorities) {
-            final var hs = new HeaderAndScheme(headerName, authScheme.toUpperCase(Locale.ROOT).trim() + " ");
+            final var hs = new HeaderAndScheme(headerName, authScheme);
             headerAndSchemes.add(hs);
             processors.add(new TokenProcessor.StaticStrict(hs, token, new PrincipalAndAuthorities(principal, authorities)));
             return this;

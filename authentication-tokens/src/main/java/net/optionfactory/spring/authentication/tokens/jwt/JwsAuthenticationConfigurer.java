@@ -13,7 +13,6 @@ import com.nimbusds.jwt.proc.JWTClaimsSetVerifier;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.List;
-import java.util.Locale;
 import net.optionfactory.spring.authentication.tokens.HeaderAndScheme;
 import net.optionfactory.spring.authentication.tokens.jwt.JwtTokenProcessor.JwsProcessor;
 import org.springframework.http.HttpHeaders;
@@ -74,7 +73,7 @@ public interface JwsAuthenticationConfigurer extends JwtAuthenticationConfigurer
         public Builder matchHeader(String header, String authScheme) {
             Assert.notNull(header, "header cannot be null");
             Assert.notNull(authScheme, "authScheme cannot be null");
-            this.hs = new HeaderAndScheme(header, authScheme.toUpperCase(Locale.ROOT).trim() + " ");
+            this.hs = new HeaderAndScheme(header, authScheme);
             return this;
         }
 

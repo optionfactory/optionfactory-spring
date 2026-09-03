@@ -1,3 +1,20 @@
+# version 27.10
+
+## `authentication-tokens`
+
+*   [FIX] **A schemeless header now matches.** `HeaderAndScheme` composed its matcher as
+    `authScheme.toUpperCase().trim() + " "`, so a blank scheme produced `" "` and the filter looked for
+    a header value starting with a space -- which a header carrying a bare token never has. Blank
+    schemes are now normalised to `""`, for which the filter's existing `startsWith` / `substring`
+    logic was already correct. Use `matchHeaderWithoutScheme(header)` on the JWS/JWE configurers, or
+    `HeaderAndScheme.schemeless(header)` directly. Motivating case: a frontend that sends a jwt in a
+    bare `jwt-auth` header, which previously needed a request-wrapping filter to translate.
+*   [FIX] **`HeaderAndScheme` normalises in its constructor**, so every construction path is correct
+    rather than only the builders that remembered to normalise. This also fixes direct construction
+    with an un-suffixed scheme -- `new HeaderAndScheme("Authorization", "Bearer")` used to match
+    nothing, because the matcher compares against an upper-cased value and expects the trailing
+    space. Normalisation is idempotent, so already-correct values are unaffected.
+
 # version 27.9
 
 ## `upstream-interceptor-jws`

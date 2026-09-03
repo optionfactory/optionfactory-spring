@@ -40,6 +40,11 @@ public interface JwtAuthenticationConfigurer<SELF> {
 
     SELF matchHeader(String header, String authScheme);
 
+    /// Matches a header carrying the bare token, with no auth-scheme prefix.
+    default SELF matchHeaderWithoutScheme(String header) {
+        return matchHeader(header, "");
+    }
+
     default SELF principal(Object principal) {
         return principal((Header header, JWTClaimsSet claims) -> principal);
     }
