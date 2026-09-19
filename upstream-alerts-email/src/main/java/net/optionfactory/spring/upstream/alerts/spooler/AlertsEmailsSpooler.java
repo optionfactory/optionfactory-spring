@@ -27,14 +27,14 @@ import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
 /// Renders batches of intercepted {@link UpstreamAlertEvent}s into email files and
-/// writes them to the spool directory of an {@link EmailPaths} — *spooling* here
+/// writes them to the spool directory of an {@link EmailPaths}: *spooling* here
 /// means exactly that hand-off to disk. Nothing is delivered by this class: an
 /// email sender polls the spool independently, sends what it finds and moves each
 /// file on to the `sent` or `dead` directory.
 ///
 /// A batch is grouped by the {@link EmailMessage.Prototype} its alerts resolve to,
 /// and each group becomes one email. The prototype is what makes two emails
-/// different — its recipients, subject and template — so it is the only thing worth
+/// different, its recipients, subject and template, so it is the only thing worth
 /// grouping by: alerts sharing a prototype belong in one email, and alerts with
 /// different prototypes cannot share one, because a single email carries a single
 /// recipient set and recipients are never templated.
@@ -52,7 +52,7 @@ import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 ///
 /// Prototypes are grouped by identity, because {@link EmailMessage.Prototype} does
 /// not define equality. A selector must therefore return *the same instance* every
-/// time it is asked about a given upstream — resolve the prototypes once and look
+/// time it is asked about a given upstream. Resolve the prototypes once and look
 /// them up, rather than building one per call, or every alert lands in a group of
 /// its own and one email per alert is spooled. Returning the same instance for
 /// several upstreams is how co-owned integrations get batched into a single email

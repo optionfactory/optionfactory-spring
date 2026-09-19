@@ -61,8 +61,8 @@ Available built-in annotations:
 | `@BooleanCompare` | `EQ, NEQ` | Customizable `trueValue` / `falseValue` tokens |
 | `@InEnum` | enum constants | Matches any of the given constants of `type` |
 | `@InList` | values | Matches any of the given values |
-| `@Sortable` | — | Whitelists a sortable path |
-| `@Filterable` | — | Binds a custom `Filter` implementation |
+| `@Sortable` | none | Whitelists a sortable path |
+| `@Filterable` | none | Binds a custom `Filter` implementation |
 
 ### 3. Create a Repository
 
@@ -75,7 +75,7 @@ public interface PersonRepository extends JpaRepository<Person, Long>, Whitelist
 
 ### 4. Use the Repository
 
-Build a `FilterRequest` — the typed builder helpers produce correctly-ordered argument
+Build a `FilterRequest`: the typed builder helpers produce correctly-ordered argument
 arrays for each filter kind:
 
 ```java

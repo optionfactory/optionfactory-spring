@@ -30,11 +30,11 @@ import org.springframework.util.Assert;
 /// proves it was encrypted to us, not who authored it. Two trust models are supported, selected
 /// automatically from the configured decrypter:
 ///
-/// - **Symmetric JWE over raw claims** — `decrypt(SecretKey)` / `decrypt(byte[])` (`AESDecrypter`),
+/// - **Symmetric JWE over raw claims**: `decrypt(SecretKey)` / `decrypt(byte[])` (`AESDecrypter`),
 ///   or a `DirectDecrypter`. The shared secret is the trust root (only its holders can produce a
 ///   token we accept), so the decrypted payload is read directly as a JWT claims set. **Do not**
 ///   configure an inner verifier for this mode.
-/// - **Asymmetric JWE with a nested JWS** — `decrypt(ECPrivateKey)` (`ECDHDecrypter`) or an
+/// - **Asymmetric JWE with a nested JWS**: `decrypt(ECPrivateKey)` (`ECDHDecrypter`) or an
 ///   `RSADecrypter`. The encryption key is public, so anyone can mint a token that decrypts
 ///   successfully; the issuer is therefore authenticated by a **nested signed JWT**
 ///   (`JWE(JWS(claims))`) whose signature is verified via `verifier(...)` / `verify(...)`. An inner

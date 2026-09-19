@@ -45,7 +45,7 @@ public SecurityFilterChain security(HttpSecurity http) throws Exception {
 
 Encrypted JWTs are supported in two modes, selected automatically from the configured decrypter.
 
-**Symmetric** — the shared secret is the trust root; the payload is read as raw claims (no inner signature):
+**Symmetric**: the shared secret is the trust root; the payload is read as raw claims (no inner signature):
 
 ```java
 c.jwe(jc -> {
@@ -59,7 +59,7 @@ c.jwe(jc -> {
 });
 ```
 
-**Asymmetric** — the token is encrypted to our public key, so the issuer is authenticated by a nested signed JWT (`JWE(JWS(claims))`):
+**Asymmetric**: the token is encrypted to our public key, so the issuer is authenticated by a nested signed JWT (`JWE(JWS(claims))`):
 
 ```java
 c.jwe(jc -> {
@@ -74,5 +74,5 @@ c.jwe(jc -> {
 });
 ```
 
-JWE only provides confidentiality, so an asymmetric decrypter (`ECDHDecrypter`/`RSADecrypter`) **requires** `verify(...)` — anyone holding the recipient's public key can encrypt, and only the inner signature proves the issuer. Symmetric decrypters read raw claims and rely on the secrecy of the shared key; do not set `verify(...)` unless you want the nested-JWS path. The issuer must produce asymmetric tokens as sign-then-encrypt.
+JWE only provides confidentiality, so an asymmetric decrypter (`ECDHDecrypter`/`RSADecrypter`) **requires** `verify(...)`, because anyone holding the recipient's public key can encrypt, and only the inner signature proves the issuer. Symmetric decrypters read raw claims and rely on the secrecy of the shared key; do not set `verify(...)` unless you want the nested-JWS path. The issuer must produce asymmetric tokens as sign-then-encrypt.
 

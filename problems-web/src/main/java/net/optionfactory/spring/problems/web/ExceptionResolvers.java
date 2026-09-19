@@ -9,6 +9,7 @@ import tools.jackson.databind.json.JsonMapper;
 public class ExceptionResolvers {
 
     private final List<HandlerExceptionResolver> container;
+    private UndeliverableResponseExceptionResolver undeliverables;
     private BinaryResponseExceptionResolver binaries;
     private RestExceptionResolver rest;
     private PagesExceptionResolver pages;
@@ -41,12 +42,24 @@ public class ExceptionResolvers {
         return this;
     }
 
+    /// Declines, ahead of every other resolver, when the client has gone or the
+    /// response is already committed, so the resolvers behind it are not asked to
+    /// answer with a problem document or an error page the request can no longer
+    /// carry. Add it when anything in the application streams: server-sent events,
+    /// a `StreamingResponseBody` download, or any response written incrementally.
+    public ExceptionResolvers undeliverables() {
+        this.undeliverables = new UndeliverableResponseExceptionResolver();
+        return this;
+    }
+
     public ExceptionResolvers binaries() {
         this.binaries = new BinaryResponseExceptionResolver();
         return this;
     }
 
     /// Places the configured exception resolvers in the chain, in this order:
+    ///   - UndeliverableResponseExceptionResolver: ahead of everything, so the
+    ///     resolvers below are never asked to write a response that is gone
     ///   - RestExceptionResolver: on top 
     ///   - BinaryResponseExceptionResolver: on top, after the
     ///     RestExceptionResolver if it's configured'
@@ -58,6 +71,7 @@ public class ExceptionResolvers {
     ///
     /// | handler | notes  |
     /// | ------- | ------ |
+    /// | `UndeliverableResponseExceptionResolver` | declines when the client is gone or the response is committed |
     /// | `RestExceptionResolver` |  |
     /// | `BinaryResponseExceptionResolver` | |
     /// | `ExceptionHandlerExceptionResolver` | handles `@ExceptionHandler`, but only for pages |
@@ -81,6 +95,9 @@ public class ExceptionResolvers {
         }
         if (rest != null) {
             container.addFirst(rest);
+        }
+        if (undeliverables != null) {
+            container.addFirst(undeliverables);
         }
     }
 

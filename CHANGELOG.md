@@ -1,3 +1,21 @@
+# version 27.12
+
+## `problems-web`
+
+*   [NEW] **`UndeliverableResponseExceptionResolver`:** declines, ahead of every other resolver, when the client has
+    gone or the response is already committed, so the resolvers behind it are never asked to write a response
+    that no longer exists. Register it with `ExceptionResolvers.configurer(...).undeliverables()`. A streaming
+    endpoint commits its response with its first byte and normally ends because the client navigated away, and
+    until now that produced two stack traces per disconnect: `RestExceptionResolver` logged the disconnect as an
+    unexpected error and rendered a json problem document, then failed to write it, and the second failure
+    escaped `render` where no resolver can catch it and surfaced as a tomcat `ERROR`. A plain `@Controller`
+    fared worse, `PagesExceptionResolver` having no applicability test at all and answering a
+    `text/event-stream` with an html error page. Disconnects are recognised through spring's
+    `DisconnectedClientHelper`, which walks the cause chain and excludes `DataAccessException` and
+    `RestClientException`, so a broken pipe to an upstream of ours still reports loudly; a genuine fault on an
+    already committed response is still logged at `WARN`, since it cannot be told to the client but is still
+    worth knowing.
+
 # version 27.10
 
 ## `authentication`
@@ -9,7 +27,7 @@
     discovered. An anonymous request carries no identity to normalise and is now left as spring made
     it. Registering a mapping for it still works, for applications that do want a guest principal of
     their own type, and an *authenticated* principal that nothing maps is still an
-    `IllegalStateException` — that remains a misconfiguration worth failing on.
+    `IllegalStateException`. That remains a misconfiguration worth failing on.
 
 ## `authentication-resource-server`
 
@@ -18,7 +36,7 @@
     resolver returns, hands it to the configured `JwtDecoder` and fails the request when the decoder
     cannot verify it, without checking whether another mechanism already authenticated the caller. So
     a resource server sharing the `Authorization` header with `authentication-tokens` rejects the
-    static integration tokens and locally signed jws that its neighbour has just accepted — removing
+    static integration tokens and locally signed jws that its neighbour has just accepted. Removing
     the resolver from one application here failed 6 of its 9 authentication tests with
     `JwtDecoderInitializationException`. The class docs now carry that, the caveat that the predicate
     reads an unverified header and must therefore route rather than decide, and a usage example.
@@ -79,7 +97,7 @@
     single fixed prototype, so each integration's failures can be mailed to its own owners instead of everyone
     receiving every alert. The existing behavior is still available as `builder(...).bufferedScheduled(prototype)`
     (every alert to one prototype), alongside the new `bufferedScheduled(prototypeByUpstream)`. The selector must
-    be stable (return the same instance per upstream — prototypes are grouped by identity) and total (a `null`
+    be stable (return the same instance per upstream, since prototypes are grouped by identity) and total (a `null`
     or throwing selector drops only its own alert, logged at WARN, not the whole batch).
 *   [BREAKING] **Layout template independent of alert template location:** use the new
     `AlertsEmailsSpooler.templateEngine(prefix, messageSource, dialects...)` factory to build the engine: it
