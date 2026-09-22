@@ -17,6 +17,21 @@
     detach right after mapping, so pure entity-to-DTO streams need no session management at all;
     the mapper must not retain the entity for lazy access after returning.
 
+*   [FIX] **A malformed filter value is now always an `InvalidFilterRequest`.** The library was
+    meticulous about whitelisting names and careless about what it threw when a whitelisted filter got
+    a value it could not parse, letting the underlying parser's exception escape. Two of those are not
+    even `IllegalArgumentException`s — `DateTimeParseException` and `StringIndexOutOfBoundsException` —
+    so an application mapping by exception type answered a malformed date with a server error rather
+    than a bad request, from the very component whose job is validating client input. Every conversion
+    of a request value now reports `InvalidFilterRequest`, naming the filter, the value and the target
+    type: `@LocalDateCompare` and `@InstantCompare` (all four formats) on unparseable text,
+    `Values.convert` on any numeric conversion, and a `char` property on a value that is not exactly
+    one character (previously an empty value threw `StringIndexOutOfBoundsException` from
+    `charAt(0)`). `@TextCompare` parsed its operator through `Filters.parseEnum` and its case
+    sensitivity through a raw `valueOf` one line below, so an unknown mode produced `No enum constant`
+    instead of the library's own message; both now go through the same path. The typed `FilterRequest`
+    builders take a `LocalDate`, an `Instant` or a `Number` and so were never able to express these
+    values: they arrive from the wire, which is where the new tests put them.
 *   [BREAKING] **Filtering across a collection is now quantified, and the `EXISTS` is genuinely
     correlated.** A filter path crossing a collection asks something about the row's elements, which is
     two independent questions: the condition, and whether *some* element must satisfy it or *none*.

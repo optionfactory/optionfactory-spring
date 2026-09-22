@@ -11,6 +11,7 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
@@ -19,6 +20,7 @@ import net.optionfactory.spring.data.jpa.filtering.TraversalFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.LocalDateCompare.LocalDateCompareFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.LocalDateCompare.RepeatableLocalDateCompare;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
+import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter;
 
@@ -91,7 +93,7 @@ public @interface LocalDateCompare {
             Filters.ensure(operators.contains(operator), root, name, "operator %s not whitelisted (%s)", operator, operators);
             Filters.ensure(values.length == (operator == Operator.BETWEEN ? 3 : 2), root, name, "unexpected number of values: %d", values.length);
             final String value = values[1];
-            final LocalDate rhs = value == null ? null : LocalDate.parse(value, formatter);
+            final LocalDate rhs = parseLocalDate(root, value);
             return switch (operator) {
                 case EQ ->
                     rhs == null ? lhs.isNull() : builder.equal(lhs, rhs);
@@ -115,7 +117,7 @@ public @interface LocalDateCompare {
                 }
                 case BETWEEN -> {
                     final String value2 = values[2];
-                    final LocalDate rhs2 = value2 == null ? null : LocalDate.parse(value2, formatter);
+                    final LocalDate rhs2 = parseLocalDate(root, value2);
                     Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
                     Filters.ensure(rhs2 != null, root, name, "value2 cannot be null for operator %s", operator);
                     final LocalDate[] sorted = Stream.of(rhs, rhs2).sorted().toArray((l) -> new LocalDate[l]);
@@ -124,6 +126,17 @@ public @interface LocalDateCompare {
                 default ->
                     throw new IllegalStateException("unreachable");
             };
+        }
+
+        private LocalDate parseLocalDate(Root<?> root, String value) {
+            if (value == null) {
+                return null;
+            }
+            try {
+                return LocalDate.parse(value, formatter);
+            } catch (DateTimeException ex) {
+                throw new InvalidFilterRequest(name, root, String.format("cannot parse '%s' as a local date: %s", value, ex.getMessage()));
+            }
         }
 
         @Override

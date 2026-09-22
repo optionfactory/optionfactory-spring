@@ -12,6 +12,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.math.BigInteger;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.stream.Stream;
@@ -19,6 +20,7 @@ import net.optionfactory.spring.data.jpa.filtering.TraversalFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.InstantCompare.InstantCompareFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.InstantCompare.RepeatableInstantCompare;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
+import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter;
 
@@ -94,7 +96,7 @@ public @interface InstantCompare {
             Filters.ensure(operators.contains(operator), root, name, "operator %s not whitelisted (%s)", operator, operators);
             Filters.ensure(values.length == (operator == Operator.BETWEEN ? 3 : 2), root, name, "unexpected number of values: %d", values.length);
             final String value = values[1];
-            final Instant rhs = parseInstant(value);
+            final Instant rhs = parseInstant(root, value);
             return switch (operator) {
                 case EQ ->
                     rhs == null ? lhs.isNull() : builder.equal(lhs, rhs);
@@ -118,7 +120,7 @@ public @interface InstantCompare {
                 }
                 case BETWEEN -> {
                     final String value2 = values[2];
-                    final Instant rhs2 = parseInstant(value2);
+                    final Instant rhs2 = parseInstant(root, value2);
                     Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
                     Filters.ensure(rhs2 != null, root, name, "value2 cannot be null for operator %s", operator);
                     final Instant[] instants = Stream.of(rhs, rhs2).sorted().toArray((l) -> new Instant[l]);
@@ -129,25 +131,29 @@ public @interface InstantCompare {
             };
         }
 
-        private Instant parseInstant(String value) {
+        private Instant parseInstant(Root<?> root, String value) {
             if (value == null) {
                 return null;
             }
-            return switch (format) {
-                case ISO_8601 ->
-                    Instant.parse(value);
-                case UNIX_S ->
-                    Instant.ofEpochSecond(Long.parseLong(value, 10));
-                case UNIX_MS ->
-                    Instant.ofEpochMilli(Long.parseLong(value, 10));
-                case UNIX_NS -> {
-                    final BigInteger nanoseconds = new BigInteger(value, 10);
-                    final BigInteger[] secondsAndNanosecondsFraction = nanoseconds.divideAndRemainder(BigInteger.valueOf(1_000_000_000L));
-                    yield Instant.ofEpochSecond(secondsAndNanosecondsFraction[0].longValueExact(), secondsAndNanosecondsFraction[1].longValueExact());
-                }
-                default ->
-                    throw new IllegalStateException("unreachable");
-            };
+            try {
+                return switch (format) {
+                    case ISO_8601 ->
+                        Instant.parse(value);
+                    case UNIX_S ->
+                        Instant.ofEpochSecond(Long.parseLong(value, 10));
+                    case UNIX_MS ->
+                        Instant.ofEpochMilli(Long.parseLong(value, 10));
+                    case UNIX_NS -> {
+                        final BigInteger nanoseconds = new BigInteger(value, 10);
+                        final BigInteger[] secondsAndNanosecondsFraction = nanoseconds.divideAndRemainder(BigInteger.valueOf(1_000_000_000L));
+                        yield Instant.ofEpochSecond(secondsAndNanosecondsFraction[0].longValueExact(), secondsAndNanosecondsFraction[1].longValueExact());
+                    }
+                    default ->
+                        throw new IllegalStateException("unreachable");
+                };
+            } catch (DateTimeException | ArithmeticException | NumberFormatException ex) {
+                throw new InvalidFilterRequest(name, root, String.format("cannot parse '%s' as an instant in format %s: %s", value, format, ex.getMessage()));
+            }
         }
 
         @Override

@@ -97,7 +97,7 @@ public @interface TextCompare {
             final Operator operator = Filters.parseEnum(root, name, "operator", Operator.class, values[0]);
             Filters.ensure((values.length == 3 && operator != Operator.BETWEEN) || (values.length == 4 && operator == Operator.BETWEEN), root, name, "expected operator,mode,value(s) got %s", Arrays.toString(values));
             Filters.ensure(operators.contains(operator), root, name, "operator %s not whitelisted (%s)", operator, operators);
-            final CaseSensitivity sensitivity = CaseSensitivity.valueOf(values[1]);
+            final CaseSensitivity sensitivity = Filters.parseEnum(root, name, "mode", CaseSensitivity.class, values[1]);
             Filters.ensure(caseSensitivity.contains(sensitivity), root, name, "mode %s not whitelisted (%s)", sensitivity, caseSensitivity);
             final String value = values[2];
             final Expression<String> lhs = sensitivity == CaseSensitivity.CASE_SENSITIVE ? lpath : builder.lower(lpath);
