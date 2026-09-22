@@ -11,6 +11,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository.SessionPolicy;
+import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Repositories;
 import org.hibernate.jpa.AvailableHints;
 import org.jspecify.annotations.Nullable;
@@ -27,7 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> extends SimpleJpaRepository<T, ID> {
 
     private final Map<String, Filter> allowedFilters;
-    private final Map<String, String> allowedSorters;
+    private final Map<String, Traversal> allowedSorters;
     private final EntityManager entityManager;
 
     public JpaWhitelistFilteringRepositoryBase(JpaEntityInformation<T, ?> ei, EntityManager em) {

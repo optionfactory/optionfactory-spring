@@ -17,6 +17,31 @@
     detach right after mapping, so pure entity-to-DTO streams need no session management at all;
     the mapper must not retain the entity for lazy access after returning.
 
+*   [BREAKING] **`@Sortable` paths are now resolved through the filters' traversal engine, and
+    collection-crossing paths are rejected at startup.** Sorting used to hand the whitelisted path
+    straight to spring's `QueryUtils`, which walks it with its own join logic: none of the traversal
+    rules that keep filtering safe applied. A `@Sortable` whose path crossed a collection was
+    accepted silently and rendered as a join from the root, multiplying rows — and since the `LIMIT`
+    then counts joined rows while the count query counts entities, pages came back short, some
+    entities repeated across pages and others never appeared at all (measured on 20 parents with 3
+    children each, pages of 10: 15 distinct entities over 3 pages, 5 of them twice). An `ORDER BY`
+    has to name an expression of the selected row, so a plural hop cannot be folded into an `EXISTS`
+    the way a filter's is: such paths are now rejected with `InvalidSortConfiguration` when the
+    repository is built. Sort the child entity, or map an aggregate, instead. Singular paths are
+    navigated with `Filters.path` like a filter's, so a filter and a sorter on the same association
+    provably share one join and `@FilterTraversal` overrides apply to both. `@Sortable` paths also
+    get the startup validation filters always had: an unresolvable path fails when the repository is
+    built rather than on the first request that uses that sorter. `Sort.Order`'s `ignoreCase` and
+    null handling keep working as before. Path syntax is now the metamodel dot-notation filters use,
+    so spring `PropertyPath` spellings that were never valid for a filter (e.g. camel-cased
+    `ownerName` for `owner.name`) now fail at startup. One shape gets a join it did not have:
+    `@Sortable(path = "owner.id")` now renders `left join owner ... order by owner.id` where spring
+    used the `owner_id` foreign key column already on the root table — matching what a filter on the
+    same path has always emitted. SPI: `Repositories.allowedSorters` returns
+    `Map<String, Filters.Traversal>` instead of `Map<String, String>`, and
+    `Sorters.validateAndTransform` is replaced by `Sorters.traversal` (startup) and
+    `Sorters.orders`/`Sorters.order` (request time).
+
 *   [NEW] **`@TextSearch`: full-text search filter for postgres and mysql/mariadb.** Searches a document
     composed of one or more text `paths` with a client-facing `syntax` and a document `language`.
     `PLAIN` (default) requires every term, no client syntax; `WEBSEARCH` opt-in exposes `"quoted

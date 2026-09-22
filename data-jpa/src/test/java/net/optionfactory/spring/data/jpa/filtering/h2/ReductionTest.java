@@ -13,6 +13,7 @@ import net.optionfactory.spring.data.jpa.test.TransactionalPhases;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringSpecificationAdapter;
 import net.optionfactory.spring.data.jpa.filtering.filters.NumberCompare;
+import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Repositories;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +52,7 @@ public class ReductionTest {
 
         private final EntityManager entityManager;
         private final Map<String, Filter> allowedFilters;
-        private final Map<String, String> allowedSorters;
+        private final Map<String, Traversal> allowedSorters;
 
         public ReductionRepositoryImpl(EntityManager em) {
             final var ei = JpaEntityInformationSupport.getEntityInformation(NumberEntity.class, em);

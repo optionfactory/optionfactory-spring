@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.optionfactory.spring.data.jpa.filtering.Filter;
 import net.optionfactory.spring.data.jpa.filtering.filters.Sortable;
+import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.data.jpa.repository.support.JpaEntityInformation;
@@ -30,7 +31,7 @@ public interface Repositories {
                 .collect(Collectors.toMap(fspec -> fspec.name(), fspec -> fspec));
     }
 
-    public static <T> Map<String, String> allowedSorters(JpaEntityInformation<T, ?> ei, EntityManager em) {
+    public static <T> Map<String, Traversal> allowedSorters(JpaEntityInformation<T, ?> ei, EntityManager em) {
         return Stream
                 .of(ei.getJavaType().getAnnotations())
                 .flatMap(repeatableAnnotation -> flattenRepeatables(repeatableAnnotation))
@@ -82,8 +83,9 @@ public interface Repositories {
         }
     }
 
-    public static <T> Pair<String, String> createSorterFromAnnotation(Annotation annotation, JpaEntityInformation<T, ?> ei, EntityManager em) throws IllegalStateException {
+    public static <T> Pair<String, Traversal> createSorterFromAnnotation(Annotation annotation, JpaEntityInformation<T, ?> ei, EntityManager em) throws IllegalStateException {
         final var ma = AnnotatedElementUtils.findMergedAnnotation(AnnotatedElementUtils.forAnnotations(annotation), Sortable.class);
-        return Pair.of(ma.name(), ma.path());
+        final var entity = em.getMetamodel().entity(ei.getJavaType());
+        return Pair.of(ma.name(), Sorters.traversal(entity, ma.name(), ma.path()));
     }
 }

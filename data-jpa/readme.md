@@ -62,7 +62,7 @@ Available built-in annotations:
 | `@InEnum` | enum constants | Matches any of the given constants of `type` |
 | `@InList` | values | Matches any of the given values |
 | `@TextSearch` | free text | Full-text search over one or more text `paths` on postgres and mysql/mariadb (see below) |
-| `@Sortable` | none | Whitelists a sortable path |
+| `@Sortable` | none | Whitelists a sortable path, resolved through the same traversal engine as filters |
 | `@Filterable` | none | Binds a custom `Filter` implementation |
 
 ### 3. Create a Repository
@@ -117,6 +117,14 @@ Override the defaults with `@FilterTraversal` on the entity:
 @TextCompare(name = "byStreet", path = "address.state.city.street")
 public class Company { ... }
 ```
+
+`@Sortable` paths go through the same engine, so a filter and a sorter on the same path
+share one join and honour the same `@FilterTraversal` overrides. Sorting has one extra
+restriction: an `ORDER BY` has to name an expression of the selected row, so a plural hop
+cannot be folded into an `EXISTS` and would have to be joined from the root, multiplying
+rows. Paths crossing a collection are therefore rejected when the repository is built,
+with an `InvalidSortConfiguration` — as is any path that does not resolve against the
+metamodel.
 
 ## Streaming
 
