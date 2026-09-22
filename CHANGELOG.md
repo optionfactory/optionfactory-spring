@@ -1,3 +1,16 @@
+# version 27.14
+
+## `data-jpa`
+
+*   [ENH] **Case-insensitive `CONTAINS`/`STARTS_WITH`/`ENDS_WITH` now render as a native `ILIKE`.** `@TextCompare`
+    with `IGNORE_CASE` used to compile to `lower(column) like '%value%'`, forcing a per-row `lower()` on the column
+    and requiring a functional index on `lower(column)` to be servable. The predicate is now built as a
+    case-insensitive Hibernate `ilike`, translated at render time by the dialect: postgres and h2 emit
+    `column ilike ? escape '\'`, so plain pg_trgm GIN indexes become usable, while dialects without native
+    case-insensitive matching keep the `lower(column) like lower(?)` emulation. `LIKE` wildcard escaping (`%`,
+    `_`, `\`) is preserved in every mode, and `IGNORE_CASE` comparison operators (`EQ`, `NEQ`, ranges, `BETWEEN`)
+    still compile to `lower()` comparisons.
+
 # version 27.12
 
 ## `problems-web`

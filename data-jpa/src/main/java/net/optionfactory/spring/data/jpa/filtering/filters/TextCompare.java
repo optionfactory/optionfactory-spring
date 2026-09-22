@@ -22,6 +22,7 @@ import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare.TextCompa
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter;
+import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 
 /**
  * Compares a text property. The three arguments must be a whitelisted
@@ -119,16 +120,16 @@ public @interface TextCompare {
                     yield builder.and(builder.greaterThanOrEqualTo(lhs, sorted[0]), builder.lessThanOrEqualTo(lhs, sorted[1]));
                 }
                 case CONTAINS -> {
-                    Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
-                    yield builder.like(lhs, "%" + escapeForLike(rhs) + "%", LIKE_ESCAPE_CHAR);
+                    Filters.ensure(value != null, root, name, "value cannot be null for operator %s", operator);
+                    yield like(builder, lpath, sensitivity, "%" + escapeForLike(value) + "%");
                 }
                 case STARTS_WITH -> {
-                    Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
-                    yield builder.like(lhs, escapeForLike(rhs) + "%", LIKE_ESCAPE_CHAR);
+                    Filters.ensure(value != null, root, name, "value cannot be null for operator %s", operator);
+                    yield like(builder, lpath, sensitivity, escapeForLike(value) + "%");
                 }
                 case ENDS_WITH -> {
-                    Filters.ensure(rhs != null, root, name, "value cannot be null for operator %s", operator);
-                    yield builder.like(lhs, "%" + escapeForLike(rhs), LIKE_ESCAPE_CHAR);
+                    Filters.ensure(value != null, root, name, "value cannot be null for operator %s", operator);
+                    yield like(builder, lpath, sensitivity, "%" + escapeForLike(value));
                 }
                 default ->
                     throw new IllegalStateException("unreachable");
@@ -137,6 +138,15 @@ public @interface TextCompare {
 
         private static final char LIKE_ESCAPE_CHAR = '\\';
         private static final String LIKE_ESCAPE_STR = String.valueOf(LIKE_ESCAPE_CHAR);
+
+        private static Predicate like(CriteriaBuilder builder, Path<String> path, CaseSensitivity sensitivity, String pattern) {
+            if (sensitivity == CaseSensitivity.IGNORE_CASE && builder instanceof HibernateCriteriaBuilder hibernate) {
+                return hibernate.ilike(path, pattern, LIKE_ESCAPE_CHAR);
+            }
+            final Expression<String> lhs = sensitivity == CaseSensitivity.CASE_SENSITIVE ? path : builder.lower(path);
+            final String rhs = sensitivity == CaseSensitivity.CASE_SENSITIVE ? pattern : pattern.toLowerCase(Locale.ROOT);
+            return builder.like(lhs, rhs, LIKE_ESCAPE_CHAR);
+        }
 
         public static String escapeForLike(String input) {
             return input

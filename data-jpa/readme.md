@@ -54,7 +54,7 @@ Available built-in annotations:
 
 | Annotation | Operators / Args | Notes |
 |---|---|---|
-| `@TextCompare` | `EQ, NEQ, LT, GT, LTE, GTE, BETWEEN, CONTAINS, STARTS_WITH, ENDS_WITH` | Plus a `CaseSensitivity` (`CASE_SENSITIVE`, `IGNORE_CASE`) argument |
+| `@TextCompare` | `EQ, NEQ, LT, GT, LTE, GTE, BETWEEN, CONTAINS, STARTS_WITH, ENDS_WITH` | Plus a `CaseSensitivity` (`CASE_SENSITIVE`, `IGNORE_CASE`) argument. `IGNORE_CASE` `CONTAINS`/`STARTS_WITH`/`ENDS_WITH` render as a native `ILIKE` where the dialect supports it (e.g. postgres, h2), so plain pg_trgm indexes can serve them; other dialects fall back to `lower() ... like lower(...)` |
 | `@NumberCompare` | `EQ, NEQ, LT, GT, LTE, GTE, BETWEEN` | Primitives (except `boolean`) and `Number` subtypes |
 | `@InstantCompare` | `EQ, NEQ, LT, GT, LTE, GTE, BETWEEN` | `java.time.Instant`; configurable `format` (`ISO_8601`, `UNIX_S`, `UNIX_MS`, `UNIX_NS`) |
 | `@LocalDateCompare` | `EQ, NEQ, LT, GT, LTE, GTE, BETWEEN` | `java.time.LocalDate` |
