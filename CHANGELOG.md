@@ -2,6 +2,30 @@
 
 ## `data-jpa`
 
+*   [NEW] **`@TextSearch`: full-text search filter for postgres and mysql/mariadb.** Searches a document
+    composed of one or more text `paths` with a client-facing `syntax` and a document `language`.
+    `PLAIN` (default) requires every term, no client syntax; `WEBSEARCH` opt-in exposes `"quoted
+    phrases"`, `OR` and `-term`; `PHRASE` requires terms adjacent and in order. Those semantics hold
+    on every engine; recall does not: postgres normalizes per `language` (the regconfig, so `cats`
+    finds `cat`), mysql matches whole words case-folded by collation. Rendering is engine-specific:
+    postgres emits `to_tsvector(lang, coalesce(p1,'') || ' ' || coalesce(p2,'')) @@ <query>` (paired
+    with a GIN expression index over exactly that expression, since `concat_ws` is unindexable and
+    the planner only matches the `@@` operator, not its function form); mysql/mariadb emit
+    `MATCH(p1, p2) AGAINST(<query> IN BOOLEAN MODE)` (paired with a `FULLTEXT` index on the same
+    columns in the same order; without one the query errors). The engine is chosen from the dialect
+    at filter construction via the injected `EntityManagerFactory`: unsupported dialects fail fast
+    with `InvalidFilterConfiguration`, and on mysql paths crossing associations are rejected there
+    too, since `MATCH()` needs root-table columns, as are path lists longer than 8 (one rendering is
+    registered per arity). Collection-crossing paths are rejected at startup on every engine: a
+    deliberate, revisitable scope decision — the known design folds each collection group into a
+    correlated `EXISTS` component in the adapter, making the document a disjunction of components
+    (all terms must match within one component); until that trade is wanted, search the child entity
+    or use a `@Filterable` custom filter. Queries are bound as inlined, quote-escaped literals; every
+    mysql term is double-quoted so client text can never inject boolean operators. MariaDB dispatches
+    through the same engine but is not covered by the test suite, which exercises postgres 18 and
+    mysql 8.
+    The module's `FunctionContributor` (`TextSearchFunctions`) registers `of_ts_matches` (`@@`) and
+    `of_match_against_N` (`MATCH...AGAINST`); additive and inert unless used.
 *   [ENH] **Case-insensitive `CONTAINS`/`STARTS_WITH`/`ENDS_WITH` now render as a native `ILIKE`.** `@TextCompare`
     with `IGNORE_CASE` used to compile to `lower(column) like '%value%'`, forcing a per-row `lower()` on the column
     and requiring a functional index on `lower(column)` to be servable. The predicate is now built as a

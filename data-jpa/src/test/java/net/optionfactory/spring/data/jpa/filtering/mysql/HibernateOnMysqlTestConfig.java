@@ -1,4 +1,4 @@
-package net.optionfactory.spring.data.jpa.filtering.psql;
+package net.optionfactory.spring.data.jpa.filtering.mysql;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -26,33 +26,42 @@ import org.testcontainers.utility.DockerImageName;
 import tools.jackson.databind.json.JsonMapper;
 
 @Configuration
-@EnableJpaWhitelistFilteringRepositories(basePackageClasses = HibernateOnPsqlTestConfig.class)
-public class HibernateOnPsqlTestConfig {
+@EnableJpaWhitelistFilteringRepositories(basePackageClasses = HibernateOnMysqlTestConfig.class)
+public class HibernateOnMysqlTestConfig {
 
     /**
-     * Postgres shared by every test declaring {@code @SharedContainer(Postgres.class)}: started before the first
-     * one, stopped after the last one; its coordinates are exposed to the environment as {@code db.*}.
+     * Mysql shared by every test declaring {@code @SharedContainer(Mysql.class)}: started before the first
+     * one, stopped after the last one. The image boots with an insecure root that exists only on localhost,
+     * so the tcp-reachable user has to be created before anything connects; the port only opens after
+     * initialization completes, the initialize-phase server being skip-networking.
      */
-    public static class Postgres implements ContainerDefinition<GenericContainer> {
+    public static class Mysql implements ContainerDefinition<GenericContainer> {
+
+        private static final String USERNAME = "test";
+        private static final String PASSWORD = "test";
+        private static final String DATABASE = "test";
 
         @Override
         public GenericContainer start() throws Exception {
-            final var image = DockerImageName.parse("optionfactory/debian13-postgres18:240");
-            final var container = new GenericContainer(image).withExposedPorts(5432)
-                    .waitingFor(Wait.forLogMessage(".*database system is ready to accept connections.*", 2));
+            final var image = DockerImageName.parse("optionfactory/debian13-mysql8:240");
+            final var container = new GenericContainer<>(image)
+                    .withExposedPorts(3306)
+                    // the datadir is a tmpfs for speed: mysqld runs as a non-root user, so it must be world-writable
+                    .withTmpFs(Map.of("/var/lib/mysql", "rw,mode=1777"))
+                    .waitingFor(Wait.forListeningPort());
             container.start();
-            container.execInContainer("psql", "-U", "postgres", "-c", "ALTER USER postgres PASSWORD 'test'");
-            container.execInContainer("psql", "-U", "postgres", "-c", "CREATE DATABASE test");
+            container.execInContainer("mysql", "--protocol=socket", "-uroot", "-e", "CREATE USER '%s'@'%%' IDENTIFIED BY '%s'".formatted(USERNAME, PASSWORD));
+            container.execInContainer("mysql", "--protocol=socket", "-uroot", "-e", "GRANT ALL PRIVILEGES ON *.* TO '%s'@'%%' WITH GRANT OPTION".formatted(USERNAME));
+            container.execInContainer("mysql", "--protocol=socket", "-uroot", "-e", "CREATE DATABASE %s".formatted(DATABASE));
             return container;
         }
 
         @Override
         public Map<String, Object> properties(GenericContainer container) {
-            
             return Map.of(
-                    "db.jdbc.url", "jdbc:postgresql://%s:%s/test?loggerLevel=OFF".formatted(container.getHost(), container.getMappedPort(5432)),
-                    "db.username", "postgres",
-                    "db.password", "test"
+                    "db.jdbc.url", "jdbc:mysql://%s:%d/%s?sslMode=DISABLED&allowPublicKeyRetrieval=true".formatted(container.getHost(), container.getMappedPort(3306), DATABASE),
+                    "db.username", USERNAME,
+                    "db.password", PASSWORD
             );
         }
     }
@@ -86,7 +95,7 @@ public class HibernateOnPsqlTestConfig {
 
         final var factory = new LocalContainerEntityManagerFactoryBean();
         factory.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
-        factory.setPackagesToScan(HibernateOnPsqlTestConfig.class.getPackage().getName());
+        factory.setPackagesToScan(HibernateOnMysqlTestConfig.class.getPackage().getName());
         factory.setDataSource(dataSource);
         factory.setJpaProperties(properties);
         return factory;
@@ -101,5 +110,4 @@ public class HibernateOnPsqlTestConfig {
     public TransactionTemplate tt(PlatformTransactionManager htt) {
         return new TransactionTemplate(htt);
     }
-
 }

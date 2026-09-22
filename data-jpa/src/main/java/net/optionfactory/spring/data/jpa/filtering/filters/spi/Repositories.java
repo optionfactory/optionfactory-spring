@@ -1,6 +1,7 @@
 package net.optionfactory.spring.data.jpa.filtering.filters.spi;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.metamodel.EntityType;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -53,6 +54,7 @@ public interface Repositories {
             typeToArgument.put(annotation.annotationType(), annotation);
             typeToArgument.put(JpaEntityInformation.class, ei);
             typeToArgument.put(EntityManager.class, em);
+            typeToArgument.put(EntityManagerFactory.class, em.getEntityManagerFactory());
             typeToArgument.put(EntityType.class, em.getMetamodel().entity(ei.getJavaType()));
 
             final List<Constructor<?>> candidates = Stream.of(filterClass.getConstructors())

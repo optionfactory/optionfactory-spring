@@ -10,6 +10,7 @@ import net.optionfactory.spring.data.jpa.filtering.filters.InstantCompare;
 import net.optionfactory.spring.data.jpa.filtering.filters.LocalDateCompare;
 import net.optionfactory.spring.data.jpa.filtering.filters.NumberCompare;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
+import net.optionfactory.spring.data.jpa.filtering.filters.TextSearch;
 
 /**
  * Filter parameters indexed by filter name.
@@ -101,6 +102,11 @@ public record FilterRequest(Map<String, String[]> filters) {
 
         public Builder text(String name, Function<TextCompare.Filter, String[]> customizer) {
             filters.put(name, customizer.apply(TextCompare.Filter.INSTANCE));
+            return this;
+        }
+
+        public Builder textSearch(String name, String query) {
+            filters.put(name, TextSearch.Filter.INSTANCE.of(query));
             return this;
         }
 

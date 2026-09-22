@@ -157,6 +157,12 @@ public interface Filters {
         }
     }
 
+    static void ensureConfiguration(boolean test, String filterName, EntityType<?> entity, String format, Object... values) {
+        if (!test) {
+            throw new InvalidFilterConfiguration(filterName, entity, String.format(format, values));
+        }
+    }
+
     private static From<?, ?> step(Root<?> root, String filterName, From<?, ?> from, String attribute, JoinType jt) {
         return from.getJoins().stream()
                 .filter(j -> j.getAttribute().getName().equals(attribute))

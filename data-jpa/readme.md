@@ -61,6 +61,7 @@ Available built-in annotations:
 | `@BooleanCompare` | `EQ, NEQ` | Customizable `trueValue` / `falseValue` tokens |
 | `@InEnum` | enum constants | Matches any of the given constants of `type` |
 | `@InList` | values | Matches any of the given values |
+| `@TextSearch` | free text | Full-text search over one or more text `paths` on postgres and mysql/mariadb (see below) |
 | `@Sortable` | none | Whitelists a sortable path |
 | `@Filterable` | none | Binds a custom `Filter` implementation |
 
@@ -116,4 +117,78 @@ Override the defaults with `@FilterTraversal` on the entity:
 @TextCompare(name = "byStreet", path = "address.state.city.street")
 public class Company { ... }
 ```
+
+## Full-Text Search (postgres, mysql/mariadb)
+
+`@TextSearch` searches a document composed of one or more text `paths`. The
+elements are engine-neutral; the rendering is per database: postgres renders
+`to_tsvector(language, p1 || ' ' || p2) @@ <query>`, mysql and mariadb render
+`MATCH(p1, p2) AGAINST(<query> IN BOOLEAN MODE)`. The engine is picked from
+the Hibernate dialect at startup; anything else fails fast with
+`InvalidFilterConfiguration`.
+
+```java
+@Entity
+@TextSearch(name = "byContent", paths = {"title", "body"}, language = "english")
+@TextSearch(name = "byFreeText", paths = {"title", "body"}, language = "english", syntax = TextSearch.Syntax.WEBSEARCH)
+@TextSearch(name = "byTitle", paths = "title", language = "italian", syntax = TextSearch.Syntax.PHRASE)
+public class Article { ... }
+```
+
+```java
+FilterRequest fr = FilterRequest.builder()
+    .textSearch("byContent", "cats running")
+    .build();
+```
+
+- `PLAIN` (default): every term must match, no client syntax
+- `WEBSEARCH`: `"quoted phrases"`, `OR` between terms, `-term` exclusion
+- `PHRASE`: terms must appear adjacent, in order
+
+These semantics hold on every engine; the *recall* does not: postgres stems
+and drops stopwords per `language` (the regconfig, default `simple`), so
+`cats` finds `cat`; mysql has no per-query linguistics and matches whole
+words, case-folded by the column collation. Tokens shorter than
+`innodb_ft_min_token_size` (3 by default) are invisible to mysql, and without
+an explicit `Sort` mysql returns rows in relevance order rather than an
+unspecified-but-stable one.
+
+Paths may cross singular associations on postgres; mysql `MATCH()` needs
+plain columns of the root table, so association crossings are rejected at
+startup there, and at most 8 paths are supported (one `of_match_against_N`
+rendering is registered per arity). Collection paths are rejected on every
+engine: this is a deliberate, revisitable scope decision, not a technical
+impossibility. The known design — grouping paths by collection prefix and
+folding each group into a correlated `EXISTS` component inside the adapter's
+subquery planner — trades semantics for capability: the document becomes a
+disjunction of components, so a `PHRASE` (or all `PLAIN` terms) must occur
+within a single component, and matching one term in the parent plus one in a
+collection element would stop working. Until that trade is worth making,
+search the child entity directly or use a `@Filterable` custom filter.
+
+MariaDB dispatches through the same mysql engine (`MariaDBDialect` extends
+`MySQLDialect`) and is expected to work, but the test suite exercises mysql 8
+and postgres only.
+
+Index pairing, per engine (the predicate is served by an index only when the
+DDL matches what the filter renders):
+
+```sql
+-- postgres, @TextSearch(paths = {"title", "body"}, language = "english")
+CREATE INDEX by_content_fts_idx ON article
+    USING GIN (to_tsvector('english', coalesce(title, '') || ' ' || coalesce(body, '')));
+
+-- postgres, @TextSearch(paths = "title", language = "english")
+CREATE INDEX by_title_fts_idx ON article
+    USING GIN (to_tsvector('english', coalesce(title, '')));
+
+-- mysql/mariadb, @TextSearch(paths = {"title", "body"})
+CREATE FULLTEXT INDEX by_content_fts_idx ON article (title, body);
+```
+
+A missing postgres index degrades to a sequential scan; a missing mysql
+fulltext index makes the query fail outright (`Can't find FULLTEXT index
+matching the column list`). The library registers a `FunctionContributor`
+(`TextSearchFunctions`) exposing the `@@` operator and `MATCH...AGAINST` to
+criteria queries; it is additive and inert unless `@TextSearch` is used.
 
