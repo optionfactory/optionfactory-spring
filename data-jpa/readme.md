@@ -1,6 +1,42 @@
 # optionfactory-spring/data-jpa
 
-Declarative whitelisted filters on JPA `@Entity` types.
+Declarative whitelisted filters and sorters on JPA `@Entity` types.
+
+## Why
+
+A filtering layer decides what a client is allowed to ask for. Most of them let the client
+send a **path** — `firstName==john`, `?owner.city=roma` — which makes your entity graph the
+query surface. Two consequences follow, and this library exists to avoid both.
+
+**The filter name is the contract, not the path.** A request carries `byName`, never
+`firstName`. The path lives on the entity and can change without a client noticing: rename a
+property, move it into an embeddable, promote a `@ManyToOne` into a collection — that last one
+changing the generated SQL from a join to a correlated `EXISTS` — and `byName` still means what
+it meant. Saved filters, bookmarked URLs and integrations keep working. When the query surface
+*is* the entity graph, none of those refactorings are free.
+
+**The default is closed.** A name that isn't declared on the entity is rejected, and there is no
+path for a client to walk. Securing a path-based filter means enumerating what must *not* be
+reachable, which is unbounded — in a multi-tenant schema, `owner.organization.…` is one hop from
+another tenant's rows. Here you enumerate what you do want. Whitelists, their paths and their
+property types are all resolved when the repository is built, so a bad declaration fails at
+startup rather than on the first request that happens to use it.
+
+Neither property costs you expressiveness on the server side: a base `Specification` still
+applies arbitrary conditions to every query (tenant scoping, soft deletes), and `@Filterable`
+binds a custom filter that can build anything the Criteria API can — still behind a stable name.
+
+## When not to use it
+
+- **Clients need ad-hoc boolean composition.** A `FilterRequest` is a conjunction of named
+  filters: no `OR` between them, no nesting, and a given filter appears at most once. That is the
+  price of the closed contract, not an oversight. If clients must express `(a and b) or c` over
+  your schema, you want a query language — RSQL or spring-filter — and the coupling it brings.
+- **The bottleneck is the query, not the filtering.** Projections selecting only the columns a
+  DTO needs, keyset pagination for deep pages, CTEs, window functions: Blaze-Persistence solves
+  those, this does not.
+- **Three scalar columns and no plans to grow.** A hand-written `Specification` is less machinery
+  than an annotation set.
 
 ## Maven
 
