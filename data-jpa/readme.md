@@ -118,6 +118,40 @@ Override the defaults with `@FilterTraversal` on the entity:
 public class Company { ... }
 ```
 
+## Streaming
+
+Streaming `findAll` overloads return matched entities as a `Stream` instead of
+materializing a list, hinting the JDBC fetch size and, optionally, loading
+entities read-only:
+
+```java
+// pure mapping: read-only entities, detached right after the mapper returns;
+// the stream bounds its own memory, no session management needed
+try (Stream<PersonDto> dtos = persons.findAll(scope, fr, sort, 512, PersonDto::from)) {
+    ...
+}
+
+// full control: the callback receives the SessionPolicy and picks the load mode
+persons.findAll(scope, fr, sort, 512, SessionPolicy.Mode.READ_ONLY, (policy, person) -> {
+    ...
+    policy.clearIf(1000);
+    return dto;
+});
+```
+
+`Mode.DEFAULT` keeps today's semantics: entities are managed with a
+dirty-check snapshot, so the callback may mutate them and rely on flush — the
+mode to use whenever the stream is not a pure read. `Mode.READ_ONLY` sets
+Hibernate's per-query read-only hint: no snapshot is kept, roughly halving
+persistence-context memory per entity, and **mutations made by the callback
+are silently ignored at flush** — which is why the mode is explicit rather
+than inferred. The hint affects only the entities this query loads, never the
+rest of the caller's transaction. Read-only entities still accumulate in the
+persistence context as the stream advances: the mapping overloads detach each
+entity right after mapping, while policy-based callbacks should evict with
+`SessionPolicy.detaching` per row or bulk `clear()`/`clearIf(n)` — the cheaper
+option on large scans.
+
 ## Full-Text Search (postgres, mysql/mariadb)
 
 `@TextSearch` searches a document composed of one or more text `paths`. The

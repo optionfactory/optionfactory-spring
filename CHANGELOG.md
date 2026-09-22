@@ -2,6 +2,21 @@
 
 ## `data-jpa`
 
+*   [BREAKING] **Streaming `findAll` now requires an explicit `SessionPolicy.Mode`.** The
+    `findAll(base, filters, sort, fetchSize, BiFunction)` overloads are gone: policy-based streaming
+    call sites must state `SessionPolicy.Mode.DEFAULT` (managed, mutable entities, dirty-checked —
+    today's behavior) or `SessionPolicy.Mode.READ_ONLY` explicitly, so the cheaper mode is a choice
+    rather than a discovery problem.
+*   [NEW] **Opt-in read-only streaming.** `Mode.READ_ONLY` sets Hibernate's per-query read-only hint
+    on the streaming query: no dirty-check snapshot is kept (roughly halving persistence-context
+    memory per entity) and mutations made by the callback are silently ignored at flush. The hint
+    scopes to the entities this query loads, never the rest of the caller's transaction, and
+    entities still accumulate until evicted — `SessionPolicy.detaching` per row or bulk
+    `clear()`/`clearIf(n)` remain the tools for that. A `Function`-based shorthand
+    (`findAll(base, filters, sort, fetchSize, mapper)`) compiles to `READ_ONLY` plus automatic
+    detach right after mapping, so pure entity-to-DTO streams need no session management at all;
+    the mapper must not retain the entity for lazy access after returning.
+
 *   [NEW] **`@TextSearch`: full-text search filter for postgres and mysql/mariadb.** Searches a document
     composed of one or more text `paths` with a client-facing `syntax` and a document `language`.
     `PLAIN` (default) requires every term, no client syntax; `WEBSEARCH` opt-in exposes `"quoted
