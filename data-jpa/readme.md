@@ -234,3 +234,24 @@ matching the column list`). The library registers a `FunctionContributor`
 (`TextSearchFunctions`) exposing the `@@` operator and `MATCH...AGAINST` to
 criteria queries; it is additive and inert unless `@TextSearch` is used.
 
+
+## Indexing case-insensitive comparisons
+
+`@TextCompare` with `IGNORE_CASE` renders two different shapes, and they want
+different indexes. `CONTAINS`/`STARTS_WITH`/`ENDS_WITH` compile to a native
+`ILIKE` where the dialect has one (postgres, h2), which a `pg_trgm` GIN index
+serves; the remaining operators (`EQ`, `NEQ`, `LT`, `GT`, `LTE`, `GTE`,
+`BETWEEN`) compare `lower(column)`, so a plain index on the column cannot serve
+them — they need a functional index on the same expression:
+
+```sql
+-- postgres, @TextCompare(name = "byEmail", path = "email") used with IGNORE_CASE + EQ
+CREATE INDEX by_email_lower_idx ON person (lower(email));
+
+-- postgres, @TextCompare(name = "byName", path = "name") used with IGNORE_CASE + CONTAINS
+CREATE INDEX by_name_trgm_idx ON person USING GIN (name gin_trgm_ops);
+```
+
+Case-sensitive `STARTS_WITH` is the one shape a plain btree can serve, and on
+postgres only when the index is declared with `text_pattern_ops` (or the
+database runs the `C` collation).

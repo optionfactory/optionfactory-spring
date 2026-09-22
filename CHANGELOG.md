@@ -17,6 +17,27 @@
     detach right after mapping, so pure entity-to-DTO streams need no session management at all;
     the mapper must not retain the entity for lazy access after returning.
 
+*   [ENH] **An unfiltered `FilterRequest` no longer emits `1=1`.** `WhitelistFilteringSpecificationAdapter`
+    returned `builder.and()` over zero predicates, which renders as a `1=1` restriction; it now returns
+    `null`, the `Specification` contract's "unrestricted", so the where clause is dropped entirely and a
+    filtered finder called with no filters emits exactly what the plain `JpaRepository` finder does. SPI
+    callers invoking the adapter directly must accept a `null` predicate (`CriteriaQuery.where(null)` is
+    fine; a hand-rolled `builder.and(mine, theirs)` is not).
+*   [ENH] **The emitted predicates no longer depend on map iteration order.** Requested filters are now
+    visited in filter-name order and subquery groups are held in a `TreeMap`, so the same logical request
+    always renders the same SQL text. Isolated subquery groups (`@FilterTraversal(reuse = false)`) are
+    keyed by path and filter name instead of a `UUID` minted at startup: the token is still unique per
+    filter, but it is now stable across restarts and across nodes, so a database can keep reusing the
+    cached plan for those queries. `AND` is commutative, so no result changes.
+*   [ENH] **Clearer join-consistency diagnostics.** `Filters.step` checks the joins it reuses in a plain
+    loop rather than a `peek` inside a stream, and the resulting `InvalidFilterRequest` now names both the
+    existing and the requested join type. The check stays at request time: join types are resolved per
+    path from `@FilterTraversal`, so two whitelisted filters sharing a prefix cannot disagree — only a
+    custom `Filter` passing a hand-built `Traversal` to `Filters.path` can, and that is not visible when
+    the repository is built.
+*   [DOC] **Indexing case-insensitive comparisons.** The readme now spells out that `IGNORE_CASE` with
+    `EQ`/`NEQ`/ranges/`BETWEEN` compares `lower(column)` and needs a functional index on that expression,
+    while `CONTAINS`/`STARTS_WITH`/`ENDS_WITH` render as `ILIKE` and are served by a `pg_trgm` GIN index.
 *   [BREAKING] **`@Sortable` paths are now resolved through the filters' traversal engine, and
     collection-crossing paths are rejected at startup.** Sorting used to hand the whitelisted path
     straight to spring's `QueryUtils`, which walks it with its own join logic: none of the traversal

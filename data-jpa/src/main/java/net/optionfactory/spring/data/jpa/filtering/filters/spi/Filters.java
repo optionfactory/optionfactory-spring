@@ -1,6 +1,7 @@
 package net.optionfactory.spring.data.jpa.filtering.filters.spi;
 
 import jakarta.persistence.criteria.From;
+import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Root;
@@ -12,7 +13,6 @@ import jakarta.persistence.metamodel.SingularAttribute;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.optionfactory.spring.data.jpa.filtering.filters.FilterTraversal;
@@ -63,9 +63,9 @@ public interface Filters {
     ///    naturally retain the active `group` identifier. This folds child conditions into the 
     ///    parent's existing `EXISTS` block, validating constraints collectively within the same table correlation.
     /// 3. **Context Isolation (`reuse = false`):** If a user explicitly registers a configuration override 
-    ///    disabling reuse, the engine assigns an isolated random `UUID` string. This forces the query 
-    ///    compiler to break away from parent folding and isolate that segment into its own distinct, standalone 
-    ///    `EXISTS` block.
+    ///    disabling reuse, the engine assigns a group token derived from the path and the filter name, unique 
+    ///    to that filter and stable across restarts. This forces the query compiler to break away from parent 
+    ///    folding and isolate that segment into its own distinct, standalone `EXISTS` block.
     /// 
     /// @param entity the JPA root metamodel descriptor
     /// @param filterName the alphanumeric identifier of the filter being evaluated
@@ -108,10 +108,10 @@ public interface Filters {
                 if (currentAttribute instanceof PluralAttribute) {
                     if (group == null) {
                         // first plural attribute encountered: we start a new subquery group.                        
-                        group = reuse ? pathString : UUID.randomUUID().toString();
+                        group = reuse ? pathString : isolated(pathString, filterName);
                     } else if (!reuse) {
                         // already inside a subquery, but user explicitly requested to break out.
-                        group = UUID.randomUUID().toString();
+                        group = isolated(pathString, filterName);
                     }
                     // if group is not null and reuse is true, we do nothing and inherit the parent's subquery group.
                 }
@@ -143,6 +143,13 @@ public interface Filters {
         return new Traversal(pathList, leaf, currentAttribute, group);
     }
 
+    /// Names a subquery group that no other filter can join. The filter name alone is enough to
+    /// isolate it, as filters are whitelisted by name, and deriving the token instead of minting a
+    /// random one keeps the emitted SQL identical across restarts, so its cached plan stays usable.
+    private static String isolated(String pathString, String filterName) {
+        return String.format("%s!%s", pathString, filterName);
+    }
+
     static Class<?> ensurePropertyOfAnyType(EntityType<?> entity, String filterName, Traversal traversal, Class<?>... types) {
         final Class<?> javaType = traversal.attribute() == null ? entity.getJavaType() : traversal.attribute().getJavaType();
         return Stream.of(types)
@@ -164,11 +171,14 @@ public interface Filters {
     }
 
     private static From<?, ?> step(Root<?> root, String filterName, From<?, ?> from, String attribute, JoinType jt) {
-        return from.getJoins().stream()
-                .filter(j -> j.getAttribute().getName().equals(attribute))
-                .peek(j -> ensure(j.getJoinType() == jt, root, filterName, "Inconsistent join configuration requested: %s", attribute))
-                .findFirst()
-                .orElseGet(() -> from.join(attribute, jt));
+        for (Join<?, ?> join : from.getJoins()) {
+            if (!join.getAttribute().getName().equals(attribute)) {
+                continue;
+            }
+            ensure(join.getJoinType() == jt, root, filterName, "inconsistent join configuration requested on %s: already joined as %s, requested as %s", attribute, join.getJoinType(), jt);
+            return join;
+        }
+        return from.join(attribute, jt);
     }
 
     @SuppressWarnings("unchecked")

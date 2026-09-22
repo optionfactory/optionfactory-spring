@@ -7,9 +7,9 @@ import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequest;
 import org.springframework.data.jpa.domain.Specification;
@@ -24,13 +24,19 @@ public class WhitelistFilteringSpecificationAdapter<T> implements Specification<
         this.whitelisted = whitelisted;
     }
 
+    /**
+     * Requested filters and subquery groups are both visited in name order: the emitted
+     * predicates then depend only on which filters were requested, never on the iteration
+     * order of the map carrying them, so the same logical request always renders the same
+     * SQL text and databases can reuse its cached plan.
+     */
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
     public Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder builder) {
         final List<Predicate> predicates = new ArrayList<>();
-        final Map<String, List<Map.Entry<String, String[]>>> subselectGroups = new HashMap<>();
+        final Map<String, List<Map.Entry<String, String[]>>> subselectGroups = new TreeMap<>();
 
-        for (Map.Entry<String, String[]> e : requested.entrySet()) {
+        for (Map.Entry<String, String[]> e : requested.entrySet().stream().sorted(Map.Entry.comparingByKey()).toList()) {
             final String name = e.getKey();
             final Filter spec = whitelisted.get(name);
             
@@ -69,6 +75,11 @@ public class WhitelistFilteringSpecificationAdapter<T> implements Specification<
             predicates.add(builder.exists(sq));
         }
 
+        if (predicates.isEmpty()) {
+            // an unrestricted Specification: lets callers drop the where clause entirely,
+            // rather than emitting a `1=1` no-one asked for
+            return null;
+        }
         return builder.and(predicates.toArray(Predicate[]::new));
     }
 }
