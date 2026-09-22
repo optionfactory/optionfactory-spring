@@ -15,6 +15,19 @@ import org.springframework.core.annotation.AliasFor;
 /**
  * Whitelists a custom filter implementation. Such filters could extend the
  * {@link CustomFilter} base class.
+ *
+ * <p>
+ * This annotation carries no {@code path} and therefore no {@link Match}
+ * quantifier: the filter owns whatever it traverses, so it owns the quantifier
+ * too. A custom filter reaching through a collection should implement
+ * {@link net.optionfactory.spring.data.jpa.filtering.TraversalFilter} and build
+ * its traversal with a quantifier
+ * ({@code Filters.traversal(entity, name, path, Match.NONE)}); the adapter then
+ * folds and negates it exactly like a built-in filter, grouping it with any
+ * other filter reaching the same collection with the same quantifier. A custom
+ * filter implementing {@link net.optionfactory.spring.data.jpa.filtering.Filter}
+ * directly receives the {@code CriteriaQuery} and builds whatever subquery it
+ * needs itself.
  */
 @Documented
 @Target(ElementType.TYPE)

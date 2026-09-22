@@ -22,41 +22,42 @@ import java.lang.annotation.Target;
 /// - **Plural Relationships:** Points crossing a `PluralAttribute` boundary (like `@OneToMany`) 
 ///   automatically trigger a correlated `EXISTS` subquery. This shields the query from 
 ///   Cartesian row-multiplication and prevents Spring Data pagination structures from failing.
+///   Whether the parent is kept when *some* element matches or when *none* does is the filter's own
+///   [Match] quantifier, declared on the filter annotation rather than here.
 /// - **Embedded Components:** `@Embedded` (embeddable) attributes are inlined into the owning
 ///   entity's table and emit no SQL join of their own. They are therefore always traversed as
 ///   [JoinType#LEFT], and a `@FilterTraversal` whose [path()] resolves to an embedded hop has no
 ///   effect: its [joinType()] is silently ignored. Only genuine association/collection hops
 ///   (`@ManyToOne`, `@OneToMany`, ...) can be customized this way.
 /// 
-/// ### How Subselects Work & The Role of JoinType
+/// ### How Subselects Work & The Role of Match
 /// 
-/// When dealing with collection attributes, the engine delegates predicate evaluation into an `EXISTS` subquery. 
-/// The underlying adapter compiles the subquery by selecting a literal from a *correlated secondary root* rather than 
-/// joining straight from the primary table query. The generated structure looks like this:
+/// When dealing with collection attributes, the engine delegates predicate evaluation into a correlated 
+/// `EXISTS` subquery: the parent row is correlated directly, and the collection is joined from it, so the 
+/// parent table is read once. The generated structure looks like this:
 /// 
 /// ```sql
-/// WHERE EXISTS (
-///     SELECT 1 FROM primary_table secondary_root
-///     [JoinType] JOIN collection_table c ON c.parent_id = secondary_root.id
-///     WHERE secondary_root.id = primary_table.id AND <FILTER_CONDITION>
+/// WHERE [NOT] EXISTS (
+///     SELECT 1 FROM collection_table c
+///     WHERE c.parent_id = primary_table.id AND <FILTER_CONDITION>
 /// )
 /// ```
 /// 
-/// Because the relational navigation happens entirely *inside* the subquery context, changing the `joinType` 
-/// yields distinct logical results when handling empty collections combined with negative assertions (like `NEQ` filters):
+/// The join into the collection is always an `INNER` one: an outer join would yield a row for every parent, 
+/// making `EXISTS` vacuously true. Whether a parent is kept is decided by the filter's [Match] quantifier, which is 
+/// the axis that actually matters when filtering across a collection:
 /// 
-/// #### Case A: `JoinType.INNER` inside the Subquery
-/// If a parent entity has an empty child collection (e.g., a Company with zero Departments), an `INNER JOIN` inside 
-/// the subquery drops the row immediately. Because the dataset becomes empty before evaluating the condition, 
-/// the filter logic never executes. The subquery returns zero rows, causing `EXISTS` to evaluate to `FALSE`.
-/// * **Semantic Consequence:** Parent entities with empty collections are universally excluded from `NEQ` operations 
-///   (e.g., a query for "Companies not in the HR department" will fail to return companies that have no departments at all).
+/// #### Case A: [Match#ANY] (Default)
+/// The parent is kept when at least one element satisfies the condition. A parent whose collection is empty is 
+/// dropped: it has no element to satisfy anything. This is the reading every positive operator (`EQ`, `CONTAINS`, 
+/// `GT`, ...) has always had.
 /// 
-/// #### Case B: `JoinType.LEFT` inside the Subquery (Default)
-/// A `LEFT JOIN` preserves the driving parent row inside the subquery even if the relationship collection is completely 
-/// empty, populating the target columns as `NULL`. Filter types with explicit null handling (such as `TextCompare`'s `NEQ` 
-/// logic) will successfully match this `NULL` state[. The subquery yields a row, causing `EXISTS` to evaluate to `TRUE`.
-/// * **Semantic Consequence:** Parent entities with empty collections are correctly preserved in negative-matching result sets.
+/// #### Case B: [Match#NONE]
+/// The subquery is negated, and the parent is kept when *no* element satisfies the condition. A parent whose 
+/// collection is empty therefore matches, correctly so. This is what a UI filter labelled "without a tag `x`" or 
+/// "not in the HR department" means, and it is expressed as `NONE` over the condition `= x` — not as `ANY` over 
+/// `<> x`, which keeps a parent that has both an `x` element and some other one, and drops the parent with no 
+/// elements at all.
 /// 
 /// ### Usage Nuances & Deep Relations
 /// 
@@ -106,6 +107,12 @@ public @interface FilterTraversal {
     /// Overrides the database joining mode applied when this specific hop is evaluated.
     /// Defaults to [JoinType#LEFT] to ensure standard filtering expressions do not inadvertently 
     /// discard parent entries with missing or null relations.
+    ///
+    /// Applies to singular hops only. A plural hop is always joined as [JoinType#INNER] inside its
+    /// `EXISTS` subquery, since an outer join there would produce a row for every parent and make
+    /// the subquery vacuously true; whether the parent is kept or dropped is decided by the filter's
+    /// [Match] quantifier instead. As with an embedded hop, a `joinType` on a plural path is silently
+    /// ignored.
     /// 
     /// @return the SQL join type constraint
     JoinType joinType() default JoinType.LEFT;

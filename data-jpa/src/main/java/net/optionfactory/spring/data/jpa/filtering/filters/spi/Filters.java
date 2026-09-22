@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.optionfactory.spring.data.jpa.filtering.filters.FilterTraversal;
+import net.optionfactory.spring.data.jpa.filtering.filters.Match;
 
 /// Utility methods for evaluating entity graph traversals and validating filter runtime requests.
 public interface Filters {
@@ -24,13 +25,17 @@ public interface Filters {
 
     }
 
-    record Traversal(List<Step> steps, String leaf, Attribute<?, ?> attribute, String group) {
+    record Traversal(List<Step> steps, String leaf, Attribute<?, ?> attribute, String group, Match match) {
+
+        public Traversal(List<Step> steps, String leaf, Attribute<?, ?> attribute, String group) {
+            this(steps, leaf, attribute, group, Match.ANY);
+        }
 
         @Override
         public String toString() {
-            return String.format("%s.%s [Group: %s]",
+            return String.format("%s.%s [Group: %s, Match: %s]",
                     steps.stream().map(Step::name).collect(Collectors.joining(".")),
-                    leaf(), group != null ? group : "none");
+                    leaf(), group != null ? group : "none", match);
         }
     }
 
@@ -46,7 +51,10 @@ public interface Filters {
     ///   default to `JoinType.LEFT` to prevent data truncation during negation or null-checking operations.
     /// - **Plural Associations (`@OneToMany`, `@ManyToMany`):** Paths crossing collection boundaries 
     ///   automatically assign a `group` token, flagging the query planner adapter to compile these 
-    ///   constraints within a correlated `EXISTS` subquery node.
+    ///   constraints within a correlated `EXISTS` subquery node, negated when the filter's [Match] 
+    ///   quantifier is [Match#NONE]. The collection itself is always entered with a [JoinType#INNER], 
+    ///   an outer join inside the subquery being vacuously true, so a `joinType` override on a plural 
+    ///   hop is ignored.
     /// - **Non-Relational Paths (Embeddables, Records, JSON columns):** Terminal or scalar non-association 
     ///   properties assign a `null` join type, allowing downstream components to safely navigate basic 
     ///   attributes via dot-notation without spawning redundant SQL `JOIN` declarations. However, if an 
@@ -58,7 +66,9 @@ public interface Filters {
     /// Collection query contexts are managed dynamically via a three-tiered state check:
     /// 
     /// 1. **Context Initialization (`group == null`):** The first plural attribute encountered on 
-    ///    a path starts a new query group named after the current path segment string.
+    ///    a path starts a new query group, named after the current path segment string and the 
+    ///    quantifier. Filters disagreeing on the quantifier describe different elements, so they land 
+    ///    in different groups and get a subquery each.
     /// 2. **Context Folding (`reuse = true`):** Deep nested collection paths (e.g., `departments.employees`) 
     ///    naturally retain the active `group` identifier. This folds child conditions into the 
     ///    parent's existing `EXISTS` block, validating constraints collectively within the same table correlation.
@@ -67,11 +77,24 @@ public interface Filters {
     ///    to that filter and stable across restarts. This forces the query compiler to break away from parent 
     ///    folding and isolate that segment into its own distinct, standalone `EXISTS` block.
     /// 
+    /// Evaluates the path with the default [Match#ANY] quantifier, for callers whose paths cannot 
+    /// cross a collection (sorters, full-text search) or that want the existential reading.
+    ///
     /// @param entity the JPA root metamodel descriptor
     /// @param filterName the alphanumeric identifier of the filter being evaluated
     /// @param path the raw dot-separated target path (e.g., `"departments.employees.name"`)
     /// @return a fully compiled graph traversal specification
     static Traversal traversal(EntityType<?> entity, String filterName, String path) {
+        return traversal(entity, filterName, path, Match.ANY);
+    }
+
+    /// @param entity the JPA root metamodel descriptor
+    /// @param filterName the alphanumeric identifier of the filter being evaluated
+    /// @param path the raw dot-separated target path (e.g., `"departments.employees.name"`)
+    /// @param quantifier what the filter asks of the elements of the collection its path crosses; 
+    ///        [Match#NONE] requires such a collection, and is rejected on a path without one
+    /// @return a fully compiled graph traversal specification
+    static Traversal traversal(EntityType<?> entity, String filterName, String path, Match quantifier) {
         if (path == null || path.isEmpty()) {
             return new Traversal(List.of(), "", null, null);
         }
@@ -101,19 +124,22 @@ public interface Filters {
             final String pathString = currentPath.toString();
 
             if (currentAttribute != null && (currentAttribute.isAssociation() || currentAttribute.isCollection())) {
-                FilterTraversal override = overrides.get(pathString);
+                final FilterTraversal override = overrides.get(pathString);
                 JoinType resolvedJoinType = override != null ? override.joinType() : JoinType.LEFT;
-                boolean reuse = override != null ? override.reuse() : true;
+                final boolean reuse = override != null ? override.reuse() : true;
 
                 if (currentAttribute instanceof PluralAttribute) {
                     if (group == null) {
                         // first plural attribute encountered: we start a new subquery group.                        
-                        group = reuse ? pathString : isolated(pathString, filterName);
+                        group = group(pathString, filterName, reuse, quantifier);
                     } else if (!reuse) {
                         // already inside a subquery, but user explicitly requested to break out.
-                        group = isolated(pathString, filterName);
+                        group = group(pathString, filterName, false, quantifier);
                     }
                     // if group is not null and reuse is true, we do nothing and inherit the parent's subquery group.
+                    // a collection is always joined inside its EXISTS: an outer join there would yield a row for
+                    // every parent, making the subquery vacuously true. Match decides who is kept, not the join type.
+                    resolvedJoinType = JoinType.INNER;
                 }
                 // Embedded hops leading to an association must be promoted to JoinType.LEFT.
                 // In SQL, @Embedded properties share the parent table, so using JoinType.LEFT 
@@ -140,14 +166,26 @@ public interface Filters {
         }
 
         final var leaf = parts.length > 0 ? parts[parts.length - 1] : "";
-        return new Traversal(pathList, leaf, currentAttribute, group);
+        // a quantifier with nothing to quantify over reads as a condition it does not apply: rejected
+        // here rather than ignored, since `match = NONE` on a scalar path states the opposite of what
+        // the filter would then do
+        ensureConfiguration(quantifier == Match.ANY || group != null, filterName, entity, "match %s requires a path crossing a collection, got %s", quantifier, path);
+        return new Traversal(pathList, leaf, currentAttribute, group, quantifier);
     }
 
-    /// Names a subquery group that no other filter can join. The filter name alone is enough to
-    /// isolate it, as filters are whitelisted by name, and deriving the token instead of minting a
+    /// Names the subquery a filter's conditions are folded into.
+    ///
+    /// The quantifier is part of the identity: a group describes *one element*, and asking that such an
+    /// element exist is a different question from asking that none does, so filters disagreeing on it
+    /// cannot share a subquery and simply get one each.
+    ///
+    /// With `reuse = false` the filter name isolates the group from every other filter. The filter name
+    /// alone is enough, as filters are whitelisted by name, and deriving the token rather than minting a
     /// random one keeps the emitted SQL identical across restarts, so its cached plan stays usable.
-    private static String isolated(String pathString, String filterName) {
-        return String.format("%s!%s", pathString, filterName);
+    private static String group(String pathString, String filterName, boolean reuse, Match quantifier) {
+        return reuse
+                ? String.format("%s#%s", pathString, quantifier)
+                : String.format("%s!%s#%s", pathString, filterName, quantifier);
     }
 
     static Class<?> ensurePropertyOfAnyType(EntityType<?> entity, String filterName, Traversal traversal, Class<?>... types) {

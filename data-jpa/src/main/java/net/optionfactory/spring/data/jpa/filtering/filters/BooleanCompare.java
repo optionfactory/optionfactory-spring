@@ -44,6 +44,18 @@ public @interface BooleanCompare {
 
     String path();
 
+    /**
+     * The quantifier applied when {@link #path()} crosses a collection: whether a row is kept
+     * because <em>some</em> element matches ({@link Match#ANY}, the default) or because
+     * <em>no</em> element does ({@link Match#NONE}). A negated filter over a collection is
+     * {@code NONE} over a positive condition, never {@code ANY} over a negated one. Ignored when
+     * the path crosses no collection.
+     *
+     * @return the quantifier
+     */
+    Match match() default Match.ANY;
+
+
     String trueValue() default "true";
 
     String falseValue() default "false";
@@ -68,7 +80,7 @@ public @interface BooleanCompare {
             this.name = annotation.name();
             this.trueValue = annotation.trueValue();
             this.validValues = Set.of(annotation.trueValue(), annotation.falseValue());
-            this.traversal = Filters.traversal(entity, annotation.name(), annotation.path());
+            this.traversal = Filters.traversal(entity, annotation.name(), annotation.path(), annotation.match());
             Filters.ensurePropertyOfAnyType(entity, annotation.name(), this.traversal, Boolean.class, boolean.class);
             this.operators = EnumSet.of(annotation.operators()[0], annotation.operators());
         }

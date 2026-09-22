@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import net.optionfactory.spring.data.jpa.filtering.filters.Match;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequest;
 import org.springframework.data.jpa.domain.Specification;
@@ -60,11 +61,11 @@ public class WhitelistFilteringSpecificationAdapter<T> implements Specification<
         // fold all subqueries into EXISTS expressions
         for (List<Map.Entry<String, String[]>> group : subselectGroups.values()) {
             final Subquery<Integer> sq = query.subquery(Integer.class);
-            final Root<?> conditionRoot = sq.from(root.getJavaType());
+            // the parent is correlated rather than selected again: the collection is joined straight
+            // from it, so the parent table is read once instead of once per EXISTS
+            final Root<T> conditionRoot = sq.correlate(root);
 
             final List<Predicate> groupPredicates = new ArrayList<>();
-            groupPredicates.add(builder.equal(conditionRoot, root));
-
             for (Map.Entry<String, String[]> e : group) {
                 final TraversalFilter tf = (TraversalFilter) whitelisted.get(e.getKey());
                 final Path path = Filters.path(conditionRoot, e.getKey(), tf.traversal());
@@ -72,7 +73,10 @@ public class WhitelistFilteringSpecificationAdapter<T> implements Specification<
             }
 
             sq.select(builder.literal(1)).where(groupPredicates.toArray(Predicate[]::new));
-            predicates.add(builder.exists(sq));
+            // every traversal of a group opens the same collection, hence carries the same quantifier
+            final var match = ((TraversalFilter<?>) whitelisted.get(group.get(0).getKey())).traversal().match();
+            final var exists = builder.exists(sq);
+            predicates.add(match == Match.NONE ? builder.not(exists) : exists);
         }
 
         if (predicates.isEmpty()) {

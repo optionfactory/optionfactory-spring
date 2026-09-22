@@ -17,6 +17,38 @@
     detach right after mapping, so pure entity-to-DTO streams need no session management at all;
     the mapper must not retain the entity for lazy access after returning.
 
+*   [BREAKING] **Filtering across a collection is now quantified, and the `EXISTS` is genuinely
+    correlated.** A filter path crossing a collection asks something about the row's elements, which is
+    two independent questions: the condition, and whether *some* element must satisfy it or *none*.
+    Only the first was expressible, so negation was written as `ANY` over a negated operator — and the
+    empty-collection case was patched by outer-joining inside the subquery, which made a row with no
+    elements match whenever that particular operator's SQL happened to tolerate `NULL`. The result
+    depended on the operator rather than on the filter: `tags.label NEQ 'x'` returned rows with no tags
+    *and* rows having both an `x` and a `y` tag, and `tags.label EQ null` — "has an element whose label
+    is null" — returned rows with no elements at all, which is simply a wrong row.
+    Every path-based filter annotation now takes `match`: `Match.ANY` (the default, `EXISTS`) keeps a
+    row when at least one element satisfies the condition, `Match.NONE` (`NOT EXISTS`) keeps it when
+    none does. A filter meaning "without a tag x" is declared `match = NONE` over the condition `EQ x`,
+    never `ANY` over `NEQ x`, and the two partition the rows the way a filter widget implies. The
+    quantifier is part of a subquery group's identity: filters sharing one are folded as before (one
+    element must satisfy every condition), filters disagreeing on it get a subquery each, so there is
+    nothing to reconcile. `Match` lives on the filter, not on `@FilterTraversal`, because the same
+    collection routinely carries both a "with" and a "without" filter; `@TextSearch` and `@Sortable`
+    have no quantifier, neither accepting a collection-crossing path. `match = NONE` on a path without
+    a collection is rejected when the repository is built, rather than ignored: with nothing to
+    quantify over, the annotation would state the opposite of what the filter does.
+    **This changes results silently, at runtime — nothing fails to compile.** Rows whose collection is
+    empty no longer match an `ANY` filter, whatever the operator. Audit every filter whose `path`
+    crosses a collection and is used with `NEQ` or a null value: those are the call sites that were
+    relying on the old shape, and `match = NONE` over the positive condition is almost certainly what
+    they meant. Filters over collections used only with positive operators are unaffected.
+    The subquery now correlates the row instead of selecting the root table a second time
+    (`exists(select 1 from tag t where t.pet_id = p.id and ...)`), so the root is read once. A path
+    crossing a singular association before the collection still joins the root inside the subquery,
+    since an outer join cannot hang off a correlated row; declare that hop
+    `@FilterTraversal(joinType = INNER)` to avoid it. The join into the collection is always `INNER`,
+    an outer join there being vacuously true, so a `joinType` on a plural hop is now ignored — as it
+    already was on an embedded one.
 *   [ENH] **An unfiltered `FilterRequest` no longer emits `1=1`.** `WhitelistFilteringSpecificationAdapter`
     returned `builder.and()` over zero predicates, which renders as a `1=1` restriction; it now returns
     `null`, the `Specification` contract's "unrestricted", so the where clause is dropped entirely and a

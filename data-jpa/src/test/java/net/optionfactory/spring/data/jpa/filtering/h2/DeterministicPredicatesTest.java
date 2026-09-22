@@ -80,7 +80,7 @@ public class DeterministicPredicatesTest {
         final var first = Filters.traversal(entity, "byLeafA", "leaves.a");
         final var second = Filters.traversal(entity, "byLeafA", "leaves.a");
         Assertions.assertEquals(first.group(), second.group());
-        Assertions.assertEquals("leaves!byLeafA", first.group());
+        Assertions.assertEquals("leaves!byLeafA#ANY", first.group());
     }
 
     @Test

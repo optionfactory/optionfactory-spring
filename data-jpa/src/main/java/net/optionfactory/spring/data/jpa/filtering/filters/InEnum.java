@@ -42,6 +42,18 @@ public @interface InEnum {
 
     String path();
 
+    /**
+     * The quantifier applied when {@link #path()} crosses a collection: whether a row is kept
+     * because <em>some</em> element matches ({@link Match#ANY}, the default) or because
+     * <em>no</em> element does ({@link Match#NONE}). A negated filter over a collection is
+     * {@code NONE} over a positive condition, never {@code ANY} over a negated one. Ignored when
+     * the path crosses no collection.
+     *
+     * @return the quantifier
+     */
+    Match match() default Match.ANY;
+
+
     boolean nullable() default false;
 
     @Documented
@@ -63,7 +75,7 @@ public @interface InEnum {
             this.name = annotation.name();
             this.nullable = annotation.nullable();
             this.type = annotation.type();
-            this.traversal = Filters.traversal(entity, annotation.name(), annotation.path());
+            this.traversal = Filters.traversal(entity, annotation.name(), annotation.path(), annotation.match());
             Filters.ensurePropertyOfAnyType(entity, annotation.name(), traversal, type);
         }
 

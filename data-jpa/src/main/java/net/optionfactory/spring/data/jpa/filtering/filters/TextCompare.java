@@ -56,6 +56,18 @@ public @interface TextCompare {
 
     String path();
 
+    /**
+     * The quantifier applied when {@link #path()} crosses a collection: whether a row is kept
+     * because <em>some</em> element matches ({@link Match#ANY}, the default) or because
+     * <em>no</em> element does ({@link Match#NONE}). A negated filter over a collection is
+     * {@code NONE} over a positive condition, never {@code ANY} over a negated one. Ignored when
+     * the path crosses no collection.
+     *
+     * @return the quantifier
+     */
+    Match match() default Match.ANY;
+
+
     @Documented
     @Target(value = ElementType.TYPE)
     @Retention(value = RetentionPolicy.RUNTIME)
@@ -75,7 +87,7 @@ public @interface TextCompare {
             this.name = annotation.name();
             this.operators = EnumSet.of(annotation.operators()[0], annotation.operators());
             this.caseSensitivity = EnumSet.of(annotation.caseSensitivity()[0], annotation.caseSensitivity());
-            this.traversal = Filters.traversal(entity, annotation.name(), annotation.path());
+            this.traversal = Filters.traversal(entity, annotation.name(), annotation.path(), annotation.match());
             Filters.ensurePropertyOfAnyType(entity, annotation.name(), traversal, String.class);
         }
 

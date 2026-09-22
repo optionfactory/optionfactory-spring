@@ -50,6 +50,11 @@ public class Person {
 }
 ```
 
+Every comparison annotation above also takes a `match` quantifier, which applies when — and only
+when — its path crosses a collection: see
+[Filtering across a collection](#filtering-across-a-collection). `@TextSearch` and `@Sortable`
+have none, as neither accepts a collection-crossing path.
+
 Available built-in annotations:
 
 | Annotation | Operators / Args | Notes |
@@ -105,7 +110,8 @@ automatically, with no manual join configuration:
 
 - **Singular** associations (`@ManyToOne`, `@OneToOne`) are navigated via an inline `LEFT JOIN`.
 - **Plural** associations (`@OneToMany`, `@ManyToMany`) are evaluated inside a correlated
-  `EXISTS` subquery, keeping pagination safe from row multiplication.
+  `EXISTS` subquery, keeping pagination safe from row multiplication. What the subquery
+  asks of the elements is the filter's [quantifier](#filtering-across-a-collection).
 - Nested collections are folded into the same subquery by default.
 
 Override the defaults with `@FilterTraversal` on the entity:
@@ -125,6 +131,106 @@ cannot be folded into an `EXISTS` and would have to be joined from the root, mul
 rows. Paths crossing a collection are therefore rejected when the repository is built,
 with an `InvalidSortConfiguration` — as is any path that does not resolve against the
 metamodel.
+
+## Filtering across a collection
+
+A filter whose path crosses a collection asks a question about the row's *elements*, and
+that question has two independent halves: the **condition** (`label = "x"`) and the
+**quantifier** — must *some* element satisfy it, or *none*? The quantifier is `match` on the
+filter itself, because it is part of what the filter means, and whoever names the filter also
+writes the label the user reads:
+
+```java
+@Entity
+@TextCompare(name = "withTag", path = "tags.label")                      // match = ANY, the default
+@TextCompare(name = "withoutTag", path = "tags.label", match = Match.NONE)
+public class Pet { ... }
+```
+
+- `ANY` renders `EXISTS (...)`: the row is kept when at least one element satisfies the
+  condition. A row with an empty collection is dropped — it has no element to satisfy
+  anything. This is the reading every positive operator always had.
+- `NONE` renders `NOT EXISTS (...)`: the row is kept when no element satisfies the condition.
+  A row with an empty collection matches, correctly so.
+
+A quantifier needs something to quantify over, so `match = NONE` on a path that crosses no
+collection is rejected when the repository is built rather than ignored — otherwise the
+annotation would state the opposite of what the filter does.
+
+**Do not express a negative filter as `ANY` over a negated operator.** `withTag NEQ "x"` asks
+"is there a tag that isn't `x`?", so it keeps a pet tagged both `x` and `y`, and drops a pet
+with no tags at all. What a UI labelled *without tag x* means is `withoutTag EQ "x"`. `NEQ`
+remains available for the rare case where the existential reading is genuinely wanted; if it
+is not, leave it out of the filter's whitelisted `operators`:
+
+```java
+@TextCompare(name = "withTag", path = "tags.label", operators = {Operator.EQ, Operator.CONTAINS})
+```
+
+`ANY` and `NONE` partition the rows over the same condition, which is what a filter widget
+implies: given pets `EMPTY`, `HAS-X`, `HAS-X-AND-Y` and `HAS-Y`, `withTag EQ "x"` returns
+`HAS-X, HAS-X-AND-Y` and `withoutTag EQ "x"` returns exactly the other two.
+
+### Composition
+
+Filters reaching the same collection with the same quantifier are folded into one subquery,
+which describes **one element**: every condition must hold for the *same* element. Filters
+that disagree on the quantifier describe different elements, so they simply get one subquery
+each — there is nothing to reconcile and no configuration to keep in sync:
+
+```java
+// withTag=x, withWeight>5        -> EXISTS (label = x AND weight > 5)         one tag, both conditions
+// withoutTag=x, withoutWeight>5  -> NOT EXISTS (label = x AND weight > 5)     no tag with both
+// withTag=x, withoutTag=y        -> EXISTS (label = x) AND NOT EXISTS (label = y)
+```
+
+Use `@FilterTraversal(path = "...", reuse = false)` to split filters that share a quantifier
+into separate subqueries, i.e. to ask for *an* element per filter rather than one element
+satisfying all of them.
+
+### Custom filters
+
+`@Filterable` has no `path`, so it has no `match` either: a custom filter owns what it
+traverses and therefore owns its quantifier. Implement `TraversalFilter` and state it on the
+traversal, and the filter is folded, grouped and negated exactly like a built-in one:
+
+```java
+public class TagAbsenceFilter implements TraversalFilter<String> {
+
+    private final Traversal traversal;
+
+    public TagAbsenceFilter(Filterable annotation, EntityType<?> entity) {
+        this.traversal = Filters.traversal(entity, annotation.name(), "tags.label", Match.NONE);
+    }
+
+    @Override
+    public Predicate condition(Root<?> root, Path<String> path, CriteriaBuilder builder, String[] values) {
+        return builder.equal(path, values[0]);
+    }
+    // name(), traversal()
+}
+```
+
+A custom filter implementing `Filter` directly is handed the `CriteriaQuery` and builds
+whatever subquery it wants, so nothing is imposed on it either way.
+
+### What it costs
+
+The collection is joined straight from the correlated row, so the root table is read once:
+
+```sql
+where exists(select 1 from tag t1_0 where t1_0.label = ? and p1_0.id = t1_0.pet_id)
+```
+
+A path that crosses a singular association *before* the collection (`kennel.badges.label`) is
+the exception: an outer join cannot hang off a correlated row without a `FROM` entry for it,
+so the root is joined again inside the subquery. Declare the singular hop as
+`@FilterTraversal(path = "kennel", joinType = JoinType.INNER)` when that extra access matters
+and the association is mandatory.
+
+The join into the collection itself is always `INNER` — an outer join there would produce a
+row for every parent and make the subquery vacuously true. A `joinType` on a plural hop is
+therefore ignored, as it is on an embedded one.
 
 ## Streaming
 
