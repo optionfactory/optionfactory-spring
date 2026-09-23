@@ -25,7 +25,9 @@ import org.springframework.web.method.HandlerMethod;
 /// classifier you register can therefore refine a built-in case — answering one subclass of
 /// `Failure` or of `RestClientException` its own way, say — and for the same reason must decline
 /// every exception it does not own. When every classifier declines, the resolver falls back to
-/// spring's defaults and to reporting an unexpected error. A classified
+/// spring's defaults and to reporting an unexpected error. A classifier that throws is logged at
+/// `ERROR`, with the exception it was offered attached, and skipped: the next one is asked, so a bug
+/// in one classifier cannot hide the exception it failed on. A classified
 /// exception is logged at `DEBUG`, like every other client error. The configured
 /// [FailureTransformer]s still run on what a classifier returns, so details are still omitted in
 /// production.

@@ -213,7 +213,10 @@
     module depends on the other and the library can later contribute more without the application
     changing its configuration. Classifiers are consulted in registration order, the first not declining
     answering, and before the resolver falls back to reporting an unexpected error; a classified
-    exception is logged at `DEBUG`. A classifier receives an `ExceptionClassifier.Context` — the request, response
+    exception is logged at `DEBUG`. A classifier that throws is logged at `ERROR`, with the exception it
+    was offered attached as suppressed, and skipped for the next one: a bug in a library's classifier
+    would otherwise escape the resolver, replacing the exception it failed on with its own and turning
+    the request into a container error. A classifier receives an `ExceptionClassifier.Context` — the request, response
     and handler, plus the resolver's message source and locale — so it can localize; a parameter object
     rather than a list of parameters, so it can grow without breaking classifiers already written. A
     module contributes classifiers and transformers and nothing else, so it cannot reconfigure the

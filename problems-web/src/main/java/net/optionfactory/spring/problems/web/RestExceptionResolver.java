@@ -210,7 +210,16 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
 
     private @Nullable HttpStatusAndProblems classified(ExceptionClassifier.Context context, Exception ex) {
         for (final var c : classifiers) {
-            final var saps = c.classify(context, ex);
+            final HttpStatusAndProblems saps;
+            try {
+                saps = c.classify(context, ex);
+            } catch (RuntimeException failure) {
+                if (failure != ex) {
+                    failure.addSuppressed(ex);
+                }
+                logger.error(String.format("classifier %s failed on %s at %s, skipped", c, ex.getClass().getName(), context.request().getRequestURI()), failure);
+                continue;
+            }
             if (saps != null) {
                 return saps;
             }

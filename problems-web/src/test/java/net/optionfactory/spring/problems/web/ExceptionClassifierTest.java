@@ -34,6 +34,14 @@ public class ExceptionClassifierTest {
 
     private static final ExceptionClassifier DECLINING_CLASSIFIER = (context, ex) -> null;
 
+    private static final ExceptionClassifier BROKEN_CLASSIFIER = (context, ex) -> {
+        throw new NullPointerException("bug in a library classifier");
+    };
+
+    private static final ExceptionClassifier RETHROWING_CLASSIFIER = (context, ex) -> {
+        throw (RuntimeException) ex;
+    };
+
     public static class PaymentRequired extends Failure {
 
         public PaymentRequired() {
@@ -115,6 +123,37 @@ public class ExceptionClassifierTest {
 
         Assertions.assertEquals(400, res.getStatus());
         Assertions.assertEquals("name", problems(got).get(0).context);
+    }
+
+    @Test
+    public void aThrowingClassifierIsSkippedInFavourOfTheNext() throws NoSuchMethodException {
+        final var er = RestExceptionResolver.builder().withClassifier(BROKEN_CLASSIFIER).withClassifier(LIBRARY_CLASSIFIER).build(new JsonMapper());
+        final var res = new MockHttpServletResponse();
+
+        er.resolveException(new MockHttpServletRequest(), res, handler(), new LibraryRejection());
+
+        Assertions.assertEquals(400, res.getStatus());
+    }
+
+    @Test
+    public void aThrowingClassifierDoesNotHideTheExceptionItWasOffered() throws NoSuchMethodException {
+        final var er = RestExceptionResolver.builder().withDetails(Details.INCLUDE).withClassifier(BROKEN_CLASSIFIER).build(new JsonMapper());
+        final var res = new MockHttpServletResponse();
+
+        final var got = er.resolveException(new MockHttpServletRequest(), res, handler(), new IllegalStateException("the real error"));
+
+        Assertions.assertEquals(500, res.getStatus());
+        Assertions.assertEquals("the real error", problems(got).get(0).details);
+    }
+
+    @Test
+    public void aClassifierRethrowingTheExceptionItWasOfferedIsSkippedToo() throws NoSuchMethodException {
+        final var er = RestExceptionResolver.builder().withClassifier(RETHROWING_CLASSIFIER).build(new JsonMapper());
+        final var res = new MockHttpServletResponse();
+
+        er.resolveException(new MockHttpServletRequest(), res, handler(), Failure.field("name", "required"));
+
+        Assertions.assertEquals(400, res.getStatus());
     }
 
     @Test

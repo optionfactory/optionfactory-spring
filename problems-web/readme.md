@@ -44,8 +44,10 @@ ExceptionResolvers.configurer(resolvers)
 Classifiers are consulted in registration order, and the first that does not decline answers.
 A classified exception is answered with the classifier's status and problems and logged at
 `DEBUG`, rather than as an `ERROR` with a stack trace; when every classifier declines, the resolver
-reports an unexpected error. A classifier receives the request being answered together with the
-resolver's message source and locale, so it can localize what it reports.
+reports an unexpected error. A classifier that throws is logged as an `ERROR`, with the exception
+it was offered attached, and skipped, so a bug in one classifier cannot hide the exception it failed
+on. A classifier receives the request being answered together with the resolver's message source
+and locale, so it can localize what it reports.
 
 The resolver's own cases are modules too, consulted after every classifier you register, as the
 defaults — specific before general, as with `catch` clauses. A classifier you register can
