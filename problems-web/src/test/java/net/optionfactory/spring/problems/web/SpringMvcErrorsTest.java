@@ -2,6 +2,7 @@ package net.optionfactory.spring.problems.web;
 
 import jakarta.inject.Inject;
 import java.util.List;
+import jakarta.validation.constraints.Min;
 import java.util.Map;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.servlet.HandlerExceptionResolver;
@@ -60,6 +62,21 @@ public class SpringMvcErrorsTest {
         @GetMapping("/map")
         public Map<String, Object> map() {
             return Map.of("a", 1);
+        }
+
+        @GetMapping("/typed")
+        public String typed(@RequestParam("q") int query) {
+            return "" + query;
+        }
+
+        @GetMapping("/typed/{identifier}")
+        public String typedPath(@PathVariable("identifier") int id) {
+            return "" + id;
+        }
+
+        @GetMapping("/validated")
+        public String validated(@RequestParam("q") @Min(1) int query) {
+            return "" + query;
         }
 
         @GetMapping("/unmapped-variable")
@@ -108,6 +125,29 @@ public class SpringMvcErrorsTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].type").value("INTERNAL_SERVER_ERROR"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].reason").value(Matchers.nullValue()))
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].details").value(Matchers.nullValue()));
+    }
+
+    @Test
+    public void aMistypedParameterIsReportedUnderTheNameTheClientSent() throws Exception {
+        mvc.perform(MockMvcRequestBuilders.get("/typed").queryParam("q", "abc"))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].type").value("FIELD_ERROR"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].context").value("q"));
+    }
+
+    @Test
+    public void aMistypedPathVariableIsReportedUnderItsTemplateName() throws Exception {
+        mvc.perform(MockMvcRequestBuilders.get("/typed/abc"))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].context").value("identifier"));
+    }
+
+    @Test
+    public void anInvalidParameterIsReportedUnderTheNameTheClientSent() throws Exception {
+        mvc.perform(MockMvcRequestBuilders.get("/validated").queryParam("q", "0"))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].type").value("FIELD_ERROR"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].context").value("q"));
     }
 
     @Test

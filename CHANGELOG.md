@@ -157,6 +157,14 @@
 
 ## `problems-web`
 
+*   [FIX] **A parameter the client got wrong is reported under the name it sent.** A mistyped or invalid
+    request parameter, path variable or header was reported with the handler's java parameter name as its
+    `context`: `@RequestParam("q") int query` sent `?q=abc` was answered with a field error on `query`, a
+    field the client never sent, while a missing `q` was correctly reported as `q`. A mistyped value is now
+    reported under the name spring matched it by, and one failing method validation under the name declared
+    on its `@RequestParam`, `@PathVariable`, `@RequestHeader`, `@CookieValue`, `@MatrixVariable` or
+    `@RequestPart`, falling back to the java name for a parameter without one. Where the two names already
+    coincided, nothing changes.
 *   [FIX] **A client error is no longer logged as a warning.** `RestExceptionResolver` extends spring's
     `DefaultHandlerExceptionResolver`, whose constructor enables a warn log category, so every exception it
     resolved — a `Failure`, a failed validation, a missing parameter — also logged a `Resolved [...]` line
