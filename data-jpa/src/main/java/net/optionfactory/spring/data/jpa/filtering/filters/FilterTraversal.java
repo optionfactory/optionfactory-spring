@@ -69,7 +69,7 @@ import java.lang.annotation.Target;
 /// @FilterTraversal(path = "address", joinType = JoinType.INNER)
 /// @FilterTraversal(path = "departments.employees", reuse = false)
 /// @TextCompare(name = "byState", path = "address.state")
-/// @TextCompare(name = "byEmpName", path = "departments.employees.name")
+/// @TextCompare(name = "byEmpName", path = "departments.employees.name", match = Match.ANY)
 /// public class Company { ... }
 /// ```
 /// 

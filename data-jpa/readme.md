@@ -203,7 +203,7 @@ remains available for the rare case where the existential reading is genuinely w
 is not, leave it out of the filter's whitelisted `operators`:
 
 ```java
-@TextCompare(name = "withTag", path = "tags.label", operators = {Operator.EQ, Operator.CONTAINS})
+@TextCompare(name = "withTag", path = "tags.label", match = Match.ANY, operators = {Operator.EQ, Operator.CONTAINS})
 ```
 
 `ANY` and `NONE` partition the rows over the same condition, which is what a filter widget
