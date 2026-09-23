@@ -59,6 +59,10 @@ the same reason must decline every exception it does not own:
 | `FailureProblemsModule` | the `Failure`s your application throws |
 | `SpringSecurityProblemsModule` | an `AccessDeniedException` |
 
+`BeanValidationProblemsModule` and `SpringSecurityProblemsModule` are registered when their library
+is on the classpath, like the integrations below; both libraries are currently dependencies of this
+module, so today they always are.
+
 A classifier can honour a `@ResponseStatus` declared on its exceptions with
 `ExceptionClassifier.annotatedStatusOr(ex, fallback)`, as the built-in ones do.
 
@@ -72,9 +76,10 @@ already classified, and by then an unknown exception has already been logged as 
 
 ## Integrations
 
-The other `optionfactory-spring` modules are supported here, each through an optional dependency:
-add the module to your application to use its integration. Applications not using a module never
-load its integration's classes.
+The other `optionfactory-spring` modules are supported here, each through an optional dependency,
+and each integration is registered by default whenever its module is on the classpath: add the
+module to your application and its integration is on, whichever form of `rest(...)` configures the
+resolver. Applications not using a module never load its integration's classes.
 
 ### data-jpa
 
@@ -82,13 +87,8 @@ A filter or sort request the repository rejects — an unknown filter or sorter 
 outside the whitelist, a value that doesn't parse — is the client's mistake. The rejection is an
 `IllegalArgumentException`, though, which spring's JPA exception translation rewraps as an
 `InvalidDataAccessApiUsageException`, which no built-in case answers: unhelped, it is logged as an
-`ERROR` and answered `500`. Register `DataJpaProblemsModule` to answer it with a `400`:
-
-```java
-ExceptionResolvers.configurer(resolvers)
-        .rest(jsonMapper, rest -> rest.withModule(new DataJpaProblemsModule()))
-        .configure();
-```
+`ERROR` and answered `500`. With `data-jpa` on the classpath, `DataJpaProblemsModule` answers it
+with a `400`:
 
 ```json
 [{"type": "FIELD_ERROR", "context": "byBirthDate", "reason": "cannot parse 'not-a-date' as a local date: ...", "details": null}]
@@ -103,9 +103,7 @@ omitted in production.
 
 A failed call to an upstream is answered `502`. With `upstream` on the classpath, a handler can
 instead forward the upstream's status and problems with `@UpstreamProblems.Forward`, and rewrite
-their contexts with `@UpstreamProblems.MapContext`. `rest(jsonMapper)` enables this by itself; when
-configuring the resolver with `rest(jsonMapper, rest -> ...)`, enable it with
-`rest.withUpstreamTransformerIfPresent()`.
+their contexts with `@UpstreamProblems.MapContext`.
 
 ## Resolvers
 

@@ -45,7 +45,7 @@ public class UpstreamProblemsTest {
         public void extendHandlerExceptionResolvers(List<HandlerExceptionResolver> resolvers) {
             List<HandlerExceptionResolver> old = new ArrayList<>(resolvers);
             resolvers.removeAll(old);
-            resolvers.add(RestExceptionResolver.builder().withUpstreamTransformer().build(new JsonMapper()));
+            resolvers.add(RestExceptionResolver.builder().build(new JsonMapper()));
             resolvers.addAll(old);
         }
 

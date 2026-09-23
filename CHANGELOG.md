@@ -157,11 +157,25 @@
 
 ## `problems-web`
 
+*   [ENH] **Our modules are registered whenever the library they integrate is on the classpath.** The
+    resolver registers, besides the always-on `SpringWebProblemsModule` and `FailureProblemsModule`, each
+    of its own modules whose library is present: `DataJpaProblemsModule` with `data-jpa`,
+    `UpstreamProblemsModule` with `upstream`, `BeanValidationProblemsModule` with jakarta validation and
+    `SpringSecurityProblemsModule` with spring security. A module is only loaded when it is registered, so
+    one whose library is missing is never loaded. This is not classpath scanning: only the modules this
+    library ships are registered this way, and any other module is still registered with `withModule`.
+    It fixes a gap between the two ways of configuring the resolver: `ExceptionResolvers.rest(mapper)`
+    registered upstream support but `rest(mapper, customizer)` never did, so an application switching to
+    the second form to register a module silently lost `@UpstreamProblems.Forward` and `MapContext`; both
+    forms now register the same modules. `withUpstreamTransformer()` and
+    `withUpstreamTransformerIfPresent()` are deprecated and do nothing, the first still failing when
+    `upstream` is missing. `DataJpaProblemsModule` no longer needs registering; registering it anyway is
+    harmless, as the copy registered first answers.
 *   [NEW] **`DataJpaProblemsModule`: a filter or sort request `data-jpa` rejects is a `400`.** A
     malformed filter value, an operator outside the whitelist or an unknown filter or sorter name reached
     the resolver as an `InvalidDataAccessApiUsageException` — spring's JPA exception translation rewraps
     every `IllegalArgumentException` leaving a repository — which no built-in case answers: it was logged
-    at `ERROR` and answered `500`. Registered with `rest.withModule(new DataJpaProblemsModule())`, its
+    at `ERROR` and answered `500`. Registered by default whenever `data-jpa` is on the classpath, its
     `FilteringExceptionClassifier` finds the rejection in the cause chain and answers `400` with a
     `FIELD_ERROR` problem whose `context` is the filter or sorter name and whose `reason` is phrased in
     terms of the client's request, so neither reveals the entity behind the name; the full message goes
@@ -177,8 +191,9 @@
     as with `catch` clauses. A registered classifier can therefore refine a built-in case — answering a
     subclass of `Failure`, `RestClientException`, `ResponseStatusException` or `AccessDeniedException`
     its own way, which built-ins consulted first made impossible — and for the same reason must decline
-    every exception it does not own. Built-in modules contribute transformers as well as classifiers,
-    registered after the application's; detail omission still runs last. The resolver is left with what only it can do: consulting the
+    every exception it does not own. Built-in modules contribute transformers as well as classifiers;
+    theirs run before the application's, so an application's transformer sees the answer the built-ins
+    produced, and detail omission still runs last. The resolver is left with what only it can do: consulting the
     classifiers, falling back to spring's defaults and reporting unexpected errors, running the
     transformers and rendering. Answers are unchanged, pinned by a test per built-in case written before
     the move and passing on both sides of it. Two things observably differ: each client error is logged by

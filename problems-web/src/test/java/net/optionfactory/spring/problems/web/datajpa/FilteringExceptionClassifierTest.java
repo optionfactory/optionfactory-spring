@@ -100,7 +100,7 @@ public class FilteringExceptionClassifierTest {
         @Override
         public void extendHandlerExceptionResolvers(List<HandlerExceptionResolver> resolvers) {
             ExceptionResolvers.configurer(resolvers)
-                    .rest(jsonMapper, rest -> rest.withModule(new DataJpaProblemsModule()))
+                    .rest(jsonMapper)
                     .configure();
         }
 

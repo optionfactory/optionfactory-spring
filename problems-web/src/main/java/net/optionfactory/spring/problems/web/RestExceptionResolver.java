@@ -10,7 +10,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import net.optionfactory.spring.problems.Problem;
 import net.optionfactory.spring.problems.web.l10n.AggregateMessageSource;
+import net.optionfactory.spring.problems.web.datajpa.DataJpaProblemsModule;
 import net.optionfactory.spring.problems.web.l10n.FallbackMessageSource;
+import net.optionfactory.spring.problems.web.upstream.UpstreamProblemsModule;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -69,12 +71,33 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
 
     public static class Builder {
 
-        private static final List<ProblemsModule> BUILT_INS = List.of(
-                new SpringWebProblemsModule(),
-                new BeanValidationProblemsModule(),
-                new FailureProblemsModule(),
-                new SpringSecurityProblemsModule()
-        );
+        private static final ClassLoader LOADER = RestExceptionResolver.class.getClassLoader();
+        private static final boolean DATA_JPA_PRESENT = ClassUtils.isPresent("net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequest", LOADER);
+        private static final boolean UPSTREAM_PRESENT = ClassUtils.isPresent("net.optionfactory.spring.upstream.errors.RestClientUpstreamException", LOADER);
+        private static final boolean BEAN_VALIDATION_PRESENT = ClassUtils.isPresent("jakarta.validation.ConstraintViolationException", LOADER);
+        private static final boolean SPRING_SECURITY_PRESENT = ClassUtils.isPresent("org.springframework.security.access.AccessDeniedException", LOADER);
+        private static final List<ProblemsModule> BUILT_INS = builtIns();
+
+        /// Our modules, each registered when the library it integrates is present: a module's class is
+        /// only loaded when it is instantiated, so one whose library is missing is never loaded.
+        private static List<ProblemsModule> builtIns() {
+            final var modules = new ArrayList<ProblemsModule>();
+            if (DATA_JPA_PRESENT) {
+                modules.add(new DataJpaProblemsModule());
+            }
+            if (UPSTREAM_PRESENT) {
+                modules.add(new UpstreamProblemsModule());
+            }
+            modules.add(new SpringWebProblemsModule());
+            if (BEAN_VALIDATION_PRESENT) {
+                modules.add(new BeanValidationProblemsModule());
+            }
+            modules.add(new FailureProblemsModule());
+            if (SPRING_SECURITY_PRESENT) {
+                modules.add(new SpringSecurityProblemsModule());
+            }
+            return List.copyOf(modules);
+        }
 
         private Details options = Details.OMIT;
         private final List<ExceptionClassifier> classifiers = new ArrayList<>();
@@ -86,21 +109,19 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             return this;
         }
 
+        /// @deprecated upstream support is registered by default whenever `upstream` is on the
+        ///             classpath; this only still fails when it is not
+        @Deprecated
         public Builder withUpstreamTransformer() {
-            try {
-                withTransformer((FailureTransformer) Class.forName("net.optionfactory.spring.problems.web.upstream.UpstreamFailureTransformer")
-                        .getDeclaredConstructor()
-                        .newInstance());
-            } catch (Exception ex) {
-                throw new IllegalStateException("Failed to instantiate UpstreamFailureTransformer", ex);
+            if (!UPSTREAM_PRESENT) {
+                throw new IllegalStateException("upstream is not on the classpath");
             }
             return this;
         }
 
+        /// @deprecated upstream support is registered by default whenever `upstream` is on the classpath
+        @Deprecated
         public Builder withUpstreamTransformerIfPresent() {
-            if (ClassUtils.isPresent("net.optionfactory.spring.upstream.errors.RestClientUpstreamException", RestExceptionResolver.class.getClassLoader())) {
-                return withUpstreamTransformer();
-            }
             return this;
         }
 
@@ -142,11 +163,12 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
 
         public RestExceptionResolver build(JsonMapper mapper) {
             final var cs = new ArrayList<ExceptionClassifier>(classifiers);
-            final var fts = new ArrayList<FailureTransformer>(transformers);
+            final var fts = new ArrayList<FailureTransformer>();
             for (final var module : BUILT_INS) {
                 cs.addAll(module.classifiers());
                 fts.addAll(module.transformers());
             }
+            fts.addAll(transformers);
             if (options == Details.OMIT) {
                 fts.add(new OmitDetails());
             }

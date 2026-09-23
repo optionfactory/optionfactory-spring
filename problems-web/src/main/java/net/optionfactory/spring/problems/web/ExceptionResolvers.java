@@ -26,7 +26,7 @@ public class ExceptionResolvers {
     }
 
     public ExceptionResolvers rest(JsonMapper mapper) {
-        this.rest = RestExceptionResolver.builder().withUpstreamTransformerIfPresent().build(mapper);
+        this.rest = RestExceptionResolver.builder().build(mapper);
         return this;
     }
 

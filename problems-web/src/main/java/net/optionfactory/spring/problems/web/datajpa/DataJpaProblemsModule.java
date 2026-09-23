@@ -8,16 +8,8 @@ import net.optionfactory.spring.problems.web.ProblemsModule;
 /// rejects are answered as bad requests rather than as unexpected errors (see
 /// [FilteringExceptionClassifier]).
 ///
-/// Register it where the rest resolver is configured:
-///
-/// ```java
-/// ExceptionResolvers.configurer(resolvers)
-///         .rest(jsonMapper, rest -> rest.withModule(new DataJpaProblemsModule()))
-///         .configure();
-/// ```
-///
-/// `data-jpa` is an optional dependency of `problems-web`: applications not using it never load this
-/// class.
+/// Registered by default whenever `data-jpa` is on the classpath: `data-jpa` is an optional dependency
+/// of `problems-web`, and applications not using it never load this class.
 public class DataJpaProblemsModule implements ProblemsModule {
 
     @Override
