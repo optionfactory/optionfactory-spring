@@ -1,4 +1,10 @@
-# version 27.14
+# version 28.1
+
+## Dependencies
+
+*   [DEP] **Bumped dependencies:** jackson 3.2.3, slf4j 2.0.20, classgraph 4.8.196.
+
+# version 28.0
 
 ## `data-jpa`
 
@@ -333,7 +339,7 @@
     was authenticated. The scheme is now compared in place, ignoring case, character by character,
     which also stops upper-casing every token on every request.
 
-# version 27.12
+# version 27.13
 
 ## `problems-web`
 
@@ -460,8 +466,6 @@
 *   [TEST] **New suites** for `upstream-interceptor-spring-oauth2`, `client-reports`,
     `authentication-resource-server`, `thymeleaf` (`Money`, `SingletonDialect`) and `context`
     (`@ApplicationProperties`).
-
-# version 27.8
 
 ## Dependencies and build
 
