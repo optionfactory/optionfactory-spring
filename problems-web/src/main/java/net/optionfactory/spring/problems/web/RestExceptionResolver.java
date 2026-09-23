@@ -184,6 +184,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
     }
 
     public RestExceptionResolver(JsonMapper mapper, MessageSource messageSource, List<ExceptionClassifier> classifiers, List<FailureTransformer> transformers) {
+        setWarnLogCategory(null);
         this.mapper = mapper;
         this.classifiers = classifiers;
         this.transformers = transformers;

@@ -157,6 +157,13 @@
 
 ## `problems-web`
 
+*   [FIX] **A client error is no longer logged as a warning.** `RestExceptionResolver` extends spring's
+    `DefaultHandlerExceptionResolver`, whose constructor enables a warn log category, so every exception it
+    resolved — a `Failure`, a failed validation, a missing parameter — also logged a `Resolved [...]` line
+    at `WARN`, next to the resolver's own `DEBUG` line for client errors. That category is now disabled:
+    client errors are logged at `DEBUG` only, and unexpected errors keep being logged at `ERROR` or `WARN`,
+    with their stack trace, by the resolver itself. Anything monitoring those `WARN` lines stops seeing
+    client errors.
 *   [ENH] **Spring's other standard errors are answered as what they are.** An unsupported request body
     type, a response type the client does not accept, a missing request header and spring's other
     exceptions implementing `ErrorResponse` reached the resolver's fallback: the status was right, but the
