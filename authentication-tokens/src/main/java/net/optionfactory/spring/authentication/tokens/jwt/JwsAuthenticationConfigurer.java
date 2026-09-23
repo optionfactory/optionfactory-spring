@@ -7,9 +7,6 @@ import com.nimbusds.jose.crypto.Ed25519Verifier;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jose.jwk.OctetKeyPair;
-import com.nimbusds.jose.proc.SecurityContext;
-import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
-import com.nimbusds.jwt.proc.JWTClaimsSetVerifier;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.List;
@@ -56,8 +53,10 @@ public interface JwsAuthenticationConfigurer extends JwtAuthenticationConfigurer
         }
     }
 
-    public static Builder builder() {
-        return new Builder();
+    /// @param claims the claims a token must carry to be accepted
+    /// @return a builder enforcing that policy
+    public static Builder builder(ClaimsPolicy claims) {
+        return new Builder(claims);
     }
 
     public static class Builder implements JwsAuthenticationConfigurer {
@@ -65,9 +64,14 @@ public interface JwsAuthenticationConfigurer extends JwtAuthenticationConfigurer
         private HeaderAndScheme hs = new HeaderAndScheme(HttpHeaders.AUTHORIZATION, "BEARER ");
         private JwsMatcher tokenMatcher = (header, unverifiedClaims, jws) -> Match.STRICT;
         private JWSVerifier verifier;
-        private JWTClaimsSetVerifier<SecurityContext> claims = new DefaultJWTClaimsVerifier<>(null, null, null, null);
+        private final ClaimsPolicy claims;
         private JwtAuthoritiesConverter authorities = new RolesGroupsAndScopesFromClaims(List.of());
         private JwtPrincipalConverter principal;
+
+        public Builder(ClaimsPolicy claims) {
+            Assert.notNull(claims, "ClaimsPolicy cannot be null");
+            this.claims = claims;
+        }
 
         @Override
         public Builder matchHeader(String header, String authScheme) {
@@ -92,13 +96,6 @@ public interface JwsAuthenticationConfigurer extends JwtAuthenticationConfigurer
         }
 
         @Override
-        public Builder claimsVerifier(JWTClaimsSetVerifier<SecurityContext> claims) {
-            Assert.notNull(claims, "JWTClaimsSetVerifier cannot be null");
-            this.claims = claims;
-            return this;
-        }
-
-        @Override
         public Builder authorities(JwtAuthoritiesConverter authorities) {
             Assert.notNull(authorities, "JwtAuthoritiesConverter cannot be null");
             this.authorities = authorities;
@@ -115,9 +112,9 @@ public interface JwsAuthenticationConfigurer extends JwtAuthenticationConfigurer
         public JwsProcessor build() {
             Assert.notNull(hs, "HeaderAndScheme must be configured");
             Assert.notNull(tokenMatcher, "JwsMatcher must be configured");
-            Assert.notNull(verifier, "JWTClaimsSetVerifier must be configured");
+            Assert.notNull(verifier, "JWSVerifier must be configured");
             Assert.notNull(principal, "JwtPrincipalConverter must be configured");
-            return new JwtTokenProcessor.JwsProcessor(hs, tokenMatcher, verifier, claims, authorities, principal);
+            return new JwtTokenProcessor.JwsProcessor(hs, tokenMatcher, verifier, claims.verifier(), authorities, principal);
         }
 
     }

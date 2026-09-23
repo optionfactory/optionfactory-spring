@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.*;
 import java.util.stream.Stream;
+import net.optionfactory.spring.authentication.tokens.jwt.ClaimsPolicy;
 import net.optionfactory.spring.authentication.tokens.jwt.JweAuthenticationConfigurer;
 import net.optionfactory.spring.authentication.tokens.jwt.JwsAuthenticationConfigurer;
 import net.optionfactory.spring.authentication.tokens.jwt.JwtTokenProcessor;
@@ -101,8 +102,13 @@ public class HttpHeaderAuthentication {
             return this;
         }
 
-        public Configurer jws(Customizer<JwsAuthenticationConfigurer> customizer) {
-            final var builder = JwsAuthenticationConfigurer.builder();
+        /// Accepts signed JWTs whose claims satisfy the given policy.
+        ///
+        /// @param claims the claims a token must carry to be accepted
+        /// @param customizer configures how the token is found, verified and turned into a principal
+        /// @return this configurer
+        public Configurer jws(ClaimsPolicy claims, Customizer<JwsAuthenticationConfigurer> customizer) {
+            final var builder = JwsAuthenticationConfigurer.builder(claims);
             customizer.customize(builder);
             final var processor = builder.build();
             jwsProcessors.add(processor);
@@ -110,8 +116,13 @@ public class HttpHeaderAuthentication {
             return this;
         }
 
-        public Configurer jwe(Customizer<JweAuthenticationConfigurer> customizer) {
-            final var builder = JweAuthenticationConfigurer.builder();
+        /// Accepts encrypted JWTs whose claims satisfy the given policy.
+        ///
+        /// @param claims the claims a token must carry to be accepted
+        /// @param customizer configures how the token is found, decrypted and turned into a principal
+        /// @return this configurer
+        public Configurer jwe(ClaimsPolicy claims, Customizer<JweAuthenticationConfigurer> customizer) {
+            final var builder = JweAuthenticationConfigurer.builder(claims);
             customizer.customize(builder);
             final var processor = builder.build();
             jweProcessors.add(processor);

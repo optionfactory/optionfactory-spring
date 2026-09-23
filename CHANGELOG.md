@@ -270,6 +270,41 @@
     Jackson's exception as its cause, which `problems-web`'s `DataJpaProblemsModule` answers with a
     `400` field error.
 
+## `authentication-tokens`
+
+*   [BREAKING] **A JWT's claims are checked against a policy every configuration states.** A `jws(...)`
+    or `jwe(...)` configuration that never called `claims(...)` checked `exp` and `nbf` only when the
+    token carried them, and neither issuer nor audience, while the default authorities converter turned
+    the token's `roles`, `groups` and `scope` into authorities: a token signed by the same key for another
+    service, or never expiring, was accepted with the roles it claimed. The policy is now the mandatory
+    first argument of `jws(ClaimsPolicy, customizer)` and `jwe(ClaimsPolicy, customizer)`, and of
+    `JwsAuthenticationConfigurer.builder(ClaimsPolicy)` and `JweAuthenticationConfigurer.builder(ClaimsPolicy)`:
+    the single-argument forms and `builder()` are gone, as are `claims(...)` and `claimsVerifier(...)`
+    inside the customizer, so every existing configuration stops compiling rather than changing what it
+    accepts at runtime. `ClaimsPolicy.issuer(...)` and `ClaimsPolicy.audience(...)` start a standard
+    policy, which requires `exp` and constrains the issuer and/or the audience — it cannot be started
+    without one of them; `ClaimsPolicy.permissive()` keeps the previous behaviour, for tokens carrying
+    none of these claims, and can still pin the claims they do carry; `ClaimsPolicy.custom(verifier)`
+    takes any Nimbus verifier. Migrating:
+
+    ```java
+    // before                                        // after
+    c.jws(jc -> {                                    c.jws(ClaimsPolicy.issuer("my-issuer").audience("example.com"), jc -> {
+        jc.verify(key);                                  jc.verify(key);
+        jc.claims(Duration.ofSeconds(60), claims -> {    jc.principal("service-name");
+            claims.audience("example.com");          });
+            claims.exact("iss", "my-issuer");
+        });
+        jc.principal("service-name");
+    });
+
+    c.jws(jc -> { ... });                            // exactly as before, now stated:
+                                                     c.jws(ClaimsPolicy.permissive(), jc -> { ... });
+    ```
+
+    A `claims(...)` configuration without `exp` in its required claims accepted tokens without one; its
+    standard-policy migration now rejects them, which is the point, while `permissive()` reproduces it.
+
 # version 27.12
 
 ## `problems-web`

@@ -13,7 +13,6 @@ import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
@@ -24,6 +23,7 @@ import net.optionfactory.spring.authentication.UnauthorizedStatusEntryPoint;
 import net.optionfactory.spring.authentication.tokens.HttpHeaderAuthentication;
 import net.optionfactory.spring.authentication.tokens.examples.TokenAuthenticationExampleTest.SecurityConfig;
 import net.optionfactory.spring.authentication.tokens.examples.TokenAuthenticationExampleTest.WebConfig;
+import net.optionfactory.spring.authentication.tokens.jwt.ClaimsPolicy;
 import net.optionfactory.spring.authentication.tokens.jwt.Match;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -104,31 +104,23 @@ public class TokenAuthenticationExampleTest {
         public SecurityFilterChain security(HttpSecurity http) throws Exception {
 
             http.with(HttpHeaderAuthentication.configurer(), c -> {
-                c.jws(jc -> {
-                    jc.matchHeader(HttpHeaders.AUTHORIZATION, "Bearer"); //this is already the default
-                    jc.matchToken(Match.STRICT); //this is already the default
+                c.jws(ClaimsPolicy.issuer("example-issuer").audience("example.com"), jc -> {
+                    jc.matchHeader(HttpHeaders.AUTHORIZATION, "Bearer");
+                    jc.matchToken(Match.STRICT);
                     jc.verify(HEX_ENCODED_HS256_KEY);
-                    jc.claims(Duration.ofSeconds(60), claims -> {
-                        claims.audience("example.com");
-                        claims.exact("iss", "example-issuer");
-                    });
                     jc.principal("jws-principal");
                     jc.authorities("ROLE_M2M");
                 });
-                c.jwe(jc -> {
-                    jc.matchHeader(HttpHeaders.AUTHORIZATION, "Bearer"); //this is already the default
-                    jc.match(Match.STRICT); //this is already the default
+                c.jwe(ClaimsPolicy.issuer("example-issuer").audience("example.com"), jc -> {
+                    jc.matchHeader(HttpHeaders.AUTHORIZATION, "Bearer");
+                    jc.match(Match.STRICT);
                     jc.decrypt(JWE_AES_KEY);
-                    jc.claims(Duration.ofSeconds(60), claims -> {
-                        claims.audience("example.com");
-                        claims.exact("iss", "example-issuer");
-                    });
                     jc.principal("jwe-principal");
                     jc.authorities("ROLE_M2M");
                 });
-                c.jws(jc -> {
+                c.jws(ClaimsPolicy.permissive(), jc -> {
                     jc.matchHeader(SERVICE_TOKEN_HEADER, SERVICE_TOKEN_SCHEME);
-                    jc.matchToken(Match.STRICT); //this is already the default
+                    jc.matchToken(Match.STRICT);
                     jc.verify(SERVICE_HS256_KEY);
                     jc.principal("service-principal");
                     jc.authorities("ROLE_M2M");
@@ -225,11 +217,11 @@ public class TokenAuthenticationExampleTest {
                 .andExpect(status().isOk());
     }
 
+    /// The token is decryptable and claim-valid for the `Authorization: Bearer` JWE processor, but it is
+    /// presented on `X-Service-Token: Token`, which only the service JWS processor selects: no processor
+    /// may authenticate it.
     @Test
     public void validJweTokenOnHeaderNotSelectedByJweProcessorYields401() throws Exception {
-        //the token is decryptable and claim-valid for the Authorization: Bearer JWE processor, but it is
-        //presented on X-Service-Token: Token, which only the service JWS processor selected: no processor
-        //may authenticate it
         mvc.perform(get("/api/m2m").header(SERVICE_TOKEN_HEADER, String.format("%s %s", SERVICE_TOKEN_SCHEME, VALID_A128GCM_JWE)))
                 .andExpect(status().isUnauthorized());
     }
@@ -240,20 +232,20 @@ public class TokenAuthenticationExampleTest {
                 .andExpect(status().isOk());
     }
 
+    /// The token's signature and claims are fully valid for the service processor, but it is presented
+    /// on `Authorization: Bearer`, which the service processor does not select: only the bearer JWS
+    /// processor may run, and it verifies with a different key.
     @Test
     public void validServiceJwsOnHeaderNotSelectedByItsProcessorYields401() throws Exception {
-        //the token's signature and claims are fully valid for the service processor, but it is presented
-        //on Authorization: Bearer, which the service processor did not select: only the Bearer JWS
-        //processor may run, and it verifies with a different key
         mvc.perform(get("/api/m2m").header("Authorization", String.format("Bearer %s", VALID_SERVICE_HS256_JWS)))
                 .andExpect(status().isUnauthorized());
     }
 
+    /// The converse of [#validServiceJwsOnHeaderNotSelectedByItsProcessorYields401()]: the bearer JWS is
+    /// fully valid for its processor, but on `X-Service-Token: Token` only the service processor may run,
+    /// and it verifies with a different key.
     @Test
     public void validBearerJwsOnHeaderNotSelectedByItsProcessorYields401() throws Exception {
-        //symmetric to validServiceJwsOnHeaderNotSelectedByItsProcessorYields401: the Bearer JWS is fully
-        //valid for its processor, but on X-Service-Token: Token only the service processor may run,
-        //and it verifies with a different key
         mvc.perform(get("/api/m2m").header(SERVICE_TOKEN_HEADER, String.format("%s %s", SERVICE_TOKEN_SCHEME, VALID_HS256_JWS)))
                 .andExpect(status().isUnauthorized());
     }

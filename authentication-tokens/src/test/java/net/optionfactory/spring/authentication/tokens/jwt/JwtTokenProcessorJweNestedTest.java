@@ -49,7 +49,7 @@ public class JwtTokenProcessorJweNestedTest {
         this.recipientPublic = recipientKey.toECPublicKey();
         this.recipientPrivate = recipientKey.toECPrivateKey();
 
-        final var b = JweAuthenticationConfigurer.builder();
+        final var b = JweAuthenticationConfigurer.builder(ClaimsPolicy.permissive());
         b.matchHeader(HttpHeaders.AUTHORIZATION, "Bearer");
         b.matchToken((header, jwe) -> Match.STRICT);
         b.decrypter(new ECDHDecrypter(recipientPrivate));
@@ -76,9 +76,8 @@ public class JwtTokenProcessorJweNestedTest {
 
     @Test
     public void symmetricRawClaimsJweIsAcceptedWithoutInnerSignature() throws Exception {
-        // 256-bit shared secret is the trust root; raw claims (no inner JWS) are the intended symmetric mode
         final var aesKey = new SecretKeySpec(new byte[32], "AES");
-        final var b = JweAuthenticationConfigurer.builder();
+        final var b = JweAuthenticationConfigurer.builder(ClaimsPolicy.permissive());
         b.matchHeader(HttpHeaders.AUTHORIZATION, "Bearer");
         b.matchToken((header, jwe) -> Match.STRICT);
         b.decrypter(new com.nimbusds.jose.crypto.AESDecrypter(aesKey));
@@ -115,9 +114,9 @@ public class JwtTokenProcessorJweNestedTest {
         Assertions.assertTrue(result.authorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_USER")));
     }
 
+    /// An attacker encrypts arbitrary claims to the recipient, using only the recipient's public key.
     @Test
     public void rawClaimsJweWithoutInnerSignatureIsRejected() throws Exception {
-        // attacker encrypts arbitrary claims to the recipient using only the recipient's public key
         final var claims = new JWTClaimsSet.Builder()
                 .subject("attacker")
                 .claim("roles", List.of("ADMIN"))
@@ -127,9 +126,10 @@ public class JwtTokenProcessorJweNestedTest {
         Assertions.assertThrows(BadCredentialsException.class, () -> processor.process(hs, token));
     }
 
+    /// An attacker signs the inner JWS with their own key rather than the issuer's, then encrypts it to
+    /// the recipient.
     @Test
     public void nestedJwsSignedWithWrongKeyIsRejected() throws Exception {
-        // attacker signs the inner JWS with their own key (not the issuer's), then encrypts to recipient
         final var attackerKey = new ECKeyGenerator(Curve.P_256).generate();
         final var claims = new JWTClaimsSet.Builder()
                 .subject("attacker")

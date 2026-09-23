@@ -19,6 +19,16 @@ import net.optionfactory.spring.authentication.tokens.HttpHeaderAuthentication.P
 import net.optionfactory.spring.authentication.tokens.HttpHeaderAuthentication.TokenProcessor;
 import org.springframework.security.authentication.BadCredentialsException;
 
+/// Authenticates a JWT with the first processor configured for its header whose matcher does not
+/// skip it.
+///
+/// A signed JWT is accepted once its signature verifies and its claims satisfy the processor's
+/// [ClaimsPolicy]. An encrypted JWT is decrypted first, and then trusted in one of two ways. With an
+/// inner verifier, its payload must be a nested signed JWT (`JWE(JWS(claims))`) whose signature
+/// verifies: this is mandatory for asymmetric JWE, since decrypting only proves the token was encrypted
+/// to us, not who authored it, and anyone holding the public key can encrypt. Without one — symmetric
+/// JWE only — the payload is read as raw claims, the shared secret being the trust root. See
+/// [JweAuthenticationConfigurer].
 public class JwtTokenProcessor implements TokenProcessor {
 
     final List<JwsProcessor> jwsProcessors;
@@ -42,7 +52,6 @@ public class JwtTokenProcessor implements TokenProcessor {
             try {
                 claims = jws.getJWTClaimsSet();
             } catch (ParseException ex) {
-                //unparseable claims
                 return null;
             }
             for (JwsProcessor proc : jwsProcessors) {
@@ -101,8 +110,6 @@ public class JwtTokenProcessor implements TokenProcessor {
                 final JWTClaimsSet claims;
                 final Header header;
                 if (proc.innerVerifier() != null) {
-                    // Nested JWS (JWE(JWS)): required for asymmetric JWE, since JWE only proves the token
-                    // was encrypted to us, not who authored it. The inner signature authenticates the issuer.
                     final SignedJWT inner;
                     try {
                         inner = SignedJWT.parse(jwe.getPayload().toString());
@@ -129,7 +136,6 @@ public class JwtTokenProcessor implements TokenProcessor {
                     }
                     header = inner.getHeader();
                 } else {
-                    // Symmetric JWE over raw claims: the shared secret is the trust root, no inner signature.
                     try {
                         claims = jwe.getJWTClaimsSet();
                     } catch (ParseException ex) {
