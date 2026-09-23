@@ -161,10 +161,14 @@
     request parameter, path variable or header was reported with the handler's java parameter name as its
     `context`: `@RequestParam("q") int query` sent `?q=abc` was answered with a field error on `query`, a
     field the client never sent, while a missing `q` was correctly reported as `q`. A mistyped value is now
-    reported under the name spring matched it by, and one failing method validation under the name declared
-    on its `@RequestParam`, `@PathVariable`, `@RequestHeader`, `@CookieValue`, `@MatrixVariable` or
-    `@RequestPart`, falling back to the java name for a parameter without one. Where the two names already
-    coincided, nothing changes.
+    reported under the name spring matched it by, and one failing method validation — spring mvc's own, or a
+    `@Validated` controller's through a `MethodValidationPostProcessor` — under the name declared on its
+    `@RequestParam`, `@PathVariable`, `@RequestHeader`, `@CookieValue`, `@MatrixVariable` or `@RequestPart`,
+    falling back to the java name for a parameter without one. Where the two names already coincided,
+    nothing changes. A violation in a bean the handler calls keeps its java path, since it is not about the
+    request: the violated method is now matched against the handler's before its parameters are renamed,
+    which also stops a service's parameter being dropped from its path when it merely shared its name with
+    the handler's request body parameter.
 *   [FIX] **A client error is no longer logged as a warning.** `RestExceptionResolver` extends spring's
     `DefaultHandlerExceptionResolver`, whose constructor enables a warn log category, so every exception it
     resolved — a `Failure`, a failed validation, a missing parameter — also logged a `Resolved [...]` line

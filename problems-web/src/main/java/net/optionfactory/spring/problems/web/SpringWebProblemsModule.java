@@ -3,7 +3,6 @@ package net.optionfactory.spring.problems.web;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.optionfactory.spring.problems.Problem;
@@ -11,7 +10,6 @@ import net.optionfactory.spring.problems.web.RestExceptionResolver.HttpStatusAnd
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -20,13 +18,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 import org.springframework.validation.method.ParameterErrors;
 import org.springframework.web.bind.MissingServletRequestParameterException;
-import org.springframework.web.bind.annotation.CookieValue;
-import org.springframework.web.bind.annotation.MatrixVariable;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -68,7 +60,7 @@ public class SpringWebProblemsModule implements ProblemsModule {
                         });
                     } else {
                         final boolean isRequestBody = param.hasParameterAnnotation(RequestBody.class);
-                        final String path = !prefix.isEmpty() ? prefix : (isRequestBody ? null : requestName(param));
+                        final String path = !prefix.isEmpty() ? prefix : (isRequestBody ? null : RequestNames.of(param));
                         result.getResolvableErrors().forEach(error -> failures.add(path == null
                                 ? Problem.of(Problem.TYPE_OBJECT_ERROR, null, error.getDefaultMessage(), null)
                                 : Problem.of(Problem.TYPE_FIELD_ERROR, path, error.getDefaultMessage(), null)
@@ -146,28 +138,6 @@ public class SpringWebProblemsModule implements ProblemsModule {
                 yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, List.of(Problem.request(Problem.NO_CONTEXT, reason, cause != null ? cause.getMessage() : ex.getMessage())));
             }
         };
-    }
-
-    /// The name the client sent a parameter under: the one declared on its `@RequestParam`,
-    /// `@PathVariable`, `@RequestHeader`, `@CookieValue`, `@MatrixVariable` or `@RequestPart`, else the
-    /// parameter's own.
-    private static String requestName(MethodParameter param) {
-        final var declared = Stream.of(
-                named(param.getParameterAnnotation(RequestParam.class), RequestParam::name, RequestParam::value),
-                named(param.getParameterAnnotation(PathVariable.class), PathVariable::name, PathVariable::value),
-                named(param.getParameterAnnotation(RequestHeader.class), RequestHeader::name, RequestHeader::value),
-                named(param.getParameterAnnotation(CookieValue.class), CookieValue::name, CookieValue::value),
-                named(param.getParameterAnnotation(MatrixVariable.class), MatrixVariable::name, MatrixVariable::value),
-                named(param.getParameterAnnotation(RequestPart.class), RequestPart::name, RequestPart::value)
-        ).filter(name -> name != null && !name.isEmpty()).findFirst();
-        return declared.orElseGet(() -> param.getParameterName() != null ? param.getParameterName() : "arg" + param.getParameterIndex());
-    }
-
-    private static <A> @Nullable String named(@Nullable A annotation, Function<A, String> name, Function<A, String> value) {
-        if (annotation == null) {
-            return null;
-        }
-        return !name.apply(annotation).isEmpty() ? name.apply(annotation) : value.apply(annotation);
     }
 
     private static String toDottedPath(String path) {
