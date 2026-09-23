@@ -6,6 +6,9 @@ import java.util.Locale;
 import net.optionfactory.spring.problems.web.RestExceptionResolver.HttpStatusAndProblems;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.MessageSource;
+import org.springframework.core.annotation.AnnotatedElementUtils;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.method.HandlerMethod;
 
 /// Classifies an exception the resolver does not handle itself, answering the status and the problems
@@ -17,10 +20,12 @@ import org.springframework.web.method.HandlerMethod;
 /// everything else the library contributes, as a [ProblemsModule], with
 /// `RestExceptionResolver.Builder#withModule`.
 ///
-/// Classifiers are consulted in registration order, only for exceptions outside the resolver's
-/// built-in cases (a `Failure` or a binding error, for instance, is never offered to them), and
-/// before the resolver falls back to spring's defaults and to reporting an unexpected error. A
-/// classified exception is logged at `DEBUG`, like every other client error. The configured
+/// Classifiers are consulted in registration order, and the first that does not decline answers.
+/// The resolver's own cases are classifiers too, in built-in modules that are always registered
+/// ahead of any other, so a classifier you register is never offered an exception one of them
+/// answers — a `Failure` or a binding error, for instance. When every classifier declines, the
+/// resolver falls back to spring's defaults and to reporting an unexpected error. A classified
+/// exception is logged at `DEBUG`, like every other client error. The configured
 /// [FailureTransformer]s still run on what a classifier returns, so details are still omitted in
 /// production.
 ///
@@ -34,6 +39,17 @@ public interface ExceptionClassifier {
     ///         to the next classifier and eventually to the resolver's defaults
     @Nullable
     HttpStatusAndProblems classify(Context context, Exception ex);
+
+    /// @param ex the exception
+    /// @param fallback the status to use when the exception's class declares none
+    /// @return the status declared with `@ResponseStatus` on the exception's class, or `fallback`
+    static HttpStatus annotatedStatusOr(@Nullable Exception ex, HttpStatus fallback) {
+        if (ex == null) {
+            return fallback;
+        }
+        final var rs = AnnotatedElementUtils.findMergedAnnotation(ex.getClass(), ResponseStatus.class);
+        return rs == null ? fallback : rs.value();
+    }
 
     /// What a classifier is given besides the exception: the request being answered, and the message
     /// source and locale the resolver localizes with. A parameter object rather than a list of

@@ -42,11 +42,24 @@ ExceptionResolvers.configurer(resolvers)
         .configure();
 ```
 
-Classifiers are consulted in registration order, only for exceptions the resolver has no built-in
-case for, and before it falls back to reporting an unexpected error. A classified exception is
-therefore answered with the classifier's status and problems and logged at `DEBUG`, rather than
-as an `ERROR` with a stack trace. A classifier receives the request being answered together with
-the resolver's message source and locale, so it can localize what it reports.
+Classifiers are consulted in registration order, and the first that does not decline answers.
+A classified exception is answered with the classifier's status and problems and logged at
+`DEBUG`, rather than as an `ERROR` with a stack trace; when every classifier declines, the resolver
+reports an unexpected error. A classifier receives the request being answered together with the
+resolver's message source and locale, so it can localize what it reports.
+
+The resolver's own cases are modules too, always registered ahead of any you add, so a classifier
+you register is never offered an exception one of them answers:
+
+| module | answers |
+| ------ | ------- |
+| `SpringWebProblemsModule` | an unreadable body, a failed binding or method validation, a missing or mistyped parameter or part, a `ResponseStatusException`, a failed `RestClient` call |
+| `BeanValidationProblemsModule` | a jakarta `ConstraintViolationException` |
+| `FailureProblemsModule` | the `Failure`s your application throws |
+| `SpringSecurityProblemsModule` | an `AccessDeniedException` |
+
+A classifier can honour a `@ResponseStatus` declared on its exceptions with
+`ExceptionClassifier.annotatedStatusOr(ex, fallback)`, as the built-in ones do.
 
 A module contributes classifiers and transformers and nothing else, so it cannot change how the
 resolver itself is configured. In particular, it cannot include details in production: detail

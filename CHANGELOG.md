@@ -157,6 +157,21 @@
 
 ## `problems-web`
 
+*   [ENH] **`RestExceptionResolver` is assembled from modules, its own cases included.** The resolver
+    answered spring mvc's, bean validation's, spring security's exceptions and `Failure`s from one
+    `switch`; each group is now a built-in `ProblemsModule` — `SpringWebProblemsModule`,
+    `BeanValidationProblemsModule`, `FailureProblemsModule`, `SpringSecurityProblemsModule` — always
+    registered ahead of any other, so a classifier an application or library adds is still never offered
+    an exception a built-in case answers. The resolver is left with what only it can do: consulting the
+    classifiers, falling back to spring's defaults and reporting unexpected errors, running the
+    transformers and rendering. Answers are unchanged, pinned by a test per built-in case written before
+    the move and passing on both sides of it. Two things observably differ: each client error is logged by
+    one `DEBUG` line, `Classified failure at <uri>: <problems>`, instead of a case-specific one, and a
+    failed upstream call is logged at `WARN` by `SpringWebProblemsModule`'s logger instead of the
+    resolver's — worth knowing if you filter logs by logger name. The groups follow the dependency each
+    one needs, so that spring security and bean validation can later become optional.
+    `ExceptionClassifier.annotatedStatusOr(ex, fallback)` exposes the `@ResponseStatus` lookup the
+    built-in cases use, for library classifiers to honour it on their own exceptions.
 *   [NEW] **`ExceptionClassifier` and `ProblemsModule`: let another library's exceptions be answered as
     what they are.** An exception the `RestExceptionResolver` has no case for is logged at `ERROR` with a
     stack trace and answered `500`. That is right for a bug, and wrong for a library whose exceptions

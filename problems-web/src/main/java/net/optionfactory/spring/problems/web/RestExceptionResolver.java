@@ -3,21 +3,11 @@ package net.optionfactory.spring.problems.web;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
-import jakarta.validation.ElementKind;
-import jakarta.validation.Path.Node;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-import net.optionfactory.spring.problems.Failure;
 import net.optionfactory.spring.problems.Problem;
 import net.optionfactory.spring.problems.web.l10n.AggregateMessageSource;
 import net.optionfactory.spring.problems.web.l10n.FallbackMessageSource;
@@ -25,32 +15,15 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.ResourceBundleMessageSource;
-import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
-import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.util.ClassUtils;
-import org.springframework.validation.BindException;
-import org.springframework.validation.FieldError;
-import org.springframework.validation.ObjectError;
-import org.springframework.validation.method.ParameterErrors;
-import org.springframework.web.bind.MissingServletRequestParameterException;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.method.HandlerMethod;
-import org.springframework.web.method.annotation.HandlerMethodValidationException;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import org.springframework.web.multipart.support.MissingServletRequestPartException;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolver;
 import org.springframework.web.servlet.view.json.JacksonJsonView;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.exc.UnrecognizedPropertyException;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
@@ -95,6 +68,13 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
     }
 
     public static class Builder {
+
+        private static final List<ProblemsModule> BUILT_INS = List.of(
+                new SpringWebProblemsModule(),
+                new BeanValidationProblemsModule(),
+                new FailureProblemsModule(),
+                new SpringSecurityProblemsModule()
+        );
 
         private Details options = Details.OMIT;
         private final List<ExceptionClassifier> classifiers = new ArrayList<>();
@@ -170,7 +150,10 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             defaultSource.setDefaultEncoding("UTF-8");
             defaultSource.setParentMessageSource(new AggregateMessageSource("ContributorValidationMessages"));
             final MessageSource ms = messageSource == null ? defaultSource : new FallbackMessageSource(messageSource, defaultSource);
-            return new RestExceptionResolver(mapper, ms, List.copyOf(classifiers), fts);
+            final var cs = new ArrayList<ExceptionClassifier>();
+            BUILT_INS.forEach(module -> cs.addAll(module.classifiers()));
+            cs.addAll(classifiers);
+            return new RestExceptionResolver(mapper, ms, List.copyOf(cs), fts);
         }
 
     }
@@ -182,168 +165,23 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
         this.messageSource = messageSource;
     }
 
-    private HttpStatusAndProblems handleMessageNotReadable(String requestUri, HttpMessageNotReadableException ex, Locale locale) {
-        final Throwable cause = ex.getCause();
-        return switch (ex.getCause()) {
-            case UnrecognizedPropertyException inner -> {
-                final var metadata = new ConcurrentHashMap<String, Object>();
-                metadata.put("known", inner.getKnownPropertyIds());
-                metadata.put("in", inner.getReferringClass().getSimpleName());
-
-                final var reason = messageSource.getMessage("error.unrecognized_field", null, "Unrecognized field", locale);
-                final var problem = Problem.request(inner.getPropertyName(), reason, metadata);
-                logger.debug(String.format("Unrecognized property at %s: %s", requestUri, problem));
-                yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, List.of(problem));
-            }
-            case JacksonException inner -> {
-                final var path = inner.getPath().stream()
-                        .map(p -> p.getPropertyName() != null ? p.getPropertyName() : Integer.toString(p.getIndex()))
-                        .collect(Collectors.joining("."));
-                final Problem problem;
-                if (path.isEmpty()) {
-                    final var details = new ConcurrentHashMap<String, Object>();
-                    details.put("location", inner.getLocation());
-                    details.put("message", cause.getMessage());
-                    final var reason = messageSource.getMessage("error.unparseable_message", null, "Unparsable message", locale);
-                    problem = Problem.request(Problem.NO_CONTEXT, reason, details);
-                } else {
-                    final var reason = messageSource.getMessage("error.invalid_format", null, "Invalid format", locale);
-                    problem = Problem.request(path, reason, inner.getMessage());
-                }
-                logger.debug(String.format("Invalid format at %s: %s", requestUri, problem));
-                yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, List.of(problem));
-            }
-            case null, default -> {
-                final var reason = messageSource.getMessage("error.message_not_readable", null, "Message not readable", locale);
-                final Problem problem = Problem.request(Problem.NO_CONTEXT, reason, cause != null ? cause.getMessage() : ex.getMessage());
-                logger.debug(String.format("Unreadable message at %s: %s", requestUri, problem));
-                yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, List.of(problem));
-            }
-        };
-    }
-
     protected HttpStatusAndProblems toStatusAndErrors(HttpServletRequest request, HttpServletResponse response, HandlerMethod hm, Exception ex) {
         final String requestUri = request.getRequestURI();
-        final var locale = LocaleContextHolder.getLocale();
-        return switch (ex) {
-            case HttpMessageNotReadableException inner -> {
-                yield handleMessageNotReadable(requestUri, inner, locale);
+        final var classified = classified(new ExceptionClassifier.Context(request, response, hm, messageSource, LocaleContextHolder.getLocale()), ex);
+        if (classified != null) {
+            logger.debug(String.format("Classified failure at %s: %s", requestUri, classified.problems()));
+            return classified;
+        }
+        if (null != super.doResolveException(request, new SendErrorToSetStatusHttpServletResponse(response), hm, ex)) {
+            if (request.getAttribute("javax.servlet.error.exception") != null) {
+                logger.warn(String.format("got an internal error from spring at %s", requestUri), ex);
             }
-            case HandlerMethodValidationException hmve -> {
-                final var failures = new ArrayList<Problem>();
-                //NOTE: we are relying on jakarta validation translation so error.getDefaultMessage() is localized already
-                for (final var result : hmve.getParameterValidationResults()) {
-                    final var param = result.getMethodParameter();
-                    final Object containerKey = result.getContainerIndex() != null ? result.getContainerIndex() : result.getContainerKey();
-                    final String prefix = containerKey != null ? containerKey.toString() : "";
-
-                    if (result instanceof ParameterErrors pe) {
-                        pe.getGlobalErrors().forEach(error -> failures.add(RestExceptionResolver.objectErrorToProblem(error)));
-                        pe.getFieldErrors().forEach(error -> {
-                            final String field = error.getField();
-                            final String path = prefix.isEmpty() ? field : prefix + "." + field;
-                            failures.add(Problem.of(Problem.TYPE_FIELD_ERROR, toDottedPath(path), error.getDefaultMessage(), null));
-                        });
-                    } else {
-                        final boolean isRequestBody = param.hasParameterAnnotation(RequestBody.class);
-                        final String path = !prefix.isEmpty() ? prefix : (isRequestBody ? null : (param.getParameterName() == null ? "arg" + param.getParameterIndex() : param.getParameterName()));
-                        result.getResolvableErrors().forEach(error -> failures.add(path == null
-                                ? Problem.of(Problem.TYPE_OBJECT_ERROR, null, error.getDefaultMessage(), null)
-                                : Problem.of(Problem.TYPE_FIELD_ERROR, path, error.getDefaultMessage(), null)
-                        ));
-                    }
-                }
-
-                logger.debug(String.format("Handler method validation failures at %s: %s", requestUri, failures));
-                yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, failures);
-            }
-            case BindException be -> {
-                // this handles MethodArgumentNotValidException too, the other exception thrown by unified validation
-                final var globalFailures = be.getGlobalErrors().stream().map(RestExceptionResolver::objectErrorToProblem);
-                final var fieldFailures = be.getFieldErrors().stream().map(RestExceptionResolver::fieldErrorToProblem);
-                final var failures = Stream.concat(globalFailures, fieldFailures).toList();
-                logger.debug(String.format("Binding failure at %s: %s", requestUri, failures));
-                yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, failures);
-            }
-            case ConstraintViolationException cve -> {
-                final var requestBodyParams = hm == null ? Set.<String>of() : Stream.of(hm.getMethodParameters())
-                        .filter(p -> p.hasParameterAnnotation(RequestBody.class))
-                        .map(p -> p.getParameterName() != null ? p.getParameterName() : "arg" + p.getParameterIndex())
-                        .collect(Collectors.toSet());
-
-                final var fieldFailures = cve.getConstraintViolations().stream()
-                        .map(cv -> constraintViolationToProblem(cv, requestBodyParams));
-                final var failures = fieldFailures.toList();
-                logger.debug(String.format("Constraint violations at %s: %s", requestUri, failures));
-                yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, failures);
-            }
-            case MissingServletRequestParameterException msrpe -> {
-                final var reason = messageSource.getMessage("error.missing_parameter", null, "Parameter is missing", locale);
-                final Problem problem = Problem.of(Problem.TYPE_FIELD_ERROR, msrpe.getParameterName(), reason, Problem.NO_DETAILS);
-                logger.debug(String.format("Missing servlet RequestParameter at %s: %s", requestUri, problem));
-                yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, List.of(problem));
-            }
-            case MethodArgumentTypeMismatchException matme -> {
-                // Handles type errors in path variables (Es. not-numeric string when expecting an int)
-                final var parameterName = matme.getParameter().getParameterName() != null ? matme.getParameter().getParameterName() : "arg" + matme.getParameter().getParameterIndex();
-                final var parameterType = matme.getParameter().getParameterType().toGenericString();
-                final var value = matme.getValue();
-                final var sourceType = value == null ? "null" : value.getClass().toGenericString();
-                final var reason = messageSource.getMessage("error.invalid_format", null, "Invalid format", locale);
-                final var problem = Problem.of(Problem.TYPE_FIELD_ERROR, parameterName, reason, String.format("Failed to convert value of type '%s' to '%s'.", sourceType, parameterType));
-                logger.debug(String.format("Conversion error for argument %s expected type %s found type %s at %s: %s", parameterName, parameterType, sourceType, requestUri, problem));
-                yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, List.of(problem));
-            }
-            case MissingServletRequestPartException msrpe -> {
-                final var reason = messageSource.getMessage("error.missing_parameter", null, "Parameter is missing", locale);
-                final var problem = Problem.of(Problem.TYPE_FIELD_ERROR, msrpe.getRequestPartName(), reason, Problem.NO_DETAILS);
-                logger.debug(String.format("Missing required part %s of multipart request: %s", msrpe.getRequestPartName(), requestUri));
-                yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, List.of(problem));
-            }
-            case ResponseStatusException rse -> {
-                final HttpStatusCode statusCode = rse.getStatusCode();
-                final HttpStatus resolved = HttpStatus.resolve(statusCode.value());
-                final var reason = messageSource.getMessage(rse.getReason(), null, rse.getReason(), locale);
-                final var problem = Problem.of(resolved != null ? resolved.name() : String.format("HTTP_%d", statusCode.value()), null, reason, Problem.NO_DETAILS);
-                logger.debug(String.format("ResponseStatusException at %s: %s", requestUri, problem));
-                yield new HttpStatusAndProblems(statusCode, List.of(problem));
-            }
-            case Failure failure -> {
-                logger.debug(String.format("Failure at %s", requestUri), failure);
-                for (Problem problem : failure.problems) {
-                    problem.reason = messageSource.getMessage(problem.reason, null, problem.reason, locale);
-                }
-
-                yield new HttpStatusAndProblems(annotatedStatusOr(failure, HttpStatus.BAD_REQUEST), failure.problems);
-            }
-            case RestClientException rce -> {
-                final var problem = Problem.upstream(null, "upstream failure", rce.getMessage());
-                logger.warn(String.format("Upstream error %s: %s", requestUri, rce.getMessage()), rce);
-                yield new HttpStatusAndProblems(HttpStatus.BAD_GATEWAY, List.of(problem));
-            }
-            case AccessDeniedException ade -> {
-                final var problem = Problem.forbidden(null, ade.getMessage());
-                logger.debug(String.format("Access denied at %s: %s", requestUri, problem));
-                yield new HttpStatusAndProblems(annotatedStatusOr(ade, HttpStatus.FORBIDDEN), List.of(problem));
-            }
-            default -> {
-                final var classified = classified(new ExceptionClassifier.Context(request, response, hm, messageSource, locale), ex);
-                if (classified != null) {
-                    logger.debug(String.format("Classified failure at %s: %s", requestUri, classified.problems()));
-                    yield classified;
-                }
-                if (null != super.doResolveException(request, new SendErrorToSetStatusHttpServletResponse(response), hm, ex)) {
-                    if (request.getAttribute("javax.servlet.error.exception") != null) {
-                        logger.warn(String.format("got an internal error from spring at %s", requestUri), ex);
-                    }
-                    final HttpStatus currentStatus = HttpStatus.valueOf(response.getStatus());
-                    logger.warn(String.format("got an unexpected error while processing request at %s", requestUri), ex);
-                    yield new HttpStatusAndProblems(annotatedStatusOr(ex, currentStatus), List.of(Problem.of(Problem.TYPE_SERVER_ERROR, null, null, ex.getMessage())));
-                }
-                logger.error(String.format("got an unexpected error while processing request at %s", requestUri), ex);
-                yield new HttpStatusAndProblems(annotatedStatusOr(ex, HttpStatus.INTERNAL_SERVER_ERROR), List.of(Problem.of(Problem.TYPE_SERVER_ERROR, null, null, ex.getMessage())));
-            }
-        };
+            final HttpStatus currentStatus = HttpStatus.valueOf(response.getStatus());
+            logger.warn(String.format("got an unexpected error while processing request at %s", requestUri), ex);
+            return new HttpStatusAndProblems(ExceptionClassifier.annotatedStatusOr(ex, currentStatus), List.of(Problem.of(Problem.TYPE_SERVER_ERROR, null, null, ex.getMessage())));
+        }
+        logger.error(String.format("got an unexpected error while processing request at %s", requestUri), ex);
+        return new HttpStatusAndProblems(ExceptionClassifier.annotatedStatusOr(ex, HttpStatus.INTERNAL_SERVER_ERROR), List.of(Problem.of(Problem.TYPE_SERVER_ERROR, null, null, ex.getMessage())));
     }
 
     private @Nullable HttpStatusAndProblems classified(ExceptionClassifier.Context context, Exception ex) {
@@ -354,14 +192,6 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             }
         }
         return null;
-    }
-
-    private HttpStatus annotatedStatusOr(Exception ex, HttpStatus defaultValue) {
-        if (ex == null) {
-            return defaultValue;
-        }
-        final var rs = AnnotatedElementUtils.findMergedAnnotation(ex.getClass(), ResponseStatus.class);
-        return rs == null ? defaultValue : rs.value();
     }
 
     @Override
@@ -395,52 +225,6 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
 
     public static record HttpStatusAndProblems(HttpStatusCode status, List<Problem> problems) {
 
-    }
-
-    private static Problem constraintViolationToProblem(ConstraintViolation<?> error, Set<String> requestBodyParams) {
-        final var nodes = StreamSupport.stream(error.getPropertyPath().spliterator(), false)
-                .toList();
-
-        final var paramName = nodes.stream()
-                .filter(node -> node.getKind() == ElementKind.PARAMETER)
-                .map(Node::getName)
-                .findFirst()
-                .orElse(null);
-
-        final var isRequestBody = paramName != null && requestBodyParams.contains(paramName);
-
-        final var path = nodes.stream()
-                .filter(node -> node.getKind() != ElementKind.METHOD)
-                .filter(node -> !(node.getKind() == ElementKind.PARAMETER && isRequestBody))
-                .map(node -> {
-                    String name = node.getName();
-                    if (name != null && name.startsWith("<") && name.endsWith(">")) {
-                        name = "";
-                    }
-
-                    if (node.getIndex() != null) {
-                        return node.getIndex() + (name != null && !name.isEmpty() ? "." + name : "");
-                    }
-                    return name;
-                })
-                .filter(s -> s != null && !s.isEmpty())
-                .collect(Collectors.joining("."));
-
-        return path.isEmpty()
-                ? Problem.of(Problem.TYPE_OBJECT_ERROR, null, error.getMessage(), null)
-                : Problem.of(Problem.TYPE_FIELD_ERROR, path, error.getMessage(), null);
-    }
-
-    private static String toDottedPath(String path) {
-        return path.replaceAll("\\[(\\d+)\\]", ".$1").replaceFirst("^\\.", "");
-    }
-
-    private static Problem fieldErrorToProblem(FieldError error) {
-        return Problem.of(Problem.TYPE_FIELD_ERROR, toDottedPath(error.getField()), error.getDefaultMessage(), null);
-    }
-
-    private static Problem objectErrorToProblem(ObjectError error) {
-        return Problem.of(Problem.TYPE_OBJECT_ERROR, null, error.getDefaultMessage(), null);
     }
 
     public static class SendErrorToSetStatusHttpServletResponse extends HttpServletResponseWrapper {
