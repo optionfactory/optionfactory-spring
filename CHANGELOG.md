@@ -316,6 +316,15 @@
     from the filter itself, outside any authentication entry point, so the request ended in a server
     error. It is now treated like a rejected token: neither is authenticated, the security context is
     cleared, and the request goes on to be refused (or served anonymously) by the authorization rules.
+*   [FIX] **A `LAX` JWT processor passes a token it rejects on to the next one.** `Match.LAX` was
+    meant to let several processors share a header, each trying the token in turn, but a lax processor
+    whose signature, decryption or principal check failed ended the search with no authentication, and
+    one whose claims check failed rejected the token outright: a second issuer on the same header was
+    never reached. Any rejection by a lax processor now moves on to the next processor, and a token is
+    rejected only when none accepts it; `STRICT` (the default) still rejects a token it claims without
+    consulting later processors, and `SKIP` still leaves it to them. Each JWE processor now decrypts
+    its own copy of the token: one that decrypted it and then failed the inner signature left it
+    decrypted, and every later processor failed on it. The three modes are documented on `Match`.
 
 # version 27.12
 
