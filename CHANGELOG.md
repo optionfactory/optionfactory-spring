@@ -171,9 +171,10 @@
     `ErrorResponseProblemsModule`, consulted after every other built-in module, answers them with their own
     status and headers — a `415` keeps the `Accept` header listing the supported types — a problem typed
     after the status (`UNSUPPORTED_MEDIA_TYPE`, `NOT_ACCEPTABLE`, `BAD_REQUEST`), as a
-    `ResponseStatusException` already was, and spring's detail as the reason, localizable through its
-    message code. A server error among them, such as a path variable missing from the mapping, still logs
-    a `WARN`. A request for an unsupported method never reaches the resolver, since it fails before a
+    `ResponseStatusException` already was, and, for a client error, spring's detail as the reason,
+    localizable through its message code. A server error among them, such as a path variable missing from
+    the mapping, has no reason, like the resolver's own server errors, keeps the detail in `details`,
+    omitted in production, and still logs a `WARN`. A request for an unsupported method never reaches the resolver, since it fails before a
     handler exists, and spring keeps answering it `405` with an `Allow` header.
 *   [ENH] **Our modules are registered whenever the library they integrate is on the classpath.** The
     resolver registers, besides the always-on `SpringWebProblemsModule` and `FailureProblemsModule`, each

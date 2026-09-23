@@ -19,6 +19,8 @@ import org.springframework.mock.http.MockHttpInputMessage;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.bind.MissingPathVariableException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -222,6 +224,25 @@ public class BuiltInCasesTest {
     @Test
     public void anAccessDeniedAnnotatedWithAStatusIsAnsweredWithIt() throws Exception {
         Assertions.assertEquals(418, resolve(new AnnotatedAccessDenied()).status());
+    }
+
+    @Test
+    public void aClientErrorResponseCarriesSpringsDetailAsItsReason() throws Exception {
+        final var handler = new HandlerMethod(new BuiltInCasesTest(), BuiltInCasesTest.class.getMethod("fakeControllerMethodWithParameter", int.class));
+        final var got = resolve(new MissingRequestHeaderException("X-Required", handler.getMethodParameters()[0]), handler);
+        Assertions.assertEquals(400, got.status());
+        Assertions.assertEquals("BAD_REQUEST", got.problem().type);
+        Assertions.assertTrue(got.problem().reason.contains("X-Required"), got.problem().reason);
+    }
+
+    @Test
+    public void aServerErrorResponseKeepsSpringsDetailOutOfItsReason() throws Exception {
+        final var handler = new HandlerMethod(new BuiltInCasesTest(), BuiltInCasesTest.class.getMethod("fakeControllerMethodWithParameter", int.class));
+        final var got = resolve(new MissingPathVariableException("id", handler.getMethodParameters()[0]), handler);
+        Assertions.assertEquals(500, got.status());
+        Assertions.assertEquals("INTERNAL_SERVER_ERROR", got.problem().type);
+        Assertions.assertNull(got.problem().reason);
+        Assertions.assertTrue(String.valueOf(got.problem().details).contains("id"), String.valueOf(got.problem().details));
     }
 
     @Test

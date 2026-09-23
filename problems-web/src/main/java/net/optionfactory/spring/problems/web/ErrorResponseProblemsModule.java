@@ -11,8 +11,10 @@ import org.springframework.web.ErrorResponse;
 
 /// Built in: spring's remaining standard exceptions, those implementing `ErrorResponse` — an
 /// unsupported request body type, a response type the client does not accept, a missing request
-/// header — answered with their own status, headers and localized detail. Consulted after every
-/// other built-in module, as the most general of them.
+/// header — answered with their own status and headers. A client error carries spring's localized
+/// detail as its reason; a server error, like the resolver's own, has no reason, the detail being
+/// kept in `details` for debugging. Consulted after every other built-in module, as the most general
+/// of them.
 public class ErrorResponseProblemsModule implements ProblemsModule {
 
     private static final Logger logger = LoggerFactory.getLogger(ErrorResponseProblemsModule.class);
@@ -30,10 +32,11 @@ public class ErrorResponseProblemsModule implements ProblemsModule {
         er.getHeaders().forEach((name, values) -> values.forEach(value -> context.response().addHeader(name, value)));
         final var resolved = HttpStatus.resolve(status.value());
         final var type = resolved != null ? resolved.name() : String.format("HTTP_%d", status.value());
-        final var reason = context.messages().getMessage(er.getDetailMessageCode(), er.getDetailMessageArguments(), er.getBody().getDetail(), context.locale());
         if (status.is5xxServerError()) {
             logger.warn(String.format("server error at %s: %s", context.request().getRequestURI(), ex.getMessage()), ex);
+            return new HttpStatusAndProblems(status, List.of(Problem.of(type, null, null, ex.getMessage())));
         }
+        final var reason = context.messages().getMessage(er.getDetailMessageCode(), er.getDetailMessageArguments(), er.getBody().getDetail(), context.locale());
         return new HttpStatusAndProblems(status, List.of(Problem.of(type, null, reason, Problem.NO_DETAILS)));
     }
 }

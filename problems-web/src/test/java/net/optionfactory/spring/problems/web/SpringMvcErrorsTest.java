@@ -105,7 +105,9 @@ public class SpringMvcErrorsTest {
     public void aServerSideMappingErrorKeepsItsServerErrorStatus() throws Exception {
         mvc.perform(MockMvcRequestBuilders.get("/unmapped-variable"))
                 .andExpect(MockMvcResultMatchers.status().isInternalServerError())
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].type").value("INTERNAL_SERVER_ERROR"));
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].type").value("INTERNAL_SERVER_ERROR"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].reason").value(Matchers.nullValue()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].details").value(Matchers.nullValue()));
     }
 
     @Test
