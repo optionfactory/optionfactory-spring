@@ -35,6 +35,10 @@ public Page<Person> search(FilterRequest filter, Pageable pageable) {
 }
 ```
 
+A `filters` parameter that cannot be read — not json, or not an object mapping filter names to
+arrays of values — is rejected with an `InvalidFilterRequest` naming the parameter, and a filter
+without an array of values with one naming the filter; with `problems-web`, both are answered `400`.
+
 ### PageMixin
 
 Configure `PageMixin` on your `JsonMapper` to serialize `Page` objects in a simplified form:

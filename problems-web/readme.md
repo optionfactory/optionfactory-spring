@@ -86,7 +86,8 @@ resolver. Applications not using a module never load its integration's classes.
 ### data-jpa
 
 A filter or sort request the repository rejects — an unknown filter or sorter name, an operator
-outside the whitelist, a value that doesn't parse — is the client's mistake. The rejection is an
+outside the whitelist, a value that doesn't parse — is the client's mistake, and so is a `filters`
+parameter `data-jpa-web` cannot read. The rejection is an
 `IllegalArgumentException`, though, which spring's JPA exception translation rewraps as an
 `InvalidDataAccessApiUsageException`, which no built-in case answers: unhelped, it is logged as an
 `ERROR` and answered `500`. With `data-jpa` on the classpath, `DataJpaProblemsModule` answers it

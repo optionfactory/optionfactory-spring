@@ -1,6 +1,9 @@
 package net.optionfactory.spring.problems.web.datajpa;
 
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Set;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidSortRequest;
 import net.optionfactory.spring.problems.Problem;
@@ -28,7 +31,8 @@ public class FilteringExceptionClassifier implements ExceptionClassifier {
 
     @Override
     public @Nullable HttpStatusAndProblems classify(Context context, Exception ex) {
-        for (Throwable t = ex; t != null; t = t.getCause()) {
+        final Set<Throwable> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (Throwable t = ex; t != null && seen.add(t); t = t.getCause()) {
             if (t instanceof InvalidFilterRequest ifr) {
                 return badRequest(ifr.filter, ifr.reason, ifr.getMessage());
             }

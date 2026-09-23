@@ -3,7 +3,8 @@ package net.optionfactory.spring.data.jpa.filtering.filters.spi;
 import jakarta.persistence.criteria.Root;
 
 /// A filter request rejected because of what the client sent: a filter name that is not
-/// whitelisted, an operator outside the whitelist, a value that cannot be parsed.
+/// whitelisted, an operator outside the whitelist, a value that cannot be parsed. It also rejects a
+/// whole request that cannot be read, [#filter] then naming the parameter that carried it.
 ///
 /// [#filter] and [#reason] describe the rejection in the terms of the client's own request, and are
 /// safe to show to it. The message additionally names the entity, which is useful in a log but is

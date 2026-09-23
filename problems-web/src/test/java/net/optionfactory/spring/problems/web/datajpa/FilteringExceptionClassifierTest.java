@@ -204,6 +204,44 @@ public class FilteringExceptionClassifierTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].context").value("byAge"));
     }
 
+    private void expectBadRequestOn(String filters, String context) throws Exception {
+        mvc.perform(MockMvcRequestBuilders.get("/pets")
+                .queryParam("filters", filters)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].type").value("FIELD_ERROR"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].context").value(context));
+    }
+
+    @Test
+    public void aFiltersParameterThatIsNotJsonIsABadRequest() throws Exception {
+        expectBadRequestOn("{not json", "filters");
+    }
+
+    @Test
+    public void aFiltersParameterOfTheWrongShapeIsABadRequest() throws Exception {
+        expectBadRequestOn("{\"byName\": \"rex\"}", "filters");
+    }
+
+    @Test
+    public void aNullFiltersParameterIsABadRequest() throws Exception {
+        expectBadRequestOn("null", "filters");
+    }
+
+    @Test
+    public void aFilterWithoutValuesIsABadRequest() throws Exception {
+        expectBadRequestOn("{\"byName\": null}", "byName");
+    }
+
+    @Test
+    public void aCyclicCauseChainIsDeclined() {
+        final var a = new IllegalStateException("a");
+        final var b = new IllegalStateException("b");
+        a.initCause(b);
+        b.initCause(a);
+        Assertions.assertNull(new FilteringExceptionClassifier().classify(null, a));
+    }
+
     @Test
     public void anUnrelatedExceptionIsDeclined() {
         Assertions.assertNull(new FilteringExceptionClassifier().classify(null, new IllegalStateException("a bug")));

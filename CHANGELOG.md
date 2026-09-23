@@ -229,6 +229,16 @@
     Applications building the resolver through `RestExceptionResolver.builder()` or `ExceptionResolvers`
     are unaffected.
 
+## `data-jpa-web`
+
+*   [FIX] **A `filters` parameter that cannot be read is a rejected filter request.** `FilterRequestArgumentResolver`
+    let Jackson's exception escape for a parameter that is not json, or not an object mapping filter names
+    to arrays of values, and threw a `NullPointerException` for a `null` parameter or a filter without an
+    array: every one was an unexpected error, answered `500`. They are now rejected with an
+    `InvalidFilterRequest` naming the parameter — or the filter, for a filter without values — with
+    Jackson's exception as its cause, which `problems-web`'s `DataJpaProblemsModule` answers with a
+    `400` field error.
+
 # version 27.12
 
 ## `problems-web`

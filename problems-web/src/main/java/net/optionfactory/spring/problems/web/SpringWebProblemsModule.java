@@ -80,7 +80,6 @@ public class SpringWebProblemsModule implements ProblemsModule {
                 yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, List.of(Problem.of(Problem.TYPE_FIELD_ERROR, msrpe.getParameterName(), reason, Problem.NO_DETAILS)));
             }
             case MethodArgumentTypeMismatchException matme -> {
-                // Handles type errors in path variables (Es. not-numeric string when expecting an int)
                 final var parameterName = matme.getParameter().getParameterName() != null ? matme.getParameter().getParameterName() : "arg" + matme.getParameter().getParameterIndex();
                 final var parameterType = matme.getParameter().getParameterType().toGenericString();
                 final var value = matme.getValue();
