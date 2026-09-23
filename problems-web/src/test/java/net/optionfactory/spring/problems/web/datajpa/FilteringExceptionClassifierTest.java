@@ -1,4 +1,4 @@
-package net.optionfactory.spring.data.jpa.web.filtering;
+package net.optionfactory.spring.problems.web.datajpa;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -17,8 +17,8 @@ import net.optionfactory.spring.data.jpa.filtering.filters.LocalDateCompare;
 import net.optionfactory.spring.data.jpa.filtering.filters.Sortable;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequest;
-import net.optionfactory.spring.data.jpa.web.DataJpaProblemsModule;
-import net.optionfactory.spring.data.jpa.web.filtering.FilteringExceptionClassifierTest.WebConfig;
+import net.optionfactory.spring.data.jpa.web.filtering.FilterRequestArgumentResolver;
+import net.optionfactory.spring.problems.web.datajpa.FilteringExceptionClassifierTest.WebConfig;
 import net.optionfactory.spring.problems.web.ExceptionResolvers;
 import org.hamcrest.Matchers;
 import org.hibernate.cfg.AvailableSettings;

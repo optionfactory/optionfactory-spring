@@ -7,7 +7,7 @@
     client sent — and `reason`, phrased in terms of the client's request. Their message still names the
     entity (`in filter byDate@Pet: …`), which is useful in a log but is exactly what the name-based
     contract keeps private, so anything answering a client should use the fields rather than the
-    message. See `data-jpa-web`'s `DataJpaProblemsModule`.
+    message. See `problems-web`'s `DataJpaProblemsModule`.
 *   [FIX] **A join-type conflict between two declarations is a configuration error, not a bad
     request.** `Filters.path` reported two traversals disagreeing on the join type of the same hop as an
     `InvalidFilterRequest`, i.e. as the client's fault, with a reason naming the entity's attribute. No
@@ -157,6 +157,18 @@
 
 ## `problems-web`
 
+*   [NEW] **`DataJpaProblemsModule`: a filter or sort request `data-jpa` rejects is a `400`.** A
+    malformed filter value, an operator outside the whitelist or an unknown filter or sorter name reached
+    the resolver as an `InvalidDataAccessApiUsageException` — spring's JPA exception translation rewraps
+    every `IllegalArgumentException` leaving a repository — which no built-in case answers: it was logged
+    at `ERROR` and answered `500`. Registered with `rest.withModule(new DataJpaProblemsModule())`, its
+    `FilteringExceptionClassifier` finds the rejection in the cause chain and answers `400` with a
+    `FIELD_ERROR` problem whose `context` is the filter or sorter name and whose `reason` is phrased in
+    terms of the client's request, so neither reveals the entity behind the name; the full message goes
+    in `details`, omitted in production. It lives here, in `net.optionfactory.spring.problems.web.datajpa`,
+    next to the `upstream` integration: `data-jpa` is an optional dependency of `problems-web`, so
+    applications not using it are unaffected and never load these classes, and neither `data-jpa` nor
+    `data-jpa-web` depends on `problems-web`.
 *   [ENH] **`RestExceptionResolver` is assembled from modules, its own cases included.** The resolver
     answered spring mvc's, bean validation's, spring security's exceptions and `Failure`s from one
     `switch`; each group is now a built-in `ProblemsModule` — `SpringWebProblemsModule`,
@@ -198,22 +210,6 @@
     constructor is replaced by a four-argument one, with the classifiers ahead of the transformers.
     Applications building the resolver through `RestExceptionResolver.builder()` or `ExceptionResolvers`
     are unaffected.
-
-## `data-jpa-web`
-
-*   [NEW] **`DataJpaProblemsModule`: a rejected filter or sort request is a `400`.** A malformed filter
-    value, an operator outside the whitelist or an unknown filter or sorter name used to reach
-    `problems-web` as an `InvalidDataAccessApiUsageException` — spring's JPA exception translation
-    rewraps every `IllegalArgumentException` leaving a repository — for which the rest resolver has no
-    case: it was logged at `ERROR` and answered `500`. Registered with
-    `rest.withModule(new DataJpaProblemsModule())`, its `FilteringExceptionClassifier` finds the rejection
-    in the cause chain and answers `400` with a `FIELD_ERROR` problem whose `context` is the filter or
-    sorter name and whose `reason` is phrased in terms of the client's request, so neither reveals the
-    entity behind the name; the full message goes in `details`, omitted in production. Registering the
-    module rather than the classifier means whatever this library contributes to `problems-web` later
-    arrives without a configuration change. `problems-web` is an optional dependency: applications not
-    using it are unaffected and never load these classes. `jakarta.servlet-api` moves from `test` to
-    `provided` scope, as compiling against the classifier SPI needs it.
 
 # version 27.12
 

@@ -1,13 +1,12 @@
-package net.optionfactory.spring.data.jpa.web;
+package net.optionfactory.spring.problems.web.datajpa;
 
 import java.util.List;
-import net.optionfactory.spring.data.jpa.web.filtering.FilteringExceptionClassifier;
 import net.optionfactory.spring.problems.web.ExceptionClassifier;
 import net.optionfactory.spring.problems.web.ProblemsModule;
 
-/// Everything `data-jpa-web` contributes to `problems-web`'s rest resolver: today, answering the
-/// filter and sort requests a repository rejects as bad requests rather than as unexpected errors
-/// (see [FilteringExceptionClassifier]).
+/// How `problems-web` answers `data-jpa`'s exceptions: the filter and sort requests a repository
+/// rejects are answered as bad requests rather than as unexpected errors (see
+/// [FilteringExceptionClassifier]).
 ///
 /// Register it where the rest resolver is configured:
 ///
@@ -17,8 +16,8 @@ import net.optionfactory.spring.problems.web.ProblemsModule;
 ///         .configure();
 /// ```
 ///
-/// `problems-web` is an optional dependency of this module: applications not using it never load
-/// this class.
+/// `data-jpa` is an optional dependency of `problems-web`: applications not using it never load this
+/// class.
 public class DataJpaProblemsModule implements ProblemsModule {
 
     @Override

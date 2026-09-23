@@ -33,12 +33,11 @@ This will automatically map standard Spring exceptions (like `MethodArgumentNotV
 A library whose exceptions describe a bad request can have them answered as one without
 depending on this module, and without this module depending on it. The library ships an
 `ExceptionClassifier`, usually as part of a `ProblemsModule` bundling everything it contributes,
-and the application registers the module on the rest resolver once. For instance, `data-jpa-web`'s
-module, which answers rejected filters with a `400`:
+and the application registers the module on the rest resolver once:
 
 ```java
 ExceptionResolvers.configurer(resolvers)
-        .rest(jsonMapper, rest -> rest.withModule(new DataJpaProblemsModule()))
+        .rest(jsonMapper, rest -> rest.withModule(new MyLibraryProblemsModule()))
         .configure();
 ```
 
@@ -70,6 +69,43 @@ registered on its own, with `withClassifier(...)`.
 
 A `FailureTransformer` cannot do a classifier's job: it transforms a failure the resolver has
 already classified, and by then an unknown exception has already been logged as an error.
+
+## Integrations
+
+The other `optionfactory-spring` modules are supported here, each through an optional dependency:
+add the module to your application to use its integration. Applications not using a module never
+load its integration's classes.
+
+### data-jpa
+
+A filter or sort request the repository rejects — an unknown filter or sorter name, an operator
+outside the whitelist, a value that doesn't parse — is the client's mistake. The rejection is an
+`IllegalArgumentException`, though, which spring's JPA exception translation rewraps as an
+`InvalidDataAccessApiUsageException`, which no built-in case answers: unhelped, it is logged as an
+`ERROR` and answered `500`. Register `DataJpaProblemsModule` to answer it with a `400`:
+
+```java
+ExceptionResolvers.configurer(resolvers)
+        .rest(jsonMapper, rest -> rest.withModule(new DataJpaProblemsModule()))
+        .configure();
+```
+
+```json
+[{"type": "FIELD_ERROR", "context": "byBirthDate", "reason": "cannot parse 'not-a-date' as a local date: ...", "details": null}]
+```
+
+It's a field error, whose `context` is the filter or sorter name the client sent — so a UI can
+highlight the offending filter — and whose `reason` is phrased in terms of its request, so neither
+reveals the entity behind the name. The full message, which does name it, is kept in `details`,
+omitted in production.
+
+### upstream
+
+A failed call to an upstream is answered `502`. With `upstream` on the classpath, a handler can
+instead forward the upstream's status and problems with `@UpstreamProblems.Forward`, and rewrite
+their contexts with `@UpstreamProblems.MapContext`. `rest(jsonMapper)` enables this by itself; when
+configuring the resolver with `rest(jsonMapper, rest -> ...)`, enable it with
+`rest.withUpstreamTransformerIfPresent()`.
 
 ## Resolvers
 

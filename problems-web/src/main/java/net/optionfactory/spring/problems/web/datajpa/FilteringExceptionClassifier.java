@@ -1,4 +1,4 @@
-package net.optionfactory.spring.data.jpa.web.filtering;
+package net.optionfactory.spring.problems.web.datajpa;
 
 import java.util.List;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequest;
@@ -23,8 +23,7 @@ import org.springframework.http.HttpStatus;
 /// client's request, so neither reveals the entity behind the name. The full message, which does
 /// name the entity, goes in `details`, which the resolver omits in production.
 ///
-/// Registered through [net.optionfactory.spring.data.jpa.web.DataJpaProblemsModule], along with
-/// anything else this module contributes to `problems-web`.
+/// Registered through [DataJpaProblemsModule].
 public class FilteringExceptionClassifier implements ExceptionClassifier {
 
     @Override
