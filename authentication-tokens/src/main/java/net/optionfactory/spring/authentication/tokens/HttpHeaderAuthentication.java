@@ -153,6 +153,12 @@ public class HttpHeaderAuthentication {
 
     }
 
+    /// A token found in a request and not yet authenticated.
+    ///
+    /// Its principal is where the token was found, the header and its scheme, never the token itself:
+    /// the token is a secret, and a principal is not treated as one. It shows up in `toString()` and in
+    /// `getName()`, both of which spring and applications log, and in the failure events an audit
+    /// listener records. The token is only available as the credentials, which are masked.
     public static class UnauthenticatedToken extends AbstractAuthenticationToken {
 
         private final HeaderAndScheme hs;
@@ -172,8 +178,8 @@ public class HttpHeaderAuthentication {
         }
 
         @Override
-        public String getPrincipal() {
-            return token;
+        public HeaderAndScheme getPrincipal() {
+            return hs;
         }
 
         public HeaderAndScheme getHeaderAndScheme() {

@@ -272,6 +272,13 @@
 
 ## `authentication-tokens`
 
+*   [BREAKING] **An unauthenticated token no longer reveals the token it carries.** `UnauthenticatedToken`
+    returned the raw token as its principal, which `toString()` and `getName()` expose — and both are what
+    spring, applications and audit listeners on failed-authentication events log — so a rejected or
+    mistyped secret ended up in the logs, next to its source address. Its principal is now where the token
+    was found, the `HeaderAndScheme`; the token stays available, masked, as the credentials, which is where
+    `HttpHeaderAuthenticationProvider` has always read it. `getPrincipal()` is declared to return a
+    `HeaderAndScheme`, so code reading it as a `String` stops compiling.
 *   [BREAKING] **A JWT's claims are checked against a policy every configuration states.** A `jws(...)`
     or `jwe(...)` configuration that never called `claims(...)` checked `exp` and `nbf` only when the
     token carried them, and neither issuer nor audience, while the default authorities converter turned
