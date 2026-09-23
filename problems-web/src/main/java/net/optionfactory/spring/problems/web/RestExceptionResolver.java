@@ -96,6 +96,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             if (SPRING_SECURITY_PRESENT) {
                 modules.add(new SpringSecurityProblemsModule());
             }
+            modules.add(new ErrorResponseProblemsModule());
             return List.copyOf(modules);
         }
 

@@ -157,6 +157,17 @@
 
 ## `problems-web`
 
+*   [ENH] **Spring's other standard errors are answered as what they are.** An unsupported request body
+    type, a response type the client does not accept, a missing request header and spring's other
+    exceptions implementing `ErrorResponse` reached the resolver's fallback: the status was right, but the
+    problem was a `SERVER_ERROR` without a reason, logged as an unexpected error. The built-in
+    `ErrorResponseProblemsModule`, consulted after every other built-in module, answers them with their own
+    status and headers — a `415` keeps the `Accept` header listing the supported types — a problem typed
+    after the status (`UNSUPPORTED_MEDIA_TYPE`, `NOT_ACCEPTABLE`, `BAD_REQUEST`), as a
+    `ResponseStatusException` already was, and spring's detail as the reason, localizable through its
+    message code. A server error among them, such as a path variable missing from the mapping, still logs
+    a `WARN`. A request for an unsupported method never reaches the resolver, since it fails before a
+    handler exists, and spring keeps answering it `405` with an `Allow` header.
 *   [ENH] **Our modules are registered whenever the library they integrate is on the classpath.** The
     resolver registers, besides the always-on `SpringWebProblemsModule` and `FailureProblemsModule`, each
     of its own modules whose library is present: `DataJpaProblemsModule` with `data-jpa`,

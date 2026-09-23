@@ -60,6 +60,7 @@ the same reason must decline every exception it does not own:
 | `BeanValidationProblemsModule` | a jakarta `ConstraintViolationException` |
 | `FailureProblemsModule` | the `Failure`s your application throws |
 | `SpringSecurityProblemsModule` | an `AccessDeniedException` |
+| `ErrorResponseProblemsModule` | spring's other standard errors, those implementing `ErrorResponse`: an unsupported body type, an unacceptable response type, a missing header, with their own status and headers |
 
 `BeanValidationProblemsModule` and `SpringSecurityProblemsModule` are registered when their library
 is on the classpath, like the integrations below; both libraries are currently dependencies of this
