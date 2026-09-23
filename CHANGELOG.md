@@ -325,6 +325,11 @@
     consulting later processors, and `SKIP` still leaves it to them. Each JWE processor now decrypts
     its own copy of the token: one that decrypted it and then failed the inner signature left it
     decrypted, and every later processor failed on it. The three modes are documented on `Match`.
+*   [FIX] **The token is cut from a header value where its scheme ends.** The filter upper-cased the
+    whole value to match the scheme, then cut the token from the original at the scheme's length; a
+    character whose upper case is longer (`ß` becomes `SS`) shifted the two apart, and a mangled token
+    was authenticated. The scheme is now compared in place, ignoring case, character by character,
+    which also stops upper-casing every token on every request.
 
 # version 27.12
 

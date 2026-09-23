@@ -7,7 +7,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import net.optionfactory.spring.authentication.tokens.HttpHeaderAuthentication.UnauthenticatedToken;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -58,7 +57,7 @@ public class HttpHeaderAuthenticationFilter extends OncePerRequestFilter {
         return this.hss.stream()
                 .map(ts ->
                         Optional.ofNullable(request.getHeader(ts.header()))
-                            .filter(v -> v.toUpperCase(Locale.ROOT).startsWith(ts.scheme()))
+                            .filter(v -> v.regionMatches(true, 0, ts.scheme(), 0, ts.scheme().length()))
                             .map(v -> v.substring(ts.scheme().length()).trim())
                             .map(token -> new UnauthenticatedToken(ts, token, request))
                 ).filter(Optional::isPresent)

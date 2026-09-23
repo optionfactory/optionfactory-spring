@@ -76,6 +76,38 @@ public class HttpHeaderAuthenticationFilterTest {
         Assertions.assertEquals("a-bare-token", credentials.get());
     }
 
+    /// Upper-casing `ß` yields `SS`: a value upper-cased as a whole no longer lines up with the original,
+    /// so the token was cut from the wrong offset.
+    @Test
+    public void theTokenIsCutWhereTheSchemeEndsInTheOriginalValue() throws Exception {
+        final var credentials = new AtomicReference<String>();
+        final AuthenticationManager am = (Authentication authentication) -> {
+            credentials.set(authentication.getCredentials().toString());
+            return new AuthenticatedToken(
+                    authentication.getCredentials().toString(),
+                    "principal",
+                    authentication.getDetails(),
+                    AuthorityUtils.NO_AUTHORITIES
+            );
+        };
+        final var filter = new HttpHeaderAuthenticationFilter(
+                am,
+                new LinkedHashSet<>(List.of(new HeaderAndScheme("X-Auth", "Weiss")))
+        );
+        final FilterChain chain = (request, response) -> {
+        };
+
+        final MockHttpServletRequest mismatched = new MockHttpServletRequest();
+        mismatched.addHeader("X-Auth", "weiß the-token");
+        filter.doFilter(mismatched, new MockHttpServletResponse(), chain);
+        Assertions.assertNull(credentials.get());
+
+        final MockHttpServletRequest matching = new MockHttpServletRequest();
+        matching.addHeader("X-Auth", "weiss the-token");
+        filter.doFilter(matching, new MockHttpServletResponse(), chain);
+        Assertions.assertEquals("the-token", credentials.get());
+    }
+
     @Test
     public void aRequestCarryingTwoTokensProceedsUnauthenticated() throws Exception {
         final var attempted = new AtomicBoolean(false);
