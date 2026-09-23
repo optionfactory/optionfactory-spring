@@ -213,7 +213,7 @@ public interface Filters {
             if (!join.getAttribute().getName().equals(attribute)) {
                 continue;
             }
-            ensure(join.getJoinType() == jt, root, filterName, "inconsistent join configuration requested on %s: already joined as %s, requested as %s", attribute, join.getJoinType(), jt);
+            ensureConfiguration(join.getJoinType() == jt, filterName, root.getModel(), "inconsistent join configuration requested on %s: already joined as %s, requested as %s", attribute, join.getJoinType(), jt);
             return join;
         }
         return from.join(attribute, jt);

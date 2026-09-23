@@ -67,15 +67,24 @@ public class InvalidFilterValuesTest {
         return new FilterRequest(java.util.Map.of(filter, values));
     }
 
-    private void assertInvalidFilterRequest(String expectedFragment, FilterRequest fr) {
+    private InvalidFilterRequest assertInvalidFilterRequest(String expectedFragment, FilterRequest fr) {
         final var thrown = Assertions.assertThrows(Exception.class, () -> repo.findAll(fr));
         for (Throwable t = thrown; t != null; t = t.getCause()) {
-            if (t instanceof InvalidFilterRequest) {
+            if (t instanceof InvalidFilterRequest ifr) {
                 Assertions.assertTrue(t.getMessage().contains(expectedFragment), t.getMessage());
-                return;
+                return ifr;
             }
         }
-        Assertions.fail("expected an InvalidFilterRequest in the cause chain, got " + thrown);
+        return Assertions.fail("expected an InvalidFilterRequest in the cause chain, got " + thrown);
+    }
+
+    @Test
+    public void aRejectionCarriesTheFilterNameAndAReasonSafeToShowTheClient() {
+        final var rejected = assertInvalidFilterRequest("cannot parse 'not-a-date'", request("byDate", "EQ", "not-a-date"));
+        Assertions.assertEquals("byDate", rejected.filter);
+        Assertions.assertTrue(rejected.reason.startsWith("cannot parse 'not-a-date' as a local date"), rejected.reason);
+        Assertions.assertTrue(rejected.getMessage().contains("@Root"), rejected.getMessage());
+        Assertions.assertFalse(rejected.reason.contains("Root"), rejected.reason);
     }
 
     @Test

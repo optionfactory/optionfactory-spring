@@ -2,6 +2,18 @@
 
 ## `data-jpa`
 
+*   [ENH] **Rejected filter and sort requests say what was rejected, in terms safe to show the
+    client.** `InvalidFilterRequest` and `InvalidSortRequest` expose `filter`/`sorter` — the name the
+    client sent — and `reason`, phrased in terms of the client's request. Their message still names the
+    entity (`in filter byDate@Pet: …`), which is useful in a log but is exactly what the name-based
+    contract keeps private, so anything answering a client should use the fields rather than the
+    message. See `data-jpa-web`'s `DataJpaProblemsModule`.
+*   [FIX] **A join-type conflict between two declarations is a configuration error, not a bad
+    request.** `Filters.path` reported two traversals disagreeing on the join type of the same hop as an
+    `InvalidFilterRequest`, i.e. as the client's fault, with a reason naming the entity's attribute. No
+    request can fix it, so it is now an `InvalidFilterConfiguration`. Only custom filters passing
+    hand-built traversals could ever reach it: join types of the built-in filters come from
+    `@FilterTraversal`, resolved per path, and cannot disagree.
 *   [BREAKING] **Streaming `findAll` now requires an explicit `SessionPolicy.Mode`.** The
     `findAll(base, filters, sort, fetchSize, BiFunction)` overloads are gone: policy-based streaming
     call sites must state `SessionPolicy.Mode.DEFAULT` (managed, mutable entities, dirty-checked —
@@ -142,6 +154,48 @@
     case-insensitive matching keep the `lower(column) like lower(?)` emulation. `LIKE` wildcard escaping (`%`,
     `_`, `\`) is preserved in every mode, and `IGNORE_CASE` comparison operators (`EQ`, `NEQ`, ranges, `BETWEEN`)
     still compile to `lower()` comparisons.
+
+## `problems-web`
+
+*   [NEW] **`ExceptionClassifier` and `ProblemsModule`: let another library's exceptions be answered as
+    what they are.** An exception the `RestExceptionResolver` has no case for is logged at `ERROR` with a
+    stack trace and answered `500`. That is right for a bug, and wrong for a library whose exceptions
+    describe a bad request — and the only way around it used to be a dependency between this module and
+    that library, in one direction or the other. An `ExceptionClassifier` answers such an exception with a
+    status and its problems; a library bundles its classifiers and transformers into a `ProblemsModule`,
+    and the application registers it once, with `RestExceptionResolver.Builder#withModule`, so neither
+    module depends on the other and the library can later contribute more without the application
+    changing its configuration. Classifiers are consulted in registration order, only for exceptions
+    outside the resolver's built-in cases (they can never override how a `Failure` or a binding error is
+    answered), and before it falls back to reporting an unexpected error; a classified exception is
+    logged at `DEBUG`. A classifier receives an `ExceptionClassifier.Context` — the request, response
+    and handler, plus the resolver's message source and locale — so it can localize; a parameter object
+    rather than a list of parameters, so it can grow without breaking classifiers already written. A
+    module contributes classifiers and transformers and nothing else, so it cannot reconfigure the
+    resolver: in particular it cannot include details in production, since detail omission runs after
+    every transformer, a module's included. `FailureTransformer` could not do a classifier's job: it runs
+    after the resolver has classified the exception, by which point an unknown one has already been
+    logged as an error.
+*   [BREAKING] **`RestExceptionResolver`'s constructor takes the classifiers.** The three-argument
+    constructor is replaced by a four-argument one, with the classifiers ahead of the transformers.
+    Applications building the resolver through `RestExceptionResolver.builder()` or `ExceptionResolvers`
+    are unaffected.
+
+## `data-jpa-web`
+
+*   [NEW] **`DataJpaProblemsModule`: a rejected filter or sort request is a `400`.** A malformed filter
+    value, an operator outside the whitelist or an unknown filter or sorter name used to reach
+    `problems-web` as an `InvalidDataAccessApiUsageException` — spring's JPA exception translation
+    rewraps every `IllegalArgumentException` leaving a repository — for which the rest resolver has no
+    case: it was logged at `ERROR` and answered `500`. Registered with
+    `rest.withModule(new DataJpaProblemsModule())`, its `FilteringExceptionClassifier` finds the rejection
+    in the cause chain and answers `400` with a `FIELD_ERROR` problem whose `context` is the filter or
+    sorter name and whose `reason` is phrased in terms of the client's request, so neither reveals the
+    entity behind the name; the full message goes in `details`, omitted in production. Registering the
+    module rather than the classifier means whatever this library contributes to `problems-web` later
+    arrives without a configuration change. `problems-web` is an optional dependency: applications not
+    using it are unaffected and never load these classes. `jakarta.servlet-api` moves from `test` to
+    `provided` scope, as compiling against the classifier SPI needs it.
 
 # version 27.12
 

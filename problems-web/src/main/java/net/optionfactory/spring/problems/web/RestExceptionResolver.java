@@ -21,6 +21,7 @@ import net.optionfactory.spring.problems.Failure;
 import net.optionfactory.spring.problems.Problem;
 import net.optionfactory.spring.problems.web.l10n.AggregateMessageSource;
 import net.optionfactory.spring.problems.web.l10n.FallbackMessageSource;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.ResourceBundleMessageSource;
@@ -67,6 +68,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
 
     private final Map<HandlerMethod, Boolean> methodToIsRest = new ConcurrentHashMap<>();
     private final JsonMapper mapper;
+    private final List<ExceptionClassifier> classifiers;
     private final List<FailureTransformer> transformers;
     private final MessageSource messageSource;
 
@@ -95,6 +97,7 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
     public static class Builder {
 
         private Details options = Details.OMIT;
+        private final List<ExceptionClassifier> classifiers = new ArrayList<>();
         private final List<FailureTransformer> transformers = new ArrayList<>();
         private MessageSource messageSource;
 
@@ -146,6 +149,17 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             return this;
         }
 
+        public Builder withClassifier(ExceptionClassifier c) {
+            this.classifiers.add(c);
+            return this;
+        }
+
+        public Builder withModule(ProblemsModule module) {
+            module.classifiers().forEach(this::withClassifier);
+            module.transformers().forEach(this::withTransformer);
+            return this;
+        }
+
         public RestExceptionResolver build(JsonMapper mapper) {
             final var fts = new ArrayList<>(transformers);
             if (options == Details.OMIT) {
@@ -156,13 +170,14 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             defaultSource.setDefaultEncoding("UTF-8");
             defaultSource.setParentMessageSource(new AggregateMessageSource("ContributorValidationMessages"));
             final MessageSource ms = messageSource == null ? defaultSource : new FallbackMessageSource(messageSource, defaultSource);
-            return new RestExceptionResolver(mapper, ms, fts);
+            return new RestExceptionResolver(mapper, ms, List.copyOf(classifiers), fts);
         }
 
     }
 
-    public RestExceptionResolver(JsonMapper mapper, MessageSource messageSource, List<FailureTransformer> transformers) {
+    public RestExceptionResolver(JsonMapper mapper, MessageSource messageSource, List<ExceptionClassifier> classifiers, List<FailureTransformer> transformers) {
         this.mapper = mapper;
+        this.classifiers = classifiers;
         this.transformers = transformers;
         this.messageSource = messageSource;
     }
@@ -312,6 +327,11 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 yield new HttpStatusAndProblems(annotatedStatusOr(ade, HttpStatus.FORBIDDEN), List.of(problem));
             }
             default -> {
+                final var classified = classified(new ExceptionClassifier.Context(request, response, hm, messageSource, locale), ex);
+                if (classified != null) {
+                    logger.debug(String.format("Classified failure at %s: %s", requestUri, classified.problems()));
+                    yield classified;
+                }
                 if (null != super.doResolveException(request, new SendErrorToSetStatusHttpServletResponse(response), hm, ex)) {
                     if (request.getAttribute("javax.servlet.error.exception") != null) {
                         logger.warn(String.format("got an internal error from spring at %s", requestUri), ex);
@@ -324,6 +344,16 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
                 yield new HttpStatusAndProblems(annotatedStatusOr(ex, HttpStatus.INTERNAL_SERVER_ERROR), List.of(Problem.of(Problem.TYPE_SERVER_ERROR, null, null, ex.getMessage())));
             }
         };
+    }
+
+    private @Nullable HttpStatusAndProblems classified(ExceptionClassifier.Context context, Exception ex) {
+        for (final var c : classifiers) {
+            final var saps = c.classify(context, ex);
+            if (saps != null) {
+                return saps;
+            }
+        }
+        return null;
     }
 
     private HttpStatus annotatedStatusOr(Exception ex, HttpStatus defaultValue) {

@@ -157,8 +157,10 @@ public class SortTraversalTest {
     public void unwhitelistedSorterIsRejected() {
         // spring's persistence exception translation wraps the InvalidSortRequest, an IllegalArgumentException
         final var thrown = Assertions.assertThrows(InvalidDataAccessApiUsageException.class, () -> pets.findAll(FilterRequest.unfiltered(), Sort.by("byTagLabel")));
-        Assertions.assertInstanceOf(InvalidSortRequest.class, thrown.getCause());
+        final var rejected = Assertions.assertInstanceOf(InvalidSortRequest.class, thrown.getCause());
         Assertions.assertTrue(thrown.getMessage().contains("sorter not configured"), thrown.getMessage());
+        Assertions.assertEquals("byTagLabel", rejected.sorter);
+        Assertions.assertFalse(rejected.reason.contains("Pet"), rejected.reason);
     }
 
     private static Owner owner(long id, String name) {

@@ -4,17 +4,21 @@ import jakarta.inject.Inject;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository;
+import java.util.List;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
+import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterConfiguration;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.h2.HibernateOnH2TestConfig;
 import net.optionfactory.spring.data.jpa.test.TransactionalPhases;
@@ -68,6 +72,22 @@ public class FiltersTest {
 
     @Inject
     private RootsRepository repository;
+
+    @Inject
+    private EntityManagerFactory emf;
+
+    @Test
+    public void conflictingJoinTypesOnTheSameHopAreAConfigurationErrorNotARequestError() {
+        try (final var em = emf.createEntityManager()) {
+            final var builder = em.getCriteriaBuilder();
+            final var root = builder.createQuery(RootAgg.class).from(RootAgg.class);
+            Filters.path(root, "asLeft", new Filters.Traversal(List.of(new Filters.Step("b", JoinType.LEFT)), "id", null, null));
+            final var thrown = Assertions.assertThrows(InvalidFilterConfiguration.class, () -> {
+                Filters.path(root, "asInner", new Filters.Traversal(List.of(new Filters.Step("b", JoinType.INNER)), "id", null, null));
+            });
+            Assertions.assertTrue(thrown.getMessage().contains("already joined as LEFT, requested as INNER"), thrown.getMessage());
+        }
+    }
 
     @Test
     public void canSpecifyEmptyTraversal() {

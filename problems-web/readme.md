@@ -28,6 +28,34 @@ public void extendHandlerExceptionResolvers(List<HandlerExceptionResolver> resol
 
 This will automatically map standard Spring exceptions (like `MethodArgumentNotValidException`) and custom `Failure` exceptions to a unified JSON error response.
 
+### Classifying another library's exceptions
+
+A library whose exceptions describe a bad request can have them answered as one without
+depending on this module, and without this module depending on it. The library ships an
+`ExceptionClassifier`, usually as part of a `ProblemsModule` bundling everything it contributes,
+and the application registers the module on the rest resolver once. For instance, `data-jpa-web`'s
+module, which answers rejected filters with a `400`:
+
+```java
+ExceptionResolvers.configurer(resolvers)
+        .rest(jsonMapper, rest -> rest.withModule(new DataJpaProblemsModule()))
+        .configure();
+```
+
+Classifiers are consulted in registration order, only for exceptions the resolver has no built-in
+case for, and before it falls back to reporting an unexpected error. A classified exception is
+therefore answered with the classifier's status and problems and logged at `DEBUG`, rather than
+as an `ERROR` with a stack trace. A classifier receives the request being answered together with
+the resolver's message source and locale, so it can localize what it reports.
+
+A module contributes classifiers and transformers and nothing else, so it cannot change how the
+resolver itself is configured. In particular, it cannot include details in production: detail
+omission runs after every transformer, a module's included. A single classifier can also be
+registered on its own, with `withClassifier(...)`.
+
+A `FailureTransformer` cannot do a classifier's job: it transforms a failure the resolver has
+already classified, and by then an unknown exception has already been logged as an error.
+
 ## Resolvers
 
 Each is opt-in, and `configure()` places them in the order below.

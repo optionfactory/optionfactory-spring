@@ -35,6 +35,44 @@ public Page<Person> search(FilterRequest filter, Pageable pageable) {
 }
 ```
 
+### Filter and sort errors, with problems-web
+
+A filter or sort request the repository rejects — an unknown filter or sorter name, an operator
+outside the whitelist, a value that doesn't parse — is the client's mistake. Without help,
+though, `problems-web` answers it with a `500` and an `ERROR` log: the rejection is an
+`IllegalArgumentException`, which spring's JPA exception translation rewraps as an
+`InvalidDataAccessApiUsageException`, and the rest resolver has no case for that.
+
+When you use `problems-web`, register this module's `DataJpaProblemsModule` where the rest
+resolver is configured:
+
+```java
+@Override
+public void extendHandlerExceptionResolvers(List<HandlerExceptionResolver> resolvers) {
+    ExceptionResolvers.configurer(resolvers)
+            .rest(jsonMapper, rest -> rest.withModule(new DataJpaProblemsModule()))
+            .configure();
+}
+```
+
+Rejections are then answered with a `400` and logged at `DEBUG`:
+
+```json
+[{"type": "FIELD_ERROR", "context": "byBirthDate", "reason": "cannot parse 'not-a-date' as a local date: ...", "details": null}]
+```
+
+It's a field error, whose `context` is the filter or sorter name the client sent — so a UI can
+highlight the offending filter — and whose `reason` is phrased in terms of its request, so neither
+reveals the entity behind the name. The full message, which does name
+it, is kept in `details`, which `problems-web` omits in production.
+
+The module is the stable thing to register: whatever else this library contributes to
+`problems-web` in the future is added to it, with no change to your configuration. It currently
+holds one `FilteringExceptionClassifier`.
+
+`problems-web` is an optional dependency of this module: add it yourself to use it. Applications
+that don't use it never load these classes.
+
 ### PageMixin
 
 Configure `PageMixin` on your `JsonMapper` to serialize `Page` objects in a simplified form:
