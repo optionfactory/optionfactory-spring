@@ -10,6 +10,7 @@ import jakarta.persistence.metamodel.EntityType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import net.optionfactory.spring.data.jpa.filtering.filters.Match;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
 import org.springframework.data.domain.Sort;
 
@@ -38,7 +39,7 @@ public class Sorters {
     public static Traversal traversal(EntityType<?> entity, String sorterName, String path) {
         final Traversal traversal;
         try {
-            traversal = Filters.traversal(entity, sorterName, path);
+            traversal = Filters.traversal(entity, sorterName, path, Match.ANY);
         } catch (IllegalArgumentException ex) {
             throw new InvalidSortConfiguration(sorterName, entity, String.format("cannot resolve path %s: %s", path, ex.getMessage()));
         }

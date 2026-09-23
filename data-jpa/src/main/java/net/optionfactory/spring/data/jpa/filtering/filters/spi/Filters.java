@@ -77,22 +77,25 @@ public interface Filters {
     ///    to that filter and stable across restarts. This forces the query compiler to break away from parent 
     ///    folding and isolate that segment into its own distinct, standalone `EXISTS` block.
     /// 
-    /// Evaluates the path with the default [Match#ANY] quantifier, for callers whose paths cannot 
-    /// cross a collection (sorters, full-text search) or that want the existential reading.
+    /// Evaluates the path with no quantifier stated, for a custom filter that has none of its own: the
+    /// path is accepted when it crosses no collection, and rejected when it crosses one, since the
+    /// filter would then have to say whether some element or no element must satisfy it — build such
+    /// a traversal with [#traversal(EntityType, String, String, Match)] instead.
     ///
     /// @param entity the JPA root metamodel descriptor
     /// @param filterName the alphanumeric identifier of the filter being evaluated
     /// @param path the raw dot-separated target path (e.g., `"departments.employees.name"`)
     /// @return a fully compiled graph traversal specification
     static Traversal traversal(EntityType<?> entity, String filterName, String path) {
-        return traversal(entity, filterName, path, Match.ANY);
+        return traversal(entity, filterName, path, Match.UNSTATED);
     }
 
     /// @param entity the JPA root metamodel descriptor
     /// @param filterName the alphanumeric identifier of the filter being evaluated
     /// @param path the raw dot-separated target path (e.g., `"departments.employees.name"`)
-    /// @param quantifier what the filter asks of the elements of the collection its path crosses; 
-    ///        [Match#NONE] requires such a collection, and is rejected on a path without one
+    /// @param quantifier what the filter asks of the elements of the collection its path crosses:
+    ///        a path crossing one requires [Match#ANY] or [Match#NONE], and rejects [Match#UNSTATED];
+    ///        a path crossing none rejects [Match#NONE] and reads the other two alike
     /// @return a fully compiled graph traversal specification
     static Traversal traversal(EntityType<?> entity, String filterName, String path, Match quantifier) {
         if (path == null || path.isEmpty()) {
@@ -169,8 +172,9 @@ public interface Filters {
         // a quantifier with nothing to quantify over reads as a condition it does not apply: rejected
         // here rather than ignored, since `match = NONE` on a scalar path states the opposite of what
         // the filter would then do
-        ensureConfiguration(quantifier == Match.ANY || group != null, filterName, entity, "match %s requires a path crossing a collection, got %s", quantifier, path);
-        return new Traversal(pathList, leaf, currentAttribute, group, quantifier);
+        ensureConfiguration(quantifier != Match.NONE || group != null, filterName, entity, "match %s requires a path crossing a collection, got %s", quantifier, path);
+        ensureConfiguration(quantifier != Match.UNSTATED || group == null, filterName, entity, "path %s crosses a collection: its quantifier must be stated, Match.ANY (some element satisfies the filter) or Match.NONE (no element does)", path);
+        return new Traversal(pathList, leaf, currentAttribute, group, quantifier == Match.UNSTATED ? Match.ANY : quantifier);
     }
 
     /// Names the subquery a filter's conditions are folded into.

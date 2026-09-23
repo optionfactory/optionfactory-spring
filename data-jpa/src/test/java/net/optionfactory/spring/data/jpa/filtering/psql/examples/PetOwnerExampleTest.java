@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
 import java.util.Map;
+import net.optionfactory.spring.data.jpa.filtering.filters.Match;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository;
 import net.optionfactory.spring.data.jpa.filtering.filters.InEnum;
@@ -72,9 +73,9 @@ public class PetOwnerExampleTest {
     @TextCompare(name = "byFirstName", path = "firstName")
     @TextCompare(name = "byLastName", path = "lastName")
     @TextCompare(name = "byState", path = "address.state")
-    @TextCompare(name = "byPetName", path = "pets.name")
-    @InEnum(name = "byPetType", path = "pets.type", type = PetType.class)
-    @LocalDateCompare(name = "byPetBirthDate", path = "pets.birthDate")
+    @TextCompare(name = "byPetName", path = "pets.name", match = Match.ANY)
+    @InEnum(name = "byPetType", path = "pets.type", type = PetType.class, match = Match.ANY)
+    @LocalDateCompare(name = "byPetBirthDate", path = "pets.birthDate", match = Match.ANY)
     public static class PetOwner {
 
         @Id

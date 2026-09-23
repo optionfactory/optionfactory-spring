@@ -18,6 +18,12 @@ import jakarta.persistence.metamodel.EntityType;
 import net.optionfactory.spring.data.jpa.filtering.TraversalFilter;
 import net.optionfactory.spring.data.jpa.filtering.filters.Filterable;
 import net.optionfactory.spring.data.jpa.filtering.filters.Match;
+import net.optionfactory.spring.data.jpa.filtering.filters.InstantCompare;
+import net.optionfactory.spring.data.jpa.filtering.filters.LocalDateCompare;
+import net.optionfactory.spring.data.jpa.filtering.filters.BooleanCompare;
+import net.optionfactory.spring.data.jpa.filtering.filters.InList;
+import net.optionfactory.spring.data.jpa.filtering.filters.InEnum;
+import net.optionfactory.spring.data.jpa.filtering.filters.NumberCompare;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterConfiguration;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
@@ -84,11 +90,11 @@ public class CollectionQuantifierTest {
     @Entity
     @Filterable(name = "customWithoutTag", filter = TagAbsenceFilter.class)
     @TextCompare(name = "byName", path = "name")
-    @TextCompare(name = "byTag", path = "tags.label")
+    @TextCompare(name = "byTag", path = "tags.label", match = Match.ANY)
     @TextCompare(name = "byKennelCity", path = "kennel.city")
-    @TextCompare(name = "byKennelBadge", path = "kennel.badges.label")
+    @TextCompare(name = "byKennelBadge", path = "kennel.badges.label", match = Match.ANY)
     @TextCompare(name = "withoutTag", path = "tags.label", match = Match.NONE)
-    @TextCompare(name = "byTagPrefix", path = "tags.label", operators = TextCompare.Operator.STARTS_WITH)
+    @TextCompare(name = "byTagPrefix", path = "tags.label", operators = TextCompare.Operator.STARTS_WITH, match = Match.ANY)
     public static class Pet {
 
         @Id
@@ -225,9 +231,39 @@ public class CollectionQuantifierTest {
     }
 
     @Test
-    public void theDefaultQuantifierIsAcceptedOnAnyPath() {
+    public void anExplicitAnyIsAcceptedOnAPathWithoutACollection() {
         final var entity = emf.getMetamodel().entity(Pet.class);
         Assertions.assertNull(Filters.traversal(entity, "byName", "name", Match.ANY).group());
+    }
+
+    @Test
+    public void anUnstatedQuantifierIsAcceptedOnAPathWithoutACollection() {
+        final var entity = emf.getMetamodel().entity(Pet.class);
+        final var traversal = Filters.traversal(entity, "byName", "name");
+        Assertions.assertNull(traversal.group());
+        Assertions.assertEquals(Match.ANY, traversal.match());
+    }
+
+    /// A filter over a collection written before quantifiers existed fails when the repository is
+    /// built, instead of silently returning different rows.
+    @Test
+    public void anUnstatedQuantifierOnAPathCrossingACollectionIsRejected() {
+        final var entity = emf.getMetamodel().entity(Pet.class);
+        final var thrown = Assertions.assertThrows(InvalidFilterConfiguration.class, () -> Filters.traversal(entity, "byTag", "tags.label", Match.UNSTATED));
+        Assertions.assertTrue(thrown.getMessage().contains("its quantifier must be stated"), thrown.getMessage());
+    }
+
+    @Test
+    public void aCustomFilterWithoutAQuantifierIsRejectedOnAPathCrossingACollection() {
+        final var entity = emf.getMetamodel().entity(Pet.class);
+        Assertions.assertThrows(InvalidFilterConfiguration.class, () -> Filters.traversal(entity, "customByTag", "tags.label"));
+    }
+
+    @Test
+    public void everyPathBasedFilterLeavesTheQuantifierUnstatedByDefault() throws Exception {
+        for (final var annotation : List.of(TextCompare.class, NumberCompare.class, InEnum.class, InList.class, BooleanCompare.class, LocalDateCompare.class, InstantCompare.class)) {
+            Assertions.assertEquals(Match.UNSTATED, annotation.getMethod("match").getDefaultValue(), annotation.getSimpleName());
+        }
     }
 
     private static Tag tag(long id, String label) {

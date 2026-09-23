@@ -41,14 +41,15 @@ public @interface InList {
 
     /**
      * The quantifier applied when {@link #path()} crosses a collection: whether a row is kept
-     * because <em>some</em> element matches ({@link Match#ANY}, the default) or because
-     * <em>no</em> element does ({@link Match#NONE}). A negated filter over a collection is
-     * {@code NONE} over a positive condition, never {@code ANY} over a negated one. Ignored when
-     * the path crosses no collection.
+     * because <em>some</em> element matches ({@link Match#ANY}) or because <em>no</em> element
+     * does ({@link Match#NONE}). A negated filter over a collection is {@code NONE} over a
+     * positive condition, never {@code ANY} over a negated one. Required when the path crosses a
+     * collection, where leaving it {@link Match#UNSTATED} is rejected when the repository is
+     * built; unnecessary, and ignored, when it crosses none.
      *
      * @return the quantifier
      */
-    Match match() default Match.ANY;
+    Match match() default Match.UNSTATED;
 
 
     @Documented

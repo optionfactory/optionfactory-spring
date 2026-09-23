@@ -134,7 +134,7 @@ public @interface TextSearch {
             Filters.ensureConfiguration(annotation.paths().length > 0, annotation.name(), entity, "at least one path is required");
             final var collected = new ArrayList<Traversal>();
             for (String path : annotation.paths()) {
-                final Traversal traversal = Filters.traversal(entity, annotation.name(), path);
+                final Traversal traversal = Filters.traversal(entity, annotation.name(), path, Match.ANY);
                 Filters.ensurePropertyOfAnyType(entity, annotation.name(), traversal, String.class);
                 Filters.ensureConfiguration(traversal.group() == null, annotation.name(), entity, "path %s crosses a collection, not supported by @TextSearch".formatted(path));
                 collected.add(traversal);

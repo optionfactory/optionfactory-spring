@@ -87,7 +87,7 @@ public class Person {
 ```
 
 Every comparison annotation above also takes a `match` quantifier, which applies when — and only
-when — its path crosses a collection: see
+when — its path crosses a collection, and which such a filter must state: see
 [Filtering across a collection](#filtering-across-a-collection). `@TextSearch` and `@Sortable`
 have none, as neither accepts a collection-crossing path.
 
@@ -178,7 +178,7 @@ writes the label the user reads:
 
 ```java
 @Entity
-@TextCompare(name = "withTag", path = "tags.label")                      // match = ANY, the default
+@TextCompare(name = "withTag", path = "tags.label", match = Match.ANY)
 @TextCompare(name = "withoutTag", path = "tags.label", match = Match.NONE)
 public class Pet { ... }
 ```
@@ -189,9 +189,12 @@ public class Pet { ... }
 - `NONE` renders `NOT EXISTS (...)`: the row is kept when no element satisfies the condition.
   A row with an empty collection matches, correctly so.
 
-A quantifier needs something to quantify over, so `match = NONE` on a path that crosses no
-collection is rejected when the repository is built rather than ignored — otherwise the
-annotation would state the opposite of what the filter does.
+Neither reading is a safe default, so there is none: `match` defaults to `Match.UNSTATED`, and a
+filter whose path crosses a collection without stating `ANY` or `NONE` is rejected with an
+`InvalidFilterConfiguration` when the repository is built. A filter whose path crosses no
+collection needs no quantifier and can leave it out. Conversely, a quantifier needs something to
+quantify over, so `match = NONE` on a path that crosses no collection is rejected too, rather than
+ignored — otherwise the annotation would state the opposite of what the filter does.
 
 **Do not express a negative filter as `ANY` over a negated operator.** `withTag NEQ "x"` asks
 "is there a tag that isn't `x`?", so it keeps a pet tagged both `x` and `y`, and drops a pet
@@ -228,7 +231,9 @@ satisfying all of them.
 
 `@Filterable` has no `path`, so it has no `match` either: a custom filter owns what it
 traverses and therefore owns its quantifier. Implement `TraversalFilter` and state it on the
-traversal, and the filter is folded, grouped and negated exactly like a built-in one:
+traversal, and the filter is folded, grouped and negated exactly like a built-in one. The
+three-argument `Filters.traversal(entity, name, path)` states none, so it is rejected on a path
+crossing a collection, exactly as an annotation that leaves `match` out:
 
 ```java
 public class TagAbsenceFilter implements TraversalFilter<String> {

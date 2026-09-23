@@ -9,6 +9,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import java.util.List;
+import net.optionfactory.spring.data.jpa.filtering.filters.Match;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
@@ -26,7 +27,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 public class ElementCollectionEmbeddableAssociationTest {
 
     @Entity
-    @TextCompare(name = "byCountryName", path = "addresses.country.name")
+    @TextCompare(name = "byCountryName", path = "addresses.country.name", match = Match.ANY)
     public static class Person {
 
         @Id

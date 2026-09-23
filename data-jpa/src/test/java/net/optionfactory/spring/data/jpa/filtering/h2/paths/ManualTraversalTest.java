@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import java.util.List;
+import net.optionfactory.spring.data.jpa.filtering.filters.Match;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository;
 import net.optionfactory.spring.data.jpa.filtering.filters.BooleanCompare;
@@ -67,8 +68,8 @@ public class ManualTraversalTest {
 
     @Entity
     @FilterTraversal(path = "leaves", reuse = false)
-    @BooleanCompare(name = "flag1", path = "leaves.flag1")
-    @BooleanCompare(name = "flag2", path = "leaves.flag2")
+    @BooleanCompare(name = "flag1", path = "leaves.flag1", match = Match.ANY)
+    @BooleanCompare(name = "flag2", path = "leaves.flag2", match = Match.ANY)
     public static class Root {
 
         @Id

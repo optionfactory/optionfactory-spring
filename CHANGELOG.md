@@ -65,11 +65,17 @@
     have no quantifier, neither accepting a collection-crossing path. `match = NONE` on a path without
     a collection is rejected when the repository is built, rather than ignored: with nothing to
     quantify over, the annotation would state the opposite of what the filter does.
-    **This changes results silently, at runtime — nothing fails to compile.** Rows whose collection is
-    empty no longer match an `ANY` filter, whatever the operator. Audit every filter whose `path`
-    crosses a collection and is used with `NEQ` or a null value: those are the call sites that were
-    relying on the old shape, and `match = NONE` over the positive condition is almost certainly what
-    they meant. Filters over collections used only with positive operators are unaffected.
+    **A filter crossing a collection must state its quantifier, or the repository fails to build.**
+    Rows whose collection is empty no longer match an `ANY` filter, whatever the operator, so the same
+    filter can return different rows than before; rather than change them silently, `match` defaults
+    to `Match.UNSTATED`, which is rejected with an `InvalidFilterConfiguration` naming the filter on a
+    path crossing a collection, and accepted on one crossing none. Filters that cross no collection
+    need no change. For each rejected filter: one used only with positive operators states
+    `match = Match.ANY` and returns what it always did; one used with `NEQ` or a null value was relying
+    on the old shape, and `match = Match.NONE` over the positive condition is almost certainly what it
+    meant. Custom filters get the same check: the three-argument `Filters.traversal(entity, name, path)`
+    states no quantifier and is rejected on a collection-crossing path, so such a filter moves to
+    `Filters.traversal(entity, name, path, match)`.
     The subquery now correlates the row instead of selecting the root table a second time
     (`exists(select 1 from tag t where t.pet_id = p.id and ...)`), so the root is read once. A path
     crossing a singular association before the collection still joins the root inside the subquery,

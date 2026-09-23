@@ -11,6 +11,7 @@ import jakarta.persistence.criteria.JoinType;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import net.optionfactory.spring.data.jpa.filtering.filters.Match;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringSpecificationAdapter;
@@ -41,8 +42,8 @@ public class DeterministicPredicatesTest {
 
     @Entity
     @FilterTraversal(path = "leaves", joinType = JoinType.INNER, reuse = false)
-    @TextCompare(name = "byLeafA", path = "leaves.a")
-    @TextCompare(name = "byLeafB", path = "leaves.b")
+    @TextCompare(name = "byLeafA", path = "leaves.a", match = Match.ANY)
+    @TextCompare(name = "byLeafB", path = "leaves.b", match = Match.ANY)
     public static class Root {
 
         @Id
@@ -77,8 +78,8 @@ public class DeterministicPredicatesTest {
     @Test
     public void isolatedSubqueryGroupsAreStableAcrossResolutions() {
         final var entity = emf.getMetamodel().entity(Root.class);
-        final var first = Filters.traversal(entity, "byLeafA", "leaves.a");
-        final var second = Filters.traversal(entity, "byLeafA", "leaves.a");
+        final var first = Filters.traversal(entity, "byLeafA", "leaves.a", Match.ANY);
+        final var second = Filters.traversal(entity, "byLeafA", "leaves.a", Match.ANY);
         Assertions.assertEquals(first.group(), second.group());
         Assertions.assertEquals("leaves!byLeafA#ANY", first.group());
     }
@@ -87,8 +88,8 @@ public class DeterministicPredicatesTest {
     public void isolatedSubqueryGroupsStayDistinctPerFilter() {
         final var entity = emf.getMetamodel().entity(Root.class);
         Assertions.assertNotEquals(
-                Filters.traversal(entity, "byLeafA", "leaves.a").group(),
-                Filters.traversal(entity, "byLeafB", "leaves.b").group());
+                Filters.traversal(entity, "byLeafA", "leaves.a", Match.ANY).group(),
+                Filters.traversal(entity, "byLeafB", "leaves.b", Match.ANY).group());
     }
 
     @Test

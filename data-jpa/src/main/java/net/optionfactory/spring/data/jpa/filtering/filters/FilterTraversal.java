@@ -45,9 +45,10 @@ import java.lang.annotation.Target;
 /// 
 /// The join into the collection is always an `INNER` one: an outer join would yield a row for every parent, 
 /// making `EXISTS` vacuously true. Whether a parent is kept is decided by the filter's [Match] quantifier, which is 
-/// the axis that actually matters when filtering across a collection:
+/// the axis that actually matters when filtering across a collection, and which such a filter must therefore
+/// state:
 /// 
-/// #### Case A: [Match#ANY] (Default)
+/// #### Case A: [Match#ANY]
 /// The parent is kept when at least one element satisfies the condition. A parent whose collection is empty is 
 /// dropped: it has no element to satisfy anything. This is the reading every positive operator (`EQ`, `CONTAINS`, 
 /// `GT`, ...) has always had.

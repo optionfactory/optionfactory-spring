@@ -7,6 +7,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import java.util.List;
+import net.optionfactory.spring.data.jpa.filtering.filters.Match;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
@@ -24,7 +25,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 public class PluralAttributesTest {
 
     @Entity
-    @TextCompare(name = "byLeafColor", path = "leaves.color")
+    @TextCompare(name = "byLeafColor", path = "leaves.color", match = Match.ANY)
     public static class Root {
 
         @Id
