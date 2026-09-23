@@ -34,7 +34,16 @@ public class ExceptionClassifierTest {
 
     private static final ExceptionClassifier DECLINING_CLASSIFIER = (context, ex) -> null;
 
-    private static final ExceptionClassifier GREEDY_CLASSIFIER = (context, ex) -> new HttpStatusAndProblems(HttpStatus.I_AM_A_TEAPOT, List.of(Problem.request("greedy")));
+    public static class PaymentRequired extends Failure {
+
+        public PaymentRequired() {
+            super(List.of(Problem.request("pay first")), null, null);
+        }
+    }
+
+    private static final ExceptionClassifier PAYMENT_CLASSIFIER = (context, ex) -> ex instanceof PaymentRequired pr
+            ? new HttpStatusAndProblems(HttpStatus.PAYMENT_REQUIRED, pr.problems)
+            : null;
 
     private static HandlerMethod handler() throws NoSuchMethodException {
         return new HandlerMethod(new ExceptionClassifierTest(), ExceptionClassifierTest.class.getMethod("fakeControllerMethod"));
@@ -88,8 +97,18 @@ public class ExceptionClassifierTest {
     }
 
     @Test
-    public void classifiersNeverOverrideTheResolversBuiltInCases() throws NoSuchMethodException {
-        final var er = RestExceptionResolver.builder().withClassifier(GREEDY_CLASSIFIER).build(new JsonMapper());
+    public void aClassifierCanRefineABuiltInCase() throws NoSuchMethodException {
+        final var er = RestExceptionResolver.builder().withClassifier(PAYMENT_CLASSIFIER).build(new JsonMapper());
+        final var res = new MockHttpServletResponse();
+
+        er.resolveException(new MockHttpServletRequest(), res, handler(), new PaymentRequired());
+
+        Assertions.assertEquals(402, res.getStatus());
+    }
+
+    @Test
+    public void aBuiltInCaseStillAnswersWhatNoClassifierClaims() throws NoSuchMethodException {
+        final var er = RestExceptionResolver.builder().withClassifier(PAYMENT_CLASSIFIER).build(new JsonMapper());
         final var res = new MockHttpServletResponse();
 
         final var got = er.resolveException(new MockHttpServletRequest(), res, handler(), Failure.field("name", "required"));

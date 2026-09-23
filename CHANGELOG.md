@@ -160,9 +160,13 @@
 *   [ENH] **`RestExceptionResolver` is assembled from modules, its own cases included.** The resolver
     answered spring mvc's, bean validation's, spring security's exceptions and `Failure`s from one
     `switch`; each group is now a built-in `ProblemsModule` — `SpringWebProblemsModule`,
-    `BeanValidationProblemsModule`, `FailureProblemsModule`, `SpringSecurityProblemsModule` — always
-    registered ahead of any other, so a classifier an application or library adds is still never offered
-    an exception a built-in case answers. The resolver is left with what only it can do: consulting the
+    `BeanValidationProblemsModule`, `FailureProblemsModule`, `SpringSecurityProblemsModule` — consulted
+    after every classifier an application or library registers, as the defaults: specific before general,
+    as with `catch` clauses. A registered classifier can therefore refine a built-in case — answering a
+    subclass of `Failure`, `RestClientException`, `ResponseStatusException` or `AccessDeniedException`
+    its own way, which built-ins consulted first made impossible — and for the same reason must decline
+    every exception it does not own. Built-in modules contribute transformers as well as classifiers,
+    registered after the application's; detail omission still runs last. The resolver is left with what only it can do: consulting the
     classifiers, falling back to spring's defaults and reporting unexpected errors, running the
     transformers and rendering. Answers are unchanged, pinned by a test per built-in case written before
     the move and passing on both sides of it. Two things observably differ: each client error is logged by
@@ -180,10 +184,9 @@
     status and its problems; a library bundles its classifiers and transformers into a `ProblemsModule`,
     and the application registers it once, with `RestExceptionResolver.Builder#withModule`, so neither
     module depends on the other and the library can later contribute more without the application
-    changing its configuration. Classifiers are consulted in registration order, only for exceptions
-    outside the resolver's built-in cases (they can never override how a `Failure` or a binding error is
-    answered), and before it falls back to reporting an unexpected error; a classified exception is
-    logged at `DEBUG`. A classifier receives an `ExceptionClassifier.Context` — the request, response
+    changing its configuration. Classifiers are consulted in registration order, the first not declining
+    answering, and before the resolver falls back to reporting an unexpected error; a classified
+    exception is logged at `DEBUG`. A classifier receives an `ExceptionClassifier.Context` — the request, response
     and handler, plus the resolver's message source and locale — so it can localize; a parameter object
     rather than a list of parameters, so it can grow without breaking classifiers already written. A
     module contributes classifiers and transformers and nothing else, so it cannot reconfigure the

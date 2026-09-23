@@ -48,8 +48,10 @@ A classified exception is answered with the classifier's status and problems and
 reports an unexpected error. A classifier receives the request being answered together with the
 resolver's message source and locale, so it can localize what it reports.
 
-The resolver's own cases are modules too, always registered ahead of any you add, so a classifier
-you register is never offered an exception one of them answers:
+The resolver's own cases are modules too, consulted after every classifier you register, as the
+defaults — specific before general, as with `catch` clauses. A classifier you register can
+therefore refine one of them, answering a subclass of `Failure` its own way for instance, and for
+the same reason must decline every exception it does not own:
 
 | module | answers |
 | ------ | ------- |

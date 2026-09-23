@@ -141,7 +141,12 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
         }
 
         public RestExceptionResolver build(JsonMapper mapper) {
-            final var fts = new ArrayList<>(transformers);
+            final var cs = new ArrayList<ExceptionClassifier>(classifiers);
+            final var fts = new ArrayList<FailureTransformer>(transformers);
+            for (final var module : BUILT_INS) {
+                cs.addAll(module.classifiers());
+                fts.addAll(module.transformers());
+            }
             if (options == Details.OMIT) {
                 fts.add(new OmitDetails());
             }
@@ -150,9 +155,6 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             defaultSource.setDefaultEncoding("UTF-8");
             defaultSource.setParentMessageSource(new AggregateMessageSource("ContributorValidationMessages"));
             final MessageSource ms = messageSource == null ? defaultSource : new FallbackMessageSource(messageSource, defaultSource);
-            final var cs = new ArrayList<ExceptionClassifier>();
-            BUILT_INS.forEach(module -> cs.addAll(module.classifiers()));
-            cs.addAll(classifiers);
             return new RestExceptionResolver(mapper, ms, List.copyOf(cs), fts);
         }
 

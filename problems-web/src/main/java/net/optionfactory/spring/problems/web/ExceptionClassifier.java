@@ -11,8 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.method.HandlerMethod;
 
-/// Classifies an exception the resolver does not handle itself, answering the status and the problems
-/// to report it with.
+/// Classifies an exception, answering the status and the problems to report it with.
 ///
 /// This is how a library whose exceptions describe a bad request gets them answered as one — and
 /// logged as one — without either module depending on the other: the library ships a classifier, and
@@ -21,10 +20,12 @@ import org.springframework.web.method.HandlerMethod;
 /// `RestExceptionResolver.Builder#withModule`.
 ///
 /// Classifiers are consulted in registration order, and the first that does not decline answers.
-/// The resolver's own cases are classifiers too, in built-in modules that are always registered
-/// ahead of any other, so a classifier you register is never offered an exception one of them
-/// answers — a `Failure` or a binding error, for instance. When every classifier declines, the
-/// resolver falls back to spring's defaults and to reporting an unexpected error. A classified
+/// The resolver's own cases are classifiers too, in built-in modules consulted after every
+/// classifier registered, as the defaults: specific before general, as with `catch` clauses. A
+/// classifier you register can therefore refine a built-in case — answering one subclass of
+/// `Failure` or of `RestClientException` its own way, say — and for the same reason must decline
+/// every exception it does not own. When every classifier declines, the resolver falls back to
+/// spring's defaults and to reporting an unexpected error. A classified
 /// exception is logged at `DEBUG`, like every other client error. The configured
 /// [FailureTransformer]s still run on what a classifier returns, so details are still omitted in
 /// production.
