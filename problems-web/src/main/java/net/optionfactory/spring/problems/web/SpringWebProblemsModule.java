@@ -30,6 +30,12 @@ import tools.jackson.databind.exc.UnrecognizedPropertyException;
 /// Built in: spring mvc's own exceptions — an unreadable body, a failed binding or method validation,
 /// a missing or mistyped parameter or part, a `ResponseStatusException` — and a failed call through
 /// spring's http clients.
+///
+/// Method validation reports each failure as it comes: spring's validator already interpolates a
+/// constraint's message in the request's locale, so an error's default message is the reason as is.
+/// Spring's built-in validation throws two exceptions: `HandlerMethodValidationException` for
+/// constraints on the method's parameters, and `MethodArgumentNotValidException` for a `@Valid`
+/// body or model attribute, which is a `BindException` and reported as one.
 public class SpringWebProblemsModule implements ProblemsModule {
 
     private static final Logger logger = LoggerFactory.getLogger(SpringWebProblemsModule.class);
@@ -45,7 +51,6 @@ public class SpringWebProblemsModule implements ProblemsModule {
                 messageNotReadable(context, inner);
             case HandlerMethodValidationException hmve -> {
                 final var failures = new ArrayList<Problem>();
-                //NOTE: we are relying on jakarta validation translation so error.getDefaultMessage() is localized already
                 for (final var result : hmve.getParameterValidationResults()) {
                     final var param = result.getMethodParameter();
                     final Object containerKey = result.getContainerIndex() != null ? result.getContainerIndex() : result.getContainerKey();
@@ -70,7 +75,6 @@ public class SpringWebProblemsModule implements ProblemsModule {
                 yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, failures);
             }
             case BindException be -> {
-                // this handles MethodArgumentNotValidException too, the other exception thrown by unified validation
                 final var globalFailures = be.getGlobalErrors().stream().map(SpringWebProblemsModule::objectErrorToProblem);
                 final var fieldFailures = be.getFieldErrors().stream().map(SpringWebProblemsModule::fieldErrorToProblem);
                 yield new HttpStatusAndProblems(HttpStatus.BAD_REQUEST, Stream.concat(globalFailures, fieldFailures).toList());

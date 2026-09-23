@@ -13,7 +13,9 @@
     `InvalidFilterRequest`, i.e. as the client's fault, with a reason naming the entity's attribute. No
     request can fix it, so it is now an `InvalidFilterConfiguration`. Only custom filters passing
     hand-built traversals could ever reach it: join types of the built-in filters come from
-    `@FilterTraversal`, resolved per path, and cannot disagree.
+    `@FilterTraversal`, resolved per path, and cannot disagree. The check stays at request time, the
+    only point where a hand-built traversal is visible, and its message now names both the existing and
+    the requested join type.
 *   [BREAKING] **Streaming `findAll` now requires an explicit `SessionPolicy.Mode`.** The
     `findAll(base, filters, sort, fetchSize, BiFunction)` overloads are gone: policy-based streaming
     call sites must state `SessionPolicy.Mode.DEFAULT` (managed, mutable entities, dirty-checked —
@@ -28,7 +30,6 @@
     (`findAll(base, filters, sort, fetchSize, mapper)`) compiles to `READ_ONLY` plus automatic
     detach right after mapping, so pure entity-to-DTO streams need no session management at all;
     the mapper must not retain the entity for lazy access after returning.
-
 *   [FIX] **A malformed filter value is now always an `InvalidFilterRequest`.** The library was
     meticulous about whitelisting names and careless about what it threw when a whitelisted filter got
     a value it could not parse, letting the underlying parser's exception escape. Two of those are not
@@ -88,12 +89,6 @@
     keyed by path and filter name instead of a `UUID` minted at startup: the token is still unique per
     filter, but it is now stable across restarts and across nodes, so a database can keep reusing the
     cached plan for those queries. `AND` is commutative, so no result changes.
-*   [ENH] **Clearer join-consistency diagnostics.** `Filters.step` checks the joins it reuses in a plain
-    loop rather than a `peek` inside a stream, and the resulting `InvalidFilterRequest` now names both the
-    existing and the requested join type. The check stays at request time: join types are resolved per
-    path from `@FilterTraversal`, so two whitelisted filters sharing a prefix cannot disagree — only a
-    custom `Filter` passing a hand-built `Traversal` to `Filters.path` can, and that is not visible when
-    the repository is built.
 *   [DOC] **Indexing case-insensitive comparisons.** The readme now spells out that `IGNORE_CASE` with
     `EQ`/`NEQ`/ranges/`BETWEEN` compares `lower(column)` and needs a functional index on that expression,
     while `CONTAINS`/`STARTS_WITH`/`ENDS_WITH` render as `ILIKE` and are served by a `pg_trgm` GIN index.
@@ -121,7 +116,6 @@
     `Map<String, Filters.Traversal>` instead of `Map<String, String>`, and
     `Sorters.validateAndTransform` is replaced by `Sorters.traversal` (startup) and
     `Sorters.orders`/`Sorters.order` (request time).
-
 *   [NEW] **`@TextSearch`: full-text search filter for postgres and mysql/mariadb.** Searches a document
     composed of one or more text `paths` with a client-facing `syntax` and a document `language`.
     `PLAIN` (default) requires every term, no client syntax; `WEBSEARCH` opt-in exposes `"quoted
@@ -186,8 +180,9 @@
     `ResponseStatusException` already was, and, for a client error, spring's detail as the reason,
     localizable through its message code. A server error among them, such as a path variable missing from
     the mapping, has no reason, like the resolver's own server errors, keeps the detail in `details`,
-    omitted in production, and still logs a `WARN`. A request for an unsupported method never reaches the resolver, since it fails before a
-    handler exists, and spring keeps answering it `405` with an `Allow` header.
+    omitted in production, and still logs a `WARN`. A request for an unsupported method never reaches
+    the resolver, since it fails before a handler exists, and spring keeps answering it `405` with an
+    `Allow` header.
 *   [ENH] **Our modules are registered whenever the library they integrate is on the classpath.** The
     resolver registers, besides the always-on `SpringWebProblemsModule` and `FailureProblemsModule`, each
     of its own modules whose library is present: `DataJpaProblemsModule` with `data-jpa`,
@@ -224,9 +219,9 @@
     its own way, which built-ins consulted first made impossible — and for the same reason must decline
     every exception it does not own. Built-in modules contribute transformers as well as classifiers;
     theirs run before the application's, so an application's transformer sees the answer the built-ins
-    produced, and detail omission still runs last. The resolver is left with what only it can do: consulting the
-    classifiers, falling back to spring's defaults and reporting unexpected errors, running the
-    transformers and rendering. Answers are unchanged, pinned by a test per built-in case written before
+    produced, and detail omission still runs last. The resolver is left with what only it can do:
+    consulting the classifiers, falling back to spring's defaults and reporting unexpected errors,
+    running the transformers and rendering. Answers are unchanged, pinned by a test per built-in case written before
     the move and passing on both sides of it. Two things observably differ: each client error is logged by
     one `DEBUG` line, `Classified failure at <uri>: <problems>`, instead of a case-specific one, and a
     failed upstream call is logged at `WARN` by `SpringWebProblemsModule`'s logger instead of the
@@ -247,9 +242,10 @@
     exception is logged at `DEBUG`. A classifier that throws is logged at `ERROR`, with the exception it
     was offered attached as suppressed, and skipped for the next one: a bug in a library's classifier
     would otherwise escape the resolver, replacing the exception it failed on with its own and turning
-    the request into a container error. A classifier receives an `ExceptionClassifier.Context` — the request, response
-    and handler, plus the resolver's message source and locale — so it can localize; a parameter object
-    rather than a list of parameters, so it can grow without breaking classifiers already written. A
+    the request into a container error. A classifier receives an `ExceptionClassifier.Context` — the
+    request, response and handler, plus the resolver's message source and locale — so it can localize; a
+    parameter object rather than a list of parameters, so it can grow without breaking classifiers
+    already written. A
     module contributes classifiers and transformers and nothing else, so it cannot reconfigure the
     resolver: in particular it cannot include details in production, since detail omission runs after
     every transformer, a module's included. `FailureTransformer` could not do a classifier's job: it runs
