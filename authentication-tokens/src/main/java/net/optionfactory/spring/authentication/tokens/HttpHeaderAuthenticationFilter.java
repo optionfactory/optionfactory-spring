@@ -11,7 +11,6 @@ import java.util.Locale;
 import java.util.Optional;
 import net.optionfactory.spring.authentication.tokens.HttpHeaderAuthentication.UnauthenticatedToken;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,6 +22,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * handler on AuthenticationException as other authentication filters (notably
  * BearerTokenAuthenticationFilter) might want to process an Authorization
  * header token .
+ * <p>
+ * A request carrying more than one of the configured tokens is ambiguous, and is
+ * treated like one whose token was rejected: none of them is authenticated and
+ * the request proceeds unauthenticated, rather than failing with an exception
+ * that escapes the filter chain.
  */
 public class HttpHeaderAuthenticationFilter extends OncePerRequestFilter {
 
@@ -36,19 +40,22 @@ public class HttpHeaderAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        searchToken(request).ifPresent(token -> {
+        final var tokens = searchTokens(request);
+        if (tokens.size() > 1) {
+            SecurityContextHolder.clearContext();
+        } else if (tokens.size() == 1) {
             try {
-                final Authentication authentication = am.authenticate(token);
+                final Authentication authentication = am.authenticate(tokens.get(0));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (AuthenticationException exception) {
                 SecurityContextHolder.clearContext();
             }
-        });
+        }
         filterChain.doFilter(request, response);
     }
 
-    private Optional<UnauthenticatedToken> searchToken(HttpServletRequest request) {
-        var tokens = this.hss.stream()
+    private List<UnauthenticatedToken> searchTokens(HttpServletRequest request) {
+        return this.hss.stream()
                 .map(ts ->
                         Optional.ofNullable(request.getHeader(ts.header()))
                             .filter(v -> v.toUpperCase(Locale.ROOT).startsWith(ts.scheme()))
@@ -57,9 +64,5 @@ public class HttpHeaderAuthenticationFilter extends OncePerRequestFilter {
                 ).filter(Optional::isPresent)
                 .map(Optional::get)
                 .toList();
-        if (tokens.size() > 1) {
-            throw new BadCredentialsException("Multiple tokens found");
-        }
-        return tokens.stream().findFirst();
     }
 }

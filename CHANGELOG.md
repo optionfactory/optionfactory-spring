@@ -311,6 +311,11 @@
 
     A `claims(...)` configuration without `exp` in its required claims accepted tokens without one; its
     standard-policy migration now rejects them, which is the point, while `permissive()` reproduces it.
+*   [FIX] **A request carrying two tokens proceeds unauthenticated instead of failing.** When more than
+    one configured header held a token, `HttpHeaderAuthenticationFilter` threw a `BadCredentialsException`
+    from the filter itself, outside any authentication entry point, so the request ended in a server
+    error. It is now treated like a rejected token: neither is authenticated, the security context is
+    cleared, and the request goes on to be refused (or served anonymously) by the authorization rules.
 
 # version 27.12
 

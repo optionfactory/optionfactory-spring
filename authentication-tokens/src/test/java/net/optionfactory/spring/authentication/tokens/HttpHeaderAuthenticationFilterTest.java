@@ -14,6 +14,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 public class HttpHeaderAuthenticationFilterTest {
 
@@ -73,6 +74,37 @@ public class HttpHeaderAuthenticationFilterTest {
         filter.doFilter(req, new MockHttpServletResponse(), chain);
 
         Assertions.assertEquals("a-bare-token", credentials.get());
+    }
+
+    @Test
+    public void aRequestCarryingTwoTokensProceedsUnauthenticated() throws Exception {
+        final var attempted = new AtomicBoolean(false);
+        final AuthenticationManager am = (Authentication authentication) -> {
+            attempted.set(true);
+            return new AuthenticatedToken(
+                    authentication.getCredentials().toString(),
+                    "principal",
+                    authentication.getDetails(),
+                    AuthorityUtils.NO_AUTHORITIES
+            );
+        };
+        final var filter = new HttpHeaderAuthenticationFilter(
+                am,
+                new LinkedHashSet<>(List.of(new HeaderAndScheme("Authorization", "Bearer"), HeaderAndScheme.schemeless("Jwt-Auth")))
+        );
+        final MockHttpServletRequest req = new MockHttpServletRequest();
+        req.addHeader("Authorization", "Bearer one-token");
+        req.addHeader("Jwt-Auth", "another-token");
+        final var proceeded = new AtomicBoolean(false);
+        final FilterChain chain = (request, response) -> {
+            proceeded.set(true);
+            Assertions.assertNull(SecurityContextHolder.getContext().getAuthentication());
+        };
+
+        filter.doFilter(req, new MockHttpServletResponse(), chain);
+
+        Assertions.assertTrue(proceeded.get());
+        Assertions.assertFalse(attempted.get());
     }
 
     @Test
