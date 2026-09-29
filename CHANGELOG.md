@@ -1,3 +1,17 @@
+# version 28.2
+
+## `localized-enums`
+
+*   [FIX] **An enum whose constants have bodies no longer breaks the scan.** The category was read from
+    the annotation of `enumValue.getClass()`, which for a constant with a body is an anonymous subclass
+    carrying no annotation, so `ResourceBundleEnumsLocalizationService` threw a `NullPointerException`
+    at construction as soon as such an enum was annotated anywhere under the scanned package. It reads
+    the declaring class now. `values(Class, Locale)` also accepts an enum that is not annotated, using
+    its simple name as the category, where it threw the same exception.
+*   [DOC] **The readme matches the api.** The configuration example used a constructor that does not
+    exist and the Thymeleaf one a `#enums.describe` function that does not exist; it now documents the
+    bundle keys, the scanned root, the resolution modes and the four dialect functions.
+
 # version 28.1
 
 ## Dependencies

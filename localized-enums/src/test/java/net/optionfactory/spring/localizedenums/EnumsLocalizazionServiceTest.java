@@ -59,4 +59,46 @@ public class EnumsLocalizazionServiceTest {
         Assertions.assertEquals(Optional.of("NOT_THERE"), ecs.value(EnumKey.of("NotAnnotated", "NOT_THERE"), Locale.ENGLISH));
     }
 
+    @Test
+    public void enumsWithConstantBodiesAreScannedUnderTheirDeclaredCategory() {
+        final var source = new ResourceBundleMessageSource();
+        source.setDefaultEncoding(StandardCharsets.UTF_8.displayName());
+        source.setBasenames("localization");
+        source.setUseCodeAsDefaultMessage(false);
+        final var ecs = new ResourceBundleEnumsLocalizationService("enums", source, AnEnum.class, ResolutionMode.MISSING_AS_NAME);
+
+        final List<LocalizedEnumResponse> result = ecs.values(Optional.of("with-bodies"), Locale.ENGLISH);
+
+        Assertions.assertEquals(List.of(
+                LocalizedEnumResponse.of("with-bodies", "PLAIN", "PLAIN"),
+                LocalizedEnumResponse.of("with-bodies", "WITH_BODY", "With a body")
+        ), result);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void valuesOfAnEnumClassWithConstantBodiesUseItsDeclaredCategory() {
+        final var source = new ResourceBundleMessageSource();
+        source.setDefaultEncoding(StandardCharsets.UTF_8.displayName());
+        source.setBasenames("localization");
+        source.setUseCodeAsDefaultMessage(false);
+        final var ecs = new ResourceBundleEnumsLocalizationService("enums", source, AnEnum.class, ResolutionMode.MISSING_AS_NAME);
+
+        final var enumClass = (Class<Enum<?>>) (Class<?>) AnEnumWithBodies.class;
+        Assertions.assertEquals("With a body", ecs.values(enumClass, Locale.ENGLISH).get(1).value());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void valuesOfANotAnnotatedEnumClassUseItsSimpleNameAsCategory() {
+        final var source = new ResourceBundleMessageSource();
+        source.setDefaultEncoding(StandardCharsets.UTF_8.displayName());
+        source.setBasenames("localization");
+        source.setUseCodeAsDefaultMessage(false);
+        final var ecs = new ResourceBundleEnumsLocalizationService("enums", source, AnEnum.class, ResolutionMode.MISSING_AS_NAME);
+
+        final var enumClass = (Class<Enum<?>>) (Class<?>) NotAnnotatedEnum.class;
+        Assertions.assertEquals(List.of(LocalizedEnumResponse.of("NotAnnotatedEnum", "ONE", "One")), ecs.values(enumClass, Locale.ENGLISH));
+    }
+
 }

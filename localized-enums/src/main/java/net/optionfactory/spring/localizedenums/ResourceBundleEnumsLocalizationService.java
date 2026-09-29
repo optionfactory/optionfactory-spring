@@ -56,8 +56,11 @@ public class ResourceBundleEnumsLocalizationService implements EnumsLocalization
     }
     
     private EnumKey enumValueToEnumKey(Enum enumValue) {
-        final LocalizedEnum md = enumValue.getClass().getAnnotation(LocalizedEnum.class);
-        final String category = md.category().isBlank() ? enumValue.getDeclaringClass().getSimpleName() : md.category();
+        // the declaring class, not getClass(): a constant with a body is an instance of an anonymous subclass,
+        // which does not carry the annotation
+        final Class<?> type = enumValue.getDeclaringClass();
+        final LocalizedEnum md = type.getAnnotation(LocalizedEnum.class);
+        final String category = md == null || md.category().isBlank() ? type.getSimpleName() : md.category();
         return EnumKey.of(category, enumValue.name());
     }
 
