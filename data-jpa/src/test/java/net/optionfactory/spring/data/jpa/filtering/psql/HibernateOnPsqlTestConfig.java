@@ -83,6 +83,7 @@ public class HibernateOnPsqlTestConfig {
         properties.put(AvailableSettings.JSON_FORMAT_MAPPER, new Jackson3JsonFormatMapper(hibernateMapper));
         properties.put(AvailableSettings.PHYSICAL_NAMING_STRATEGY, new PhysicalNamingStrategySnakeCaseImpl());
         properties.put(AvailableSettings.IMPLICIT_NAMING_STRATEGY, new ImplicitNamingStrategyComponentPathImpl());
+        properties.put(AvailableSettings.STATEMENT_INSPECTOR, CapturingStatementInspector.class);
 
         final var factory = new LocalContainerEntityManagerFactoryBean();
         factory.setJpaVendorAdapter(new HibernateJpaVendorAdapter());

@@ -6,6 +6,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.EntityManager;
 import java.util.List;
+import java.util.Locale;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextSearch;
@@ -121,24 +122,30 @@ public class TextSearchOnPsqlTest {
     @Test
     public void contentPredicateUsesTheExpressionIndex() {
         em.createNativeQuery("SET LOCAL enable_seqscan = off").executeUpdate();
-        final var plan = (List<?>) em.createNativeQuery("""
-                EXPLAIN (COSTS OFF) SELECT id FROM text_search_on_psql_test$article
-                WHERE to_tsvector('english', coalesce(title, '') || ' ' || coalesce(body, ''))
-                      @@ plainto_tsquery('english', :query)
-                """).setParameter("query", "cats running").getResultList();
-        final var planText = plan.stream().map(String::valueOf).collect(java.util.stream.Collectors.joining("\n"));
+        final var planText = explainRenderedPredicate("byContent", "cats running");
         Assertions.assertTrue(planText.contains("article_by_content_fts_idx"), planText);
     }
 
     @Test
     public void titlePredicateUsesTheExpressionIndex() {
         em.createNativeQuery("SET LOCAL enable_seqscan = off").executeUpdate();
-        final var plan = (List<?>) em.createNativeQuery("""
-                EXPLAIN (COSTS OFF) SELECT id FROM text_search_on_psql_test$article
-                WHERE to_tsvector('italian', coalesce(title, ''))
-                      @@ phraseto_tsquery('italian', :query)
-                """).setParameter("query", "cani randagi").getResultList();
-        final var planText = plan.stream().map(String::valueOf).collect(java.util.stream.Collectors.joining("\n"));
+        final var planText = explainRenderedPredicate("byTitle", "cani randagi");
         Assertions.assertTrue(planText.contains("article_by_title_fts_idx"), planText);
+    }
+
+    /**
+     * EXPLAINs the SQL the criteria predicate actually renders, not a
+     * hand-written lookalike: if the dialect or the literal handling changes
+     * enough to stop matching the index expression, this is where it shows.
+     */
+    private String explainRenderedPredicate(String filter, String query) {
+        final var sqls = CapturingStatementInspector.capture(() -> search(filter, query));
+        final var select = sqls.stream()
+                .filter(sql -> sql.toLowerCase(Locale.ROOT).startsWith("select"))
+                .filter(sql -> sql.contains("to_tsvector"))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("no rendered text-search select in " + sqls));
+        final var plan = (List<?>) em.createNativeQuery("EXPLAIN (COSTS OFF) " + select).getResultList();
+        return plan.stream().map(String::valueOf).collect(java.util.stream.Collectors.joining("\n"));
     }
 }

@@ -20,6 +20,13 @@
 
 ## `data-jpa`
 
+*   [FIX] **The `@TextSearch` index tests EXPLAIN the query the filter renders.** The
+    expression-index tests ran `EXPLAIN` against hand-written SQL that looked like the predicate:
+    they stayed green through any change to the rendered SQL (dialect, escaping, literal
+    handling) that stopped matching the index expression. A statement inspector now captures the
+    SQL Hibernate actually sends for a repository search and that statement is the one EXPLAINed:
+    a rendering change that stops using the index fails the tests. The inspector is registered in
+    the psql test configuration only and is inert outside `capture(...)`.
 *   [FIX] **`SessionPolicy.clearIf` clears after every mod-th row.** The streaming `findAll`
     counted rows in a `peek` stage, which runs before the callback and started at `-1`: the
     first callback saw `current() == 0` and `0 % mod == 0` cleared the persistence context
