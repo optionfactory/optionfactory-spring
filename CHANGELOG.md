@@ -1,5 +1,14 @@
 # version 28.2
 
+## `downstream-maven-plugin`
+
+*   [FIX] **`outputStyleOverrides` generates the overridden style again.** The emitter computed the
+    per-dto style (`useClasses`) to choose between a class and a record builder, but then branched on
+    the global `outputStyle` when emitting members: a dto overridden to `CLASSES` under a `RECORDS`
+    default got a record constructor on a class builder, and one overridden to `RECORDS` under a
+    `CLASSES` default got public instance fields on a record builder; both crashed code generation.
+    Every override now produces the style it names.
+
 ## `localized-enums`
 
 *   [FIX] **An enum whose constants have bodies no longer breaks the scan.** The category was read from

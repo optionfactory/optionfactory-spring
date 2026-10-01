@@ -101,7 +101,7 @@ public class JavaEmitter implements SourceEmitter {
 
         final var fields = Reflection.candidateFields(dtoClass, Object.class);
 
-        if (dtoStyle == DtoStyle.CLASSES) {
+        if (useClasses) {
             for (final var field : fields) {
                 final var fieldType = translator.translate(field.annotatedType());
                 final var fieldSpecBuilder = FieldSpec.builder(fieldType, field.name(), Modifier.PUBLIC);
