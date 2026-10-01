@@ -39,6 +39,14 @@ A `filters` parameter that cannot be read — not json, or not an object mapping
 arrays of values — is rejected with an `InvalidFilterRequest` naming the parameter, and a filter
 without an array of values with one naming the filter; with `problems-web`, both are answered `400`.
 
+Requests are also bounded, so an oversized one is rejected with a `400` naming the offending
+filter instead of generating enormous predicate trees or hitting database limits: at most
+**64 filters** and **1024 values per filter** are accepted. Both limits are configurable:
+
+```java
+resolvers.add(new FilterRequestArgumentResolver("filters", mapper, 32, 256));
+```
+
 ### PageMixin
 
 Configure `PageMixin` on your `JsonMapper` to serialize `Page` objects in a simplified form:

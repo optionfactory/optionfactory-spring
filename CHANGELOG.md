@@ -1,5 +1,14 @@
 # version 28.2
 
+## `data-jpa-web`
+
+*   [ENH] **Filter requests are bounded.** The `FilterRequestArgumentResolver` accepted any
+    number of filters and any number of values per filter: a client could force huge predicate
+    trees and IN lists, turning a bad request into a 500 at the database's mercy. Requests are
+    now rejected with an `InvalidFilterRequest` (a `400` under `problems-web`) naming the
+    offending filter when they exceed 64 filters or 1024 values per filter; both limits are
+    configurable through a new constructor.
+
 ## `data-jpa-test`
 
 *   [FIX] **`@Nested` test classes get phase transactions for the enclosing instance's lifecycle

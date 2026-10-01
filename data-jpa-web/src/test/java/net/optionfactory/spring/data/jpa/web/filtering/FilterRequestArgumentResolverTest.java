@@ -48,4 +48,34 @@ public class FilterRequestArgumentResolverTest {
     public void aFilterWithoutValuesIsRejectedAsThatFilter() {
         Assertions.assertEquals("byName", Assertions.assertThrows(InvalidFilterRequest.class, () -> resolve("filters", "{\"byName\": null}")).filter);
     }
+
+    private static FilterRequest resolve(String parameterName, String value, int maxFilters, int maxValuesPerFilter) throws Exception {
+        final var request = new MockHttpServletRequest();
+        request.addParameter(parameterName, value);
+        return new FilterRequestArgumentResolver(parameterName, new JsonMapper(), maxFilters, maxValuesPerFilter).resolveArgument(null, null, new ServletWebRequest(request), null);
+    }
+
+    @Test
+    public void aFilterWithTooManyValuesIsRejectedAsThatFilter() {
+        final var values = new StringBuilder("{\"byName\": [");
+        for (int i = 0; i < 3; i++) {
+            values.append(i == 0 ? "\"v" : ", \"v").append(i).append("\"");
+        }
+        values.append("]}");
+        final var thrown = Assertions.assertThrows(InvalidFilterRequest.class, () -> resolve("filters", values.toString(), 64, 2));
+        Assertions.assertEquals("byName", thrown.filter);
+        Assertions.assertEquals("too many values: 3, maximum is 2", thrown.reason);
+    }
+
+    @Test
+    public void tooManyDistinctFiltersAreRejected() {
+        final var thrown = Assertions.assertThrows(InvalidFilterRequest.class, () -> resolve("filters", "{\"a\": [\"v\"], \"b\": [\"v\"], \"c\": [\"v\"]}", 2, 1024));
+        Assertions.assertEquals("too many filters: 3, maximum is 2", thrown.reason);
+    }
+
+    @Test
+    public void repeatedFilterNamesCountOnce() throws Exception {
+        final var got = resolve("filters", "{\"byName\": [\"v\"]}", 1, 1024);
+        Assertions.assertArrayEquals(new String[]{"v"}, got.filters().get("byName"));
+    }
 }
