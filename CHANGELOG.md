@@ -2,6 +2,15 @@
 
 ## `upstream`
 
+*   [FIX] **Streaming responses whose body is never obtained release their connection.**
+    `StreamingUpstreamHttpResponse.close()` was a no-op so that RestClient's post-conversion close
+    would not kill the stream handed to the caller, but on paths where no converter ever asked for
+    the body (interceptor or status-handler failure before conversion, discarded response) nothing
+    released the pooled connection, which HC5 then held until pool exhaustion. The response now
+    tracks whether a body was obtained and closes the inner response when it never was; once
+    obtained, ownership stays with the consumer, exactly as before. Bodies that are obtained and
+    then abandoned without closing (Spring's body probe on paths that fail afterwards, discarded
+    response bodies) are released by a cleaner once they become unreachable.
 *   [FIX] **`@Upstream.QueryParam` no longer double-encodes the existing query string.** The
     interceptor rebuilt the request URI with `UriComponentsBuilder.build()`, which treats the
     already-encoded URI (encoding happens in the URI factory, before interceptors run) as raw
