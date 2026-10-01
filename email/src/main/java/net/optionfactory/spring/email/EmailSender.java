@@ -35,6 +35,12 @@ public class EmailSender {
         this.javaMail = createJavaMail(conf);
     }
 
+    /// Sends the spool's contents.
+    ///
+    /// Assumes a single EmailSender per machine and a spool directory owned by this process
+    /// alone: nothing here claims files atomically, so concurrent invocations would race and
+    /// double-send. The scheduled path is serialized by `ScheduledEmailSender`'s lock; any other
+    /// caller must arrange its own mutual exclusion.
     public void processSpool() {
         try {
             try (final Stream<Path> emls = Files.walk(paths.spool(), 1)) {
