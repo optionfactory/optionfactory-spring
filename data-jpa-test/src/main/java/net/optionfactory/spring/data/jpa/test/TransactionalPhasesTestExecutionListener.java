@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.test.context.TestContext;
+import org.springframework.test.context.TestContextAnnotationUtils;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
@@ -152,11 +153,19 @@ public class TransactionalPhasesTestExecutionListener extends AbstractTestExecut
     }
 
     private boolean hasLifecycleMethod(Class<?> clazz, Class<? extends Annotation> annotationType) {
-        for (Method method : ReflectionUtils.getAllDeclaredMethods(clazz)) {
-            if (AnnotatedElementUtils.isAnnotated(method, annotationType)) {
-                return true;
+        // JUnit executes the enclosing instance's @BeforeEach/@AfterEach for @Nested classes too:
+        // walk up non-static enclosing classes, or the phase transaction is never opened
+        for (Class<?> current = clazz; current != null; current = enclosingClass(current)) {
+            for (Method method : ReflectionUtils.getAllDeclaredMethods(current)) {
+                if (AnnotatedElementUtils.isAnnotated(method, annotationType)) {
+                    return true;
+                }
             }
         }
         return false;
+    }
+
+    private Class<?> enclosingClass(Class<?> clazz) {
+        return TestContextAnnotationUtils.searchEnclosingClass(clazz) ? clazz.getEnclosingClass() : null;
     }
 }

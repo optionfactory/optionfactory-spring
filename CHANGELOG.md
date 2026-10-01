@@ -1,5 +1,14 @@
 # version 28.2
 
+## `data-jpa-test`
+
+*   [FIX] **`@Nested` test classes get phase transactions for the enclosing instance's lifecycle
+    methods.** `TransactionalPhasesTestExecutionListener` detected `@BeforeEach`/`@AfterEach` on
+    the test class and its superclasses only, but JUnit also executes the enclosing instance's
+    lifecycle methods for `@Nested` classes: those ran untransactioned, failing confusingly
+    against repositories that mandate an active transaction. The listener now walks up non-static
+    enclosing classes, the same search the shared-container support already used.
+
 ## `data-jpa`
 
 *   [FIX] **`SessionPolicy.clearIf` clears after every mod-th row.** The streaming `findAll`
