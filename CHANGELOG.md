@@ -1,5 +1,10 @@
 # version 28.2
 
+## Dependencies
+
+*   [DEP] **Bumped dependencies:** h2 2.5.252, libphonenumber 9.0.40, openhtmltopdf 1.1.87,
+    maven-core/maven-plugin-api 3.10.0 (downstream-maven-plugin).
+
 ## `context-web`
 
 *   [DOC] **`EnableCustomWebMvc` says how the locale resolver is chosen.** The custom resolver

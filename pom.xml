@@ -162,7 +162,7 @@
             <dependency>
                 <groupId>com.h2database</groupId>
                 <artifactId>h2</artifactId>
-                <version>2.5.250</version>
+                <version>2.5.252</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.validator</groupId>
@@ -234,7 +234,7 @@
             <dependency>
                 <groupId>com.googlecode.libphonenumber</groupId>
                 <artifactId>libphonenumber</artifactId>
-                <version>9.0.39</version>
+                <version>9.0.40</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -270,12 +270,12 @@
             <dependency>
                 <groupId>io.github.openhtmltopdf</groupId>
                 <artifactId>openhtmltopdf-core</artifactId>
-                <version>1.1.86</version>
+                <version>1.1.87</version>
             </dependency>            
             <dependency>
                 <groupId>io.github.openhtmltopdf</groupId>
                 <artifactId>openhtmltopdf-pdfbox</artifactId>
-                <version>1.1.86</version>
+                <version>1.1.87</version>
                 <exclusions>
                     <exclusion>
                         <artifactId>commons-logging</artifactId>
