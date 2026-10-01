@@ -2,6 +2,11 @@
 
 ## `upstream`
 
+*   [FIX] **Redaction failures are logged.** When a body's payload did not match its declared
+    content type (malformed JSON/XML/form), the redaction silently fell back to rendering the raw
+    payload. The fallback stays, by choice, but is now announced by a WARN naming the content
+    type and the cause: `ABBREVIATED_REDACTED` degrading to raw on a weird payload is visible in
+    logs instead of happening invisibly.
 *   [FIX] **Type-level annotations on the proxied subinterface configure inherited endpoints.**
     `Annotations.closest(Method, ...)` searched the declaring interface only: proxying
     `interface B extends A` left `@Upstream.Logging`, `@Upstream.AlertOnResponse`,

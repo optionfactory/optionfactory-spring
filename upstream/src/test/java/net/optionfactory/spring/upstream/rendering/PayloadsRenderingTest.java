@@ -92,4 +92,17 @@ public class PayloadsRenderingTest {
 
     }
 
+    @Test
+    public void malformedJsonIsRenderedRawWhenRedactionFails() {
+        final var source = BodySource.of("{\"password\": \"s3cret\"", StandardCharsets.UTF_8);
+        final var got = br.renderBody(BodiesStrategy.ABBREVIATED_REDACTED, 21, MediaType.APPLICATION_JSON, source, ".", 2048);
+        Assertions.assertEquals("{\"password\": \"s3cret\"", got, "redaction failure fails open by choice: the raw payload wins over a placeholder");
+    }
+
+    @Test
+    public void malformedXmlIsRenderedRawWhenRedactionFails() {
+        final var source = BodySource.of("<a><password>s3cret</a>", StandardCharsets.UTF_8);
+        final var got = br.renderBody(BodiesStrategy.ABBREVIATED_REDACTED, 23, MediaType.APPLICATION_XML, source, ".", 2048);
+        Assertions.assertEquals("<a><password>s3cret</a>", got);
+    }
 }

@@ -11,12 +11,16 @@ import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
 import net.optionfactory.spring.upstream.rendering.ContentClassDetector.ContentClass;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import tools.jackson.core.JsonPointer;
 import tools.jackson.databind.json.JsonMapper;
 
 public class PayloadsRendering {
+
+    private static final Logger logger = LoggerFactory.getLogger(PayloadsRendering.class);
 
     public enum MultipartStrategy {
         RENDER_RECAP,
@@ -134,12 +138,14 @@ public class PayloadsRendering {
                 if ("xml".equals(subtype) || subtype.endsWith("+xml")) {
                     return xsltRedactor.redact(source);
                 }
-                if(type.equals(MediaType.APPLICATION_FORM_URLENCODED)){
+                if (type.equals(MediaType.APPLICATION_FORM_URLENCODED)) {
                     return formUrlencodedRedactor.redact(source);
                 }
             }
         } catch (RuntimeException ex) {
-            //fallback to unredacted oneline
+            // fail open by choice: a payload that does not match its declared content type is
+            // more valuable for diagnostics than the redaction risk, but the fallback must be visible
+            logger.warn("cannot redact a {} body: rendering it raw", type, ex);
         }
         return new String(source.bytes(), StandardCharsets.UTF_8).replaceAll("[\r\n]+", "");
     }
