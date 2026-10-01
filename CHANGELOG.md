@@ -2,6 +2,14 @@
 
 ## `upstream`
 
+*   [ENH] **Client-credentials and password grants cache their access token.**
+    `OauthClientCredentialsAuthenticator` and `OauthPasswordAuthenticator` executed a full grant
+    for every upstream request, doubling traffic to the token endpoint and discarding `expires_in`.
+    They now share `OauthAccessTokenCache`: one grant per validity window, retired 60s (default,
+    configurable via `refreshMargin`) before the declared `expires_in`; a missing or non-positive
+    `expires_in` is cached conservatively for one minute; a token response without a usable
+    `access_token` fails fast instead of sending an empty `Bearer`. Both builders gained
+    `refreshMargin` and `clock`.
 *   [FIX] **Digest authentication signs the actual request.** The authenticator computed the
     digest response over a hard-coded `POST` and the path only: any GET/PUT/DELETE request, and
     any request with a query string, produced a response the server rejected, since RFC 7616
