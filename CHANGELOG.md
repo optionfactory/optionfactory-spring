@@ -1,5 +1,17 @@
 # version 28.2
 
+## `authentication-tokens`
+
+*   [FIX] **The authentication provider is registered before the shared `AuthenticationManager` is
+    built.** `HttpHeaderAuthentication`'s configurer registered its provider in `configure`,
+    after `HttpSecurity` had already built the shared `AuthenticationManager` the filter captures:
+    it only worked because Spring Security 7.1's `ProviderManager` holds the builder's live,
+    mutable provider list. The registration now happens in `init` (the pattern Spring's own
+    configurers use), removing the reliance on that undocumented internals detail. Note that an
+    application setting its own `http.authenticationManager(...)` never receives configurer-
+    registered providers by design; such setups must include the token provider in their own
+    manager, as before.
+
 ## `authentication-authorization-code`
 
 *   [FIX] **The logout `redirect_uri` never carries the incoming request's query string.**

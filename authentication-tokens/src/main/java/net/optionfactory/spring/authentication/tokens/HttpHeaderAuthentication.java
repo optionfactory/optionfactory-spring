@@ -139,11 +139,18 @@ public class HttpHeaderAuthentication {
         }
 
         @Override
+        public void init(HttpSecurity http) {
+            // HttpSecurity builds the shared AuthenticationManager after init and before configure:
+            // the provider must be registered by then. A configure-time registration only worked
+            // because ProviderManager kept the builder's live provider list by reference.
+            http.authenticationProvider(new HttpHeaderAuthenticationProvider(makeProcessors(processors, jwsProcessors, jweProcessors)));
+        }
+
+        @Override
         public void configure(HttpSecurity http) {
             final var authenticationManager = http.getSharedObject(AuthenticationManager.class);
             final var filter = new HttpHeaderAuthenticationFilter(authenticationManager, headerAndSchemes);
             postProcess(filter);
-            http.authenticationProvider(new HttpHeaderAuthenticationProvider(makeProcessors(processors, jwsProcessors, jweProcessors)));
             http.addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class);
         }
 
