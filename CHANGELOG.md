@@ -2,6 +2,14 @@
 
 ## `authentication-tokens`
 
+*   [FIX] **A rejected or ambiguous token no longer strips authentication established earlier in
+    the chain.** `HttpHeaderAuthenticationFilter` called `SecurityContextHolder.clearContext()`
+    when a token was rejected and when a request carried more than one of the configured tokens:
+    a stale `Authorization` header added by a proxy or extension downgraded an otherwise validly
+    authenticated request (session, resource-server, remember-me) to anonymous, silently. A
+    failed token now simply contributes no authentication and invalidates nothing, matching the
+    documented fall-through contract; ambiguity is announced at WARN, naming headers and schemes,
+    never tokens, and rejection at DEBUG.
 *   [FIX] **The authentication provider is registered before the shared `AuthenticationManager` is
     built.** `HttpHeaderAuthentication`'s configurer registered its provider in `configure`,
     after `HttpSecurity` had already built the shared `AuthenticationManager` the filter captures:

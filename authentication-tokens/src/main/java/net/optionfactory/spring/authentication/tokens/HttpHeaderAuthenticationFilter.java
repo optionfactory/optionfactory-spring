@@ -9,6 +9,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import net.optionfactory.spring.authentication.tokens.HttpHeaderAuthentication.UnauthenticatedToken;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -22,12 +24,15 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * BearerTokenAuthenticationFilter) might want to process an Authorization
  * header token .
  * <p>
- * A request carrying more than one of the configured tokens is ambiguous, and is
- * treated like one whose token was rejected: none of them is authenticated and
- * the request proceeds unauthenticated, rather than failing with an exception
- * that escapes the filter chain.
+ * A rejected or ambiguous token contributes no authentication, but invalidates
+ * nothing: authentication mechanisms earlier in the chain keep whatever they
+ * established, and the request proceeds. A request carrying more than one of
+ * the configured tokens is ambiguous and is announced at WARN, naming the
+ * headers and schemes it was found in, never the tokens.
  */
 public class HttpHeaderAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final Logger logger = LoggerFactory.getLogger(HttpHeaderAuthenticationFilter.class);
 
     private final AuthenticationManager am;
     private final List<HeaderAndScheme> hss;
@@ -41,13 +46,14 @@ public class HttpHeaderAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         final var tokens = searchTokens(request);
         if (tokens.size() > 1) {
-            SecurityContextHolder.clearContext();
+            final var sources = tokens.stream().map(t -> t.getHeaderAndScheme().header() + ": " + t.getHeaderAndScheme().scheme().strip()).toList();
+            logger.warn("ambiguous authentication: request carries {} tokens ({}); none will be authenticated", tokens.size(), sources);
         } else if (tokens.size() == 1) {
             try {
                 final Authentication authentication = am.authenticate(tokens.get(0));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (AuthenticationException exception) {
-                SecurityContextHolder.clearContext();
+                logger.debug("token authentication rejected: {}", exception.getClass().getSimpleName());
             }
         }
         filterChain.doFilter(request, response);

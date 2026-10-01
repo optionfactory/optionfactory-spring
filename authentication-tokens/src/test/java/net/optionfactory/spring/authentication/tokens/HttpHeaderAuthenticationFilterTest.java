@@ -7,11 +7,14 @@ import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import net.optionfactory.spring.authentication.tokens.HttpHeaderAuthentication.AuthenticatedToken;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -147,6 +150,64 @@ public class HttpHeaderAuthenticationFilterTest {
         Assertions.assertEquals("", new HeaderAndScheme("Jwt-Auth", "").scheme());
         Assertions.assertEquals("", new HeaderAndScheme("Jwt-Auth", "   ").scheme());
         Assertions.assertEquals("", HeaderAndScheme.schemeless("Jwt-Auth").scheme());
+    }
+
+    @AfterEach
+    public void clearContext() {
+        SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    public void aRejectedTokenLeavesEarlierAuthenticationInPlace() throws Exception {
+        final AuthenticationManager am = (Authentication authentication) -> {
+            throw new BadCredentialsException("no");
+        };
+        final var filter = new HttpHeaderAuthenticationFilter(
+                am,
+                new LinkedHashSet<>(List.of(new HeaderAndScheme("Authorization", "Bearer")))
+        );
+        final var earlier = new TestingAuthenticationToken("session-user", "none", "ROLE_USER");
+        SecurityContextHolder.getContext().setAuthentication(earlier);
+        final MockHttpServletRequest req = new MockHttpServletRequest();
+        req.addHeader("Authorization", "Bearer stale-or-forged");
+        final var proceeded = new AtomicBoolean(false);
+        final FilterChain chain = (request, response) -> {
+            proceeded.set(true);
+            Assertions.assertSame(earlier, SecurityContextHolder.getContext().getAuthentication(),
+                    "a rejected token must not strip authentication established earlier in the chain");
+        };
+
+        filter.doFilter(req, new MockHttpServletResponse(), chain);
+
+        Assertions.assertTrue(proceeded.get());
+    }
+
+    @Test
+    public void anAmbiguousRequestLeavesEarlierAuthenticationInPlace() throws Exception {
+        final var filter = new HttpHeaderAuthenticationFilter(
+                (Authentication authentication) -> new AuthenticatedToken(
+                        authentication.getCredentials().toString(),
+                        "principal",
+                        authentication.getDetails(),
+                        AuthorityUtils.NO_AUTHORITIES
+                ),
+                new LinkedHashSet<>(List.of(new HeaderAndScheme("Authorization", "Bearer"), HeaderAndScheme.schemeless("Jwt-Auth")))
+        );
+        final var earlier = new TestingAuthenticationToken("session-user", "none", "ROLE_USER");
+        SecurityContextHolder.getContext().setAuthentication(earlier);
+        final MockHttpServletRequest req = new MockHttpServletRequest();
+        req.addHeader("Authorization", "Bearer one-token");
+        req.addHeader("Jwt-Auth", "another-token");
+        final var proceeded = new AtomicBoolean(false);
+        final FilterChain chain = (request, response) -> {
+            proceeded.set(true);
+            Assertions.assertSame(earlier, SecurityContextHolder.getContext().getAuthentication(),
+                    "an ambiguous token set must not strip authentication established earlier in the chain");
+        };
+
+        filter.doFilter(req, new MockHttpServletResponse(), chain);
+
+        Assertions.assertTrue(proceeded.get());
     }
 
 }
