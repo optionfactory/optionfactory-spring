@@ -97,6 +97,37 @@ public class ClientReportFilterTest {
     }
 
     @Test
+    public void bodyExactlyAtTheLimitIsParsed() throws Exception {
+        final var filter = filter("/client-errors/", 2, false);
+
+        final var request = new MockHttpServletRequest("POST", "/client-errors/");
+        request.setContent("{}".getBytes(StandardCharsets.UTF_8));
+        final var response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, new MockFilterChain());
+
+        Assertions.assertEquals(202, response.getStatus());
+        final var event = (ClientError) events.get(0);
+        Assertions.assertTrue(event.content().isObject(), "a body of exactly maxBodySize bytes must be accepted");
+    }
+
+    @Test
+    public void reportUnderAContextPathIsAccepted() throws Exception {
+        final var filter = filter("/client-errors/", 65_536, false);
+
+        final var request = new MockHttpServletRequest("POST", "/client-errors/");
+        request.setContextPath("/app");
+        request.setRequestURI("/app/client-errors/");
+        request.setContent("{\"message\":\"boom\"}".getBytes(StandardCharsets.UTF_8));
+        final var response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, new MockFilterChain());
+
+        Assertions.assertEquals(202, response.getStatus());
+        Assertions.assertEquals(1, events.size(), "a report posted under a context path must be received, not silently dropped");
+    }
+
+    @Test
     public void nonReportRequestsProceedDownTheChain() throws Exception {
         final var filter = filter("/client-errors/", 65_536, false);
 

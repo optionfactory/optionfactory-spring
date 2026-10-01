@@ -30,4 +30,8 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
 Clients can then POST JSON error reports to `/api/client-errors`.
 
+The configured `reportUri` is matched against the request path with the deployment's context
+path stripped, so the same configuration works at the root and under e.g. `/app`. Bodies larger
+than `maxBodySize` are truncated and reported as an `"unparseable report"` text node.
+
 

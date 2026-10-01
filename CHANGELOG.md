@@ -1,5 +1,14 @@
 # version 28.2
 
+## `client-reports`
+
+*   [FIX] **Reports are received under a servlet context path.** The filter compared the
+    configured `reportUri` against `getRequestURI()`, which carries the deployment's context
+    path: an application deployed under `/app` silently never received any client error report.
+    The comparison now happens against the request path with the context path stripped. The
+    body cap also reads at most exactly `maxBodySize` bytes (the previous range copy read one
+    byte too many); the larger-than-cap truncation contract is unchanged.
+
 ## `authentication-tokens`
 
 *   [FIX] **A rejected or ambiguous token no longer strips authentication established earlier in

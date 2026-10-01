@@ -4,7 +4,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -13,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.util.StreamUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
@@ -46,7 +44,11 @@ public class ClientReportFilter<ET> extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        if ("POST".equals(request.getMethod()) && reportUri.equals(request.getRequestURI())) {
+        // getRequestURI() carries the deployment's context path: the configured uri is matched
+        // against the request path with the context path stripped, or an application deployed
+        // under /app silently never receives any report
+        final var requestPath = request.getRequestURI().substring(request.getContextPath().length());
+        if ("POST".equals(request.getMethod()) && reportUri.equals(requestPath)) {
             final var auth = SecurityContextHolder.getContext().getAuthentication();
             final var principal = auth == null ? null : auth.getPrincipal();
             final var json = bodyToJson(request);
@@ -61,9 +63,10 @@ public class ClientReportFilter<ET> extends OncePerRequestFilter {
     }
 
     private JsonNode bodyToJson(HttpServletRequest req) {
-        try (final var is = req.getInputStream(); final var baos = new ByteArrayOutputStream()) {
-            StreamUtils.copyRange(is, baos, 0, maxBodySize);
-            return mapper.readValue(baos.toByteArray(), JsonNode.class);
+        try (final var is = req.getInputStream()) {
+            // readNBytes caps at exactly maxBodySize: a larger body is truncated and reported
+            // as unparseable, by design
+            return mapper.readValue(is.readNBytes(maxBodySize), JsonNode.class);
         } catch (IOException | JacksonException ex) {
             return mapper.getNodeFactory().stringNode("unparseable report");
         }
