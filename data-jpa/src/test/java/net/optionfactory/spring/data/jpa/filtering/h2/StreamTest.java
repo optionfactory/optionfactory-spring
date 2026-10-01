@@ -99,4 +99,40 @@ public class StreamTest {
         Assertions.assertEquals(1, seen.size());
         Assertions.assertTrue(seen.stream().noneMatch(em::contains));
     }
+
+    @Test
+    public void counterCountsMappedRowsOneBased() {
+        for (long id = 1; id <= 3; id++) {
+            final EntityForStream e = new EntityForStream();
+            e.id = 100 + id;
+            e.name = "row-" + id;
+            repo.save(e);
+        }
+        final var currents = new ArrayList<Long>();
+        repo.findAll(null, FilterRequest.unfiltered(), Sort.unsorted(), 100, SessionPolicy.Mode.DEFAULT, (sp, e) -> {
+            currents.add(sp.current());
+            return e;
+        }).toList();
+        Assertions.assertEquals(List.of(1L, 2L, 3L, 4L), currents);
+    }
+
+    @Test
+    public void clearIfClearsOnEveryModThRow() {
+        repo.deleteAll();
+        final var streamed = new ArrayList<EntityForStream>();
+        for (long id = 1; id <= 6; id++) {
+            final EntityForStream e = new EntityForStream();
+            e.id = 200 + id;
+            e.name = "row-" + id;
+            repo.save(e);
+        }
+        repo.findAll(null, FilterRequest.unfiltered(), Sort.unsorted(), 100, SessionPolicy.Mode.DEFAULT, (sp, e) -> {
+            sp.clearIf(2);
+            streamed.add(e);
+            return e;
+        }).toList();
+        Assertions.assertEquals(6, streamed.size());
+        Assertions.assertTrue(streamed.stream().noneMatch(em::contains),
+                "clearIf(2) must clear after every second row, leaving nothing behind on an even row count");
+    }
 }

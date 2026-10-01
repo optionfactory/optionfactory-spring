@@ -2,6 +2,14 @@
 
 ## `data-jpa`
 
+*   [FIX] **`SessionPolicy.clearIf` clears after every mod-th row.** The streaming `findAll`
+    counted rows in a `peek` stage, which runs before the callback and started at `-1`: the
+    first callback saw `current() == 0` and `0 % mod == 0` cleared the persistence context
+    after the very first row, then every `mod` rows. The counter is incremented in the mapper,
+    right before the callback: `current()` is now the 1-based row number (code reading it shifts
+    by one), `clearIf(mod)` fires exactly on multiples of `mod`. The streaming contract is now
+    documented on the interface: consume within the caller's transaction, close the stream to
+    release the JDBC scroll, counting assumes linear consumption.
 *   [DOC] **The readme says where the sort whitelist applies.** Every `Sort`/`Pageable` reaching a
     `WhitelistFilteringRepository` (FilterRequest endpoints, plain `findAll(Sort)`/`findAll(Pageable)`,
     `Specification` queries) is validated against `@Sortable` names, server-built ones included;

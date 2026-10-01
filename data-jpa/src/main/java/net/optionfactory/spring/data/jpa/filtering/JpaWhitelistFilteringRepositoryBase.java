@@ -81,7 +81,7 @@ public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> ext
 
 
     public <R> Stream<R> findAll(@Nullable Specification<T> base, FilterRequest filters, Sort sort, int fetchSize, SessionPolicy.Mode mode, BiFunction<SessionPolicy, T, R> beforeDetaching) {
-        final AtomicLong counter = new AtomicLong(-1);
+        final AtomicLong counter = new AtomicLong(0);
         final SessionPolicy policy = new SessionPolicy(entityManager, counter);
         final var query = getQuery(where(base).and(filter(filters)), getDomainClass(), sort)
                 .setHint(AvailableHints.HINT_FETCH_SIZE, fetchSize);
@@ -89,8 +89,12 @@ public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> ext
             query.setHint(AvailableHints.HINT_READ_ONLY, true);
         }
         return query.getResultStream()
-                .peek(entity -> counter.incrementAndGet())
-                .map(entity -> beforeDetaching.apply(policy, entity));
+                .map(entity -> {
+                    // count in the mapper, where execution is guaranteed before the callback:
+                    // clearIf sees the 1-based row number it is deciding upon
+                    counter.incrementAndGet();
+                    return beforeDetaching.apply(policy, entity);
+                });
     }
 
 

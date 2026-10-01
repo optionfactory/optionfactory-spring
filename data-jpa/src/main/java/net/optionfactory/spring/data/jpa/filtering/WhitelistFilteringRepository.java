@@ -82,6 +82,14 @@ public interface WhitelistFilteringRepository<T> {
      * lazy access after returning: the entity is detached as soon as the
      * mapper's result is produced.
      *
+     * <p>
+     * The stream borrows the caller's transaction and the underlying JDBC
+     * scroll: consume it while the transaction is active, and close it
+     * (try-with-resources) when done. Both halves of the contract are on the
+     * caller; consuming past the transaction end fails against a closed
+     * session, and abandoning the stream unclosed holds JDBC resources until
+     * the session ends.
+     *
      * @param <R> result type
      * @param base a base filter that should be always applied
      * @param filters filters parameters
@@ -99,6 +107,16 @@ public interface WhitelistFilteringRepository<T> {
      * {@link Specification}, ordered by a {@link Sort}, calling the passed
      * Function before possibly detaching the streamed entity, loading
      * entities according to the given {@link SessionPolicy.Mode}.
+     *
+     * <p>
+     * The stream borrows the caller's transaction and the underlying JDBC
+     * scroll: consume it while the transaction is active, and close it
+     * (try-with-resources) when done. Both halves of the contract are on the
+     * caller; consuming past the transaction end fails against a closed
+     * session, and abandoning the stream unclosed holds JDBC resources until
+     * the session ends. {@link SessionPolicy#clearIf} and
+     * {@link SessionPolicy#current} count mapped rows (1-based) and assume the
+     * stream is consumed linearly.
      *
      * @param <R> result type
      * @param base a base filter that should be always applied
@@ -173,10 +191,23 @@ public interface WhitelistFilteringRepository<T> {
             em.clear();
         }
 
+        /**
+         * Current 1-based row number, as seen by the streaming callback. Counts
+         * mapped rows: a stream consumed non-linearly (skip, limit, takeWhile)
+         * does not observe every row.
+         *
+         * @return the number of rows mapped so far
+         */
         public long current() {
             return counter.get();
         }
 
+        /**
+         * Clears the persistence context whenever the current row number is a
+         * multiple of {@code mod}.
+         *
+         * @param mod the bulk-clear cadence, in rows
+         */
         public void clearIf(int mod) {
             if (counter.get() % mod != 0) {
                 return;
