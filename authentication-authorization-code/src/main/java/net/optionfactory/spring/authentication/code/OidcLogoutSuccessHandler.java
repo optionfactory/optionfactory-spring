@@ -14,6 +14,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 /// `{@code redirect_uri}` query parameter built from the incoming request's scheme, host, and port
 /// (as resolved by `ServletServerHttpRequest`, i.e. honoring `Forwarded`/`X-Forwarded-*` headers
 /// when a `ForwardedHeaderFilter` is in front of this handler) followed by the configured `path`.
+/// The incoming request's query string is never carried into the redirect target.
 ///
 /// # Security assumption: the Identity Provider MUST exact-match the redirect target
 ///
@@ -43,10 +44,14 @@ public class OidcLogoutSuccessHandler implements LogoutSuccessHandler {
     @Override
     public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         final ServletServerHttpRequest sRequest = new ServletServerHttpRequest(request);
+        // replaceQuery(null): the redirect target is scheme+host+port+path, never the incoming
+        // request's query string, which the IdP's exact match would reject and which an attacker
+        // could otherwise smuggle onto the post-logout landing page
         final var builder = UriComponentsBuilder.fromUri(oidcServerBaseUri)
                 .path("/logout")
                 .queryParam("redirect_uri", UriComponentsBuilder.fromUri(sRequest.getURI())
                         .replacePath(path)
+                        .replaceQuery(null)
                         .toUriString());
 
         final var redirectUri = useRelativeRedirects ? builder.scheme(null).host(null).toUriString() : builder.toUriString();

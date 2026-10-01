@@ -28,4 +28,23 @@ public class OidcLogoutSuccessHandlerTest {
         Assertions.assertTrue(redirectedUrl.contains("app.example.com"),
                 "redirect_uri must reflect the request's own host");
     }
+
+    @Test
+    public void redirectUriDropsTheIncomingQueryString() throws Exception {
+        final var handler = new OidcLogoutSuccessHandler(URI.create("https://idp.example.com"), "/app/home", false);
+        final var req = new MockHttpServletRequest();
+        req.setScheme("https");
+        req.setServerName("app.example.com");
+        req.setServerPort(-1);
+        req.setRequestURI("/app/logout");
+        req.setQueryString("next=https://attacker.example");
+
+        final var res = new MockHttpServletResponse();
+        handler.onLogoutSuccess(req, res, null);
+
+        final var redirectedUrl = res.getRedirectedUrl();
+        Assertions.assertNotNull(redirectedUrl);
+        Assertions.assertEquals("https://idp.example.com/logout?redirect_uri=https://app.example.com/app/home", redirectedUrl,
+                "the redirect target is scheme+host+port+path: the incoming query must never ride along");
+    }
 }

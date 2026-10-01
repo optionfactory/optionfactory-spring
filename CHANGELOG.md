@@ -1,5 +1,15 @@
 # version 28.2
 
+## `authentication-authorization-code`
+
+*   [FIX] **The logout `redirect_uri` never carries the incoming request's query string.**
+    `OidcLogoutSuccessHandler` rebuilt the redirect target with `replacePath` only, so the
+    query string of the logout request rode into `redirect_uri`: an attacker-chosen query
+    landed on the post-logout target (or made the IdP's exact match reject the redirect).
+    The target is now exactly scheme, host, port and the configured path, as the handler's
+    documentation always stated. Reflecting the request's host remains the documented
+    contract, backed by the IdP's exact-match validation.
+
 ## `data-jpa-web`
 
 *   [ENH] **Filter requests are bounded.** The `FilterRequestArgumentResolver` accepted any
