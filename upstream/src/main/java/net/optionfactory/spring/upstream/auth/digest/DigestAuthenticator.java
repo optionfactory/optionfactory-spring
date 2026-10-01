@@ -16,7 +16,7 @@ public class DigestAuthenticator implements UpstreamHttpRequestInitializer {
 
     @Override
     public void initialize(InvocationContext invocation, ClientHttpRequest request) {
-        final var header = client.authenticate(digestAuth, request.getURI());
+        final var header = client.authenticate(digestAuth, request.getMethod(), request.getURI());
         request.getHeaders().set("Authorization", header);
     }
 

@@ -27,7 +27,7 @@ public class DigestAuth {
         return new DigestAuth(clientId, clientSecret, sr::nextInt);
     }
 
-    public String authHeader(String method, String uriPath, String serverChallenge) {
+    public String authHeader(String method, String requestUri, String serverChallenge) {
         final AuthenticationChallengeParser.AuthenticationChallenge challenge = new AuthenticationChallengeParser().parse(serverChallenge);
         if (!"digest".equalsIgnoreCase(challenge.scheme())) {
             throw new IllegalStateException("Not a Digest challenge: " + serverChallenge);
@@ -38,18 +38,20 @@ public class DigestAuth {
         final String nc = "00000001";
         final String clientNonce = String.format("%08x", clientNonceFactory.get());
         final String ha1 = md5LowercaseHex(String.format("%s:%s:%s", clientId, serverRealm, clientSecret));
-        final String ha2 = md5LowercaseHex(String.format("%s:%s", method, uriPath));
+        final String ha2 = md5LowercaseHex(String.format("%s:%s", method, requestUri));
         final String response = md5LowercaseHex(String.format("%s:%s:%s:%s:%s:%s", ha1, serverNonce, nc, clientNonce, "auth", ha2));
         final Map<String, String> digestParams = new LinkedHashMap<>();
         digestParams.put("username", quoted(clientId));
         digestParams.put("realm", quoted(serverRealm));
         digestParams.put("nonce", quoted(serverNonce));
-        digestParams.put("uri", quoted(uriPath));
+        digestParams.put("uri", quoted(requestUri));
         digestParams.put("qop", "auth");
         digestParams.put("nc", nc);
         digestParams.put("cnonce", quoted(clientNonce));
         digestParams.put("response", quoted(response));
-        digestParams.put("opaque", quoted(serverOpaque));
+        if (serverOpaque != null) {
+            digestParams.put("opaque", quoted(serverOpaque));
+        }
         final String digestParamsValue = digestParams.entrySet().stream().map((e) -> String.format("%s=%s", e.getKey(), e.getValue())).collect(Collectors.joining(", "));
         return String.format("Digest %s", digestParamsValue);
     }

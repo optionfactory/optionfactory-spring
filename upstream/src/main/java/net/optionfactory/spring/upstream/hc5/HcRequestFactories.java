@@ -86,11 +86,11 @@ public class HcRequestFactories {
         }
 
         public Builder connectionTimeout(Duration d) {
-            return connectionConfig(c -> c.setConnectTimeout(d.toSeconds(), TimeUnit.SECONDS));
+            return connectionConfig(c -> c.setConnectTimeout(d.toMillis(), TimeUnit.MILLISECONDS));
         }
 
         public Builder socketTimeout(Duration d) {
-            return connectionConfig(c -> c.setSocketTimeout((int) d.toSeconds(), TimeUnit.SECONDS));
+            return connectionConfig(c -> c.setSocketTimeout((int) d.toMillis(), TimeUnit.MILLISECONDS));
         }
 
         public Builder connectionTimeToLive(Duration d) {
@@ -98,7 +98,7 @@ public class HcRequestFactories {
                 if (d == null) {
                     c.setTimeToLive(null);
                 } else {
-                    c.setTimeToLive(d.toSeconds(), TimeUnit.SECONDS);
+                    c.setTimeToLive(d.toMillis(), TimeUnit.MILLISECONDS);
                 }
             });
         }
@@ -108,7 +108,7 @@ public class HcRequestFactories {
                 if (d == null) {
                     c.setValidateAfterInactivity(null);
                 } else {
-                    c.setValidateAfterInactivity(d.toSeconds(), TimeUnit.SECONDS);
+                    c.setValidateAfterInactivity(d.toMillis(), TimeUnit.MILLISECONDS);
                 }
             });
         }
@@ -171,8 +171,8 @@ public class HcRequestFactories {
                 socketConfigCustomizer.accept(socketConfigBuilder);
             }
             final var connectionConfigBuilder = ConnectionConfig.custom()
-                    .setConnectTimeout(connTimeout.toSeconds(), TimeUnit.SECONDS)
-                    .setSocketTimeout((int) sockTimeout.toSeconds(), TimeUnit.SECONDS);
+                    .setConnectTimeout(connTimeout.toMillis(), TimeUnit.MILLISECONDS)
+                    .setSocketTimeout((int) sockTimeout.toMillis(), TimeUnit.MILLISECONDS);
             for (final var connectionConfigCustomizer : connectionConfigCustomizers) {
                 connectionConfigCustomizer.accept(connectionConfigBuilder);
             }

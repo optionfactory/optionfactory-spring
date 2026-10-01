@@ -2,6 +2,19 @@
 
 ## `upstream`
 
+*   [FIX] **Digest authentication signs the actual request.** The authenticator computed the
+    digest response over a hard-coded `POST` and the path only: any GET/PUT/DELETE request, and
+    any request with a query string, produced a response the server rejected, since RFC 7616
+    covers the actual method and the request-target (query included) in A2. `DigestAuthClient`
+    gained `authenticate(DigestAuth, HttpMethod, URI)` and the authenticator now passes the
+    request's method and target; the old two-argument default method is deprecated and keeps the
+    POST behavior. `DigestAuth` also no longer emits `opaque="null"` when the server sends no
+    opaque directive.
+*   [FIX] **Sub-second HC5 timeouts are no longer truncated to "no timeout".** The request-factory
+    builder converted every Duration (connection timeout, socket timeout, connection TTL,
+    validate-after-inactivity) with `toSeconds()`: a 900ms timeout became 0 seconds, which in
+    socket semantics disables the timeout entirely, and 2.5s silently became 2s. All conversions
+    now keep millisecond precision.
 *   [FIX] **Streaming responses whose body is never obtained release their connection.**
     `StreamingUpstreamHttpResponse.close()` was a no-op so that RestClient's post-conversion close
     would not kill the stream handed to the caller, but on paths where no converter ever asked for
