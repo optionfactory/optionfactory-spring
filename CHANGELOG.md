@@ -2,6 +2,11 @@
 
 ## `upstream`
 
+*   [FIX] **Non-standard response statuses no longer crash the status handlers.** A proxy or
+    server answering with a status outside 100-599 (e.g. 6xx, 999) made
+    `UpstreamErrorOnResponseHandler` throw `IllegalArgumentException: No matching constant` from
+    `Series.valueOf`, failing the whole request; such statuses now resolve to no series, fall
+    through the annotated handlers, and are delivered to the caller as-is.
 *   [FIX] **Redaction failures are logged.** When a body's payload did not match its declared
     content type (malformed JSON/XML/form), the redaction silently fell back to rendering the raw
     payload. The fallback stays, by choice, but is now announced by a WARN naming the content

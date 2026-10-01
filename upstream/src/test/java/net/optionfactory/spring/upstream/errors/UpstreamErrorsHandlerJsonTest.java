@@ -1,8 +1,13 @@
 package net.optionfactory.spring.upstream.errors;
 
+import java.nio.charset.StandardCharsets;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
+import net.optionfactory.spring.upstream.mocks.MockClientHttpResponse;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import tools.jackson.databind.json.JsonMapper;
@@ -59,7 +64,7 @@ public class UpstreamErrorsHandlerJsonTest {
                     c.response(HttpStatus.BAD_REQUEST, MediaType.valueOf("application/failures+json"),
                             """
                             [{
-                                "type": "FIELD_ERROR",                           
+                                "type": "FIELD_ERROR",
                                 "context": "field",
                                 "reason": "must not be null"
                             }]
@@ -74,6 +79,33 @@ public class UpstreamErrorsHandlerJsonTest {
         });
 
     }
-    
+
+    @Test
+    public void nonStandardStatusCodeYieldsResultInsteadOfCrashingTheStatusHandlers() {
+        final var client = UpstreamBuilder.create(UpstreamErrorsJsonClient.class)
+                .requestFactoryMock(c -> {
+                    c.responseFactory((ctx, uri, method, headers) -> {
+                        final var h = new HttpHeaders();
+                        h.setContentType(MediaType.APPLICATION_JSON);
+                        return new MockClientHttpResponse(
+                                HttpStatusCode.valueOf(999),
+                                "Unknown",
+                                h,
+                                new ByteArrayResource("""
+                                {
+                                    "metadata": {"success": true},
+                                    "data": null
+                                }
+                                """.getBytes(StandardCharsets.UTF_8)));
+                    });
+                })
+                .baseUri("http://example.com")
+                .json(JsonMapper.builder().build())
+                .build();
+
+        Assertions.assertEquals(true, client.callWithJsonPath().metadata.success,
+                "a 6xx/999 response must fall through the status handlers, not crash them");
+    }
+
 
 }

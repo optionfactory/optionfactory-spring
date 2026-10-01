@@ -73,8 +73,13 @@ public class UpstreamErrorOnResponseHandler implements UpstreamResponseErrorHand
         if (expressions == null) {
             return Optional.empty();
         }
+        // resolve returns null for non-standard codes (e.g. 6xx, 999): no series can match,
+        // where valueOf would throw and turn the response handling itself into a failure
+        final Series serie = Series.resolve(statusCode);
+        if (serie == null) {
+            return Optional.empty();
+        }
         for (AnnotatedValues expression : expressions) {
-            final Series serie = Series.valueOf(statusCode);
             if (!expression.series().contains(serie)) {
                 continue;
             }
