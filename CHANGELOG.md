@@ -1,5 +1,14 @@
 # version 28.2
 
+## `data-jpa`
+
+*   [DOC] **The readme says where the sort whitelist applies.** Every `Sort`/`Pageable` reaching a
+    `WhitelistFilteringRepository` (FilterRequest endpoints, plain `findAll(Sort)`/`findAll(Pageable)`,
+    `Specification` queries) is validated against `@Sortable` names, server-built ones included;
+    derived query methods are implemented by query derivation and never pass through the base
+    class, so their sorts bypass the whitelist entirely and must not receive client-supplied
+    sorts. Both halves were undocumented; the readme now states them.
+
 ## `upstream`
 
 *   [FIX] **Non-standard response statuses no longer crash the status handlers.** A proxy or

@@ -168,6 +168,21 @@ rows. Paths crossing a collection are therefore rejected when the repository is 
 with an `InvalidSortConfiguration` — as is any path that does not resolve against the
 metamodel.
 
+### Where the sort whitelist applies
+
+Every `Sort` that reaches a `WhitelistFilteringRepository` is validated against the
+`@Sortable` names: the `FilterRequest` endpoints, plain `findAll(Sort)`/`findAll(Pageable)`
+inherited from `SimpleJpaRepository`, and `Specification`-based queries all pass through the
+same base class, so even a server-built `Sort.by("name")` must use whitelisted sorter names.
+Use the `@Sortable` name in the `Sort` object (`Sort.by("sortByName")`) or sort through a
+`Specification` instead.
+
+**Derived query methods are outside the whitelist.** A `findByName(name, Sort)` on a
+whitelist repository is implemented by Spring Data query derivation and never passes through
+the base class: its `Sort` is applied raw, with no name checking. Treat that as a server-side
+convenience only — never hand a client-supplied `Sort` or `Pageable` to a derived method — or
+keep derived finders off whitelist repositories altogether.
+
 ## Filtering across a collection
 
 A filter whose path crosses a collection asks a question about the row's *elements*, and
