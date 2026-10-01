@@ -1,5 +1,15 @@
 # version 28.2
 
+## `context-web`
+
+*   [DOC] **`EnableCustomWebMvc` says how the locale resolver is chosen.** The custom resolver
+    must be named `customLocaleResolver`; a conventionally named `localeResolver` bean is not
+    picked up, because `WebMvcConfigurationSupport` already defines a bean with exactly that
+    name, so the conventional name either collides or is overridden. The readme states the
+    contract, the fallback logs at WARN (naming the expected bean) instead of INFO, the ambiguity
+    error lists the conflicting resolvers, and the module gained its first tests covering the
+    three branches.
+
 ## `client-reports`
 
 *   [FIX] **Reports are received under a servlet context path.** The filter compared the

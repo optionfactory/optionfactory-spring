@@ -49,15 +49,15 @@ public @interface EnableCustomWebMvc {
         @Override
         public LocaleResolver localeResolver() {
             final var resolvers = customLocaleResolver.stream().toList();
-            if(resolvers.isEmpty()){
-                logger.info("LocaleResolver: bean 'customLocaleResolver' not found: using the default localeResolver");
+            if (resolvers.isEmpty()) {
+                logger.warn("LocaleResolver: bean 'customLocaleResolver' not found: using the default AcceptHeaderLocaleResolver. A bean named 'localeResolver' is NOT picked up: the conventional name collides with WebMvcConfigurationSupport's own bean.");
                 return super.localeResolver();
             }
-            if(resolvers.size() == 1){
+            if (resolvers.size() == 1) {
                 logger.info("LocaleResolver: bean 'customLocaleResolver' found: configured");
                 return resolvers.get(0);
             }
-            throw new IllegalStateException(String.format("multiple conflicting locale resolvers found: %s", resolvers));
+            throw new IllegalStateException(String.format("multiple conflicting locale resolvers found: %s", customLocaleResolver.stream().map(r -> r.getClass().getName()).toList()));
         }
 
     }
