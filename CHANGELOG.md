@@ -2,6 +2,12 @@
 
 ## `upstream`
 
+*   [FIX] **Type-level annotations on the proxied subinterface configure inherited endpoints.**
+    `Annotations.closest(Method, ...)` searched the declaring interface only: proxying
+    `interface B extends A` left `@Upstream.Logging`, `@Upstream.AlertOnResponse`,
+    `@Upstream.AlertOnRemotingError` and `@Upstream.ErrorOnResponse` declared on `B` invisible for
+    endpoints inherited from `A`, inconsistently with endpoint discovery. The lookup overloads
+    now take the proxied interface and search it first; method-level annotations still win.
 *   [ENH] **Client-credentials and password grants cache their access token.**
     `OauthClientCredentialsAuthenticator` and `OauthPasswordAuthenticator` executed a full grant
     for every upstream request, doubling traffic to the token endpoint and discarding `expires_in`.

@@ -32,7 +32,7 @@ public class UpstreamErrorOnResponseHandler implements UpstreamResponseErrorHand
     @Override
     public void preprocess(Class<?> k, Expressions expressions, Map<Method, EndpointDescriptor> endpoints) {
         for (final var endpoint : endpoints.values()) {
-            final var anns = Annotations.closestRepeatable(endpoint.method(), Upstream.ErrorOnResponse.class)
+            final var anns = Annotations.closestRepeatable(endpoint.method(), k, Upstream.ErrorOnResponse.class)
                     .stream()
                     .map(annotation -> {
                         final var predicate = expressions.bool(annotation.value());

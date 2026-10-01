@@ -35,10 +35,10 @@ public class UpstreamAlertInterceptor implements UpstreamHttpInterceptor {
     @Override
     public void preprocess(Class<?> k, Expressions expressions, Map<Method, EndpointDescriptor> endpoints) {
         for (final var endpoint : endpoints.values()) {
-            Annotations.closest(endpoint.method(), Upstream.AlertOnRemotingError.class)
+            Annotations.closest(endpoint.method(), k, Upstream.AlertOnRemotingError.class)
                     .map(ann -> expressions.bool(ann.value()))
                     .ifPresent(expression -> remotingConfs.put(endpoint.method(), expression));
-            Annotations.closest(endpoint.method(), Upstream.AlertOnResponse.class)
+            Annotations.closest(endpoint.method(), k, Upstream.AlertOnResponse.class)
                     .map(ann -> expressions.bool(ann.value()))
                     .ifPresent(expression -> responseConfs.put(endpoint.method(), expression));
 

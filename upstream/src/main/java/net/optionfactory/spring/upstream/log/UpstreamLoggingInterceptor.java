@@ -36,7 +36,7 @@ public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
     @Override
     public void preprocess(Class<?> k, Expressions expressions, Map<Method, EndpointDescriptor> endpoints) {
         for (final var endpoint : endpoints.values()) {
-            Annotations.closest(endpoint.method(), Upstream.Logging.class)
+            Annotations.closest(endpoint.method(), k, Upstream.Logging.class)
                     .map(a -> new Upstream.Logging.Conf(
                     a.requestMultipart(),
                     a.requestHeaders(),

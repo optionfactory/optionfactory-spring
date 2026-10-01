@@ -8,12 +8,19 @@ import java.util.Optional;
 
 public class Annotations {
 
-    public static <T extends Annotation> List<T> closestRepeatable(Method m, Class<T> annotation) {
+    /// Looks the annotation up on the method first, then on the root interface
+    /// and its ancestors: [rootIface] is the proxied interface, which may be a
+    /// subinterface of the one declaring [m] and carry the annotation there.
+    public static <T extends Annotation> List<T> closestRepeatable(Method m, Class<?> rootIface, Class<T> annotation) {
         final var manns = m.getAnnotationsByType(annotation);
         if (manns.length > 0) {
             return List.of(manns);
         }
-        return closestRepeatable(m.getDeclaringClass(), annotation);
+        return closestRepeatable(rootIface, annotation);
+    }
+
+    public static <T extends Annotation> List<T> closestRepeatable(Method m, Class<T> annotation) {
+        return closestRepeatable(m, m.getDeclaringClass(), annotation);
     }
 
     public static <T extends Annotation> List<T> closestRepeatable(Class<?> rootIface, Class<T> annotation) {
@@ -32,12 +39,19 @@ public class Annotations {
         return List.of();
     }
 
-    public static <T extends Annotation> Optional<T> closest(Method m, Class<T> annotation) {
+    /// Looks the annotation up on the method first, then on the root interface
+    /// and its ancestors: [rootIface] is the proxied interface, which may be a
+    /// subinterface of the one declaring [m] and carry the annotation there.
+    public static <T extends Annotation> Optional<T> closest(Method m, Class<?> rootIface, Class<T> annotation) {
         final var mann = m.getAnnotation(annotation);
         if (mann != null) {
             return Optional.of(mann);
         }
-        return closest(m.getDeclaringClass(), annotation);
+        return closest(rootIface, annotation);
+    }
+
+    public static <T extends Annotation> Optional<T> closest(Method m, Class<T> annotation) {
+        return closest(m, m.getDeclaringClass(), annotation);
     }
 
     public static <T extends Annotation> Optional<T> closest(Class<?> rootIface, Class<T> annotation) {
