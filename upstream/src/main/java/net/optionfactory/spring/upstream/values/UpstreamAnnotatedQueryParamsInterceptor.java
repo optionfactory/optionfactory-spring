@@ -2,6 +2,7 @@ package net.optionfactory.spring.upstream.values;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,6 +19,7 @@ import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.expressions.StringExpression;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.util.UriUtils;
 
 public class UpstreamAnnotatedQueryParamsInterceptor implements UpstreamHttpInterceptor {
 
@@ -55,16 +57,19 @@ public class UpstreamAnnotatedQueryParamsInterceptor implements UpstreamHttpInte
                 continue;
             }
             queryParams.add(
-                    aqp.key().evaluate(ectx),
-                    aqp.value().evaluate(ectx)
+                    UriUtils.encodeQueryParam(aqp.key().evaluate(ectx), StandardCharsets.UTF_8),
+                    UriUtils.encodeQueryParam(aqp.value().evaluate(ectx), StandardCharsets.UTF_8)
             );
         }
         if (!queryParams.isEmpty()) {
-            final var newURi = UriComponentsBuilder.fromUri(request.uri())
+            // request.uri() is already encoded (DefaultUriBuilderFactory runs before interceptors):
+            // components must be treated as encoded (build(true)) or every existing %XX is re-encoded
+            // to %25XX; the added values are encoded once here instead.
+            final var newUri = UriComponentsBuilder.fromUri(request.uri())
                     .queryParams(queryParams)
-                    .build()
+                    .build(true)
                     .toUri();
-            request = request.withUri(newURi);
+            request = request.withUri(newUri);
         }
         return execution.execute(invocation, request);
     }

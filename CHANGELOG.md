@@ -1,5 +1,14 @@
 # version 28.2
 
+## `upstream`
+
+*   [FIX] **`@Upstream.QueryParam` no longer double-encodes the existing query string.** The
+    interceptor rebuilt the request URI with `UriComponentsBuilder.build()`, which treats the
+    already-encoded URI (encoding happens in the URI factory, before interceptors run) as raw
+    input: every `%` in a pre-existing query value was re-encoded to `%25`, so adding a single
+    query param corrupted the rest of the query. The builder now treats components as encoded and
+    the added keys/values are encoded once, with query-param rules.
+
 ## `downstream-maven-plugin`
 
 *   [FIX] **`outputStyleOverrides` generates the overridden style again.** The emitter computed the
