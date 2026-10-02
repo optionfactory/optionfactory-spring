@@ -12,10 +12,15 @@ import tools.jackson.databind.json.JsonMapper;
 
 public class UpstreamErrorsReasonsTest {
 
-    private static UpstreamErrorsReasonsClient client(HttpStatus status, String code) {
+    private static HttpHeaders jsonHeaders(String code) {
         final var headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("X-Code", code);
+        return headers;
+    }
+
+    private static UpstreamErrorsReasonsClient client(HttpStatus status, String code) {
+        final var headers = jsonHeaders(code);
         return UpstreamBuilder.create(UpstreamErrorsReasonsClient.class)
                 .requestFactoryMock(c -> c.response(status, headers, "{\"k\":\"v\"}".getBytes(StandardCharsets.UTF_8)))
                 .json(new JsonMapper())
@@ -70,5 +75,45 @@ public class UpstreamErrorsReasonsTest {
         final var client = client(HttpStatus.BAD_GATEWAY, "a");
         final var ex = Assertions.assertThrows(RestClientUpstreamException.class, client::plain, "a 5xx must fail the call");
         Assertions.assertEquals("plain", ex.endpoint, "an endpoint without @Upstream.Endpoint must be named after its method");
+    }
+
+    @Test
+    public void clientErrorAnnotationWinsOverTheStatusReason() {
+        final var client = client(HttpStatus.NOT_FOUND, "a");
+        final var ex = Assertions.assertThrows(RestClientUpstreamException.class, client::onClientErrors, "a matching CLIENT_ERROR annotation must fail the call");
+        Assertions.assertEquals("client error: a", ex.reason, "a matching CLIENT_ERROR annotation must provide the reason instead of the status");
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode(), "the exception must carry the status");
+    }
+
+    @Test
+    public void clientErrorAnnotationNotMatchingYieldsTheStatusReason() {
+        final var client = client(HttpStatus.NOT_FOUND, "b");
+        final var ex = Assertions.assertThrows(RestClientUpstreamException.class, client::onClientErrors, "a 4xx must fail the call");
+        Assertions.assertEquals("404 Not Found", ex.reason, "a 4xx not matching the annotation must report the status as reason");
+    }
+
+    @Test
+    public void serverErrorAnnotationWinsOverTheStatusReason() {
+        final var client = client(HttpStatus.BAD_GATEWAY, "a");
+        final var ex = Assertions.assertThrows(RestClientUpstreamException.class, client::onServerErrors, "a matching SERVER_ERROR annotation must fail the call");
+        Assertions.assertEquals("server error", ex.reason, "a matching SERVER_ERROR annotation must provide the reason instead of the status");
+    }
+
+    @Test
+    public void successfulOnlyAnnotationsDoNotChangeErrorStatusReasons() {
+        final var client = client(HttpStatus.NOT_FOUND, "a");
+        final var ex = Assertions.assertThrows(RestClientUpstreamException.class, client::firstMatchingWins, "a 4xx must fail the call");
+        Assertions.assertEquals("404 Not Found", ex.reason, "annotations for the SUCCESSFUL series only must leave the status as reason of a 4xx");
+    }
+
+    @Test
+    public void annotationsCanBeRepeatedOnTheInterface() {
+        final var client = UpstreamBuilder.create(UpstreamErrorsRepeatedOnTypeClient.class)
+                .requestFactoryMock(c -> c.response(HttpStatus.OK, jsonHeaders("b"), "{\"k\":\"v\"}".getBytes(StandardCharsets.UTF_8)))
+                .json(new JsonMapper())
+                .baseUri("http://example.com")
+                .build();
+        final var ex = Assertions.assertThrows(RestClientUpstreamException.class, client::inherited, "the annotations repeated on the interface must apply to its methods");
+        Assertions.assertEquals("type second", ex.reason, "the repeated interface annotations must be tried in declaration order");
     }
 }

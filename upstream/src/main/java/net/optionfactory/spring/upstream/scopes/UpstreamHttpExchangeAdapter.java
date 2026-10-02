@@ -96,8 +96,8 @@ public interface UpstreamHttpExchangeAdapter {
         /// Starts a builder from existing request values, to change some of them.
         ///
         /// It copies the method, the uri, the uri builder factory, the uri template, the uri
-        /// variables, the headers, the cookies, the attributes and the body value. It does not copy
-        /// the api version nor the body value type, which are therefore lost unless set again.
+        /// variables, the headers, the cookies, the attributes, the api version, the body value
+        /// and its type.
         ///
         /// @param values the values to copy
         /// @return a builder holding a copy of the values
@@ -120,7 +120,14 @@ public interface UpstreamHttpExchangeAdapter {
             for (final var attribute : values.getAttributes().entrySet()) {
                 builder.addAttribute(attribute.getKey(), attribute.getValue());
             }
-            builder.setBodyValue(values.getBodyValue());
+            if (values.getApiVersion() != null) {
+                builder.setApiVersion(values.getApiVersion());
+            }
+            if (values.getBodyValueType() != null) {
+                builder.setBodyValue(values.getBodyValue(), values.getBodyValueType());
+            } else {
+                builder.setBodyValue(values.getBodyValue());
+            }
             return builder;
 
         }

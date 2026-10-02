@@ -168,4 +168,11 @@ public class UpstreamMethodInterceptorTest {
         Assertions.assertThrows(RestClientException.class, client::plain, "the failure must be rethrown");
         Assertions.assertTrue(events.isEmpty(), "a failure that is not a mapping one must not publish an alert");
     }
+
+    @Test
+    public void toStringDescribesTheClientOutsideAnyScope() throws NoSuchMethodException {
+        final var client = recording();
+        Assertions.assertEquals("upstream client " + Client.class.getName(), client.toString(), "toString must describe the client interface");
+        Assertions.assertTrue(seen.isEmpty(), "toString must not open an invocation scope");
+    }
 }

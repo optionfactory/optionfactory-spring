@@ -113,4 +113,19 @@ public class SoapJaxbHttpMessageConverterTest {
         final var converter = converter(SoapHeaderWriter.NONE);
         Assertions.assertThrows(HttpMessageNotReadableException.class, () -> converter.read(AddResponse.class, input("<not-an-envelope/>")), "a document that is not a SOAP envelope must not be readable");
     }
+
+    @Test
+    public void anEnvelopeWithAnEmptyBodyIsNotReadable() throws JAXBException {
+        final var converter = converter(SoapHeaderWriter.NONE);
+        final var empty = """
+                <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body/></soap:Envelope>
+                """;
+        Assertions.assertThrows(HttpMessageNotReadableException.class, () -> converter.read(AddResponse.class, input(empty)), "an envelope whose body has no element must not be readable");
+    }
+
+    @Test
+    public void anEmptyResponseIsNotReadable() throws JAXBException {
+        final var converter = converter(SoapHeaderWriter.NONE);
+        Assertions.assertThrows(HttpMessageNotReadableException.class, () -> converter.read(AddResponse.class, input("")), "an empty response must not be readable");
+    }
 }

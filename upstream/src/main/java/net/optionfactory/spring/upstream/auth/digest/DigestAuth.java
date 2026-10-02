@@ -43,15 +43,21 @@ public class DigestAuth {
     /// @param requestUri the request-target to digest: the raw path, followed by the raw query if any
     /// @param serverChallenge the `WWW-Authenticate` header value
     /// @return the `Authorization` header value
-    /// @throws IllegalStateException when the challenge is missing or not a `Digest` one
-    /// @throws NullPointerException when the challenge has no `realm` or no `nonce`
+    /// @throws IllegalStateException when the challenge is missing, is not a `Digest` one, or has no
+    /// `realm` or no `nonce`
     public String authHeader(String method, String requestUri, String serverChallenge) {
         final AuthenticationChallengeParser.AuthenticationChallenge challenge = new AuthenticationChallengeParser().parse(serverChallenge);
         if (!"digest".equalsIgnoreCase(challenge.scheme())) {
             throw new IllegalStateException("Not a Digest challenge: " + serverChallenge);
         }
         final String serverRealm = challenge.params().get("realm");
+        if (serverRealm == null) {
+            throw new IllegalStateException("Digest challenge without realm: " + serverChallenge);
+        }
         final String serverNonce = challenge.params().get("nonce");
+        if (serverNonce == null) {
+            throw new IllegalStateException("Digest challenge without nonce: " + serverChallenge);
+        }
         final String serverOpaque = challenge.params().get("opaque");
         final String nc = "00000001";
         final String clientNonce = String.format("%08x", clientNonceFactory.get());

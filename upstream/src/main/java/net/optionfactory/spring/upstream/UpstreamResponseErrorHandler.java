@@ -15,9 +15,10 @@ import net.optionfactory.spring.upstream.expressions.Expressions;
 /// consulted in order and the first one whose [#hasError] returns true handles the response, the
 /// others are skipped: the ones registered through [UpstreamBuilder#responseErrorHandler] come
 /// first, followed by the built-in
-/// [net.optionfactory.spring.upstream.errors.UpstreamErrorOnErrorStatusHandler] (any `4xx` or `5xx`)
-/// and [net.optionfactory.spring.upstream.errors.UpstreamErrorOnResponseHandler]
-/// (`@Upstream.ErrorOnResponse`). A registered handler can therefore replace the exception thrown
+/// [net.optionfactory.spring.upstream.errors.UpstreamErrorOnResponseHandler]
+/// (`@Upstream.ErrorOnResponse`) and
+/// [net.optionfactory.spring.upstream.errors.UpstreamErrorOnErrorStatusHandler] (any `4xx` or `5xx`).
+/// A registered handler can therefore replace the exception thrown
 /// for an error status, or accept such a response by returning from [#handleError] without
 /// throwing.
 ///

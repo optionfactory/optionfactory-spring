@@ -35,4 +35,10 @@ public class MockClientTest {
         Assertions.assertEquals(MediaType.parseMediaType("application/json;charset=utf-8"), got.getHeaders().getContentType(), "the Content-Type must default to the interface DefaultContentType");
     }
 
+    @Test
+    public void objectMethodsWorkOnTheClient() {
+        Assertions.assertEquals("upstream client " + MockClient.class.getName(), client.toString(), "toString must describe the client interface");
+        Assertions.assertTrue(client.equals(client), "a client must equal itself");
+        Assertions.assertEquals(client.hashCode(), client.hashCode(), "hashCode must be stable");
+    }
 }

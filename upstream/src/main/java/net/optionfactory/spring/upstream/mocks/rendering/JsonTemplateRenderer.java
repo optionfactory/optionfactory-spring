@@ -31,19 +31,16 @@ import tools.jackson.databind.node.ObjectNode;
 /// - object keys are templates as well, and an entry whose key evaluates to `null` is dropped;
 /// - numbers, booleans and `null` are copied as they are.
 ///
-/// Two directives, recognized as the first field of an object that is an array element, shape
-/// arrays:
+/// Two directives, recognized as the first field of an object, shape arrays:
 ///
 /// - `"#if": "<expression>"` keeps the element only when the SpEL expression (not a template) is
-///   true. The kept element is made of the remaining fields as they are written: their templates
-///   are not evaluated;
+///   true. The kept element is made of the remaining fields, evaluated;
 /// - `"#each <name>": "<expression>"` replaces the element with one object per item of the
 ///   `Iterable` the expression yields, each made of the remaining fields evaluated with the item
 ///   bound to `#<name>`.
 ///
-/// A directive found outside an array (in the root object, or in an object that is the value of a
-/// field) fails the rendering with a `NullPointerException` when it removes the object (`#if`)
-/// or when the output is written (`#each`).
+/// Outside an array, a false `#if` drops the field it is the value of, or renders a json `null`
+/// at the root, and an `#each` renders an array of its objects.
 ///
 /// ```json
 /// {
@@ -85,7 +82,7 @@ public class JsonTemplateRenderer implements MocksRenderer {
         try (var is = source.getInputStream()) {
             final var input = om.readValue(is, JsonNode.class);
             final var output = process(input, ctx.expressions(), oec, om.getNodeFactory());
-            return new ByteArrayResource(om.writeValueAsBytes(output.node()));
+            return new ByteArrayResource(om.writeValueAsBytes(output == null ? om.getNodeFactory().nullNode() : toNode(output, om.getNodeFactory())));
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
         }
@@ -117,7 +114,7 @@ public class JsonTemplateRenderer implements MocksRenderer {
             for (String remainingProcField : fields.subList(1, fields.size())) {
                 remainingFields.put(remainingProcField, input.get(remainingProcField));
             }
-            return FragmentOrNode.object(jnf, remainingFields);
+            return process(new ObjectNode(jnf, remainingFields), expressions, ctx, jnf);
         }
         if (firstField != null && firstField.startsWith("#each ")) {
             final var varName = firstField.substring("#each ".length());
@@ -129,7 +126,10 @@ public class JsonTemplateRenderer implements MocksRenderer {
                 for (String remainingProcField : otherFields) {
                     remainingFields.put(remainingProcField, input.get(remainingProcField));
                 }
-                fragmentEls.add(process(new ObjectNode(jnf, remainingFields), expressions, ctx.createOverlay(varName, value), jnf).node());
+                final var element = process(new ObjectNode(jnf, remainingFields), expressions, ctx.createOverlay(varName, value), jnf);
+                if (element != null) {
+                    fragmentEls.add(toNode(element, jnf));
+                }
             }
             return FragmentOrNode.fragment(fragmentEls);
         }
@@ -141,7 +141,10 @@ public class JsonTemplateRenderer implements MocksRenderer {
             }
             final var v = input.get(field);
             final var pv = process(v, expressions, ctx, jnf);
-            children.put(k, pv.node());
+            if (pv == null) {
+                continue;
+            }
+            children.put(k, toNode(pv, jnf));
         }
         return FragmentOrNode.object(jnf, children);
     }
@@ -156,6 +159,10 @@ public class JsonTemplateRenderer implements MocksRenderer {
         return FragmentOrNode.array(jnf, els);
     }
     
+    private static JsonNode toNode(FragmentOrNode fn, JsonNodeFactory jnf) {
+        return fn.nodes() != null ? new ArrayNode(jnf, fn.nodes()) : fn.node();
+    }
+
     /// The result of rendering a template node: a single `node`, or the `nodes` of a fragment that
     /// an `#each` directive splices into the enclosing array. Exactly one of the two is not `null`.
     ///

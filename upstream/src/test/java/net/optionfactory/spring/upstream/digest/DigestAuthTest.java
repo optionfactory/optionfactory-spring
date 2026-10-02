@@ -20,6 +20,20 @@ public class DigestAuthTest {
     }
 
     @Test
+    public void challengeWithoutRealmIsRejected() {
+        final var da = new DigestAuth("Mufasa", "Circle Of Life", () -> 1);
+        final var ex = Assertions.assertThrows(IllegalStateException.class, () -> da.authHeader("GET", "/", "Digest nonce=\"n\""), "a challenge without realm must be rejected with an IllegalStateException");
+        Assertions.assertTrue(ex.getMessage().contains("realm"), "the rejection must name the missing realm: " + ex.getMessage());
+    }
+
+    @Test
+    public void challengeWithoutNonceIsRejected() {
+        final var da = new DigestAuth("Mufasa", "Circle Of Life", () -> 1);
+        final var ex = Assertions.assertThrows(IllegalStateException.class, () -> da.authHeader("GET", "/", "Digest realm=\"r\""), "a challenge without nonce must be rejected with an IllegalStateException");
+        Assertions.assertTrue(ex.getMessage().contains("nonce"), "the rejection must name the missing nonce: " + ex.getMessage());
+    }
+
+    @Test
     public void opaqueIsOmittedWhenTheServerSendsNone() {
         final var da = new DigestAuth("Mufasa", "Circle Of Life", () -> 1);
         final var got = da.authHeader("GET", "/", "Digest realm=\"r\", nonce=\"n\"");

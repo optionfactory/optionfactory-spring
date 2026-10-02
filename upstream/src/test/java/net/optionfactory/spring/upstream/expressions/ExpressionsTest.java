@@ -1,6 +1,7 @@
 package net.optionfactory.spring.upstream.expressions;
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.Map;
 import net.optionfactory.spring.upstream.buffering.Buffering;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
@@ -112,5 +113,17 @@ public class ExpressionsTest {
         final var e = new Expressions(null, Map.of("flag", "true"));
         Assertions.assertTrue(e.bool("#flag").evaluate(e.context()), "a string result must be converted to a boolean");
         Assertions.assertFalse(e.bool("1 > 2").evaluate(e.context()), "a boolean result must be returned as is");
+    }
+
+    @Test
+    public void variablesAreCopiedWhenConstructed() {
+        final var vars = new HashMap<String, Object>();
+        vars.put("a", "before");
+        vars.put("nothing", null);
+        final var expressions = new Expressions(null, vars);
+        vars.put("a", "after");
+        vars.put("b", "added");
+        Assertions.assertEquals("before", expressions.parse("#a").getValue(expressions.context()), "changes to the map after construction must not be seen by the expressions");
+        Assertions.assertNull(expressions.parse("#b").getValue(expressions.context()), "variables added to the map after construction must not be seen by the expressions");
     }
 }

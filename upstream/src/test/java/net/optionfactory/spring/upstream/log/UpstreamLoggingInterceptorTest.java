@@ -5,6 +5,8 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.InstantSource;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +24,11 @@ import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext.BodySource;
 import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.rendering.PayloadsRendering;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.appender.AbstractAppender;
+import org.apache.logging.log4j.core.config.Property;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
@@ -67,6 +74,20 @@ public class UpstreamLoggingInterceptorTest {
         }
     }
 
+    private static class CapturingAppender extends AbstractAppender {
+
+        private final List<String> messages = new CopyOnWriteArrayList<>();
+
+        public CapturingAppender() {
+            super("capturing", null, null, true, Property.EMPTY_ARRAY);
+        }
+
+        @Override
+        public void append(LogEvent event) {
+            messages.add(event.getMessage().getFormattedMessage());
+        }
+    }
+
     private final RecordingRendering rendering = new RecordingRendering();
     private final Expressions expressions = new Expressions(null, null);
 
@@ -78,7 +99,7 @@ public class UpstreamLoggingInterceptorTest {
     private UpstreamLoggingInterceptor interceptor(Class<?> k, Optional<Upstream.Logging.Conf> override, Map<Method, Upstream.Logging.Conf> overrides) {
         final var endpoints = Stream.of(k.getMethods())
                 .collect(Collectors.toMap(m -> m, m -> new EndpointDescriptor("up", m.getName(), m, null)));
-        final var interceptor = new UpstreamLoggingInterceptor(override, overrides);
+        final var interceptor = new UpstreamLoggingInterceptor(override, overrides, InstantSource.fixed(Instant.EPOCH.plusSeconds(5)));
         interceptor.preprocess(k, expressions, endpoints);
         return interceptor;
     }
@@ -150,5 +171,26 @@ public class UpstreamLoggingInterceptorTest {
         Assertions.assertThrows(IOException.class, () -> interceptor.intercept(invocation, request, failing), "the failure must reach the caller");
         Assertions.assertEquals(List.of(1), rendering.requestSizes, "the request must be logged before the failure");
         Assertions.assertTrue(rendering.responseSizes.isEmpty(), "no response must be rendered on failure");
+    }
+
+    @Test
+    public void failureElapsedTimeIsMeasuredWithTheClientClock() throws Exception {
+        final var method = LoggedClient.class.getMethod("typeLevel");
+        final var interceptor = interceptor(LoggedClient.class, Optional.empty(), Map.of());
+        final var invocation = invocation(method);
+        final var request = request();
+        final UpstreamHttpRequestExecution failing = (i, r) -> {
+            throw new IOException("boom");
+        };
+        final var appender = new CapturingAppender();
+        appender.start();
+        final var logger = (Logger) LogManager.getLogger(UpstreamLoggingInterceptor.class);
+        logger.addAppender(appender);
+        try {
+            Assertions.assertThrows(IOException.class, () -> interceptor.intercept(invocation, request, failing), "the failure must reach the caller");
+        } finally {
+            logger.removeAppender(appender);
+        }
+        Assertions.assertTrue(appender.messages.stream().anyMatch(m -> m.contains("[t:ie][ms:5000]")), "the elapsed time of a failure must be measured with the client clock: " + appender.messages);
     }
 }

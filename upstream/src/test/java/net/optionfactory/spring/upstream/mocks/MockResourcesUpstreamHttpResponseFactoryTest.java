@@ -21,11 +21,13 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.RestClientException;
 
 public class MockResourcesUpstreamHttpResponseFactoryTest {
 
+    @Upstream.Mock.DefaultContentType("application/json")
     public interface Endpoints {
 
         @Upstream.Mock("missing.json")
@@ -43,6 +45,14 @@ public class MockResourcesUpstreamHttpResponseFactoryTest {
 
         @Upstream.Mock("rendered.custom")
         void rendered();
+
+        @Upstream.Mock(value = "fallback.json", headers = "Content-Type: text/plain")
+        void annotatedContentType();
+
+        @Upstream.Mock("typed.json")
+        void resourceContentType();
+
+        void unmocked();
     }
 
     private static final Expressions EXPRESSIONS = new Expressions(null, null);
@@ -128,5 +138,31 @@ public class MockResourcesUpstreamHttpResponseFactoryTest {
     public void headersFromResourceAreEmptyWithoutAHeadersResource() {
         final var headers = MockResourcesUpstreamHttpResponseFactory.headersFromResource("fallback.json", invocation("fallback"));
         Assertions.assertTrue(headers.isEmpty(), "a mock without a .headers resource must have no resource headers");
+    }
+
+    @Test
+    public void theDefaultContentTypeIsUsedWhenNoOtherIsGiven() {
+        final var response = create(factory(), invocation("fallback"));
+        Assertions.assertEquals(List.of("application/json"), response.getHeaders().get(HttpHeaders.CONTENT_TYPE), "the DefaultContentType must be used when neither the .headers resource nor the annotation give one");
+    }
+
+    @Test
+    public void anAnnotationContentTypeOverridesTheDefault() {
+        final var response = create(factory(), invocation("annotatedContentType"));
+        Assertions.assertEquals(List.of("text/plain"), response.getHeaders().get(HttpHeaders.CONTENT_TYPE), "the annotation Content-Type must replace the default one");
+        Assertions.assertEquals(MediaType.TEXT_PLAIN, response.getHeaders().getContentType(), "the annotation Content-Type must be the response content type");
+    }
+
+    @Test
+    public void aHeadersResourceContentTypeOverridesTheDefault() {
+        final var response = create(factory(), invocation("resourceContentType"));
+        Assertions.assertEquals(List.of("application/xml"), response.getHeaders().get(HttpHeaders.CONTENT_TYPE), "the .headers resource Content-Type must replace the default one");
+    }
+
+    @Test
+    public void anEndpointWithoutMockFailsNamingTheEndpoint() {
+        final var factory = factory();
+        final var ex = Assertions.assertThrows(RestClientException.class, () -> create(factory, invocation("unmocked")), "an endpoint without @Upstream.Mock must fail the exchange with a clear error");
+        Assertions.assertTrue(ex.getMessage().contains("up:unmocked"), "the failure must name the upstream and the endpoint: " + ex.getMessage());
     }
 }

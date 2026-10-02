@@ -5,6 +5,7 @@ import java.util.Map;
 import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
 import net.optionfactory.spring.upstream.buffering.Buffering;
+import net.optionfactory.spring.upstream.expressions.Expressions;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
@@ -22,6 +23,27 @@ public class HcRequestFactoriesTest {
 
     public interface InheritingClient extends TemplatedClient {
 
+    }
+
+    @Upstream.HttpComponents(maxConnections = "#{#max}", maxConnectionsType = Expressions.Type.TEMPLATED, maxConnectionsPerRoute = "#{#max}", maxConnectionsPerRouteType = Expressions.Type.TEMPLATED)
+    public interface TemplatedPoolClient {
+
+        @GetExchange("/")
+        Map<String, String> get();
+    }
+
+    @Upstream.HttpComponents(maxConnections = "#max", maxConnectionsType = Expressions.Type.STATIC)
+    public interface StaticPoolClient {
+
+        @GetExchange("/")
+        Map<String, String> get();
+    }
+
+    @Upstream.HttpComponents(maxConnections = "#max * 2", maxConnectionsPerRoute = "#max")
+    public interface DefaultTypePoolClient {
+
+        @GetExchange("/")
+        Map<String, String> get();
     }
 
     @Test
@@ -53,6 +75,33 @@ public class HcRequestFactoriesTest {
                 .requestFactoryHttpComponents(c -> {
                 });
         Assertions.assertThrows(DateTimeParseException.class, builder::build, "the super-interface configuration must be applied, failing on its unparseable timeout");
+    }
+
+    @Test
+    public void templatedPoolSizesAreRenderedWithTheBuilderVariables() {
+        Assertions.assertDoesNotThrow(() -> UpstreamBuilder.create(TemplatedPoolClient.class)
+                .var("max", 5)
+                .requestFactoryHttpComponents(c -> {
+                })
+                .build(), "TEMPLATED pool sizes must be rendered as templates with the builder variables");
+    }
+
+    @Test
+    public void staticPoolSizesAreNotEvaluated() {
+        final var builder = UpstreamBuilder.create(StaticPoolClient.class)
+                .var("max", 5)
+                .requestFactoryHttpComponents(c -> {
+                });
+        Assertions.assertThrows(NumberFormatException.class, builder::build, "a STATIC pool size must be parsed as an int, not evaluated as an expression");
+    }
+
+    @Test
+    public void poolSizesAreExpressionsByDefault() {
+        Assertions.assertDoesNotThrow(() -> UpstreamBuilder.create(DefaultTypePoolClient.class)
+                .var("max", 5)
+                .requestFactoryHttpComponents(c -> {
+                })
+                .build(), "pool sizes without an explicit type must be evaluated as SpEL expressions");
     }
 
     @Test

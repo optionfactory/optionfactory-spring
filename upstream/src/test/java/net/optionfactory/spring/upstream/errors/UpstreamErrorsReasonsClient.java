@@ -25,4 +25,12 @@ public interface UpstreamErrorsReasonsClient {
 
     @GetExchange("/plain")
     Map<String, String> plain();
+
+    @GetExchange("/client-errors")
+    @Upstream.ErrorOnResponse(value = "#response.headers().getFirst('X-Code') == 'a'", reason = "client error: #{#response.headers().getFirst('X-Code')}", series = HttpStatus.Series.CLIENT_ERROR)
+    Map<String, String> onClientErrors();
+
+    @GetExchange("/server-errors")
+    @Upstream.ErrorOnResponse(value = "true", reason = "server error", series = HttpStatus.Series.SERVER_ERROR)
+    Map<String, String> onServerErrors();
 }

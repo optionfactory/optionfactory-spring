@@ -3,6 +3,8 @@ package net.optionfactory.spring.upstream.values;
 import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import java.util.List;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.service.invoker.HttpRequestValues;
 
@@ -34,5 +36,20 @@ public class UpstreamAnnotatedPathVariableTransformerTest {
     public void endpointsWithoutAnnotationsKeepTheirValues() {
         final var values = values();
         Assertions.assertSame(values, transformer().transform(AnnotatedValues.invocation("bare", "alice"), values), "an endpoint without annotations must get the very same values back");
+    }
+
+    @Test
+    public void theApiVersionAndTheBodyValueTypeAreKept() {
+        final var builder = HttpRequestValues.builder()
+                .setHttpMethod(HttpMethod.POST)
+                .setUriTemplate("/users/{id}")
+                .setApiVersion("1.2");
+        final var bodyType = new ParameterizedTypeReference<List<String>>() {
+        };
+        builder.setBodyValue(List.of("a"), bodyType);
+        final var got = transformer().transform(AnnotatedValues.invocation("annotated", "alice"), builder.build());
+        Assertions.assertEquals("1.2", got.getApiVersion(), "the api version must be kept");
+        Assertions.assertEquals(bodyType, got.getBodyValueType(), "the body value type must be kept");
+        Assertions.assertEquals(List.of("a"), got.getBodyValue(), "the body value must be kept");
     }
 }

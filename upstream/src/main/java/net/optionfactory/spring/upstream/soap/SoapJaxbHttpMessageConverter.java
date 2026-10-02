@@ -126,9 +126,8 @@ public class SoapJaxbHttpMessageConverter implements HttpMessageConverter<Object
     /// @param clazz the target class
     /// @param inputMessage the response
     /// @return the unmarshalled body element, or the fault (`null` when the body has none)
-    /// @throws HttpMessageNotReadableException when the envelope cannot be parsed or the body
-    /// element cannot be unmarshalled or does not validate; an empty body fails with a
-    /// `NullPointerException` instead
+    /// @throws HttpMessageNotReadableException when the envelope cannot be parsed, its body has no
+    /// element, or the body element cannot be unmarshalled or does not validate
     /// @throws IOException when the response cannot be read
     @Override
     public Object read(Class<?> clazz, HttpInputMessage inputMessage) throws IOException, HttpMessageNotReadableException {
@@ -139,7 +138,11 @@ public class SoapJaxbHttpMessageConverter implements HttpMessageConverter<Object
             }
             final Unmarshaller unmarshaller = context.createUnmarshaller();
             unmarshaller.setSchema(schema);
-            return unmarshaller.unmarshal(firstSoapElement(message.getSOAPBody()), clazz).getValue();
+            final var element = firstSoapElement(message.getSOAPBody());
+            if (element == null) {
+                throw new HttpMessageNotReadableException("cannot unmarshal: empty SOAP body", inputMessage);
+            }
+            return unmarshaller.unmarshal(element, clazz).getValue();
         } catch (JAXBException | SOAPException ex) {
             throw new HttpMessageNotReadableException("cannot unmarshal", ex, inputMessage);
         }

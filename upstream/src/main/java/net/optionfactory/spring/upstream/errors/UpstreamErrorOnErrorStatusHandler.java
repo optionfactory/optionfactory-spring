@@ -13,8 +13,10 @@ import net.optionfactory.spring.upstream.expressions.Expressions;
 /// Turns every `4xx` and `5xx` response into a [RestClientUpstreamException] whose reason is the
 /// status code and text, e.g. `404 Not Found`.
 ///
-/// Always registered by [net.optionfactory.spring.upstream.UpstreamBuilder], after the handlers
-/// registered by the application and before [UpstreamErrorOnResponseHandler].
+/// Always registered by [net.optionfactory.spring.upstream.UpstreamBuilder], as the last handler:
+/// after the handlers registered by the application and after [UpstreamErrorOnResponseHandler], so
+/// that a matching `@Upstream.ErrorOnResponse` listing `CLIENT_ERROR` or `SERVER_ERROR` provides
+/// the reason instead.
 public class UpstreamErrorOnErrorStatusHandler implements UpstreamResponseErrorHandler {
 
     /// Does nothing: the handler needs no configuration.

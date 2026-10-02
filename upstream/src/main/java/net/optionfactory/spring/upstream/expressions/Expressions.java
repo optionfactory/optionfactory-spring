@@ -1,5 +1,7 @@
 package net.optionfactory.spring.upstream.expressions;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import net.optionfactory.spring.upstream.contexts.ExceptionContext;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
@@ -54,11 +56,11 @@ public class Expressions {
     }
 
     /// @param ac the application context whose beans the expressions can reference, or `null`
-    /// @param vars the variables visible to every expression, or `null` for none; not copied, so later
-    /// changes to the map are seen by the contexts created afterwards
+    /// @param vars the variables visible to every expression, or `null` for none; copied, so later
+    /// changes to the map are not seen
     public Expressions(@Nullable ConfigurableApplicationContext ac, @Nullable Map<String, Object> vars) {
         this.ac = ac;
-        this.vars = vars == null ? Map.of() : vars;
+        this.vars = vars == null ? Map.of() : Collections.unmodifiableMap(new HashMap<>(vars));
     }
 
     /// @param value the attribute value

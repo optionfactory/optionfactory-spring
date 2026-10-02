@@ -20,6 +20,48 @@
     and the replacement is encoded.
 *   [FIX] **`MultipartStrategy.RENDER_RECAP` is honoured.** Parts were always rendered in full; with
     `RENDER_RECAP` each part is now rendered with its headers and its body size (`size: 123B`).
+*   [FIX] **Json mock templates evaluate the fields kept by `#if` and support directives outside
+    arrays.** A true `#if` emitted the remaining fields unevaluated; a false `#if` at the root or as a
+    field value, and an `#each` as a field value, threw `NullPointerException`. Now a false `#if`
+    drops its field (renders `null` at the root) and `#each` renders an array.
+*   [FIX] **Request values transformers keep the api version and the body value type.**
+    `HttpRequestValuesTransformer.valuesBuilder` dropped both, so every endpoint using
+    `@Upstream.PathVariable` lost them.
+*   [FIX] **`toString()` works on upstream clients.** It threw `NullPointerException`; it now returns
+    `upstream client <interface>`, and other non-endpoint methods fail with `IllegalStateException`.
+*   [FIX] **A mock `Content-Type` overrides `@Upstream.Mock.DefaultContentType`.** A `Content-Type`
+    from the `.headers` resource or from `@Upstream.Mock(headers)` was added after the default one,
+    and `getContentType()` returned the default. Invoking a mocked endpoint without `@Upstream.Mock`
+    now fails with a `RestClientException` naming it (and is warned about at build) instead of a
+    `NullPointerException`.
+*   [FIX] **An empty SOAP body is reported as not readable.** An envelope with an empty
+    `<soap:Body/>` threw `NullPointerException` instead of `HttpMessageNotReadableException`.
+*   [FIX] **`@Upstream.HttpComponents.maxConnectionsType` and `maxConnectionsPerRouteType` are
+    honored.** `maxConnections` and `maxConnectionsPerRoute` were always evaluated as SpEL
+    expressions, whatever type was declared, so `TEMPLATED` values failed the build and `STATIC`
+    ones were evaluated anyway. Both attributes now default to `EXPRESSION`, so clients that never set
+    them behave as before.
+*   [FIX] **`@Upstream.ErrorOnResponse` listing `CLIENT_ERROR` or `SERVER_ERROR` provides the reason of
+    a matching `4xx`/`5xx` response.** The built-in status handler ran first and claimed every error
+    status, so those annotations could never fire and the reason was always the status (e.g. `404 Not
+    Found`). The annotation handler now runs before it; responses no annotation matches, and clients
+    that never declared an error series, still get the status as reason.
+*   [FIX] **`@Upstream.ErrorOnResponse` can be repeated on an interface.** Its container targeted
+    methods only, so repeating the annotation on a type did not compile, although a single one was
+    accepted there.
+*   [FIX] **An exception thrown by an `@Upstream.AlertOnResponse` condition or by the event publisher
+    is no longer treated as a remoting error.** It used to go through the `@Upstream.AlertOnRemotingError`
+    handling, possibly raising a remoting alert (or publishing twice) before reaching the caller; it now
+    reaches the caller as is. Remoting errors are timestamped with the client clock
+    (`UpstreamBuilder#clock`) instead of the system clock.
+*   [FIX] **The elapsed time logged for a failed exchange is measured with the client clock.** It was
+    computed from the request timestamp (client clock) to `Instant.now()`, so it was wrong for clients
+    built with a non-system `UpstreamBuilder#clock`.
+*   [FIX] **`DigestAuth` rejects a challenge without `realm` or `nonce` with an
+    `IllegalStateException` naming the missing parameter.** It used to fail with a
+    `NullPointerException`.
+*   [FIX] **Variables set on an `UpstreamBuilder` after `build()` no longer change the clients already
+    built.** `Expressions` kept a reference to the builder's variable map instead of copying it.
 
 # version 28.2
 

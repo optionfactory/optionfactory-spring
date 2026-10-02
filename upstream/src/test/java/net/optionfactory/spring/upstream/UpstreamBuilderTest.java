@@ -24,6 +24,13 @@ import tools.jackson.databind.json.JsonMapper;
 
 public class UpstreamBuilderTest {
 
+    public interface QueryVarClient {
+
+        @GetExchange("/")
+        @Upstream.QueryParam(key = "v", value = "#v")
+        Map<String, String> get();
+    }
+
     @Upstream("annotated-name")
     public interface NamedClient {
 
@@ -220,5 +227,15 @@ public class UpstreamBuilderTest {
         public org.springframework.http.client.ClientHttpRequest createRequest(URI uri, org.springframework.http.HttpMethod httpMethod) {
             return new MockClientHttpRequest(httpMethod, uri);
         }
+    }
+
+    @Test
+    public void variablesSetAfterBuildDoNotChangeBuiltClients() {
+        final var seen = new ArrayList<Seen>();
+        final var builder = recording(QueryVarClient.class, seen, HttpStatus.OK).var("v", "before");
+        final var client = builder.build();
+        builder.var("v", "after");
+        client.get();
+        Assertions.assertEquals(URI.create("http://example.com/?v=before"), seen.get(0).uri(), "a variable changed on the builder after build() must not change the clients already built");
     }
 }

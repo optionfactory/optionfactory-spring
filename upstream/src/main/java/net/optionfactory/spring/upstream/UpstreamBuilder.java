@@ -100,7 +100,7 @@ import tools.jackson.dataformat.xml.XmlMapper;
 /// Each built client handles every exchange through, in order: the registered initializers, the
 /// registered interceptors, the built-in interceptors (annotated headers, cookies and query params,
 /// logging, alerts) and, once the response is back, the registered response error handlers followed
-/// by the built-in ones (error statuses, `@Upstream.ErrorOnResponse`).
+/// by the built-in ones (`@Upstream.ErrorOnResponse`, error statuses).
 ///
 /// A builder is not thread-safe, while the clients it builds are. Being an [UpstreamPrototype], a
 /// partially configured builder can be shared and copied with [#builder].
@@ -628,8 +628,8 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
         return this;
     }
 
-    /// Configures the clock timing the requests and the responses, as seen in their contexts and in the
-    /// logged elapsed times.
+    /// Configures the clock timing the requests, the responses and the remoting errors, as seen in their
+    /// contexts, in the alerts and in the logged elapsed times.
     ///
     /// @param clock the clock, or `null` for `InstantSource.system()`
     /// @return this builder
@@ -784,15 +784,15 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
                 Stream.of(new UpstreamAnnotatedHeadersInterceptor(),
                         new UpstreamAnnotatedCookiesInterceptor(),
                         new UpstreamAnnotatedQueryParamsInterceptor(),
-                        new UpstreamLoggingInterceptor(loggingOverride, loggingOverrides),
-                        new UpstreamAlertInterceptor(pub, obs)
+                        new UpstreamLoggingInterceptor(loggingOverride, loggingOverrides, clockOrDefault),
+                        new UpstreamAlertInterceptor(pub, obs, clockOrDefault)
                 ))
                 .peek(i -> i.preprocess(klass, expressions, endpoints))
                 .toList();
 
         rcb.requestInterceptor(scopeHandler.adapt(initializedInterceptors));
 
-        Stream.concat(responseErrorHandlers.stream(), Stream.of(new UpstreamErrorOnErrorStatusHandler(), new UpstreamErrorOnResponseHandler()))
+        Stream.concat(responseErrorHandlers.stream(), Stream.of(new UpstreamErrorOnResponseHandler(), new UpstreamErrorOnErrorStatusHandler()))
                 .peek(i -> i.preprocess(klass, expressions, endpoints))
                 .map(scopeHandler::adapt)
                 .forEach(rcb::defaultStatusHandler);

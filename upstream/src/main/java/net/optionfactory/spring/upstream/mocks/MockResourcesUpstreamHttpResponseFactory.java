@@ -43,11 +43,10 @@ import org.springframework.web.client.RestClientException;
 ///   `#invocation`, `#args` and the method parameters by name, and resolved as a classpath resource
 ///   relative to the class declaring the method (a leading `/` makes it absolute);
 /// - the response status is the annotation `status`, with its standard reason phrase;
-/// - the response headers are, in this order, the [Upstream.Mock.DefaultContentType] of the class
-///   declaring the method (or of its super interfaces), the lines of the `<resource>.headers`
-///   resource when present (see [#headersFromResource(String, InvocationContext)]) and the
-///   annotation `headers`. Values are added, never replaced: a `Content-Type` coming from the
-///   last two sources follows the default one, which stays the value `getContentType()` returns;
+/// - the response headers are the lines of the `<resource>.headers` resource when present (see
+///   [#headersFromResource(String, InvocationContext)]) followed by the annotation `headers`, values
+///   added, never replaced; when neither gives a `Content-Type`, the [Upstream.Mock.DefaultContentType]
+///   of the class declaring the method (or of its super interfaces) is used;
 /// - the body is the resource rendered by the first [MocksRenderer] accepting it, or the resource
 ///   as it is when none does.
 ///
@@ -81,8 +80,8 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
 
     private final Logger logger = LoggerFactory.getLogger(MockResourcesUpstreamHttpResponseFactory.class);
 
-    /// Compiles the [Upstream.Mock] annotations of every endpoint. An endpoint without one cannot
-    /// be invoked through this factory.
+    /// Compiles the [Upstream.Mock] annotations of every endpoint. An endpoint without one is
+    /// reported with a warning, and invoking it fails with a `RestClientException`.
     ///
     /// @param klass the client interface
     /// @param expressions the parser of the annotations' expressions
@@ -92,10 +91,6 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
         for (final var endpoint : endpoints.values()) {
             final var m = endpoint.method();
             final var conf = m.getAnnotationsByType(Upstream.Mock.class);
-            if (conf.length == 0) {
-                continue;
-            }
-
             final var defaultMediaType = Optional
                     .ofNullable(AnnotationUtils.findAnnotation(m.getDeclaringClass(), Upstream.Mock.DefaultContentType.class))
                     .map(ann -> ann.value())
@@ -124,11 +119,14 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
     /// @param method the request method, unused
     /// @param headers the request headers, unused
     /// @return the response built from the first existing mock resource
-    /// @throws RestClientException when no annotation names an existing resource, or when a header
-    /// line is missing its `:`
+    /// @throws RestClientException when the endpoint has no annotation, when no annotation names an
+    /// existing resource, or when a header line is missing its `:`
     @Override
     public ClientHttpResponse create(InvocationContext invocation, URI uri, HttpMethod method, HttpHeaders headers) {
-        final var mcs = methodToMockConfigurations.get(invocation.endpoint().method());
+        final var mcs = methodToMockConfigurations.getOrDefault(invocation.endpoint().method(), List.of());
+        if (mcs.isEmpty()) {
+            throw new RestClientException(String.format("missing mock configuration for %s:%s", invocation.endpoint().upstream(), invocation.endpoint().name()));
+        }
         final var context = invocation.expressions().context(invocation);
         for (MockConfiguration mc : mcs) {
             final var path = mc.bodyPath().evaluate(context);
@@ -136,14 +134,15 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
             if (!resource.exists()) {
                 continue;
             }
-            final var responseHeaders = new HttpHeaders();
-            mc.defaultMediaType().ifPresent(responseHeaders::setContentType);
-            responseHeaders.addAll(headersFromResource(path, invocation));
+            final var responseHeaders = headersFromResource(path, invocation);
             Stream.of(mc.headers())
                     .map(he -> he.evaluate(context))
                     .map(MockResourcesUpstreamHttpResponseFactory::headerFromLine)
                     .map(kv -> new String[]{kv[0].trim(), kv[1].trim()})
                     .forEach(kv -> responseHeaders.add(kv[0], kv[1]));
+            if (!responseHeaders.containsHeader(HttpHeaders.CONTENT_TYPE)) {
+                mc.defaultMediaType().ifPresent(responseHeaders::setContentType);
+            }
 
             final var renderer = renderers.stream().
                     filter(mr -> mr.canRender(resource))

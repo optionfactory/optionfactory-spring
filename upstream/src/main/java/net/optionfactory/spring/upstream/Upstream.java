@@ -81,20 +81,21 @@ public @interface Upstream {
         /// @return how [#socketTimeout] is evaluated
         public Type socketTimeoutType() default Type.TEMPLATED;
 
-        /// @return the maximum number of pooled connections, always evaluated as a SpEL expression
-        /// yielding an int
+        /// @return the maximum number of pooled connections, an int once evaluated; a value that does
+        /// not yield an int fails the build
         String maxConnections() default "100";
 
-        /// @return currently ignored: [#maxConnections] is always evaluated as a SpEL expression
-        public Type maxConnectionsType() default Type.STATIC;
+        /// @return how [#maxConnections] is evaluated; `EXPRESSION` by default, as the value was always
+        /// evaluated as a SpEL expression before this attribute was honored
+        public Type maxConnectionsType() default Type.EXPRESSION;
 
-        /// @return the maximum number of pooled connections per route, always evaluated as a SpEL
-        /// expression yielding an int
+        /// @return the maximum number of pooled connections per route, an int once evaluated; a value
+        /// that does not yield an int fails the build
         String maxConnectionsPerRoute() default "100";
 
-        /// @return currently ignored: [#maxConnectionsPerRoute] is always evaluated as a SpEL
-        /// expression
-        public Type maxConnectionsPerRouteType() default Type.STATIC;
+        /// @return how [#maxConnectionsPerRoute] is evaluated; `EXPRESSION` by default, as the value
+        /// was always evaluated as a SpEL expression before this attribute was honored
+        public Type maxConnectionsPerRouteType() default Type.EXPRESSION;
 
         /// @return true to call `HttpClientBuilder.disableAuthCaching()`
         boolean disableAuthCaching() default false;
@@ -257,10 +258,10 @@ public @interface Upstream {
     /// resource can be followed by a generic fallback; the call fails with a `RestClientException`
     /// when none exists.
     ///
-    /// The response headers accumulate, in order: the [DefaultContentType] of the interface, the
-    /// `Name: value` lines of the optional `<path>.headers` resource next to the body, and
-    /// [#headers]; a header given twice keeps both values, the first one being the one read by
-    /// `HttpHeaders.getFirst`. The body resource is rendered by the first configured renderer (e.g. a
+    /// The response headers accumulate, in order: the `Name: value` lines of the optional
+    /// `<path>.headers` resource next to the body, then [#headers]; a header given twice keeps both
+    /// values, the first one being the one read by `HttpHeaders.getFirst`. The [DefaultContentType]
+    /// of the interface is used only when neither gives a `Content-Type`. The body resource is rendered by the first configured renderer (e.g. a
     /// `.tpl.json` or `.th.json` template) that accepts it, and served as is otherwise.
     @Target({ElementType.METHOD})
     @Retention(value = RetentionPolicy.RUNTIME)
@@ -288,9 +289,8 @@ public @interface Upstream {
 
         /// The `Content-Type` of the mocked responses of an interface's endpoints.
         ///
-        /// It is set before the headers a mock declares, which are added to it: a mock declaring
-        /// its own `Content-Type` yields two values, and `HttpHeaders.getContentType` reads this
-        /// one.
+        /// It is used only when the mock's `.headers` resource and its [Mock#headers] declare no
+        /// `Content-Type`.
         ///
         /// Looked up on the interface declaring the mocked method and on its super-interfaces; a
         /// blank value is ignored.
@@ -520,11 +520,11 @@ public @interface Upstream {
     /// The annotations on the method, or else the ones on the nearest of the built interface and its
     /// super-interfaces (breadth first), are tried in declaration order: the first one whose
     /// [#series] contains the response status and whose condition matches provides the reason. It
-    /// can be repeated on methods only.
+    /// can be repeated, on methods and on interfaces.
     ///
-    /// `4xx` and `5xx` responses already fail with a `RestClientUpstreamException` before these
-    /// annotations are consulted, so listing `CLIENT_ERROR` or `SERVER_ERROR` in [#series] has no
-    /// effect; non-standard status codes match no series.
+    /// Listing `CLIENT_ERROR` or `SERVER_ERROR` in [#series] lets a matching annotation provide the
+    /// reason of a `4xx` or `5xx` response; the ones no annotation matches still fail with the status
+    /// as reason (e.g. `404 Not Found`). Non-standard status codes match no series.
     ///
     /// The condition and the reason are evaluated with [InvocationContext] as `#invocation`,
     /// [RequestContext] as `#request`, [ResponseContext] as `#response`, the arguments, and the
@@ -554,7 +554,7 @@ public @interface Upstream {
         HttpStatus.Series[] series() default HttpStatus.Series.SUCCESSFUL;
 
         /// Container of repeated [ErrorOnResponse] annotations.
-        @Target(ElementType.METHOD)
+        @Target({ElementType.METHOD, ElementType.TYPE})
         @Retention(RetentionPolicy.RUNTIME)
         @Documented
         public @interface List {

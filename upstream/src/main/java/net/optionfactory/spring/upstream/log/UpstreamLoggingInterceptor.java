@@ -3,7 +3,7 @@ package net.optionfactory.spring.upstream.log;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.time.Duration;
-import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,12 +44,25 @@ public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
     private final Optional<Upstream.Logging.Conf> override;
     private final Map<Method, Upstream.Logging.Conf> overrides;
     private final Map<Method, Upstream.Logging.Conf> confs = new ConcurrentHashMap<>();
+    private final InstantSource clock;
 
     /// @param override the configuration of every endpoint, winning over the annotations
     /// @param overrides the configurations of single endpoints, winning over everything else
-    public UpstreamLoggingInterceptor(Optional<Upstream.Logging.Conf> override, Map<Method, Upstream.Logging.Conf> overrides) {
+    /// @param clock the clock timestamping the requests of the client, measuring the elapsed time of a
+    /// failed exchange
+    public UpstreamLoggingInterceptor(Optional<Upstream.Logging.Conf> override, Map<Method, Upstream.Logging.Conf> overrides, InstantSource clock) {
         this.override = override;
         this.overrides = overrides;
+        this.clock = clock;
+    }
+
+    /// Creates an interceptor measuring the elapsed time of a failed exchange with the system clock,
+    /// for clients built with no [net.optionfactory.spring.upstream.UpstreamBuilder#clock].
+    ///
+    /// @param override the configuration of every endpoint, winning over the annotations
+    /// @param overrides the configurations of single endpoints, winning over everything else
+    public UpstreamLoggingInterceptor(Optional<Upstream.Logging.Conf> override, Map<Method, Upstream.Logging.Conf> overrides) {
+        this(override, overrides, InstantSource.system());
     }
 
     /// Reads the closest `@Upstream.Logging` of every endpoint: on the method, or else on the
@@ -126,7 +139,7 @@ public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
             }
             return response;
         } catch (Exception ex) {
-            final long elapsed = Duration.between(request.at(), Instant.now()).toMillis();
+            final long elapsed = Duration.between(request.at(), clock.instant()).toMillis();
             logger.info("{}[t:ie][ms:{}] error: {}", prefix, elapsed, ex);
             throw ex;
         }

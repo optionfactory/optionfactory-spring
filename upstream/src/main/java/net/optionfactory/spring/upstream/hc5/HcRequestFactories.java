@@ -14,6 +14,7 @@ import net.optionfactory.spring.upstream.UpstreamBuilder.RequestFactoryProvider;
 import net.optionfactory.spring.upstream.annotations.Annotations;
 import net.optionfactory.spring.upstream.buffering.Buffering;
 import net.optionfactory.spring.upstream.buffering.BufferingUpstreamHttpRequestFactory;
+import net.optionfactory.spring.upstream.expressions.Expressions;
 import org.apache.hc.client5.http.AuthenticationStrategy;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
@@ -311,8 +312,8 @@ public class HcRequestFactories {
                 final var conf = Annotations.closest(klass, Upstream.HttpComponents.class).orElseGet(() -> AnnotationUtils.synthesizeAnnotation(HttpComponents.class));
                 final var connTimeout = Duration.parse(expressions.string(conf.connectionTimeout(), conf.connectionTimeoutType()).evaluate(expressions.context()));
                 final var sockTimeout = Duration.parse(expressions.string(conf.socketTimeout(), conf.socketTimeoutType()).evaluate(expressions.context()));
-                final var maxConnections = expressions.parse(conf.maxConnections()).getValue(expressions.context(), int.class);
-                final var maxConnectionsPerRoute = expressions.parse(conf.maxConnectionsPerRoute()).getValue(expressions.context(), int.class);
+                final var maxConnections = poolSize(expressions, conf.maxConnections(), conf.maxConnectionsType());
+                final var maxConnectionsPerRoute = poolSize(expressions, conf.maxConnectionsPerRoute(), conf.maxConnectionsPerRouteType());
 
                 final var f = buildFactory(connTimeout, sockTimeout, maxConnections, maxConnectionsPerRoute, cb -> {
                     if (conf.disableAuthCaching()) {
@@ -346,6 +347,17 @@ public class HcRequestFactories {
                         yield scopeHandler.adapt(buffered);
                     }
                 };
+            };
+        }
+
+        private static int poolSize(Expressions expressions, String value, Expressions.Type type) {
+            return switch (type) {
+                case STATIC ->
+                    Integer.parseInt(value);
+                case EXPRESSION ->
+                    expressions.parse(value).getValue(expressions.context(), int.class);
+                case TEMPLATED ->
+                    expressions.parseTemplated(value).getValue(expressions.context(), int.class);
             };
         }
     }

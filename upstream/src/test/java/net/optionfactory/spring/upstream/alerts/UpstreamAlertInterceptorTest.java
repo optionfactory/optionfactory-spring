@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -42,10 +43,20 @@ public class UpstreamAlertInterceptorTest {
         String methodLevel();
     }
 
+    @Upstream.AlertOnResponse("1 / 0 == 1")
+    @Upstream.AlertOnRemotingError
+    public interface BrokenConditionClient {
+
+        String broken();
+    }
+
     public interface QuietClient {
 
         String quiet();
     }
+
+    private static final Instant NOW = Instant.parse("2020-01-01T00:00:00Z");
+    private static final InstantSource CLOCK = InstantSource.fixed(NOW);
 
     private final List<Object> events = new ArrayList<>();
     private final Expressions expressions = new Expressions(null, null);
@@ -53,7 +64,7 @@ public class UpstreamAlertInterceptorTest {
     private UpstreamAlertInterceptor interceptor(Class<?> k, ObservationRegistry observations) {
         final var endpoints = Stream.of(k.getMethods())
                 .collect(Collectors.toMap(m -> m, m -> new EndpointDescriptor("up", m.getName(), m, null)));
-        final var interceptor = new UpstreamAlertInterceptor(events::add, observations);
+        final var interceptor = new UpstreamAlertInterceptor(events::add, observations, CLOCK);
         interceptor.preprocess(k, expressions, endpoints);
         return interceptor;
     }
@@ -154,5 +165,41 @@ public class UpstreamAlertInterceptorTest {
             Assertions.assertThrows(IOException.class, () -> interceptor.intercept(invocation, request, failing("boom")), "the remoting error must be rethrown");
         }
         Assertions.assertEquals("remoting", remoting.getContext().getLowCardinalityKeyValue("alert").getValue(), "a remoting alert must tag the observation as such");
+    }
+
+    @Test
+    public void remotingErrorIsTimestampedWithTheClientClock() throws Exception {
+        final var interceptor = interceptor(AlertingClient.class, ObservationRegistry.NOOP);
+        final var invocation = invocation(AlertingClient.class, "typeLevel");
+        final var request = request();
+        Assertions.assertThrows(IOException.class, () -> interceptor.intercept(invocation, request, failing("boom")), "the remoting error must be rethrown");
+        final var event = (UpstreamAlertEvent) events.get(0);
+        Assertions.assertEquals(NOW, event.exception().at(), "the exception context must be timestamped with the client clock");
+    }
+
+    @Test
+    public void failingResponseConditionIsNotARemotingError() throws Exception {
+        final var interceptor = interceptor(BrokenConditionClient.class, ObservationRegistry.NOOP);
+        final var invocation = invocation(BrokenConditionClient.class, "broken");
+        final var request = request();
+        Assertions.assertThrows(RuntimeException.class, () -> interceptor.intercept(invocation, request, responding(HttpStatus.OK)), "the failure of the response condition must reach the caller");
+        Assertions.assertTrue(events.isEmpty(), "the failure of the response condition must not raise a remoting alert");
+    }
+
+    @Test
+    public void failingPublisherIsNotARemotingError() throws Exception {
+        final var attempts = new ArrayList<Object>();
+        final var endpoints = Stream.of(AlertingClient.class.getMethods())
+                .collect(Collectors.toMap(m -> m, m -> new EndpointDescriptor("up", m.getName(), m, null)));
+        final var interceptor = new UpstreamAlertInterceptor(event -> {
+            attempts.add(event);
+            throw new IllegalStateException("publisher down");
+        }, ObservationRegistry.NOOP, CLOCK);
+        interceptor.preprocess(AlertingClient.class, expressions, endpoints);
+        final var invocation = invocation(AlertingClient.class, "typeLevel");
+        final var request = request();
+        final var thrown = Assertions.assertThrows(IllegalStateException.class, () -> interceptor.intercept(invocation, request, responding(HttpStatus.BAD_GATEWAY)), "the failure of the publisher must reach the caller");
+        Assertions.assertEquals("publisher down", thrown.getMessage(), "the publisher failure must be rethrown as is");
+        Assertions.assertEquals(1, attempts.size(), "the failure of the publisher must not raise a remoting alert");
     }
 }

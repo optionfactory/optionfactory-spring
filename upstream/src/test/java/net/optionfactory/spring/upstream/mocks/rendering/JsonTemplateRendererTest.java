@@ -106,6 +106,54 @@ public class JsonTemplateRendererTest {
     }
 
     @Test
+    public void aTrueIfEvaluatesTheRemainingFields() throws Exception {
+        final var got = render("""
+                [{"#if": "#name == 'x'", "name": "#{#name}", "#{#name}": "#{1+1}"}]
+                """, "x", List.of());
+        Assertions.assertEquals(json("""
+                [{"name": "x", "x": 2}]
+                """), got, "the fields kept by a true #if must be evaluated");
+    }
+
+    @Test
+    public void aFalseIfAtTheRootRendersNull() throws Exception {
+        final var got = render("""
+                {"#if": "#name == 'y'", "k": 1}
+                """, "x", List.of());
+        Assertions.assertTrue(got.isNull(), "a false #if at the root must render a json null");
+    }
+
+    @Test
+    public void aFalseIfAsAFieldValueDropsTheField() throws Exception {
+        final var got = render("""
+                {"a": {"#if": "#name == 'y'", "k": 1}, "b": {"#if": "#name == 'x'", "k": 2}}
+                """, "x", List.of());
+        Assertions.assertEquals(json("""
+                {"b": {"k": 2}}
+                """), got, "a false #if as a field value must drop the field, a true one must keep the object");
+    }
+
+    @Test
+    public void eachAsAFieldValueRendersAnArray() throws Exception {
+        final var got = render("""
+                {"items": {"#each item": "#items", "value": "#{#item}"}}
+                """, "x", List.of("a", "b"));
+        Assertions.assertEquals(json("""
+                {"items": [{"value": "a"}, {"value": "b"}]}
+                """), got, "#each as a field value must render an array of one object per item");
+    }
+
+    @Test
+    public void anIfAfterAnEachFiltersTheItems() throws Exception {
+        final var got = render("""
+                [{"#each item": "#items", "#if": "#item != 'b'", "value": "#{#item}"}]
+                """, "x", List.of("a", "b", "c"));
+        Assertions.assertEquals(json("""
+                [{"value": "a"}, {"value": "c"}]
+                """), got, "an #if following an #each must drop the items it is false for");
+    }
+
+    @Test
     public void rendersOnlyResourcesWithTheTemplateSuffix() {
         Assertions.assertTrue(renderer.canRender(new ClassPathResource("mock.tpl.json")), "a resource with the template suffix must be rendered");
         Assertions.assertFalse(renderer.canRender(new ClassPathResource("mock.json")), "a resource without the template suffix must not be rendered");

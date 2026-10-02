@@ -24,8 +24,10 @@ import org.springframework.http.HttpStatus.Series;
 /// Turns the responses matching an `@Upstream.ErrorOnResponse` condition into a
 /// [RestClientUpstreamException] carrying the reason of the annotation.
 ///
-/// Always registered by [net.optionfactory.spring.upstream.UpstreamBuilder], as the last handler:
-/// `4xx` and `5xx` responses are handled by [UpstreamErrorOnErrorStatusHandler] before reaching it.
+/// Always registered by [net.optionfactory.spring.upstream.UpstreamBuilder], after the handlers
+/// registered by the application and before [UpstreamErrorOnErrorStatusHandler]: a `4xx` or `5xx`
+/// response matching an annotation that lists its series fails with the reason of the annotation,
+/// the others with the status as reason.
 ///
 /// The conditions are evaluated in [#hasError] and again in [#handleError], so they should not have
 /// side effects.

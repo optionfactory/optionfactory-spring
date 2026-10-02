@@ -23,7 +23,9 @@ import static net.optionfactory.spring.upstream.scopes.ScopeHandler.BOOT_ID;
 import static net.optionfactory.spring.upstream.scopes.ScopeHandler.INVOCATION_COUNTER;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
+import org.springframework.aop.framework.AopProxyUtils;
 import org.springframework.aop.framework.ReflectiveMethodInvocation;
+import org.springframework.aop.support.AopUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.client.RestClientException;
@@ -46,8 +48,9 @@ import org.springframework.web.client.UnknownContentTypeException;
 ///   raised for the response already, tags the observation `alert=mapping` and publishes an
 ///   [UpstreamAlertEvent], then rethrows.
 ///
-/// Default methods of the client interface are invoked directly, outside of any scope. Any other
-/// method that is not an endpoint, `toString()` included, fails with a `NullPointerException`.
+/// Default methods of the client interface are invoked directly, outside of any scope, and so is
+/// `toString()`, which renders `upstream client ` followed by the interface name. Any other method
+/// that is not an endpoint fails with an `IllegalStateException`.
 public class UpstreamMethodInterceptor implements MethodInterceptor {
 
     private final Map<Method, EndpointDescriptor> endpoints;
@@ -103,7 +106,13 @@ public class UpstreamMethodInterceptor implements MethodInterceptor {
             }
             throw new IllegalStateException("Unexpected method invocation: " + method);
         }
+        if (AopUtils.isToStringMethod(method) && mi instanceof ReflectiveMethodInvocation rmi) {
+            return "upstream client " + AopProxyUtils.proxiedUserInterfaces(rmi.getProxy())[0].getName();
+        }
         final var endpoint = endpoints.get(method);
+        if (endpoint == null) {
+            throw new IllegalStateException("Not an upstream endpoint: " + method);
+        }
         final var eprincipal = Optional.ofNullable(endpoint.principalParamIndex())
                 .map(i -> mi.getArguments()[i])
                 .or(() -> Optional.ofNullable(principal.get()))

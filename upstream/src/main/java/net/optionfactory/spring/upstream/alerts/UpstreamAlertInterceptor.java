@@ -3,7 +3,7 @@ package net.optionfactory.spring.upstream.alerts;
 import io.micrometer.observation.ObservationRegistry;
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,20 +29,31 @@ import org.springframework.context.ApplicationEventPublisher;
 /// returned (flagged with [ResponseContext#withAlert()], so that it is not reported twice) and a
 /// failure is rethrown.
 ///
-/// An exception thrown after the exchange, by the response condition or by the publisher, is
-/// however handled as a remoting error of the same invocation, and fails the call.
+/// Only the failures of the exchange are remoting errors: an exception thrown by the response
+/// condition or by the publisher reaches the caller as is, without raising a remoting alert.
 public class UpstreamAlertInterceptor implements UpstreamHttpInterceptor {
 
     private final Map<Method, BooleanExpression> remotingConfs = new ConcurrentHashMap<>();
     private final Map<Method, BooleanExpression> responseConfs = new ConcurrentHashMap<>();
     private final ApplicationEventPublisher publisher;
     private final ObservationRegistry observations;
+    private final InstantSource clock;
 
     /// @param publisher receives the alert events
     /// @param observations the registry whose current observation is tagged with the alert kind
-    public UpstreamAlertInterceptor(ApplicationEventPublisher publisher, ObservationRegistry observations) {
+    /// @param clock timestamps the remoting errors, see [ExceptionContext#at()]
+    public UpstreamAlertInterceptor(ApplicationEventPublisher publisher, ObservationRegistry observations, InstantSource clock) {
         this.publisher = publisher;
         this.observations = observations;
+        this.clock = clock;
+    }
+
+    /// Creates an interceptor timestamping the remoting errors with the system clock.
+    ///
+    /// @param publisher receives the alert events
+    /// @param observations the registry whose current observation is tagged with the alert kind
+    public UpstreamAlertInterceptor(ApplicationEventPublisher publisher, ObservationRegistry observations) {
+        this(publisher, observations, InstantSource.system());
     }
 
     /// Reads the `@Upstream.AlertOnResponse` and `@Upstream.AlertOnRemotingError` of every endpoint,
@@ -71,31 +82,31 @@ public class UpstreamAlertInterceptor implements UpstreamHttpInterceptor {
     /// @throws IOException the failure of the exchange, rethrown after evaluating the remoting condition
     @Override
     public ResponseContext intercept(InvocationContext invocation, RequestContext request, UpstreamHttpRequestExecution execution) throws IOException {
+        final ResponseContext response;
         try {
-            final var response = execution.execute(invocation, request);
-            final var expression = responseConfs.get(invocation.endpoint().method());
-            if (expression == null) {
-                return response;
-            }
-            final var ectx = invocation.expressions().context(invocation, request, response);
-            if (expression.evaluate(ectx)) {
-                publish(invocation, request, response, null);
-                return response.withAlert();
-            }
-            return response;
-
+            response = execution.execute(invocation, request);
         } catch (Exception exception) {
             final var expression = remotingConfs.get(invocation.endpoint().method());
             if (expression == null) {
                 throw exception;
             }
-            final var exceptionContext = new ExceptionContext(Instant.now(), exception.getMessage());
+            final var exceptionContext = new ExceptionContext(clock.instant(), exception.getMessage());
             final var ectx = invocation.expressions().context(invocation, request, exceptionContext);
             if (expression.evaluate(ectx)) {
                 publish(invocation, request, null, exceptionContext);
             }
             throw exception;
         }
+        final var expression = responseConfs.get(invocation.endpoint().method());
+        if (expression == null) {
+            return response;
+        }
+        final var ectx = invocation.expressions().context(invocation, request, response);
+        if (expression.evaluate(ectx)) {
+            publish(invocation, request, response, null);
+            return response.withAlert();
+        }
+        return response;
     }
 
     private void publish(InvocationContext invocation, RequestContext request, ResponseContext response, ExceptionContext ex) {

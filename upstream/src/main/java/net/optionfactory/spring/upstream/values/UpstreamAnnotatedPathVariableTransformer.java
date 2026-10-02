@@ -30,7 +30,7 @@ import org.springframework.web.service.invoker.HttpRequestValues;
 ///
 /// Installed on every client by `UpstreamBuilder`, ahead of the configured transformers. Endpoints
 /// without the annotation get their request values untouched; the others get them rebuilt through
-/// [HttpRequestValuesTransformer#valuesBuilder(HttpRequestValues)], with its limits.
+/// [HttpRequestValuesTransformer#valuesBuilder(HttpRequestValues)].
 public class UpstreamAnnotatedPathVariableTransformer implements HttpRequestValuesTransformer {
 
     private final Map<Method, List<AnnotatedPathVariable>> conf = new ConcurrentHashMap<>();
