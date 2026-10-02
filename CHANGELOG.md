@@ -76,6 +76,12 @@
 
 ## `authentication-tokens`
 
+*   [FIX] **A strict static token that shadows other configurations fails the security chain
+    build.** `bearerStrict`/`tokenStrict` reject every other token on their header and scheme, and
+    the `jws`/`jwe` configurations always run after the static ones, so a JWT configuration, or a
+    static token configured later, on the same header and scheme was accepted at startup and then
+    never authenticated anything. It is now rejected with an `IllegalStateException` naming the
+    header and scheme.
 *   [FIX] **A token no longer authenticates the session of the request it arrives with.** The
     filter wrote the token's authentication into the request's existing security context, which,
     for a request with a session, is the very instance stored in the `HttpSession`: the token's

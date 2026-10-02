@@ -64,7 +64,8 @@ public class HttpHeaderAuthentication {
     /// a matching token and lets any other token on its header through to the next processor. A
     /// strict one (`bearerStrict`, `tokenStrict`) owns its header and scheme: any other token found
     /// there is rejected without reaching later processors, so a strict static token cannot share
-    /// its header with other static tokens configured after it, nor with JWTs.
+    /// its header with other static tokens configured after it, nor with JWTs: such a
+    /// configuration fails when the security chain is built.
     ///
     /// The filter is added before `UsernamePasswordAuthenticationFilter`, and the provider is
     /// registered with the chain's shared `AuthenticationManager`.
@@ -252,12 +253,47 @@ public class HttpHeaderAuthentication {
             return this;
         }
 
-        private static List<TokenProcessor> makeProcessors(List<TokenProcessor> processors, List<JwsProcessor> jwsProcessors, List<JweProcessor> jweProcessors) {
+        /// The processors in the order they are consulted: the static and custom ones in
+        /// configuration order, then a single [JwtTokenProcessor] gathering every `jws` and `jwe`
+        /// configuration.
+        ///
+        /// A strict static token rejects every other token on its header and scheme, and a
+        /// rejection ends the search: a static token configured after it on the same header and
+        /// scheme, and any `jws` or `jwe` configuration matching them, would never see a token.
+        /// Such a configuration is rejected here, when the security chain is built, rather than
+        /// left to silently reject every one of those tokens. Custom processors are not checked:
+        /// their header and scheme are not known.
+        ///
+        /// @return the processors, in the order they are consulted
+        /// @throws IllegalStateException when a strict static token shadows another configuration
+        List<TokenProcessor> tokenProcessors() {
+            final var strict = new LinkedHashSet<HeaderAndScheme>();
+            for (final var processor : processors) {
+                final HeaderAndScheme hs = processor instanceof TokenProcessor.StaticLax lax ? lax.hs
+                        : processor instanceof TokenProcessor.StaticStrict ss ? ss.hs
+                        : null;
+                if (hs != null && strict.contains(hs)) {
+                    throw new IllegalStateException(String.format("a static token on %s is configured after a strict one on the same header and scheme, which rejects it", describe(hs)));
+                }
+                if (processor instanceof TokenProcessor.StaticStrict ss) {
+                    strict.add(ss.hs);
+                }
+            }
+            Stream.concat(jwsProcessors.stream().map(JwsProcessor::hs), jweProcessors.stream().map(JweProcessor::hs))
+                    .filter(strict::contains)
+                    .findFirst()
+                    .ifPresent(hs -> {
+                        throw new IllegalStateException(String.format("a jws or jwe configuration on %s is shadowed by a strict static token on the same header and scheme, which rejects every other token there", describe(hs)));
+                    });
             if (jweProcessors.isEmpty() && jwsProcessors.isEmpty()) {
                 return processors;
             }
             final var jwt = new JwtTokenProcessor(jwsProcessors, jweProcessors);
             return Stream.concat(processors.stream(), Stream.of(jwt)).toList();
+        }
+
+        private static String describe(HeaderAndScheme hs) {
+            return hs.scheme().isEmpty() ? String.format("header %s", hs.header()) : String.format("header %s, scheme %s", hs.header(), hs.scheme().trim());
         }
 
         /// Registers the [HttpHeaderAuthenticationProvider]. It happens at init time because
@@ -268,7 +304,7 @@ public class HttpHeaderAuthentication {
         /// @param http the security being built
         @Override
         public void init(HttpSecurity http) {
-            http.authenticationProvider(new HttpHeaderAuthenticationProvider(makeProcessors(processors, jwsProcessors, jweProcessors)));
+            http.authenticationProvider(new HttpHeaderAuthenticationProvider(tokenProcessors()));
         }
 
         /// Adds the [HttpHeaderAuthenticationFilter], searching every configured header and scheme,

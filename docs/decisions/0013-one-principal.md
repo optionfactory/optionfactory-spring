@@ -40,4 +40,5 @@ mechanisms sharing the `Authorization` header contend for it.
 - Which mechanism owns a token must be decidable from the token itself (its
   header, scheme, jws header), before any verification.
 - Sharing a header is a configuration decision: lax static tokens and JWTs can
-  share one, a strict static token cannot share its own.
+  share one, a strict static token cannot share its own, and a configuration
+  that tries fails when the security chain is built (0007).
