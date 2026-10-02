@@ -285,6 +285,13 @@
 *   [DOC] **The readme marks `targetClientName` as required for `generate-ts`**, as the mojo
     always did, and documents `typeAliases`.
 
+## `client-reports`
+
+*   [DOC] **Who can post reports, and what `SameSite` has to do with it.** The javadoc and readme
+    state that the endpoint is open by design, that a report carries the principal of the session
+    cookie sent with it, and that `SameSite=Lax`/`Strict` session cookies keep other sites from
+    posting reports attributed to a visitor, while `SameSite=None` does not.
+
 ## `applications-web-tomcat`
 
 *   [FIX] **`TomcatStartupListener` logs through its own logger.** It logged under the

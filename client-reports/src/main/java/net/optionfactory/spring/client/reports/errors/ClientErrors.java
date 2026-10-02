@@ -36,8 +36,11 @@ public class ClientErrors {
     /// authorization rules have not run yet, so reports are accepted from anyone, including clients
     /// whose session expired. Two consequences follow: a principal established per request (e.g.
     /// from a bearer token) is not known yet, so those reports carry a `null` principal; and,
-    /// without csrf protection, any site can make a visitor's browser post a report attributed to
-    /// the visitor, so a report must never be trusted as an action of its principal.
+    /// without csrf protection, a report is attributed to whoever's session cookie comes with it,
+    /// so a report must never be trusted as an action of its principal. Session cookies marked
+    /// `SameSite=Lax` or `Strict` (the `@EmbeddedTomcatWebMvcApplication` default is `Lax`) are not
+    /// sent with a cross-site POST, which keeps another site from making a visitor's browser post
+    /// a report attributed to the visitor; with `SameSite=None` it can.
     ///
     /// Events are published to the `ApplicationContext` shared by `HttpSecurity`.
     public static class Configurer extends SecurityConfigurerAdapter<DefaultSecurityFilterChain, HttpSecurity> {
