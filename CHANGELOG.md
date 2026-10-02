@@ -76,6 +76,13 @@
 
 ## `authentication-tokens`
 
+*   [FIX] **A token no longer authenticates the session of the request it arrives with.** The
+    filter wrote the token's authentication into the request's existing security context, which,
+    for a request with a session, is the very instance stored in the `HttpSession`: the token's
+    identity replaced the session's and stuck to it, so later requests on that session were
+    authenticated as the token's principal, with its roles, without presenting any token. The
+    request now gets a new context holding the token's authentication, and the session keeps its
+    own, as documented.
 *   [FIX] **`ClaimsPolicy.exact(...)` compares numeric claims by value.** JSON integers are parsed as
     `Long` and decimals as `Double`, and values were compared with `equals`, so
     `exact("level", 1)` (an `Integer`) never matched, and neither did a `Short`, `Byte` or `Float`.
