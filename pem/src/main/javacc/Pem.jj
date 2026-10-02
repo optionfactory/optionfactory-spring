@@ -5,8 +5,10 @@ options {
 
 PARSER_BEGIN(PemParser)
 package net.optionfactory.spring.pem.parsing;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,20 +21,71 @@ import net.optionfactory.spring.pem.PemException;
 /// `-`, plus spaces and tabs, as RFC 7468 defines them; the label of the `-----END` line is not
 /// checked against the one of the `-----BEGIN` line. Within an entry, whitespace between the base64
 /// characters is ignored. Any other text is a parse failure.
+///
+/// The JavaCC token manager takes any exception raised while reading for the end of the input. The
+/// stream is therefore read through a [RecordingReader], which ends the input on the first
+/// `IOException` and keeps it, so that [#parse(InputStream)] reports it instead of returning the
+/// entries read until then.
 public class PemParser {
 
-    /// Parses a UTF-8 PEM stream, without decoding the entries and without closing the stream.
+    /// Parses a UTF-8 PEM stream, without decoding the entries. The stream is closed when read to
+    /// its end, and left open on a parse failure.
     ///
     /// @param is the stream
     /// @return the entries, in file order, empty for an empty or blank stream
-    /// @throws PemException when the stream is not well-formed PEM
+    /// @throws PemException when the stream is not well-formed PEM, or when reading it fails, the
+    /// `IOException` being the cause
     public static List<PemEntry> parse(InputStream is) {
+        final var r = new RecordingReader(new InputStreamReader(is, StandardCharsets.UTF_8));
         try{
-            final var r = new InputStreamReader(is, StandardCharsets.UTF_8);
             final var p = new PemParser(r);
-            return p.entries();
+            final var entries = p.entries();
+            r.ensureNoFailure();
+            return entries;
         }catch(ParseException ex){
+            r.ensureNoFailure();
             throw new PemException(ex);
+        }
+    }
+
+    /// A [Reader] ending the input on the first `IOException` of the wrapped one, and keeping it.
+    /// Once the input has ended, the wrapped reader is no longer read.
+    private static class RecordingReader extends Reader {
+
+        private final Reader inner;
+        private boolean ended;
+        private IOException failure;
+
+        private RecordingReader(Reader inner) {
+            this.inner = inner;
+        }
+
+        @Override
+        public int read(char[] buffer, int offset, int length) {
+            if (ended) {
+                return -1;
+            }
+            try {
+                final var got = inner.read(buffer, offset, length);
+                ended = got == -1;
+                return got;
+            } catch (IOException ex) {
+                ended = true;
+                failure = ex;
+                return -1;
+            }
+        }
+
+        @Override
+        public void close() throws IOException {
+            ended = true;
+            inner.close();
+        }
+
+        private void ensureNoFailure() {
+            if (failure != null) {
+                throw new PemException(failure);
+            }
         }
     }
 

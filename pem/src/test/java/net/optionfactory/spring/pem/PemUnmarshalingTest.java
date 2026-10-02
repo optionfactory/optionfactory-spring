@@ -1,10 +1,13 @@
 package net.optionfactory.spring.pem;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.SequenceInputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.interfaces.RSAPrivateCrtKey;
+import net.optionfactory.spring.pem.der.DerException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -106,5 +109,40 @@ public class PemUnmarshalingTest {
     @Test
     public void textAroundEntriesIsNotAllowed() {
         Assertions.assertThrows(PemException.class, () -> Pem.certificate(is("# comment\n" + TestData.CERTIFICATE_X509)), "explanatory text that is not metadata is a parse failure");
+    }
+
+    @Test
+    public void readFailuresFailTheParsingInsteadOfTruncatingIt() {
+        final var failing = new InputStream() {
+            @Override
+            public int read() throws IOException {
+                throw new IOException("disk on fire");
+            }
+        };
+        final var src = new SequenceInputStream(is(TestData.CERTIFICATE_X509), failing);
+        final var ex = Assertions.assertThrows(PemException.class, () -> Pem.keyStore(src), "a stream failing after the first entry fails the load, rather than loading that entry only");
+        Assertions.assertInstanceOf(IOException.class, ex.getCause(), "the io failure is kept as the cause");
+    }
+
+    @Test
+    public void entriesWithoutLabelAreRejected() {
+        final var src = "-----BEGIN -----\nMIID\n-----END -----\n";
+        Assertions.assertThrows(PemException.class, () -> Pem.certificate(is(src)), "an entry without label is not a certificate");
+        Assertions.assertThrows(PemException.class, () -> Pem.privateKey(is(src), null), "an entry without label is not a key");
+        Assertions.assertThrows(PemException.class, () -> Pem.keyStore(is(src)), "an entry without label fails the keystore");
+    }
+
+    @Test
+    public void invalidBase64IsRejected() {
+        final var src = "-----BEGIN CERTIFICATE-----\nMIIDA\n-----END CERTIFICATE-----\n";
+        final var ex = Assertions.assertThrows(PemException.class, () -> Pem.certificate(is(src)), "base64 of an invalid length is a PemException");
+        Assertions.assertInstanceOf(IllegalArgumentException.class, ex.getCause(), "the base64 decoder failure is kept as the cause");
+    }
+
+    @Test
+    public void malformedPkcs1KeysAreRejected() {
+        final var src = "-----BEGIN RSA PRIVATE KEY-----\nMAA=\n-----END RSA PRIVATE KEY-----\n";
+        final var ex = Assertions.assertThrows(PemException.class, () -> Pem.privateKey(is(src), null), "an empty PKCS#1 sequence is a PemException");
+        Assertions.assertInstanceOf(DerException.class, ex.getCause(), "the DER failure is kept as the cause");
     }
 }

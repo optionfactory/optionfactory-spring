@@ -42,14 +42,18 @@ public class PemKeyStore extends KeyStoreSpi {
 
     /// Replaces the content with the entries of a PEM stream.
     ///
-    /// @param stream the PEM stream; `null`, which the [java.security.KeyStore] contract uses to
-    /// request an empty keystore, is not supported and fails with a `NullPointerException`
+    /// @param stream the PEM stream; `null` empties the keystore, as the [java.security.KeyStore]
+    /// contract requires
     /// @param passphrase ignored: encrypted keys are decrypted with the password given to
     /// [#engineGetKey(String, char\[\])]
     /// @throws net.optionfactory.spring.pem.PemException when an entry is malformed or unsupported,
     /// or two keys share an alias; the previous content is then kept
     @Override
     public void engineLoad(InputStream stream, char[] passphrase) throws IOException, NoSuchAlgorithmException, CertificateException {
+        if (stream == null) {
+            data.clear();
+            return;
+        }
         final java.util.Map<java.lang.String, net.optionfactory.spring.pem.parsing.KeyAndCertificates> unrolled = PemParser.parse(stream)
                 .stream()
                 .map(PemEntry::unmarshal)
@@ -97,16 +101,16 @@ public class PemKeyStore extends KeyStoreSpi {
                 .orElse(null);
     }
 
-    /// Unlike the [KeyStoreSpi] contract, which asks for `null`, an unknown alias yields an empty
-    /// array, and a trusted certificate entry yields its certificate.
-    ///
     /// @param alias the alias
-    /// @return the certificates of the alias in file order, possibly empty
+    /// @return the certificates of a key entry in file order, empty for a key without certificates;
+    /// `null` when the alias is unknown or is a trusted certificate entry, as the [KeyStoreSpi]
+    /// contract requires
     @Override
     public Certificate[] engineGetCertificateChain(String alias) {
         return byAlias(alias)
+                .filter(kac -> kac.key() != null)
                 .map(KeyAndCertificates::certs)
-                .orElse(new X509Certificate[0]);
+                .orElse(null);
     }
 
     /// @param alias the alias

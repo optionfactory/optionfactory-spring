@@ -86,4 +86,33 @@ public class DerWriterTest {
         Assertions.assertArrayEquals(Arrays.copyOfRange(DerWriter.oid("1.2.840.113549.1.7.1"), 2, 11), set.next().oid(bytes), "the oid content survives the round trip");
         cursor.eof();
     }
+
+    @Test
+    public void utcTimeRejectsInstantsItCannotRepresent() throws IOException {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> DerWriter.utcTime(Instant.parse("2050-01-01T00:00:00Z")), "2050 would be read back as 1950");
+        Assertions.assertThrows(IllegalArgumentException.class, () -> DerWriter.utcTime(Instant.parse("1949-12-31T23:59:59Z")), "1949 would be read back as 2049");
+        final var first = Instant.parse("1950-01-01T00:00:00Z");
+        final var last = Instant.parse("2049-12-31T23:59:59Z");
+        final var bytes = DerWriter.seq(DerWriter.utcTime(first), DerWriter.utcTime(last));
+        final var cursor = DerCursor.flat(bytes).next().sequence(bytes).flat();
+        Assertions.assertEquals(first, cursor.next().utc(bytes), "the first instant of 1950 survives the round trip");
+        Assertions.assertEquals(last, cursor.next().utc(bytes), "the last second of 2049 survives the round trip");
+    }
+
+    @Test
+    public void implicitPrimitiveLeavesTheConstructedBitClear() throws IOException {
+        Assertions.assertArrayEquals(new byte[]{(byte) 0x80, 0x01, 0x05}, DerWriter.implicitPrimitive(0, new byte[]{5}), "[0] IMPLICIT of a primitive type is context specific and primitive");
+        Assertions.assertEquals((byte) 0xA0, DerWriter.implicit(0, DerWriter.seq(), DerWriter.seq())[0], "[0] IMPLICIT of a constructed type is still context specific and constructed");
+    }
+
+    @Test
+    public void nulReturnsAFreshArray() {
+        DerWriter.nul()[0] = 0x7F;
+        Assertions.assertArrayEquals(new byte[]{Tag.NULL, 0x00}, DerWriter.nul(), "modifying a returned NULL does not affect the next one");
+    }
+
+    @Test
+    public void oidWithASingleArcIsRejected() {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> DerWriter.oid("1"), "an OBJECT IDENTIFIER has at least two arcs");
+    }
 }

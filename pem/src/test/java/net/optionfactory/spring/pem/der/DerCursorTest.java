@@ -142,4 +142,22 @@ public class DerCursorTest {
         Assertions.assertFalse(cursor.next().bool(bytes), "0x00 is false");
         Assertions.assertEquals(3, cursor.next().enumerated(bytes), "the enumerated value is its integer");
     }
+
+    @Test
+    public void bitsReadsABitString() {
+        final var bitString = new byte[]{Tag.BITSTRING, 2, 0x00, (byte) 0xAB};
+        Assertions.assertArrayEquals(new byte[]{(byte) 0xAB}, DerCursor.flat(bitString).next().bits(bitString), "the bits of a BIT STRING follow its unused-bits octet");
+        final var octetString = new byte[]{Tag.OCTETSTRING, 2, 0x00, (byte) 0xAB};
+        Assertions.assertThrows(DerException.class, () -> DerCursor.flat(octetString).next().bits(octetString), "an OCTET STRING is not a BIT STRING");
+    }
+
+    @Test
+    public void typedAccessorsCheckTheTagClass() {
+        final var contextSpecificTwo = new byte[]{(byte) 0x82, 1, 0x05};
+        final var value = DerCursor.flat(contextSpecificTwo).next();
+        Assertions.assertThrows(DerException.class, () -> value.integer(contextSpecificTwo), "a context specific [2] is not a universal INTEGER");
+        Assertions.assertThrows(DerException.class, () -> value.ensure(Tag.INTEGER), "ensure checks the class, not only the tag number");
+        final var contextSpecificTwelve = new byte[]{(byte) 0x8C, 1, 0x61};
+        Assertions.assertThrows(DerException.class, () -> DerCursor.flat(contextSpecificTwelve).next().string(contextSpecificTwelve), "a context specific [12] is not a universal UTF8String");
+    }
 }

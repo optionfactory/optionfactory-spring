@@ -16,7 +16,9 @@ public class DateParsingTest {
                 Arguments.of("can parse with seconds, with Z", Instant.parse("2023-12-13T01:45:50Z"), "231213014550Z"),
                 Arguments.of("can parse without seconds, with Z", Instant.parse("2023-12-13T01:45:00Z"), "2312130145Z"),
                 Arguments.of("can parse with seconds, with offset", Instant.parse("2023-12-13T01:45:50+01:20"), "231213014550+0120"),
-                Arguments.of("can parse without seconds, with offset", Instant.parse("2023-12-13T01:45:00+01:20"), "2312130145+0120")
+                Arguments.of("can parse without seconds, with offset", Instant.parse("2023-12-13T01:45:00+01:20"), "2312130145+0120"),
+                Arguments.of("years 50 to 99 are in the twentieth century, as in X.509", Instant.parse("1950-01-01T00:00:00Z"), "500101000000Z"),
+                Arguments.of("years 00 to 49 are in the twenty-first century, as in X.509", Instant.parse("2049-12-31T23:59:59Z"), "491231235959Z")
         );
     }
 

@@ -37,11 +37,24 @@ Resource pdf = renderer.renderXhtml(xhtml);
 
 ### Signing a PDF
 
-The module also provides `Pkcs7PdfSigner` for digital signatures.
+`PdfSigner` adds a detached PKCS#7 signature (built by `Pkcs7PdfSigner`) to a PDF, as an incremental update. It takes
+the signing key, RSA of at least 2048 bits or a 256 bit EC key, and its certificate chain, the signer's certificate
+first; an unsupported key or an empty chain is rejected by the constructor.
 
 ```java
-Pkcs7PdfSigner signer = new Pkcs7PdfSigner(keystore, "alias", "password");
-byte[] signedPdf = signer.sign(pdfInputStream, new SignatureInfo(...));
+KeyStore keystore = Pem.keyStore(pemStream);
+PrivateKey key = (PrivateKey) keystore.getKey("signer", "password".toCharArray());
+Certificate[] certificates = keystore.getCertificateChain("signer");
+X509Certificate[] chain = Arrays.copyOf(certificates, certificates.length, X509Certificate[].class);
+
+PdfSigner signer = new PdfSigner(key, chain);
+TemporaryFileSystemResource signed = signer.sign(pdf, new SignatureInfo(
+    "ACME", "Invoice", "Milano", ZonedDateTime.now(), SignatureInfo.CommitmentType.PROOF_OF_ORIGIN
+));
 ```
+
+`pdf` is a spring `Resource`, such as the one returned by `ThymeleafToPdfRenderer.render`. The signed document is
+buffered in a temporary file, deleted once the returned resource has been read. A loaded `PDDocument` can be signed with
+`signer.sign(document, signatureInfo)` instead, followed by `document.saveIncremental(outputStream)`.
 
 

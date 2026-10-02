@@ -31,7 +31,8 @@ public class DerWriter {
             .ofPattern("yyMMddHHmmss'Z'")
             .withZone(ZoneId.of("UTC"));
 
-    private static final byte[] NULL_BYTES = new byte[]{Tag.NULL, 0x00};
+    private static final Instant UTC_TIME_MIN = Instant.parse("1950-01-01T00:00:00Z");
+    private static final Instant UTC_TIME_MAX = Instant.parse("2050-01-01T00:00:00Z");
 
     /// @param part the encoded content, `null` for an empty sequence
     /// @return the `SEQUENCE`
@@ -64,7 +65,9 @@ public class DerWriter {
 
     /// Encodes a constructed `[tagNumber] IMPLICIT` value: the context specific tag replaces the
     /// tag of the value, so `part` is its content rather than a complete encoding. The constructed
-    /// bit is always set, which suits implicitly tagged `SEQUENCE` and `SET` types only.
+    /// bit is set, as it must be for implicitly tagged constructed types such as `SEQUENCE`, `SET`
+    /// and `SET OF`; a primitive type, such as an `OCTET STRING` or an `INTEGER`, is implicitly
+    /// tagged with [#implicitPrimitive(int, byte\[\])].
     ///
     /// @param tagNumber the context specific tag number, below 31
     /// @param part the content
@@ -83,6 +86,18 @@ public class DerWriter {
     /// @throws IOException never in practice
     public static byte[] implicit(int tagNumber, byte[]... parts) throws IOException {
         return encodeTag(CONTEXT_SPECIFIC | CONSTRUCTED | tagNumber, parts);
+    }
+
+    /// Encodes a primitive `[tagNumber] IMPLICIT` value, as for an implicitly tagged
+    /// `OCTET STRING` or `INTEGER`: the context specific tag replaces the tag of the value, so
+    /// `content` is its content rather than a complete encoding, and the constructed bit is clear.
+    ///
+    /// @param tagNumber the context specific tag number, below 31
+    /// @param content the content, `null` for an empty one
+    /// @return the tagged value
+    /// @throws IOException never in practice
+    public static byte[] implicitPrimitive(int tagNumber, byte[] content) throws IOException {
+        return encodeTag(CONTEXT_SPECIFIC | tagNumber, content);
     }
 
     /// Encodes a `[tagNumber] EXPLICIT` value: the context specific tag wraps the complete encoding
@@ -117,33 +132,40 @@ public class DerWriter {
         return encodeTag(Tag.OCTETSTRING, data);
     }
 
-    /// Encodes `instant` as `YYMMDDhhmmssZ` in UTC, truncated to the second. The two-digit year
-    /// cannot represent instants outside 1950 to 2049, for which X.509 asks for a
-    /// `GeneralizedTime`: they are written with the wrong century.
+    /// Encodes `instant` as `YYMMDDhhmmssZ` in UTC, truncated to the second. The two-digit year,
+    /// read as X.509 (RFC 5280) does, covers 1950 to 2049 only: instants outside that range, for
+    /// which X.509 asks for a `GeneralizedTime`, are rejected.
     ///
     /// @param instant the instant
     /// @return the `UTCTime`
     /// @throws IOException never in practice
+    /// @throws IllegalArgumentException when `instant` is before 1950 or after 2049
     public static byte[] utcTime(Instant instant) throws IOException {
+        if (instant.isBefore(UTC_TIME_MIN) || !instant.isBefore(UTC_TIME_MAX)) {
+            throw new IllegalArgumentException(String.format("UTCTime cannot represent %s: only 1950 to 2049 are", instant));
+        }
         String timeString = UTC_TIME_FORMATTER.format(instant);
         byte[] content = timeString.getBytes(StandardCharsets.US_ASCII);
         return encodeTag(Tag.UTCTIME, content);
     }
 
-    /// @return the `NULL`, as a shared array the caller must not modify
+    /// @return the `NULL`, a new array on each call
     public static byte[] nul() {
-        return NULL_BYTES;
+        return new byte[]{Tag.NULL, 0x00};
     }
 
     /// @param oid the dotted form, with at least two arcs, such as `1.2.840.113549.1.1.1`
     /// @return the `OBJECT IDENTIFIER`
     /// @throws IOException never in practice
-    /// @throws IndexOutOfBoundsException when `oid` has a single arc
+    /// @throws IllegalArgumentException when `oid` has a single arc
     /// @throws NumberFormatException when an arc is not a number
     public static byte[] oid(String oid) throws IOException {
         final var buffer = new ByteArrayOutputStream();
         
         int firstDot = oid.indexOf('.');
+        if (firstDot == -1) {
+            throw new IllegalArgumentException(String.format("an OBJECT IDENTIFIER has at least two arcs: %s", oid));
+        }
         int secondDot = oid.indexOf('.', firstDot + 1);
         
         int first = Integer.parseInt(oid, 0, firstDot, 10);

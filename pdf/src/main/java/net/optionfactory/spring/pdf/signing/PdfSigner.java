@@ -29,12 +29,12 @@ public class PdfSigner {
     private final PrivateKey key;
     private final X509Certificate[] certificateChain;
 
-    /// The key is not validated here: an unsupported key fails each signing with the
-    /// `IllegalArgumentException` of [Pkcs7PdfSigner].
-    ///
     /// @param key the signing key, a RSA key of at least 2048 bits or a 256 bit EC key
     /// @param certificateChain the certificates embedded in the signature, the signer's first
+    /// @throws IllegalArgumentException when the key is of another algorithm, size or type, or the
+    /// chain is null, empty or holds a null certificate
     public PdfSigner(PrivateKey key, X509Certificate[] certificateChain) {
+        Pkcs7PdfSigner.validate(key, certificateChain);
         this.key = key;
         this.certificateChain = certificateChain;
     }
@@ -46,7 +46,6 @@ public class PdfSigner {
     /// @param pdf the document to sign
     /// @param sinfo the signer name, reason, location and time written in the signature dictionary,
     /// and the time and commitment type signed in the PKCS#7 attributes
-    /// @throws IllegalArgumentException when the key is not supported
     /// @throws java.io.UncheckedIOException when pdfbox fails to add the signature
     public void sign(PDDocument pdf, SignatureInfo sinfo) {
         final var signature = new PDSignature();
@@ -73,7 +72,7 @@ public class PdfSigner {
     /// @param sinfo the signer name, reason, location and time written in the signature dictionary,
     /// and the time and commitment type signed in the PKCS#7 attributes
     /// @return the signed document, readable once
-    /// @throws IllegalArgumentException when the key is not supported
+    /// @throws IllegalArgumentException when the signing time is outside 1950 to 2049
     /// @throws java.io.UncheckedIOException when the document cannot be read, parsed or written
     public TemporaryFileSystemResource sign(Resource pdf, SignatureInfo sinfo) {
         try {

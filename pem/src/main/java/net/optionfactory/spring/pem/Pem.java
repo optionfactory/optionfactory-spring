@@ -17,15 +17,13 @@ import net.optionfactory.spring.pem.spi.PemProvider;
 /// RFC 7468 tolerates, is a parse failure. The only metadata in use is `alias`, read by
 /// [#keyStore(InputStream)]. Only RSA keys are supported.
 ///
-/// Failures, such as a parse error, an unsupported label or an invalid key or certificate, are
-/// reported as a [PemException], with a few exceptions: base64 content of an invalid length fails
-/// with the `IllegalArgumentException` of the base64 decoder, a malformed PKCS#1 key with a
-/// [net.optionfactory.spring.pem.der.DerException], and a `-----BEGIN -----` line without a label
-/// with a `NullPointerException`. An `IOException` raised while reading the stream ends the
-/// parsing as if the stream had ended there.
+/// Every failure, such as a parse error, a missing or unsupported label, invalid base64, an invalid
+/// key or certificate, or an `IOException` raised while reading the stream, is reported as a
+/// [PemException], caused by the underlying exception when there is one.
 ///
-/// The streams are read as UTF-8 and are not closed: [PemSources] offers the same readers for
-/// spring resources, closing the streams it opens.
+/// The streams are read as UTF-8. The JavaCC character stream of the parser closes a stream it reads
+/// to the end, but not one it stops reading on a parse failure, so callers should still close them:
+/// [PemSources] offers the same readers for spring resources, closing the streams it opens.
 ///
 /// ```java
 /// try (InputStream is = Files.newInputStream(path)) {

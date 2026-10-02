@@ -4,9 +4,11 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
+import java.security.Provider;
 import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.ServiceLoader;
 import java.util.Set;
 import net.optionfactory.spring.pem.Pem;
 import net.optionfactory.spring.pem.PemException;
@@ -124,5 +126,30 @@ public class PemKeyStoreTest {
         final var ks = KeyStore.getInstance(PemProvider.TYPE, new PemProvider());
         ks.load(is(TestData.CERTIFICATE_X509), null);
         Assertions.assertEquals(1, ks.size(), "the provider instantiates a working PEM keystore");
+    }
+
+    @Test
+    public void theProviderIsRegisteredForServiceLoading() {
+        final var found = ServiceLoader.load(Provider.class).stream()
+                .anyMatch(p -> p.type() == PemProvider.class);
+        Assertions.assertTrue(found, "the provider is found by the ServiceLoader the JDK uses to resolve the security.provider.<n>=PEM property");
+    }
+
+    @Test
+    public void loadingANullStreamEmptiesTheKeyStore() throws Exception {
+        final var ks = KeyStore.getInstance(PemProvider.TYPE, new PemProvider());
+        ks.load(null, null);
+        Assertions.assertEquals(0, ks.size(), "a null stream gives an empty keystore, as the KeyStore contract requires");
+        ks.load(is(TestData.CERTIFICATE_X509), null);
+        ks.load(null, null);
+        Assertions.assertEquals(0, ks.size(), "a null stream discards the content of a previous load");
+    }
+
+    @Test
+    public void certificateChainIsNullForUnknownAliasesAndTrustedCertificates() throws Exception {
+        final var ks = Pem.keyStore(is("alias: ca\n" + TestData.CERTIFICATE_X509 + "alias: signer\n" + TestData.PRIVATE_KEY_PKCS1));
+        Assertions.assertNull(ks.getCertificateChain("missing"), "an unknown alias has no chain, as the KeyStoreSpi contract requires");
+        Assertions.assertNull(ks.getCertificateChain("ca"), "a trusted certificate entry has no chain, as the KeyStoreSpi contract requires");
+        Assertions.assertEquals(0, ks.getCertificateChain("signer").length, "a key entry without certificates has an empty chain");
     }
 }

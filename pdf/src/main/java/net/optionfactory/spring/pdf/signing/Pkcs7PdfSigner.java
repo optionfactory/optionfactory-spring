@@ -83,40 +83,62 @@ public class Pkcs7PdfSigner implements SignatureInterface {
 
     /// @param privateKey the signing key: RSA of at least 2048 bits, or EC (`EC` or `ECDSA`) with a
     /// 256 bit order such as P-256
-    /// @param certificateChain the certificates to embed, the signer's first; it must not be empty
+    /// @param certificateChain the certificates to embed, the signer's first
     /// @param signatureInfo the signing time and commitment type to sign
-    /// @throws IllegalArgumentException when the key is of another algorithm, size or type
+    /// @throws IllegalArgumentException when the key is of another algorithm, size or type, or the
+    /// chain is null, empty or holds a null certificate
     public Pkcs7PdfSigner(PrivateKey privateKey, X509Certificate[] certificateChain, SignatureInfo signatureInfo) {
+        final var algorithm = validate(privateKey, certificateChain);
         this.privateKey = privateKey;
         this.certificateChain = certificateChain;
         this.signatureInfo = signatureInfo;
-        final String alg = privateKey.getAlgorithm();
-        switch (alg) {
+        this.signatureAlgorithmName = algorithm.name();
+        this.signatureAlgorithmOid = algorithm.oid();
+    }
+
+    /// @param name the JCA name of the signature algorithm
+    /// @param oid the identifier of the signature algorithm in the `SignerInfo`
+    record SignatureAlgorithm(String name, String oid) {
+
+    }
+
+    /// Checks the key and the chain as the constructor does, so that [PdfSigner] rejects them when
+    /// it is created rather than on each signature.
+    ///
+    /// @param privateKey the signing key
+    /// @param certificateChain the certificates to embed, the signer's first
+    /// @return the signature algorithm of the key
+    /// @throws IllegalArgumentException when the key is not supported, or the chain is null, empty
+    /// or holds a null certificate
+    static SignatureAlgorithm validate(PrivateKey privateKey, X509Certificate[] certificateChain) {
+        Assert.notNull(privateKey, "the private key must not be null");
+        Assert.notEmpty(certificateChain, "the certificate chain must not be empty");
+        Assert.noNullElements(certificateChain, "the certificate chain must not hold null certificates");
+        return switch (privateKey.getAlgorithm()) {
             case "EC", "ECDSA" -> {
                 if (!(privateKey instanceof ECKey ecKey)) {
                     throw new IllegalArgumentException("Private key claims to be EC/ECDSA but does not implement ECKey.");
                 }
                 Assert.isTrue(ecKey.getParams().getOrder().bitLength() == 256, "only 256 bit ECDSA keys are supported");
-                this.signatureAlgorithmName = "SHA256withECDSA";
-                this.signatureAlgorithmOid = OID_ECDSA_WITH_SHA256;
+                yield new SignatureAlgorithm("SHA256withECDSA", OID_ECDSA_WITH_SHA256);
             }
             case "RSA" -> {
                 if (!(privateKey instanceof RSAKey rsaKey)) {
                     throw new IllegalArgumentException("Private key claims to be RSA but does not implement RSAKey.");
                 }
                 Assert.isTrue(rsaKey.getModulus().bitLength() >= 2048, "RSA key length must be >= 2048 bits");
-                this.signatureAlgorithmName = "SHA256withRSA";
-                this.signatureAlgorithmOid = OID_RSA;
+                yield new SignatureAlgorithm("SHA256withRSA", OID_RSA);
             }
             default ->
                 throw new IllegalArgumentException("key must be RSA or ECDSA");
-        }
-
+        };
     }
 
     /// @param content the bytes to sign, read to the end and closed
     /// @return the DER encoded `ContentInfo` of the `SignedData`
     /// @throws IOException when the content cannot be read, or the signature cannot be computed
+    /// @throws IllegalArgumentException when the signing time is outside 1950 to 2049, the range of
+    /// the `UTCTime` it is signed as
     @Override
     public byte[] sign(InputStream content) throws IOException {
         try {

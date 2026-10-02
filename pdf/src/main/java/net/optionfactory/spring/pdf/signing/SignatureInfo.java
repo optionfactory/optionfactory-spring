@@ -8,8 +8,9 @@ import java.time.ZonedDateTime;
 /// @param reason the reason for signing, written in the signature dictionary
 /// @param location where the document was signed, written in the signature dictionary
 /// @param at the signing time, written in the signature dictionary and signed as the PKCS#9
-/// signing time attribute; it is not checked against the clock, nor against the validity of the
-/// certificate. Required
+/// signing time attribute, as a `UTCTime` that only covers 1950 to 2049: a time outside that
+/// range fails the signing with an `IllegalArgumentException`. It is not checked against the
+/// clock, nor against the validity of the certificate. Required
 /// @param commitmentType the commitment the signer makes, signed as the ETSI commitment type
 /// attribute. Required
 public record SignatureInfo(String name, String reason, String location, ZonedDateTime at, CommitmentType commitmentType) {

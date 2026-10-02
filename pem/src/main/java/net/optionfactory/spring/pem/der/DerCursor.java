@@ -5,6 +5,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoField;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -308,8 +310,10 @@ public class DerCursor {
 
     /// A value yielded by a cursor: its tag and the bounds of its content in the source.
     ///
-    /// The accessors take the source the value was read from, and check the tag number before
-    /// decoding, failing with a [DerException] on a mismatch; the class of the tag is not checked.
+    /// The accessors take the source the value was read from, and check that the tag is the
+    /// universal tag of the type before decoding, failing with a [DerException] on a mismatch: an
+    /// implicitly tagged value, such as a context specific `[2]`, is never read as the universal
+    /// type sharing its tag number.
     ///
     /// @param tag the tag
     /// @param from the offset of the first content byte
@@ -317,15 +321,18 @@ public class DerCursor {
     public record DerValue(Tag tag, int from, int to) {
 
         /// The `UTCTime` format: seconds are optional, and the time zone is `Z` or an offset such
-        /// as `+0100`. The two-digit year is read as `20YY`, whereas X.509 maps `50` to `99` to the
-        /// twentieth century.
-        public static final DateTimeFormatter UTC_TIME_PATTERN = DateTimeFormatter.ofPattern("yyMMddHHmm[ss]XX");
+        /// as `+0100`. The two-digit year is read as X.509 (RFC 5280) does: `50` to `99` as `19YY`,
+        /// `00` to `49` as `20YY`.
+        public static final DateTimeFormatter UTC_TIME_PATTERN = new DateTimeFormatterBuilder()
+                .appendValueReduced(ChronoField.YEAR, 2, 2, 1950)
+                .appendPattern("MMddHHmm[ss]XX")
+                .toFormatter();
 
-        /// @param tags the accepted tag numbers, without duplicates
+        /// @param tags the accepted universal tag numbers, without duplicates
         /// @return this value
-        /// @throws DerException when the tag number is none of `tags`
+        /// @throws DerException when the tag is not universal, or its number is none of `tags`
         public DerValue ensure(Byte... tags) {
-            DerException.ensure(Set.of(tags).contains(this.tag.type()), "expected type to be one of %s but was: %s", List.of(tags), this.tag.type());
+            DerException.ensure(this.tag.isUniversal() && Set.of(tags).contains(this.tag.type()), "expected type to be one of %s but was: %s", List.of(tags), this.tag);
             return this;
         }
         /// @param index the expected tag number
@@ -365,17 +372,15 @@ public class DerCursor {
             return Arrays.copyOfRange(source, from, to);
         }
 
-        /// Reads the content of a bit string, without its leading unused-bits octet; DER already
+        /// Reads the content of a `BIT STRING`, without its leading unused-bits octet; DER already
         /// zeroes the unused bits.
-        ///
-        /// The tag checked is the one of an `OCTET STRING`, not of a `BIT STRING`, so an actual
-        /// `BIT STRING` value is rejected.
         ///
         /// @param source the source the value was read from
         /// @return a copy of the bits
+        /// @throws DerException when the value is not a `BIT STRING`, or lacks the unused-bits octet
         public byte[] bits(byte[] source) {
-            ensure(Tag.OCTETSTRING);
-            final var unusedBits = source[from];
+            ensure(Tag.BITSTRING);
+            DerException.ensure(to > from, "BIT STRING without the unused-bits octet");
             return Arrays.copyOfRange(source, from + 1, to);
         }
 
@@ -434,8 +439,9 @@ public class DerCursor {
         ///
         /// @param source the source the value was read from
         /// @return the decoded string
-        /// @throws DerException when the value is not one of these string types
+        /// @throws DerException when the value is not one of these universal string types
         public String string(byte[] source) {
+            DerException.ensure(tag.isUniversal(), "expected type to be one of the string types but was: %s", tag);
             return new String(source, from, to - from, switch (tag.type()) {
                 case Tag.PRINTABLESTRING, Tag.IA5STRING, Tag.GENERALSTRING ->
                     StandardCharsets.US_ASCII;

@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
@@ -33,6 +34,7 @@ public class PdfSignerTest {
 
     private static PdfSigner signer;
     private static X509Certificate certificate;
+    private static PrivateKey key;
 
     @TempDir
     Path dir;
@@ -52,6 +54,7 @@ public class PdfSignerTest {
                     X509Certificate[].class
             );
             certificate = x509Chain[0];
+            key = privateKey;
             signer = new PdfSigner(privateKey, x509Chain);
         }
     }
@@ -97,6 +100,18 @@ public class PdfSignerTest {
         final var original = new ClassPathResource("/example/example.pdf").getContentAsByteArray();
         final var signed = Files.readAllBytes(signed());
         Assertions.assertArrayEquals(original, Arrays.copyOf(signed, original.length), "the signature is appended as an incremental update");
+    }
+
+    @Test
+    public void unsupportedKeysAreRejectedAtConstruction() throws Exception {
+        final var ed25519 = KeyPairGenerator.getInstance("Ed25519").generateKeyPair().getPrivate();
+        Assertions.assertThrows(IllegalArgumentException.class, () -> new PdfSigner(ed25519, new X509Certificate[]{certificate}), "a key that cannot sign is rejected when the signer is created, not on each signature");
+    }
+
+    @Test
+    public void emptyChainsAreRejectedAtConstruction() {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> new PdfSigner(key, new X509Certificate[0]), "a signer certificate is required when the signer is created, not on each signature");
+        Assertions.assertThrows(IllegalArgumentException.class, () -> new PdfSigner(key, new X509Certificate[]{null}), "a null certificate is rejected when the signer is created");
     }
 
 }

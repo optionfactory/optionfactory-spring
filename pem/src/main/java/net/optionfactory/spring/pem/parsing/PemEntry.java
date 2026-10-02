@@ -18,14 +18,15 @@ import net.optionfactory.spring.pem.Pem;
 import net.optionfactory.spring.pem.PemException;
 import net.optionfactory.spring.pem.der.DerCursor;
 import net.optionfactory.spring.pem.der.DerCursor.Tag;
+import net.optionfactory.spring.pem.der.DerException;
 
 /// A PEM entry as parsed by [PemParser], not yet decoded.
 ///
-/// The `unmarshal` methods decode the entry and fail with a [PemException] when the label does not
-/// match what they decode, or when the content is not valid for it; the base64 decoder's
-/// `IllegalArgumentException` and, for PKCS#1 keys, the [net.optionfactory.spring.pem.der.DerException]
-/// of the DER parser are not wrapped. An entry without label (`null`) fails the label-checking
-/// methods with a `NullPointerException`. Only RSA keys are supported.
+/// The `unmarshal` methods decode the entry and fail with a [PemException] when the entry has no
+/// label, when the label does not match what they decode, or when the content is not valid for it:
+/// invalid base64 and, for PKCS#1 keys, malformed DER are reported as a [PemException] caused by the
+/// `IllegalArgumentException` of the base64 decoder and by the
+/// [net.optionfactory.spring.pem.der.DerException] of the DER parser. Only RSA keys are supported.
 ///
 /// @param label the label of the `-----BEGIN` line, `null` when the line has none
 /// @param metadata the `key: value` lines preceding the entry, in file order
@@ -48,9 +49,11 @@ public record PemEntry(String label, List<Metadata> metadata, String b64) {
     ///
     /// @return a certificate without key for a certificate label, a key without certificates for a
     /// private key label
-    /// @throws PemException when the label is not one of the labels [#unmarshalPrivateKey()] and
-    /// [#unmarshalX509Certificate()] support, or the content is invalid for the label
+    /// @throws PemException when the label is missing or is not one of the labels
+    /// [#unmarshalPrivateKey()] and [#unmarshalX509Certificate()] support, or the content is invalid
+    /// for the label
     public KeyAndCertificates unmarshal() {
+        ensureLabel();
         final var alias = metadata.stream()
                 .filter(m -> m.k().equals("alias"))
                 .map(m -> m.v())
@@ -76,8 +79,10 @@ public record PemEntry(String label, List<Metadata> metadata, String b64) {
     /// asked for it.
     ///
     /// @return the holder of the key
-    /// @throws PemException when the label is not a private key label, or the content is invalid
+    /// @throws PemException when the label is missing or is not a private key label, or the content
+    /// is invalid
     public PrivateKeyHolder unmarshalPrivateKey() {
+        ensureLabel();
         return switch (label) {
             case "RSA PRIVATE KEY" ->
                 new ClearTextPrivateKeyHolder(this.unmarshalPkcs1PrivateKey());
@@ -93,14 +98,28 @@ public record PemEntry(String label, List<Metadata> metadata, String b64) {
     /// Decodes a `CERTIFICATE`, `X509 CERTIFICATE` or `TRUSTED CERTIFICATE` entry.
     ///
     /// @return the certificate
-    /// @throws PemException when the label is not a certificate label, or the content is invalid
+    /// @throws PemException when the label is missing or is not a certificate label, or the content
+    /// is invalid
     public X509Certificate unmarshalX509Certificate() {
+        ensureLabel();
         PemException.ensure(Set.of("TRUSTED CERTIFICATE", "X509 CERTIFICATE", "CERTIFICATE").contains(label), "unsupported PEM label: %s", label);
         return x509Certificate();
     }
 
+    private void ensureLabel() {
+        PemException.ensure(label != null, "missing PEM label");
+    }
+
+    private byte[] decodeBase64() {
+        try {
+            return Base64.getDecoder().decode(b64);
+        } catch (IllegalArgumentException ex) {
+            throw new PemException(ex);
+        }
+    }
+
     private X509Certificate x509Certificate() {
-        final var bytes = Base64.getDecoder().decode(b64);
+        final var bytes = decodeBase64();
         try (final var is = new ByteArrayInputStream(bytes)) {
             final var cf = CertificateFactory.getInstance("X.509");
             return (X509Certificate) cf.generateCertificate(is);
@@ -114,7 +133,7 @@ public record PemEntry(String label, List<Metadata> metadata, String b64) {
     /// @return the key
     /// @throws PemException when the content is not a PKCS#8 RSA key
     public PrivateKey unmarshalPkcs8PrivateKey() {
-        final var bytes = Base64.getDecoder().decode(b64);
+        final var bytes = decodeBase64();
         try {
             final var kf = KeyFactory.getInstance("RSA");
             final var ks = new PKCS8EncodedKeySpec(bytes);
@@ -129,11 +148,11 @@ public record PemEntry(String label, List<Metadata> metadata, String b64) {
     /// two-prime keys are supported: the optional `otherPrimeInfos` must be absent.
     ///
     /// @return the key, with its CRT parameters
-    /// @throws PemException when the RSA parameters are rejected by the key factory
-    /// @throws net.optionfactory.spring.pem.der.DerException when the content is not a DER encoded
-    /// two-prime PKCS#1 key
+    /// @throws PemException when the content is not a DER encoded two-prime PKCS#1 key, the
+    /// [net.optionfactory.spring.pem.der.DerException] being the cause, or when the RSA parameters
+    /// are rejected by the key factory
     public PrivateKey unmarshalPkcs1PrivateKey() {
-        final var bytes = Base64.getDecoder().decode(b64);
+        final var bytes = decodeBase64();
         try {
             final var cursor = DerCursor.nested(bytes);
             final var sequence = cursor.next().ensure(Tag.SEQUENCE);
@@ -151,7 +170,7 @@ public record PemEntry(String label, List<Metadata> metadata, String b64) {
 
             final var keySpec = new RSAPrivateCrtKeySpec(modulus, publicExp, privateExp, prime1, prime2, exp1, exp2, crtCoef);
             return KeyFactory.getInstance("RSA").generatePrivate(keySpec);
-        } catch (GeneralSecurityException ex) {
+        } catch (GeneralSecurityException | DerException ex) {
             throw new PemException(ex);
         }
     }
@@ -162,7 +181,7 @@ public record PemEntry(String label, List<Metadata> metadata, String b64) {
     /// @return the encrypted key
     /// @throws PemException when the content is not an `EncryptedPrivateKeyInfo`
     public EncryptedPrivateKeyInfo unmarshalEncryptedPkcs8PrivateKey() {
-        final var bytes = Base64.getDecoder().decode(b64);
+        final var bytes = decodeBase64();
         try {
             return new EncryptedPrivateKeyInfo(bytes);
         } catch (IOException ex) {

@@ -161,6 +161,45 @@
 *   [DOC] **The remaining implementation notes are javadoc.** The inline comments in
     `SharedContainersExtension` and `TransactionalPhasesTestExecutionListener` moved to `///`.
 
+## `pem`
+
+*   [FIX] **A read failure of a PEM stream now fails the parsing with a `PemException`.** The JavaCC
+    token manager took any `IOException` for the end of input, so a keystore could silently load only
+    the entries read before the failure; the `IOException` is now the cause of the `PemException`.
+*   [FIX] **Every PEM parse failure is now a `PemException`.** A `-----BEGIN -----` line without a
+    label failed with `NullPointerException`, base64 of invalid length with `IllegalArgumentException`
+    and a malformed PKCS#1 key with `DerException`; they are now wrapped, keeping the cause.
+*   [FIX] **`KeyStore.load(null, ...)` on a `PEM` keystore gives an empty keystore.** It failed with
+    `NullPointerException`, against the `KeyStore` contract.
+*   [FIX] **`KeyStore.getCertificateChain` returns `null` for unknown aliases and trusted
+    certificates.** It returned an empty array and a one-element array respectively, against the
+    `KeyStoreSpi` contract; key entries are unaffected.
+*   [FIX] **The `PemProvider` registration is now at `META-INF/services/java.security.Provider`.** It
+    was outside `services/` and therefore ignored, so `security.provider.<n>=PEM` in the JVM security
+    properties could not resolve the provider; how to install the provider is now documented.
+*   [FIX] **`DerValue` reads UTCTime years 50-99 as 19YY, as X.509 does.** They were read as 20YY;
+    `DerWriter.utcTime` now rejects instants outside 1950-2049 with `IllegalArgumentException`
+    instead of writing them with the wrong century.
+*   [FIX] **`DerValue.bits()` reads BIT STRINGs.** It required an OCTET STRING tag, rejecting actual
+    bit strings.
+*   [FIX] **`DerValue` accessors check the tag class.** Only the tag number was compared, so an
+    implicitly tagged value such as a context specific `[2]` was read as an `INTEGER`.
+*   [FIX] **`DerWriter.nul()` returns a new array and `DerWriter.oid` rejects single-arc oids with
+    `IllegalArgumentException`.** `nul()` returned a shared mutable array and `oid("1")` threw
+    `IndexOutOfBoundsException`; `DerWriter.implicitPrimitive` encodes implicitly tagged primitive
+    types, which `implicit` (always constructed) cannot.
+
+## `pdf`
+
+*   [FIX] **`PdfSigner` rejects an unsupported key or an empty certificate chain at construction.**
+    They were only detected on each `sign` call, with `IllegalArgumentException` and
+    `ArrayIndexOutOfBoundsException`; such a signer could never sign. A signing time outside
+    1950-2049, which UTCTime cannot represent, now fails the signing instead of being signed with the
+    wrong century.
+*   [DOC] **The readme shows the actual signing API.** It showed a `Pkcs7PdfSigner(keystore, alias,
+    password)` constructor and a `sign(InputStream, ...)` method that do not exist; it now shows
+    `PdfSigner(key, chain)` and `sign(Resource, SignatureInfo)`.
+
 # version 28.2
 
 ## Dependencies

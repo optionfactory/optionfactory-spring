@@ -148,4 +148,16 @@ public class Pkcs7PdfSignerVerificationTest {
         final var ed25519 = KeyPairGenerator.getInstance("Ed25519").generateKeyPair().getPrivate();
         Assertions.assertThrows(IllegalArgumentException.class, () -> new Pkcs7PdfSigner(ed25519, new X509Certificate[]{ecCert}, SI), "only RSA and ECDSA keys are supported");
     }
+
+    @Test
+    public void emptyChainsAreRejected() {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> new Pkcs7PdfSigner(rsa.getPrivate(), new X509Certificate[0], SI), "the signer certificate is required");
+    }
+
+    @Test
+    public void signingTimesUtcTimeCannotRepresentAreRejected() {
+        final var future = new SignatureInfo("Test Name", "Test Reason", "Italy", ZonedDateTime.parse("2050-01-02T10:11:12Z"), SignatureInfo.CommitmentType.PROOF_OF_APPROVAL);
+        final var pkcs7 = new Pkcs7PdfSigner(rsa.getPrivate(), new X509Certificate[]{rsaCert}, future);
+        Assertions.assertThrows(IllegalArgumentException.class, () -> pkcs7.sign(new ByteArrayInputStream(CONTENT)), "a signing time in 2050 is not signed as 1950");
+    }
 }
