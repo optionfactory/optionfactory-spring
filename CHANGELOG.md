@@ -296,6 +296,11 @@
 
 ## `marshaling-jaxb`
 
+*   [FIX] **`XsdDecimalToLongCents` reads `xs:decimal` amounts strictly.** It parsed the longest
+    number at the start of the value and ignored the rest: `12abc` was 1200 cents, `1,000` was 100,
+    `1E2` was accepted, fractions of a cent were truncated and amounts beyond a `long` overflowed,
+    while a leading `+` and surrounding whitespace, valid in `xs:decimal`, were rejected. The whole
+    value must now match the `xs:decimal` lexical form and be a whole amount of cents within range.
 *   [DOC] **The readme lists the adapters that exist.** It listed an `XsdTimeToLocalTime` adapter
     that does not exist, and omitted `money.XsdDecimalToLongCents`.
 
@@ -329,6 +334,14 @@
     state that the endpoint is open by design, that a report carries the principal of the session
     cookie sent with it, and that `SameSite=Lax`/`Strict` session cookies keep other sites from
     posting reports attributed to a visitor, while `SameSite=None` does not.
+
+## `thymeleaf`
+
+*   [FIX] **`Money.parseCents` reads amounts strictly, and `Money` rounds half-up.** Parsing
+    ignored trailing text (`12abc` was 1200 cents), did not check grouping (`1.2.3,4` was 12340)
+    and truncated fractions of a cent (`1,999` was 199); it now requires a whole amount, grouped
+    by thousands or not, with at most two decimals, surrounding spaces aside. Formatting rounded
+    half-even, so hiding the cents showed `1234,50` as `1.234`; it now rounds half-up (`1.235`).
 
 ## `applications-web-tomcat`
 

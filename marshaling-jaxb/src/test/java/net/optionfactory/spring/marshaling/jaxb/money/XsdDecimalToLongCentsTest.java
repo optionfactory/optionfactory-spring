@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class XsdDecimalToLongCentsTest {
 
@@ -18,22 +19,24 @@ public class XsdDecimalToLongCentsTest {
                 Arguments.of("1", 100L),
                 Arguments.of("0.1", 10L),
                 Arguments.of("0.01", 1L),
-                Arguments.of("0.001", 0L),
-                Arguments.of("0.019", 1L),
                 Arguments.of("123", 12300L),
                 Arguments.of("123.4", 12340L),
                 Arguments.of("123.40", 12340L),
                 Arguments.of("123.04", 12304L),
                 Arguments.of("12345.06", 1234506L),
                 Arguments.of("-1.5", -150L),
-                Arguments.of("-0.019", -1L)
+                Arguments.of("+1.5", 150L),
+                Arguments.of("1.", 100L),
+                Arguments.of(".5", 50L),
+                Arguments.of("0.010", 1L),
+                Arguments.of(" 12.5 ", 1250L)
         );
     }
 
     @ParameterizedTest
     @MethodSource("unmarshalData")
     public void unmarshal(String input, Long expected) {
-        Assertions.assertEquals(expected, adapter.unmarshal(input), "decimal digits past the cents are truncated toward zero");
+        Assertions.assertEquals(expected, adapter.unmarshal(input), "a value in the xs:decimal lexical form is read in cents");
     }
 
     public static Stream<Arguments> marshalData() {
@@ -76,4 +79,10 @@ public class XsdDecimalToLongCentsTest {
         }
     }
 
+
+    @ParameterizedTest
+    @ValueSource(strings = {"12abc", "1,000", "1E2", "0.001", "-0.019", ".", "-", "1 000", "92233720368547758.08"})
+    public void rejectsWhatIsNotAnAmountInCents(String input) {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> adapter.unmarshal(input), "trailing text, grouping, exponents, fractions of a cent and amounts beyond a long are rejected, not truncated");
+    }
 }

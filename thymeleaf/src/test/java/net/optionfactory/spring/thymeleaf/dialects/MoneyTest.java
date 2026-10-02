@@ -2,6 +2,7 @@ package net.optionfactory.spring.thymeleaf.dialects;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormatSymbols;
+import java.util.List;
 import java.util.Locale;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -63,5 +64,24 @@ public class MoneyTest {
         final var english = new Money(() -> DecimalFormatSymbols.getInstance(Locale.ENGLISH));
         Assertions.assertEquals("1,234.56", english.formatCents(123456), "the strategy separators are used for formatting");
         Assertions.assertEquals(123456, english.parseCents("1,234.56"), "the strategy separators are used for parsing");
+    }
+
+    @Test
+    public void parseCentsRejectsWhatIsNotAnAmount() {
+        for (final var value : List.of("12abc", "1.2.3,4", "1,999", "12.34", "1.23,45", "-", ",")) {
+            Assertions.assertThrows(IllegalArgumentException.class, () -> money.parseCents(value), "trailing text, misplaced grouping and fractions of a cent are rejected, got through: " + value);
+        }
+    }
+
+    @Test
+    public void parseCentsAcceptsSurroundingSpacesAndOneDecimal() {
+        Assertions.assertEquals(123450, money.parseCents(" 1.234,5 "), "surrounding spaces are ignored and one decimal is tens of cents");
+    }
+
+    @Test
+    public void formatCentsHidingCentsRoundsHalfUp() {
+        Assertions.assertEquals("1.235", money.formatCents(123450, true), "half a unit rounds up, 1234,50 shows as 1.235");
+        Assertions.assertEquals("1.236", money.formatCents(123550, true), "half a unit rounds up, 1235,50 shows as 1.236");
+        Assertions.assertEquals("-1.235", money.formatCents(-123450, true), "half a unit rounds away from zero for negative amounts");
     }
 }

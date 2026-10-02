@@ -2,9 +2,10 @@ package net.optionfactory.spring.marshaling.jaxb.money;
 
 import jakarta.xml.bind.annotation.adapters.XmlAdapter;
 import java.math.BigDecimal;
+import java.util.regex.Pattern;
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.text.ParseException;
 import java.util.Locale;
 
 /// Adapts an `xs:decimal` amount of currency units to a `Long` number of cents (hundredths).
@@ -26,30 +27,38 @@ import java.util.Locale;
 /// ```
 public class XsdDecimalToLongCents extends XmlAdapter<String, Long> {
 
+    private static final Pattern XSD_DECIMAL = Pattern.compile("[+-]?(\\d+(\\.\\d*)?|\\.\\d+)");
     private static final DecimalFormatSymbols XSD_DECIMAL_SYMBOLS = DecimalFormatSymbols.getInstance(Locale.ROOT);
 
     static {
         XSD_DECIMAL_SYMBOLS.setDecimalSeparator('.');
     }
 
+    /// Reads an amount in the `xs:decimal` lexical form, `[+-]?(\d+(\.\d*)?|\.\d+)` once the
+    /// surrounding whitespace is collapsed, into cents.
+    ///
+    /// The whole value must be an amount: trailing text, grouping separators and exponents are
+    /// rejected, and so are fractions of a cent (`0.019`) rather than truncated, and amounts beyond
+    /// a `long` of cents rather than overflowed. Trailing zeros past the cents are accepted:
+    /// `0.010` is 1 cent.
+    ///
     /// @param value the lexical decimal amount
     /// @return the amount in cents, or `null` for a `null` value
-    /// @throws IllegalArgumentException when no number can be read from the start of the value
+    /// @throws IllegalArgumentException when the value is not an `xs:decimal` amount in whole cents
     @Override
     public Long unmarshal(String value) {
         if (value == null) {
             return null;
         }
-
-        final var decimalFormat = new DecimalFormat("0.##", XSD_DECIMAL_SYMBOLS);
-        decimalFormat.setParseBigDecimal(true);
-        try {
-            final BigDecimal parsed = (BigDecimal) decimalFormat.parse(value);
-            return parsed.movePointRight(2).longValue();
-        } catch (ParseException ex) {
+        final var trimmed = value.strip();
+        if (!XSD_DECIMAL.matcher(trimmed).matches()) {
             throw new IllegalArgumentException(String.format("Unparseable decimal value: %s", value));
         }
-
+        try {
+            return new BigDecimal(trimmed.endsWith(".") ? trimmed + "0" : trimmed).movePointRight(2).setScale(0, RoundingMode.UNNECESSARY).longValueExact();
+        } catch (ArithmeticException ex) {
+            throw new IllegalArgumentException(String.format("Decimal value is not a whole amount of cents within range: %s", value), ex);
+        }
     }
 
     /// @param cents the amount in cents

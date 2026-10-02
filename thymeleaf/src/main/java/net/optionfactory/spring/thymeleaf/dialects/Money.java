@@ -1,9 +1,10 @@
 package net.optionfactory.spring.thymeleaf.dialects;
 
 import java.math.BigDecimal;
+import java.util.regex.Pattern;
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.text.ParseException;
 import java.util.function.Supplier;
 
 /// Parses and formats money amounts, kept as `long` cents or as [BigDecimal] units, with the
@@ -44,23 +45,32 @@ public class Money {
 
     /// Parses an amount in units, such as `1.234,56`, into cents.
     ///
-    /// The parsing is lenient: grouping separators are optional and not checked for position, a
-    /// leading minus sign is accepted, and the parsing stops at the first character that does not
-    /// belong to a number, ignoring the rest (`12abc` is 1200 cents). Decimals beyond the cents
-    /// are truncated, not rounded: `1,999` is 199 cents.
+    /// The whole value, surrounding spaces aside, must be an amount: an optional leading minus
+    /// sign, the units either without grouping or grouped by thousands with the grouping separator
+    /// in the right places, and optionally the decimal separator followed by one or two digits.
+    /// Trailing text (`12abc`), misplaced grouping (`1.2.3`) and fractions of a cent (`1,999`) are
+    /// rejected rather than ignored or truncated, and so are amounts beyond a `long` of cents.
     ///
     /// @param value the amount, with the separators of the strategy
     /// @return the amount in cents
     /// @throws IllegalArgumentException with a message in Italian, meant for the user, when the
-    /// value does not start with a number
+    /// value is not such an amount
     public long parseCents(String value) {
-        final var decimalFormat = new DecimalFormat("#,##0.##", symbolsStrategy.get());
-        decimalFormat.setParseBigDecimal(true);
-
+        final var symbols = symbolsStrategy.get();
+        final var grouping = Pattern.quote(String.valueOf(symbols.getGroupingSeparator()));
+        final var decimal = Pattern.quote(String.valueOf(symbols.getDecimalSeparator()));
+        final var minus = Pattern.quote(String.valueOf(symbols.getMinusSign()));
+        final var amount = Pattern.compile("(" + minus + ")?(\\d+|\\d{1,3}(" + grouping + "\\d{3})+)(" + decimal + "(\\d{1,2}))?");
+        final var matcher = amount.matcher(value == null ? "" : value.strip());
+        if (!matcher.matches()) {
+            throw new IllegalArgumentException("Specificare una cifra valida (es. 1234,56)");
+        }
+        final var units = matcher.group(2).replaceAll(grouping, "");
+        final var cents = matcher.group(5) == null ? "" : matcher.group(5);
         try {
-            final BigDecimal euros = (BigDecimal) decimalFormat.parse(value);
-            return euros.multiply(new BigDecimal(100)).longValue();
-        } catch (ParseException ex) {
+            final var parsed = new BigDecimal(units + (cents.isEmpty() ? "" : "." + cents)).movePointRight(2).longValueExact();
+            return matcher.group(1) == null ? parsed : -parsed;
+        } catch (ArithmeticException ex) {
             throw new IllegalArgumentException("Specificare una cifra valida (es. 1234,56)");
         }
     }
@@ -86,18 +96,19 @@ public class Money {
         return format(bd, false);
     }
 
-    /// Formats an amount, rounding it to the shown digits with the half-even rule of
-    /// `DecimalFormat`: hiding the cents, `1234,50` becomes `1.234` while `1235,50` becomes
-    /// `1.236`.
+    /// Formats an amount, rounding it to the shown digits half-up, away from zero on a tie: hiding
+    /// the cents, `1234,50` becomes `1.235` and `-1234,50` becomes `-1.235`.
     ///
     /// @param bd the amount in units
     /// @param hideCents whether to show no decimals instead of two
     /// @return the amount, grouped by thousands
     public String format(BigDecimal bd, boolean hideCents) {
         final var symbols = symbolsStrategy.get();
-        return hideCents
-                ? new DecimalFormat("#,###", symbols).format(bd)
-                : new DecimalFormat("#,##0.00", symbols).format(bd);
+        final var format = hideCents
+                ? new DecimalFormat("#,###", symbols)
+                : new DecimalFormat("#,##0.00", symbols);
+        format.setRoundingMode(RoundingMode.HALF_UP);
+        return format.format(bd);
     }
 
 }
