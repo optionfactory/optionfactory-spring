@@ -17,8 +17,10 @@ import net.optionfactory.spring.downstream.plugin.mapping.TypeRegistry;
 ///
 /// For a class, in order of precedence:
 /// 1. an aliased class is referenced by its simple name, the alias being declared by the emitter;
-/// 2. a translated class is replaced by the TypeScript type of its translation target (a
-///    well-known java type or a payload), or else by the target simple name;
+/// 2. a translated class is replaced by the TypeScript type of its translation target: the
+///    simple name of an aliased target, the flat name of a payload, the TypeScript type of a
+///    well-known java type (primitives included), an array of the mapping of its component for
+///    an array (`byte[]` becomes `number[]`), or else the target simple name;
 /// 3. a payload is referenced by its [flat name][TypeRegistry.TargetName#flatName], and an enum
 ///    that is not a payload by its simple name;
 /// 4. strings and `char` become `string`, numeric primitives, their wrappers, `BigDecimal` and
@@ -28,12 +30,8 @@ import net.optionfactory.spring.downstream.plugin.mapping.TypeRegistry;
 /// `Optional<T>` becomes `T` (the emitter marks the property optional), a `Collection<T>` or an
 /// array becomes `T[]`, a `Map<K, V>` becomes `Record<K, V>` with `K` replaced by `string` unless
 /// it maps to `string`, `number`, an enum or an alias. Other parameterized types keep their
-/// arguments, but a generic class translated to a TypeScript primitive drops them.
+/// arguments, but a generic class translated to a TypeScript primitive or to an array drops them.
 /// Type variables keep their name and wildcards become their upper bound, or `any`.
-///
-/// A translation target with no TypeScript counterpart is used by simple name verbatim, e.g.
-/// `byte[]` stays `byte[]`, which TypeScript does not know. A translation whose target is itself
-/// aliased references the simple name of the translated class, not the one of the alias.
 public class TypeScriptTypeTranslator {
 
     private final TypeRegistry registry;
@@ -68,7 +66,7 @@ public class TypeScriptTypeTranslator {
                 final String rawFqn = rawClass.getName();
                 if (translations.containsKey(rawFqn) || typeAliases.containsKey(rawFqn)) {
                     final String translatedRaw = translate(rawClass);
-                    if (TS_PRIMITIVES.contains(translatedRaw)) {
+                    if (TS_PRIMITIVES.contains(translatedRaw) || translatedRaw.endsWith("[]")) {
                         return translatedRaw;
                     }
                     final var typeArgs = Arrays.stream(pt.getActualTypeArguments())
@@ -108,36 +106,15 @@ public class TypeScriptTypeTranslator {
             if (typeAliases.containsKey(originalFqn)) {
                 return simpleName(originalFqn);
             }
-
-            final var fqn = translations.getOrDefault(originalFqn, originalFqn);
-
-            if (!fqn.equals(originalFqn) && typeAliases.containsKey(fqn)) {
-                return simpleName(originalFqn);                
+            if (translations.containsKey(originalFqn) && !translations.get(originalFqn).equals(originalFqn)) {
+                return translateTarget(translations.get(originalFqn));
             }
-
-            if (!fqn.equals(originalFqn) && registry.isRegistered(fqn)) {
-                return registry.getTargetName(fqn).flatName();
-            }
-
-            if (fqn.equals(originalFqn) && (registry.isRegistered(clazz) || clazz.isEnum())) {
+            if (registry.isRegistered(clazz) || clazz.isEnum()) {
                 return registry.isRegistered(clazz)
                         ? registry.getTargetName(clazz).flatName()
                         : clazz.getSimpleName();
             }
-            return switch (fqn) {
-                case "java.lang.String", "char", "java.lang.Character" ->
-                    "string";
-                case "int", "long", "double", "float", "short", "byte", "java.lang.Integer", "java.lang.Long", "java.lang.Double", "java.lang.Float", "java.lang.Short", "java.lang.Byte", "java.math.BigDecimal", "java.math.BigInteger" ->
-                    "number";
-                case "boolean", "java.lang.Boolean" ->
-                    "boolean";
-                case "java.lang.Object", "java.util.Optional" ->
-                    "any";
-                case "void", "java.lang.Void" ->
-                    "void";
-                default ->
-                    fqn.equals(originalFqn) ? "any" : simpleName(fqn);
-            };
+            return wellKnown(originalFqn).orElse("any");
         }
         if (type instanceof TypeVariable<?> tv) {
             return tv.getName();
@@ -149,6 +126,36 @@ public class TypeScriptTypeTranslator {
             return "any";
         }
         return "any";
+    }
+
+    private String translateTarget(String target) {
+        if (target.endsWith("[]")) {
+            return "%s[]".formatted(translateTarget(target.substring(0, target.length() - 2)));
+        }
+        if (typeAliases.containsKey(target)) {
+            return simpleName(target);
+        }
+        if (registry.isRegistered(target)) {
+            return registry.getTargetName(target).flatName();
+        }
+        return wellKnown(target).orElseGet(() -> simpleName(target));
+    }
+
+    private static Optional<String> wellKnown(String fqn) {
+        return Optional.ofNullable(switch (fqn) {
+            case "java.lang.String", "char", "java.lang.Character" ->
+                "string";
+            case "int", "long", "double", "float", "short", "byte", "java.lang.Integer", "java.lang.Long", "java.lang.Double", "java.lang.Float", "java.lang.Short", "java.lang.Byte", "java.math.BigDecimal", "java.math.BigInteger" ->
+                "number";
+            case "boolean", "java.lang.Boolean" ->
+                "boolean";
+            case "java.lang.Object", "java.util.Optional" ->
+                "any";
+            case "void", "java.lang.Void" ->
+                "void";
+            default ->
+                null;
+        });
     }
 
     /// @param fqn a binary or canonical class name

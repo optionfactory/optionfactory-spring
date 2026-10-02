@@ -50,13 +50,12 @@ public interface Downstream {
     ///   an enum), so it is usually paired with a `translations` entry;
     /// - on an endpoint parameter: the parameter type is not walked into, e.g. for a `Principal`
     ///   or a framework type resolved by the server;
-    /// - on a public field of a class: the field is left out of the generated type.
+    /// - on a public field or a getter of a class, or on a record component: the property is left
+    ///   out of the generated type and its type is not walked into.
     ///
-    /// The annotation targets neither methods nor record components, so a getter cannot be
-    /// ignored (a getter of an ignored field still generates the property) and neither can a
-    /// record component: on a component the annotation only lands on the private field and the
-    /// canonical constructor parameter, which the generation does not look at.
-    @Target({ElementType.TYPE, ElementType.FIELD, ElementType.PARAMETER})
+    /// A field and its getter are looked at separately: ignoring one of them leaves out the
+    /// property only when the other is not public, or is ignored too.
+    @Target({ElementType.TYPE, ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.RECORD_COMPONENT})
     @Retention(RetentionPolicy.RUNTIME)
     @interface Ignore {
     }

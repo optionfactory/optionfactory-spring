@@ -96,4 +96,15 @@ public class PayloadsDiscoveryTest {
     public void ignoredTypesAreNeitherCollectedNorWalked() throws Exception {
         Assertions.assertEquals(Set.of(), discover("ignored"), "an @Downstream.Ignore type is not collected and its fields are not walked");
     }
+
+    @Test
+    public void theSourcePackageMatchesWholePackageNamesOnly() throws Exception {
+        final var method = Api.class.getMethod("arrays");
+        final var packageName = PayloadsDiscoveryTest.class.getPackageName();
+        final var truncated = packageName.substring(0, packageName.length() - 1);
+        Assertions.assertEquals(Set.of(), new Payloads(truncated).discover(List.of(method)), "a source package does not match a package whose last segment merely starts with it");
+        final var parent = packageName.substring(0, packageName.lastIndexOf('.'));
+        Assertions.assertEquals(Set.of(Item.class, Detail.class, Kind.class), new Payloads(parent).discover(List.of(method)), "a source package matches its subpackages");
+        Assertions.assertEquals(Set.of(Item.class, Detail.class, Kind.class), new Payloads(parent + ".").discover(List.of(method)), "a source package ending with a dot matches its subpackages");
+    }
 }

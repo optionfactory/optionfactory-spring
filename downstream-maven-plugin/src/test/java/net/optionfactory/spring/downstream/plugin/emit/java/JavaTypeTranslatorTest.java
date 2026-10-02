@@ -16,6 +16,11 @@ public class JavaTypeTranslatorTest {
         public T value;
     }
 
+    public static class Other<T> {
+
+        public T value;
+    }
+
     public record Dto(String name) {
 
     }
@@ -31,13 +36,14 @@ public class JavaTypeTranslatorTest {
         public LocalDate date;
         public LocalDate[][] dates;
         public Wrapper<Dto> wrapped;
+        public Other<Dto> other;
         public List<Dto> list;
         public Outer.Inner inner;
         public String untouched;
     }
 
     private static String translate(String field, Map<String, String> translations) throws Exception {
-        final var registry = new TypeRegistry(Set.of(Dto.class, Outer.class, Outer.Inner.class), "net.generated", Nesting.NESTED);
+        final var registry = new TypeRegistry(Set.of(Dto.class, Outer.class, Outer.Inner.class, Wrapper.class), "net.generated", Nesting.NESTED);
         return new JavaTypeTranslator(registry, translations).translate(Fields.class.getField(field).getAnnotatedType()).toString();
     }
 
@@ -63,5 +69,20 @@ public class JavaTypeTranslatorTest {
     @Test
     public void binaryNamesOfNestedTranslationTargetsAreAccepted() throws Exception {
         Assertions.assertEquals("com.example.Outer.Target", translate("date", Map.of(LocalDate.class.getName(), "com.example.Outer$Target")), "a binary nested class name is turned into a nested type reference");
+    }
+
+    @Test
+    public void parameterizedPayloadsAreReplacedByTheirGeneratedCounterpart() throws Exception {
+        Assertions.assertEquals("net.generated.Wrapper<net.generated.Dto>", translate("wrapped", Map.of()), "the raw class of a parameterized payload is replaced by its generated counterpart");
+    }
+
+    @Test
+    public void genericClassesTranslatedToAPayloadReferenceTheGeneratedPayload() throws Exception {
+        Assertions.assertEquals("net.generated.Wrapper<net.generated.Dto>", translate("other", Map.of(Other.class.getName(), Wrapper.class.getName())), "a generic class translated to a payload references the generated payload");
+    }
+
+    @Test
+    public void binaryNamesOfGenericTranslationTargetsAreAccepted() throws Exception {
+        Assertions.assertEquals("com.example.Outer.Box<net.generated.Dto>", translate("other", Map.of(Other.class.getName(), "com.example.Outer$Box")), "a binary nested class name targeted by a generic class is turned into a nested type reference");
     }
 }

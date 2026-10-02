@@ -51,12 +51,13 @@ public class Reflection {
 
     /// Lists the generated properties of a type.
     ///
-    /// For a record, its components in declaration order. Otherwise, walking from the topmost
-    /// superclass below `stop` down to `clazz`, its public instance non-transient fields and its
-    /// public instance getters: `getX()` returning anything but `void`, and `isX()` returning
-    /// `boolean` or `Boolean`. A getter replaces a field or an inherited property with the same
-    /// name, keeping its position and adding up their nullability. Synthetic members and fields
-    /// annotated with `@Downstream.Ignore` are skipped. Fields keep their declaration order, while
+    /// For a record, its components not annotated with `@Downstream.Ignore`, in declaration order.
+    /// Otherwise, walking from the topmost superclass below `stop` down to `clazz`, its public
+    /// instance non-transient fields and its public instance getters: `getX()` returning anything
+    /// but `void`, and `isX()` returning `boolean` or `Boolean`. A getter replaces a field or an
+    /// inherited property with the same name, keeping its position and adding up their
+    /// nullability. Synthetic members, and fields and getters annotated with `@Downstream.Ignore`,
+    /// are skipped. Fields keep their declaration order, while
     /// getters follow `getDeclaredMethods`, whose order the JVM does not specify.
     ///
     /// @param clazz the payload type

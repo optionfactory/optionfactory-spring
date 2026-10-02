@@ -112,6 +112,19 @@ public class TypeScriptTypeTranslatorTest {
     }
 
     @Test
+    public void aTranslationToAnAliasedClassReferencesTheAlias() throws Exception {
+        Assertions.assertEquals("IsoDate", translate("date", Map.of(LocalDate.class.getName(), "com.example.IsoDate"), Map.of("com.example.IsoDate", "string")), "a translation targeting an aliased class references the declared alias, not the translated class");
+    }
+
+    @Test
+    public void translationTargetsAreMappedToTypeScript() throws Exception {
+        Assertions.assertEquals("number[]", translate("date", Map.of(LocalDate.class.getName(), "byte[]"), Map.of()), "an array of a java primitive becomes an array of its TypeScript type");
+        Assertions.assertEquals("string[][]", translate("date", Map.of(LocalDate.class.getName(), "java.lang.String[][]"), Map.of()), "a multidimensional array target is mapped component by component");
+        Assertions.assertEquals("Money[]", translate("date", Map.of(LocalDate.class.getName(), Money.class.getName() + "[]"), Map.of()), "an array of a payload becomes an array of its generated name");
+        Assertions.assertEquals("number", translate("date", Map.of(LocalDate.class.getName(), "long"), Map.of()), "a java primitive becomes its TypeScript type");
+    }
+
+    @Test
     public void simpleNameStripsPackagesAndOuterClasses() {
         Assertions.assertEquals("Inner", TypeScriptTypeTranslator.simpleName("com.example.Outer$Inner"), "both the package and the binary outer class are stripped");
         Assertions.assertEquals("Plain", TypeScriptTypeTranslator.simpleName("Plain"), "a name without package is returned as is");

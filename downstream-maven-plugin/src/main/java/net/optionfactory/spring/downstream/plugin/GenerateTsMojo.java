@@ -42,7 +42,8 @@ import org.apache.maven.project.MavenProject;
 ///   `PREFIXED` both prefix nested types with them;
 /// - `translations`: source class binary name to replacement java type. The replacement becomes
 ///   the TypeScript type of a well-known java type (`string`, `number`, `boolean`, `any`,
-///   `void`), the generated name of a payload, or else its simple name;
+///   `void`), the name of an aliased class, the generated name of a payload, an array of the
+///   mapping of its component (`byte[]` becomes `number[]`), or else its simple name;
 /// - `typeAliases`: source class binary name to TypeScript type, declared as
 ///   `export type {SimpleName} = {type};` and referenced by that simple name. An alias wins over
 ///   a translation of the same class.

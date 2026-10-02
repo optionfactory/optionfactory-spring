@@ -22,11 +22,9 @@ import net.optionfactory.spring.downstream.plugin.mapping.TypeRegistry.TargetNam
 /// 3. itself.
 ///
 /// Arrays are mapped component by component, and parameterized types argument by argument. The
-/// raw class of a parameterized type is replaced by its translation only, used as is: it is
-/// neither looked up among the payloads nor read as a binary name, and the mapped arguments are
-/// kept unless the translation is a primitive or an array. A parameterized payload that is not
-/// translated keeps its source raw class: a `Page<User>` property where `Page` is a payload is
-/// generated as the source `Page` of the generated `User`, not as the generated `Page`.
+/// raw class of a parameterized type is mapped as any other class (a `Page<User>` property where
+/// `Page` is a payload is generated as the generated `Page` of the generated `User`), and the
+/// mapped arguments are kept unless it maps to a primitive or an array.
 public class JavaTypeTranslator {
 
     private final TypeRegistry registry;
@@ -45,16 +43,12 @@ public class JavaTypeTranslator {
         final var type = annotatedType.getType();
         if (annotatedType instanceof AnnotatedParameterizedType apt && type instanceof ParameterizedType pType) {
             final var typeArgs = Arrays.stream(apt.getAnnotatedActualTypeArguments()).map(this::translate).toArray(TypeName[]::new);
-            if (pType.getRawType() instanceof Class<?> rawClass && translations.containsKey(rawClass.getName())) {
-                TypeName substitutedRaw = resolveTarget(translations.get(rawClass.getName()));
-                if (substitutedRaw instanceof ClassName className && typeArgs.length > 0) {
+            if (pType.getRawType() instanceof Class<?> rawClass) {
+                final var rawType = resolveClassType(rawClass);
+                if (rawType instanceof ClassName className && typeArgs.length > 0) {
                     return ParameterizedTypeName.get(className, typeArgs);
                 }
-                return substitutedRaw;
-            }
-            final var rawType = TypeName.get(pType.getRawType());
-            if (rawType instanceof ClassName className) {
-                return ParameterizedTypeName.get(className, typeArgs);
+                return rawType;
             }
         }
         if (type instanceof Class<?> clazz) {

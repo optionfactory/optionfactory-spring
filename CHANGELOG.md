@@ -243,6 +243,30 @@
 *   [DOC] **The readme lists the adapters that exist.** It listed an `XsdTimeToLocalTime` adapter
     that does not exist, and omitted `money.XsdDecimalToLongCents`.
 
+## `downstream`
+
+*   [FIX] **`@Downstream.Ignore` works on record components and getters.** The annotation did not
+    target `RECORD_COMPONENT` nor `METHOD`: on a record component it did nothing, and a getter
+    could not be annotated at all. Both now leave the property out of the generated type and
+    stop the walk into its type.
+
+## `downstream-maven-plugin`
+
+*   [FIX] **`generate-dtos` references the generated class for parameterized payloads.** A
+    `Page<User>` property where `Page` is a payload was generated as the server's `Page` of the
+    generated `User`; a generic class translated to a payload, or to a binary `Outer$Inner` name,
+    was not resolved either. The raw class now goes through the same mapping as any other class.
+*   [FIX] **`generate-ts` maps translation targets to TypeScript.** A target with no TypeScript
+    counterpart was emitted verbatim (the readme's own `MultipartFile` → `byte[]` example produced
+    `byte[]`); array targets are now mapped component by component (`byte[]` becomes `number[]`).
+    A translation targeting an aliased class referenced the simple name of the translated class,
+    an undeclared type; it now references the alias.
+*   [FIX] **`sourceBasePackage` matches whole package names.** The match was a plain string
+    prefix, so `com.example` also collected payloads from `com.examples`; it now matches the
+    package and its subpackages only.
+*   [DOC] **The readme marks `targetClientName` as required for `generate-ts`**, as the mojo
+    always did, and documents `typeAliases`.
+
 # version 28.2
 
 ## Dependencies

@@ -27,6 +27,6 @@ public class MyController {
 }
 ```
 
-Use `@Downstream.Ignore` to exclude specific types or fields, and `@Downstream.Rename` to change the name of a generated type.
+Use `@Downstream.Ignore` to exclude specific types, properties (fields, getters, record components) or endpoint parameters, and `@Downstream.Rename` to change the name of a generated type.
 
 

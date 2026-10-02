@@ -35,6 +35,22 @@ public class ReflectionTest {
         public String ignored;
     }
 
+    public record IgnoringRecord(String kept, @Downstream.Ignore String skipped) {
+
+    }
+
+    public static class IgnoringBean {
+
+        public String getVisible() {
+            return null;
+        }
+
+        @Downstream.Ignore
+        public String getHidden() {
+            return null;
+        }
+    }
+
     public static class Bean {
 
         private String name;
@@ -146,5 +162,17 @@ public class ReflectionTest {
         Assertions.assertEquals(List.of("a", "b"), names(fields), "records expose their components only, getters are not looked at");
         Assertions.assertTrue(field(fields, "a").nullable(), "a @Nullable component is nullable");
         Assertions.assertTrue(field(fields, "b").optional(), "an Optional component is optional");
+    }
+
+    @Test
+    public void ignoredRecordComponentsAreSkipped() {
+        final var fields = Reflection.candidateFields(IgnoringRecord.class, Object.class);
+        Assertions.assertEquals(List.of("kept"), names(fields), "a record component annotated with @Downstream.Ignore is not a property");
+    }
+
+    @Test
+    public void ignoredGettersAreSkipped() {
+        final var fields = Reflection.candidateFields(IgnoringBean.class, Object.class);
+        Assertions.assertEquals(List.of("visible"), names(fields), "a getter annotated with @Downstream.Ignore is not a property");
     }
 }

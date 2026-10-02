@@ -19,15 +19,17 @@ import net.optionfactory.spring.downstream.plugin.reflection.Reflection;
 ///
 /// Only classes whose package starts with the source package are collected, so `String`, `List`
 /// or a framework type stop the walk, as do annotation types, classes annotated with
-/// `@Downstream.Ignore` and parameters annotated with it. The match is a plain prefix match on the
-/// package name: `com.example` also matches `com.examples`.
+/// `@Downstream.Ignore` and parameters annotated with it. The source package matches itself and
+/// its subpackages only: `com.example` matches `com.example.dto`, but not `com.examples`.
 public class Payloads {
 
     private final String sourcePackage;
+    private final String subpackagesPrefix;
 
-    /// @param sourcePackage the package prefix of the payload types to collect
+    /// @param sourcePackage the package of the payload types to collect, subpackages included
     public Payloads(String sourcePackage) {
         this.sourcePackage = sourcePackage;
+        this.subpackagesPrefix = sourcePackage.isEmpty() || sourcePackage.endsWith(".") ? sourcePackage : sourcePackage + ".";
     }
 
     /// @param endpoints the endpoint methods
@@ -47,7 +49,7 @@ public class Payloads {
     }
 
     private void registerIfPayload(Set<Class<?>> result, AnnotatedType annotatedType) {
-        if (annotatedType == null || annotatedType.isAnnotationPresent(Downstream.Ignore.class)) {
+        if (annotatedType == null) {
             return;
         }
         if (annotatedType instanceof AnnotatedParameterizedType apt) {
@@ -72,7 +74,7 @@ public class Payloads {
         if (clazz.isAnnotationPresent(Downstream.Ignore.class)) {
             return;
         }
-        if (!clazz.getPackageName().startsWith(sourcePackage) || clazz.isAnnotation()) {
+        if (!inSourcePackage(clazz) || clazz.isAnnotation()) {
             return;
         }
         if (!result.add(clazz)) {
@@ -89,4 +91,8 @@ public class Payloads {
                 .forEach(field -> registerIfPayload(result, field.annotatedType()));
     }
 
+    private boolean inSourcePackage(Class<?> clazz) {
+        final var packageName = clazz.getPackageName();
+        return packageName.equals(sourcePackage) || packageName.startsWith(subpackagesPrefix);
+    }
 }
