@@ -20,6 +20,17 @@ import net.optionfactory.spring.upstream.expressions.BooleanExpression;
 import net.optionfactory.spring.upstream.expressions.Expressions;
 import org.springframework.context.ApplicationEventPublisher;
 
+/// Raises the alerts declared by `@Upstream.AlertOnResponse` and `@Upstream.AlertOnRemotingError`:
+/// publishes an [UpstreamAlertEvent] and tags the current observation with `alert=response` or
+/// `alert=remoting`.
+///
+/// Always registered by [net.optionfactory.spring.upstream.UpstreamBuilder], as the innermost
+/// interceptor. Raising an alert does not change the outcome of the call: a matching response is
+/// returned (flagged with [ResponseContext#withAlert()], so that it is not reported twice) and a
+/// failure is rethrown.
+///
+/// An exception thrown after the exchange, by the response condition or by the publisher, is
+/// however handled as a remoting error of the same invocation, and fails the call.
 public class UpstreamAlertInterceptor implements UpstreamHttpInterceptor {
 
     private final Map<Method, BooleanExpression> remotingConfs = new ConcurrentHashMap<>();
@@ -27,11 +38,19 @@ public class UpstreamAlertInterceptor implements UpstreamHttpInterceptor {
     private final ApplicationEventPublisher publisher;
     private final ObservationRegistry observations;
 
+    /// @param publisher receives the alert events
+    /// @param observations the registry whose current observation is tagged with the alert kind
     public UpstreamAlertInterceptor(ApplicationEventPublisher publisher, ObservationRegistry observations) {
         this.publisher = publisher;
         this.observations = observations;
     }
 
+    /// Reads the `@Upstream.AlertOnResponse` and `@Upstream.AlertOnRemotingError` of every endpoint,
+    /// looked up on the method first and then on the interface hierarchy, and parses their conditions.
+    ///
+    /// @param k the proxied interface
+    /// @param expressions the expressions of the client
+    /// @param endpoints the endpoints of the client, by method
     @Override
     public void preprocess(Class<?> k, Expressions expressions, Map<Method, EndpointDescriptor> endpoints) {
         for (final var endpoint : endpoints.values()) {
@@ -45,6 +64,11 @@ public class UpstreamAlertInterceptor implements UpstreamHttpInterceptor {
         }
     }
 
+    /// @param invocation the invocation in progress
+    /// @param request the request to send
+    /// @param execution the rest of the chain
+    /// @return the response, flagged as alerted when it matched the endpoint condition
+    /// @throws IOException the failure of the exchange, rethrown after evaluating the remoting condition
     @Override
     public ResponseContext intercept(InvocationContext invocation, RequestContext request, UpstreamHttpRequestExecution execution) throws IOException {
         try {

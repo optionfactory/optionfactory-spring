@@ -30,11 +30,11 @@ public class TypeScriptEmitterPrecedenceTest {
         emitter.emit(registry);
 
         final File generatedFile = new File(tempDir, "spec.d.ts");
-        Assertions.assertTrue(generatedFile.exists(), "TypeScript definition file was not generated");
+        Assertions.assertTrue(generatedFile.exists(), "the TypeScript spec file is generated");
 
         final String contents = Files.readString(generatedFile.toPath());
 
-        Assertions.assertTrue(contents.contains("export type UUID = string;"), "TS Alias definitions missing from spec header");
-        Assertions.assertTrue(contents.contains("id: UUID;"), "Emitter incorrectly dropped raw primitive instead of referencing explicit Alias override");
+        Assertions.assertTrue(contents.contains("export type UUID = string;"), "the alias is declared in the spec header");
+        Assertions.assertTrue(contents.contains("id: UUID;"), "an alias takes precedence over a translation of the same type");
     }
 }

@@ -13,6 +13,18 @@ import net.optionfactory.spring.upstream.errors.RestClientUpstreamException;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.web.method.HandlerMethod;
 
+/// Applies a handler's [UpstreamProblems.Forward] and [UpstreamProblems.MapContext] declarations
+/// to the failure of an upstream call it made, a `RestClientUpstreamException`.
+///
+/// By default an upstream failure is answered as a `502` with an `UPSTREAM_ERROR` problem: the
+/// client is told that something behind the server failed, not what. When the upstream rejected
+/// the request because of the client's own input, a handler can forward the upstream's problems
+/// instead, with [UpstreamProblems.Forward], and rewrite their contexts to name the client's input
+/// rather than the upstream's, with [UpstreamProblems.MapContext]. The forward is applied first,
+/// then every matching mapping, in declaration order, each on the result of the previous.
+///
+/// Any other exception, and an upstream failure on a handler declaring neither, is returned
+/// unchanged. Registered by default through [UpstreamProblemsModule].
 public class UpstreamFailureTransformer implements FailureTransformer {
 
     private static final ParameterizedTypeReference<List<Problem>> PROBLEMS_LIST = new ParameterizedTypeReference<>() {
@@ -20,6 +32,12 @@ public class UpstreamFailureTransformer implements FailureTransformer {
     private final Map<HandlerMethod, Optional<UpstreamProblems.MapContext[]>> drops = new ConcurrentHashMap<>();
     private final Map<HandlerMethod, Optional<UpstreamProblems.Forward>> statuses = new ConcurrentHashMap<>();
 
+    /// @param saps the status and problems answered so far
+    /// @param request the current request, unused
+    /// @param response the current response, unused
+    /// @param handler the handler method, whose declarations are read once and cached
+    /// @param ex the exception being answered
+    /// @return the forwarded status and problems, contexts mapped, or `saps` when nothing applies
     @Override
     public HttpStatusAndProblems transform(HttpStatusAndProblems saps, HttpServletRequest request, HttpServletResponse response, HandlerMethod handler, Exception ex) {
         if (!(ex instanceof RestClientUpstreamException uex)) {
@@ -73,7 +91,7 @@ public class UpstreamFailureTransformer implements FailureTransformer {
                     case STRING_FIRST -> {
                         int index = problem.context.indexOf(annotation.source());
                         if (index < 0) {
-                            yield problem.context; // search string not found
+                            yield problem.context;
                         }
                         yield problem.context.substring(0, index) + annotation.target() + problem.context.substring(index + annotation.source().length());
                     }

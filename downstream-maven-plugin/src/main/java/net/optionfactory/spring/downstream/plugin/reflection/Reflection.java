@@ -17,8 +17,12 @@ import java.util.Map;
 import java.util.Optional;
 import net.optionfactory.spring.downstream.Downstream;
 
+/// Reflection helpers deciding which properties of a payload type are generated.
 public class Reflection {
 
+    /// @param clazz the class to start from
+    /// @param stop the superclass where to stop, excluded; `null` to go up to `Object` included
+    /// @return the class and its superclasses below `stop`, the topmost first
     public static Deque<Class<?>> superclasses(Class<?> clazz, Class<?> stop) {
         final var classes = new ArrayDeque<Class<?>>();
         while (clazz != null && clazz != stop) {
@@ -28,10 +32,36 @@ public class Reflection {
         return classes;
     }
 
+    /// A property of a payload type.
+    ///
+    /// Annotations are recognised by simple name, whatever their package: `Nullable` marks the
+    /// property nullable, `NonNull` and `NotNull` mark it non null.
+    ///
+    /// @param name the property name
+    /// @param type the generic type of the property
+    /// @param annotatedType the annotated type of the property, carrying type-use annotations
+    /// @param nullable true when the property, its type or (for a getter) its backing field is
+    /// annotated `Nullable`
+    /// @param nonNull true when the property, its type or (for a getter) its backing field is
+    /// annotated `NonNull` or `NotNull`
+    /// @param optional true when the property type is `Optional`
     public record CandidateField(String name, Type type, AnnotatedType annotatedType, boolean nullable, boolean nonNull, boolean optional) {
 
     }
 
+    /// Lists the generated properties of a type.
+    ///
+    /// For a record, its components in declaration order. Otherwise, walking from the topmost
+    /// superclass below `stop` down to `clazz`, its public instance non-transient fields and its
+    /// public instance getters: `getX()` returning anything but `void`, and `isX()` returning
+    /// `boolean` or `Boolean`. A getter replaces a field or an inherited property with the same
+    /// name, keeping its position and adding up their nullability. Synthetic members and fields
+    /// annotated with `@Downstream.Ignore` are skipped. Fields keep their declaration order, while
+    /// getters follow `getDeclaredMethods`, whose order the JVM does not specify.
+    ///
+    /// @param clazz the payload type
+    /// @param stop the superclass whose members, and its superclasses', are not looked at
+    /// @return the properties, empty when there is none
     public static List<CandidateField> candidateFields(Class<?> clazz, Class<?> stop) {
         final var candidates = new LinkedHashMap<String, CandidateField>();
 

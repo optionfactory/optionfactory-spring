@@ -31,6 +31,8 @@ import org.springframework.util.Assert;
 /// shared. The clock skew tolerated on `exp` and `nbf` defaults to 60 seconds.
 public sealed interface ClaimsPolicy permits ClaimsPolicy.Standard, ClaimsPolicy.Permissive, ClaimsPolicy.Custom {
 
+    /// The skew tolerated on `exp` and `nbf` unless configured otherwise: Nimbus' default, 60
+    /// seconds.
     Duration DEFAULT_CLOCK_SKEW = Duration.ofSeconds(DefaultJWTClaimsVerifier.DEFAULT_MAX_CLOCK_SKEW_SECONDS);
 
     /// @return the verifier enforcing this policy
@@ -100,6 +102,10 @@ public sealed interface ClaimsPolicy permits ClaimsPolicy.Standard, ClaimsPolicy
     /// @param clockSkew the skew tolerated on `exp` and `nbf`
     public record Standard(@Nullable String issuer, Set<String> audiences, Map<String, Object> exact, Set<String> required, Set<String> prohibited, Duration clockSkew) implements ClaimsPolicy {
 
+        /// Copies the collections, so that the policy stays immutable.
+        ///
+        /// @throws IllegalArgumentException when neither an issuer nor an audience is given, or the
+        /// clock skew is `null`
         public Standard {
             Assert.isTrue(issuer != null || !audiences.isEmpty(), "a standard claims policy requires an issuer or an audience");
             audiences = Set.copyOf(audiences);
@@ -109,33 +115,52 @@ public sealed interface ClaimsPolicy permits ClaimsPolicy.Standard, ClaimsPolicy
             Assert.notNull(clockSkew, "clockSkew cannot be null");
         }
 
+        /// @param issuer the `iss` required, replacing any configured before
+        /// @return a policy requiring that issuer
         public Standard issuer(String issuer) {
             Assert.hasText(issuer, "issuer cannot be empty");
             return new Standard(issuer, audiences, exact, required, prohibited, clockSkew);
         }
 
+        /// @param audience an `aud` the token may carry, added to those configured before
+        /// @param more further accepted audiences
+        /// @return a policy requiring the token to name at least one of all the audiences
         public Standard audience(String audience, String... more) {
             final var all = new HashSet<>(audiences);
             all.addAll(ClaimsPolicy.audiences(audience, more));
             return new Standard(issuer, all, exact, required, prohibited, clockSkew);
         }
 
+        /// The value is compared with `equals` against the claim as parsed from json, where every
+        /// integer is a `Long`: `exact("level", 1)` never matches, `exact("level", 1L)` does.
+        ///
+        /// @param claim a claim the token must carry; the issuer, when configured, takes precedence
+        /// over an exact `iss`
+        /// @param value the value it must hold
+        /// @return a policy also requiring that value
         public Standard exact(String claim, Object value) {
             return new Standard(issuer, audiences, with(exact, claim, value), required, prohibited, clockSkew);
         }
 
+        /// @param claim a claim the token must carry, whatever its value
+        /// @return a policy also requiring that claim
         public Standard require(String claim) {
             return new Standard(issuer, audiences, exact, with(required, claim), prohibited, clockSkew);
         }
 
+        /// @param claim a claim the token must not carry
+        /// @return a policy also prohibiting that claim
         public Standard prohibit(String claim) {
             return new Standard(issuer, audiences, exact, required, with(prohibited, claim), clockSkew);
         }
 
+        /// @param clockSkew the skew tolerated on `exp` and `nbf`, in whole seconds
+        /// @return a policy tolerating that skew
         public Standard clockSkew(Duration clockSkew) {
             return new Standard(issuer, audiences, exact, required, prohibited, clockSkew);
         }
 
+        /// @return a verifier requiring `exp`, the issuer and audiences, and the configured claims
         @Override
         public JWTClaimsSetVerifier<SecurityContext> verifier() {
             final var exactWithIssuer = issuer == null ? exact : with(exact, "iss", issuer);
@@ -151,6 +176,9 @@ public sealed interface ClaimsPolicy permits ClaimsPolicy.Standard, ClaimsPolicy
     /// @param clockSkew the skew tolerated on `exp` and `nbf`
     public record Permissive(Map<String, Object> exact, Set<String> required, Set<String> prohibited, Duration clockSkew) implements ClaimsPolicy {
 
+        /// Copies the collections, so that the policy stays immutable.
+        ///
+        /// @throws IllegalArgumentException when the clock skew is `null`
         public Permissive {
             exact = Map.copyOf(exact);
             required = Set.copyOf(required);
@@ -158,22 +186,35 @@ public sealed interface ClaimsPolicy permits ClaimsPolicy.Standard, ClaimsPolicy
             Assert.notNull(clockSkew, "clockSkew cannot be null");
         }
 
+        /// The value is compared with `equals` against the claim as parsed from json, where every
+        /// integer is a `Long`: `exact("level", 1)` never matches, `exact("level", 1L)` does.
+        ///
+        /// @param claim a claim the token must carry
+        /// @param value the value it must hold
+        /// @return a policy also requiring that value
         public Permissive exact(String claim, Object value) {
             return new Permissive(with(exact, claim, value), required, prohibited, clockSkew);
         }
 
+        /// @param claim a claim the token must carry, whatever its value
+        /// @return a policy also requiring that claim
         public Permissive require(String claim) {
             return new Permissive(exact, with(required, claim), prohibited, clockSkew);
         }
 
+        /// @param claim a claim the token must not carry
+        /// @return a policy also prohibiting that claim
         public Permissive prohibit(String claim) {
             return new Permissive(exact, required, with(prohibited, claim), clockSkew);
         }
 
+        /// @param clockSkew the skew tolerated on `exp` and `nbf`, in whole seconds
+        /// @return a policy tolerating that skew
         public Permissive clockSkew(Duration clockSkew) {
             return new Permissive(exact, required, prohibited, clockSkew);
         }
 
+        /// @return a verifier checking `exp` and `nbf` when present, and the configured claims
         @Override
         public JWTClaimsSetVerifier<SecurityContext> verifier() {
             return ClaimsPolicy.verifier(null, exact, required, prohibited, clockSkew);
@@ -185,6 +226,7 @@ public sealed interface ClaimsPolicy permits ClaimsPolicy.Standard, ClaimsPolicy
     /// @param verifier the verifier to delegate to
     public record Custom(JWTClaimsSetVerifier<SecurityContext> verifier) implements ClaimsPolicy {
 
+        /// @throws IllegalArgumentException when the verifier is `null`
         public Custom {
             Assert.notNull(verifier, "verifier cannot be null");
         }

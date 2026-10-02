@@ -13,8 +13,8 @@ Opinionated Spring Framework extension libraries.
 | [`authentication-tokens`](authentication-tokens/readme.md)                           | Authentication via HTTP headers (JWS, JWE, opaque tokens, basic).  |
 | [`client-reports`](client-reports/readme.md)                                         | Server-side logging and event publishing for client-side errors.   |
 | [`content-security-policies`](content-security-policies/readme.md)                   | Nonce-based Strict Content Security Policy for Spring Security.    |
-| [`context`](context/readme.md)                                                       | Property sources, direct field access, and devtools.               |
-| [`context-web`](context-web/readme.md)                                               | Web property sources, conditional beans, and direct field access.  |
+| [`context`](context/readme.md)                                                       | Property sources and devtools.                                     |
+| [`context-web`](context-web/readme.md)                                               | Spring MVC with direct field access and a custom locale resolver.  |
 | [`data-jpa`](data-jpa/readme.md)                                                     | Declarative whitelisted filters on JPA `@Entity` types.            |
 | [`data-jpa-test`](data-jpa-test/readme.md)                                           | Shared Testcontainers and per-phase transactions for JPA tests.    |
 | [`data-jpa-web`](data-jpa-web/readme.md)                                             | Spring MVC support for `data-jpa` filtering and pagination.        |

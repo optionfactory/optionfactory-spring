@@ -52,12 +52,13 @@ public class TransactionalPhasesTest {
         mark("after", info);
     }
 
+    /// The nested `TransactionTemplate` call participates in the `@Test` transaction, and marks it
+    /// rollback-only.
     @Test
     @Order(1)
     public void beforeEachIsCommittedAndRollbackOnlyTestIsRolledBack(TestInfo info) {
         Assertions.assertTrue(markers.existsById("before:" + name(info)), "@BeforeEach must be committed before @Test");
         mark("test", info);
-        /* participating in the @Test transaction: marks it rollback-only */
         tt.executeWithoutResult(TransactionStatus::setRollbackOnly);
     }
 

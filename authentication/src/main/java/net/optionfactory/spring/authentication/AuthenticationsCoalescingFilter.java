@@ -14,6 +14,32 @@ import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+/// Replaces the principal of the request's authentication with the application's own principal
+/// type, as mapped by the first [PrincipalMappingStrategy] supporting it. Usually installed through
+/// [Principals#coalescing(Class)] rather than directly.
+///
+/// For each request:
+///
+/// - no authentication, a `null` principal, or a principal already of the application type: the
+///   request proceeds untouched;
+/// - an authenticated principal: it is replaced by a [CoalescingAuthentication] carrying the mapped
+///   principal and delegating everything else to the original authentication;
+/// - an anonymous principal (as told by the `AuthenticationTrustResolver`): it is replaced by an
+///   `AnonymousAuthenticationToken` with the mapped principal and the original authorities, so that
+///   it is still recognised as anonymous; with no strategy supporting it, the request proceeds
+///   untouched, since an application should not have to invent a principal for callers that have
+///   not authenticated.
+///
+/// An authenticated principal that no strategy supports, or that its strategy maps to `null`, fails
+/// the request with an `IllegalStateException`: it is a misconfiguration, and letting the request
+/// through with a principal of an unexpected type would only move the failure into the
+/// application.
+///
+/// The replaced context is set on the holder strategy and saved to the `SecurityContextRepository`,
+/// so with a session-backed repository later requests load the already-coalesced authentication and
+/// pass straight through.
+///
+/// @param <R> the application principal type
 public class AuthenticationsCoalescingFilter<R> extends OncePerRequestFilter {
 
     private final SecurityContextHolderStrategy securityContextHolderStrategy;
@@ -23,6 +49,11 @@ public class AuthenticationsCoalescingFilter<R> extends OncePerRequestFilter {
     private final List<PrincipalMappingStrategy<?, R>> mappers;
     private final Class<R> principalType;
 
+    /// @param securityContextHolderStrategy where the request's authentication is read and replaced
+    /// @param securityContextRepository where the replaced context is saved
+    /// @param authenticationTrustResolver tells anonymous authentications apart
+    /// @param mappers the strategies, consulted in order
+    /// @param principalType the application principal type
     public AuthenticationsCoalescingFilter(
             SecurityContextHolderStrategy securityContextHolderStrategy,
             SecurityContextRepository securityContextRepository,
@@ -52,9 +83,6 @@ public class AuthenticationsCoalescingFilter<R> extends OncePerRequestFilter {
             if (!anonymous) {
                 throw new IllegalStateException(String.format("unmappable principal '%s'", auth.getPrincipal()));
             }
-            // an anonymous request carries no identity to normalise, so it is left as spring made
-            // it: an application should not have to invent a principal for callers that have not
-            // authenticated
             filterChain.doFilter(request, response);
             return;
         }

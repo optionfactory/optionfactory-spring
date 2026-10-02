@@ -98,7 +98,7 @@ public class CspExampleTest {
                 .andReturn();
         final var mav = result.getModelAndView();
         final var csp = mav.getModel().get("csp");
-        Assertions.assertTrue(csp instanceof Csp);
+        Assertions.assertTrue(csp instanceof Csp, "the interceptor exposes the request nonce to the view model");
     }
 
     @Test
@@ -109,9 +109,9 @@ public class CspExampleTest {
 
         final var cspHeader = result.getResponse().getHeader("Content-Security-Policy-Report-Only");
 
-        Assertions.assertNotNull(cspHeader);
-        Assertions.assertTrue(cspHeader.contains("/test-csp-report/"));
-        Assertions.assertNotNull(result.getResponse().getHeader("X-XSS-Protection"));
+        Assertions.assertNotNull(cspHeader, "report mode sends the Content-Security-Policy-Report-Only header");
+        Assertions.assertTrue(cspHeader.contains("/test-csp-report/"), "the policy names the configured report uri");
+        Assertions.assertNotNull(result.getResponse().getHeader("X-XSS-Protection"), "headers configured besides the policy are still written");
     }
 
     @Test

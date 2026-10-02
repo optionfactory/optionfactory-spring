@@ -61,14 +61,14 @@ public class SortTest {
         final Sort sort = Sort.by(Sort.Order.asc("byA"), Sort.Order.desc("byB"));
         final List<EntityForSort> all = repo.findAll(sort);
         final List<String> expected = List.of("D", "C", "B", "F", "E", "A");
-        Assertions.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()));
+        Assertions.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()), "whitelisted sorters order by a ascending, then by b descending");
     }
 
     @Test
     public void canSortWithSpecificationOrders() {
         final List<EntityForSort> all = repo.findAll(new EvenIdFirst(), FilterRequest.unfiltered());
         final List<String> expected = List.of("B", "D", "F", "A", "C", "E");
-        Assertions.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()));
+        Assertions.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()), "the specification's own orders are applied when no sort is requested");
     }
 
     @Test
@@ -76,7 +76,7 @@ public class SortTest {
         final Sort sort = Sort.by(Sort.Order.asc("byA"), Sort.Order.desc("byB"));
         final List<EntityForSort> all = repo.findAll(new EvenIdFirst(), FilterRequest.unfiltered(), sort);
         final List<String> expected = List.of("D", "B", "F", "C", "E", "A");
-        Assertions.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()));
+        Assertions.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()), "the specification's orders come first, then the requested ones");
     }
 
     @Test
@@ -84,7 +84,7 @@ public class SortTest {
         final Sort sort = Sort.by(Sort.Order.asc("byA"), Sort.Order.desc("byB"));
         final List<EntityForSort> all = repo.findAll(new EvenIdFirst(), sort);
         final List<String> expected = List.of("D", "B", "F", "C", "E", "A");
-        Assertions.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()));
+        Assertions.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()), "the specification's orders come first, then the requested ones");
     }
 
     @Test
@@ -93,7 +93,7 @@ public class SortTest {
         final PageRequest pr = PageRequest.of(0, 10, sort);
         final Page<EntityForSort> all = repo.findAll(new EvenIdFirst(), pr);
         final List<String> expected = List.of("D", "B", "F", "C", "E", "A");
-        Assertions.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()));
+        Assertions.assertEquals(expected, all.stream().map(e -> e.b).collect(Collectors.toList()), "the specification's orders come first, then the pageable's ones");
     }
 
     @Test
@@ -101,7 +101,7 @@ public class SortTest {
         final Sort sort = Sort.by(Sort.Order.asc("byA"), Sort.Order.desc("byB"));
         final Page<EntityForSort> page = repo.findAll(PageRequest.of(0, Integer.MAX_VALUE, sort));
         final List<String> expected = List.of("D", "C", "B", "F", "E", "A");
-        Assertions.assertEquals(expected, page.stream().map(e -> e.b).collect(Collectors.toList()));
+        Assertions.assertEquals(expected, page.stream().map(e -> e.b).collect(Collectors.toList()), "a page is ordered by the pageable's whitelisted sorters");
     }
 
     @Test
@@ -109,9 +109,14 @@ public class SortTest {
         final Sort sort = Sort.by(Sort.Order.asc("byA"), Sort.Order.desc("byB"));
         final Page<EntityForSort> page = repo.findAll(new EvenIdFirst(), FilterRequest.unfiltered(), PageRequest.of(0, Integer.MAX_VALUE, sort));
         final List<String> expected = List.of("D", "B", "F", "C", "E", "A");
-        Assertions.assertEquals(expected, page.stream().map(e -> e.b).collect(Collectors.toList()));
+        Assertions.assertEquals(expected, page.stream().map(e -> e.b).collect(Collectors.toList()), "the specification's orders come first, then the pageable's ones on a filtered page");
     }
 
+    /// Orders even ids first, through its own `ORDER BY`.
+    ///
+    /// Uses `CriteriaBuilder.function("mod", ...)` rather than `CriteriaBuilder.mod`: since Hibernate
+    /// 7.3.0.Final criteria type checks are stricter and `mod` only accepts `Integer` expressions, so
+    /// `criteriaBuilder.mod(root.get("id").as(Integer.class), 2)` is no longer valid on a `long` id.
     private static class EvenIdFirst implements Specification<EntityForSort> {
 
         @Override
@@ -120,12 +125,6 @@ public class SortTest {
                     criteriaBuilder.asc(
                             criteriaBuilder.selectCase()
                                     .when(criteriaBuilder.equal(
-                                            // Since Hibernate 7.3.0.Final, criteria type checks became stricter.
-                                            // CriteriaBuilder.mod() supports only Integer numeric type, making a Long expression an incompatible argument.
-                                            // The following criterion is no longer valid with an "id" field of Long/long type:
-                                            //     criteriaBuilder.mod(root.get("id").as(Integer.class), 2),
-                                            // Therefore, we have to use the CriteriaBuilder.function() method instead, with the "mod" function name.
-                                            // It would be nicer to have CriteriaBuilder implementing mod for Long expressions as well.
                                             criteriaBuilder.function("mod", Long.class, root.get("id"), criteriaBuilder.literal(2L)),
                                             0), 0)
                                     .otherwise(1)

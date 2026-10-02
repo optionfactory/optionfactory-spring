@@ -61,7 +61,7 @@ public class TextCompareTest {
 
         final Pageable pr = Pageable.unpaged();
         Page<Root> page = repo.findAll(null, fr, pr);
-        Assertions.assertEquals(123L, page.getContent().get(0).id);
+        Assertions.assertEquals(123L, page.getContent().get(0).id, "EQ matches the row with the exact name");
     }
 
     @Test
@@ -71,7 +71,7 @@ public class TextCompareTest {
                 .build();
         final Pageable pr = Pageable.unpaged();
         Page<Root> page = repo.findAll(null, fr, pr);
-        Assertions.assertEquals(123L, page.getContent().get(0).id);
+        Assertions.assertEquals(123L, page.getContent().get(0).id, "case-sensitive BETWEEN includes a name within the bounds");
     }
 
     @Test
@@ -81,7 +81,7 @@ public class TextCompareTest {
                 .build();
         final Pageable pr = Pageable.unpaged();
         Page<Root> page = repo.findAll(null, fr, pr);
-        Assertions.assertEquals(123L, page.getContent().get(0).id);
+        Assertions.assertEquals(123L, page.getContent().get(0).id, "case-insensitive BETWEEN includes a lower-case name within upper-case bounds");
     }
 
     @Test
@@ -91,7 +91,7 @@ public class TextCompareTest {
                 .build();
         final Pageable pr = Pageable.unpaged();
         Page<Root> page = repo.findAll(null, fr, pr);
-        Assertions.assertEquals(123L, page.getContent().get(0).id);
+        Assertions.assertEquals(123L, page.getContent().get(0).id, "case-insensitive EQ matches a name differing only in case");
     }
 
     @Test
@@ -101,7 +101,7 @@ public class TextCompareTest {
                 .build();
         final Pageable pr = Pageable.unpaged();
         Page<Root> page = repo.findAll(null, fr, pr);
-        Assertions.assertEquals(123L, page.getContent().get(0).id);
+        Assertions.assertEquals(123L, page.getContent().get(0).id, "CONTAINS matches a name containing the value");
     }
 
     @Test
@@ -112,7 +112,7 @@ public class TextCompareTest {
 
         final Pageable pr = Pageable.unpaged();
         Page<Root> page = repo.findAll(null, fr, pr);
-        Assertions.assertEquals(123L, page.getContent().get(0).id);
+        Assertions.assertEquals(123L, page.getContent().get(0).id, "case-insensitive CONTAINS matches a name containing the value in another case");
     }
 
     @Test
@@ -123,7 +123,7 @@ public class TextCompareTest {
 
         final Pageable pr = Pageable.unpaged();
         Page<Root> page = repo.findAll(null, fr, pr);
-        Assertions.assertEquals(123L, page.getContent().get(0).id);
+        Assertions.assertEquals(123L, page.getContent().get(0).id, "STARTS_WITH matches a name starting with the value");
     }
 
     @Test
@@ -135,7 +135,7 @@ public class TextCompareTest {
 
         final Pageable pr = Pageable.unpaged();
         Page<Root> page = repo.findAll(null, fr, pr);
-        Assertions.assertEquals(123L, page.getContent().get(0).id);
+        Assertions.assertEquals(123L, page.getContent().get(0).id, "case-insensitive STARTS_WITH matches a name starting with the value in another case");
     }
 
     @Test
@@ -147,7 +147,7 @@ public class TextCompareTest {
 
         final Pageable pr = Pageable.unpaged();
         Page<Root> page = repo.findAll(null, fr, pr);
-        Assertions.assertEquals(123L, page.getContent().get(0).id);
+        Assertions.assertEquals(123L, page.getContent().get(0).id, "ENDS_WITH matches a name ending with the value");
     }
 
     @Test
@@ -157,7 +157,7 @@ public class TextCompareTest {
                 .build();
         final Pageable pr = Pageable.unpaged();
         Page<Root> page = repo.findAll(null, fr, pr);
-        Assertions.assertEquals(123L, page.getContent().get(0).id);
+        Assertions.assertEquals(123L, page.getContent().get(0).id, "case-insensitive ENDS_WITH matches a name ending with the value in another case");
     }
 
     @Test
@@ -169,6 +169,6 @@ public class TextCompareTest {
 
         final Page<Root> all = repo.findAll(Pageable.unpaged());
         final Page<Root> page = repo.findAll(null, fr, Pageable.unpaged());
-        Assertions.assertEquals(all.getTotalElements(), page.getTotalElements());
+        Assertions.assertEquals(all.getTotalElements(), page.getTotalElements(), "NEQ keeps the row whose value is null");
     }
 }

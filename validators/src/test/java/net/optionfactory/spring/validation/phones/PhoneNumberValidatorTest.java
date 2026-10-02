@@ -12,7 +12,7 @@ import java.util.stream.Stream;
 
 public class PhoneNumberValidatorTest {
 
-    private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+    private static final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
     public record DefaultPhoneBean(@PhoneNumber String phone) {
 

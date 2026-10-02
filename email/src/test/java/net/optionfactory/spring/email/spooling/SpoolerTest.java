@@ -75,7 +75,7 @@ public class SpoolerTest {
             publisher.publishEvent(new TestEvent(i));
         }
         boolean reachedZero = countDownLatch.await(1, TimeUnit.SECONDS);
-        Assertions.assertTrue(reachedZero);
+        Assertions.assertTrue(reachedZero, "every published event reaches the spooler");
     }
 
 }

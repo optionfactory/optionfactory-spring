@@ -72,7 +72,7 @@ public class PluralAttributesTest {
                 .build();
         final Pageable pr = Pageable.unpaged();
         final Page<Root> page = roots.findAll(null, fr, pr);
-        Assertions.assertEquals(2, page.getContent().get(0).leaves.size());
+        Assertions.assertEquals(2, page.getContent().get(0).leaves.size(), "filtering through a collection does not trim the collection of the returned root");
 
     }
 }

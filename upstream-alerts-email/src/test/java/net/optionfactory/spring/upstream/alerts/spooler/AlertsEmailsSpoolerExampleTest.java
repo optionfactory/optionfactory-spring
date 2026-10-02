@@ -198,8 +198,11 @@ public class AlertsEmailsSpoolerExampleTest {
         publisher.publishEvent(event2);
         publisher.publishEvent(event3);
 
-        Thread.sleep(Duration.ofMillis(1500));
-        Assertions.assertEquals(1, emlsIn(paths.sent()).count());
+        final var deadline = Instant.now().plusSeconds(5);
+        while (emlsIn(paths.sent()).count() == 0 && Instant.now().isBefore(deadline)) {
+            Thread.sleep(10);
+        }
+        Assertions.assertEquals(1, emlsIn(paths.sent()).count(), "the burst of alerts is spooled as one email, which the scheduled sender sends");
     }
 
     private Stream<Path> emlsIn(Path path) throws IOException {

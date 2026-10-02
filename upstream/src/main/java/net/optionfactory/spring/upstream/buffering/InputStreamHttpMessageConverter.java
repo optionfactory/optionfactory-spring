@@ -9,6 +9,12 @@ import org.springframework.http.converter.AbstractHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.HttpMessageNotWritableException;
 
+/// Reads a body of any media type as an `InputStream`, handing over the body stream itself unread.
+///
+/// Only the `InputStream` type itself is supported. On a streamed endpoint (see [Buffering]) the
+/// caller then owns the connection, and must close the stream. Writing an `InputStream` body copies
+/// it, and is only possible when no specific content type is requested, since the converter declares
+/// no media type.
 public class InputStreamHttpMessageConverter extends AbstractHttpMessageConverter<InputStream> {
 
     @Override

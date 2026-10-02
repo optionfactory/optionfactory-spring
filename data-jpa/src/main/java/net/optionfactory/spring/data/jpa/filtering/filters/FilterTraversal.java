@@ -90,7 +90,10 @@ import java.lang.annotation.Target;
 /// Flipping [reuse()] to `false` splits the context, forcing the engine to evaluate the nested 
 /// collection in its own completely separate, isolated `EXISTS` subquery, translating semantically to: 
 /// *"Find a company that has a department, AND which also has an employee named X anywhere within the entity tree."*
-/// 
+///
+/// The overrides apply to the paths of [Sortable] sorters as well, which are resolved the same way:
+/// a filter and a sorter on the same association then share one join.
+///
 /// @see net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository
 /// @see net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters#traversal
 @Target(ElementType.TYPE)
@@ -128,9 +131,13 @@ public @interface FilterTraversal {
     /// @return whether to reuse or isolate the subquery group context
     boolean reuse() default true;
 
+    /// The container of repeated [FilterTraversal] annotations, used implicitly by the compiler when
+    /// the annotation is repeated on an entity.
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface List {
+
+        /// @return the repeated annotations
         FilterTraversal[] value();
     }
 }

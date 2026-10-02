@@ -4,8 +4,21 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+/// Parses the value of a `WWW-Authenticate` header carrying a single challenge, such as
+/// `Digest realm="r", nonce="n", qop="auth,auth-int"`.
+///
+/// The parser is lenient: values may be quoted or not, commas inside quoted values are kept, the
+/// surrounding quotes are removed while escaped quotes inside the value are kept verbatim (backslash
+/// included), and empty entries are skipped. A header carrying several challenges is not split: it
+/// yields the first scheme, with the following challenges mixed into its parameters.
+///
+/// Instances are stateless and thread-safe.
 public class AuthenticationChallengeParser {
 
+    /// @param str the header value
+    /// @return the challenge, with its scheme lowercased and its parameter names as sent; a parameter
+    /// without `=` maps to `null`
+    /// @throws IllegalStateException when the value is `null` or has no scheme
     public AuthenticationChallenge parse(String str) {
         if (str == null) {
             throw new IllegalStateException("Null authentication challenge");
@@ -24,11 +37,11 @@ public class AuthenticationChallengeParser {
             key = naked(state, ',', '=');
             value = null;
             if (state.more() && (state.peek() == '=')) {
-                state.pos++; // consume '='
+                state.pos++;
                 value = maybeQuoted(state, ',');
             }
             if (state.more() && (state.peek() == ',')) {
-                state.pos++; // consume ','
+                state.pos++;
             }
             if (key != null && !(key.equals("") && value == null)) {
                 params.put(key, value);
@@ -81,6 +94,10 @@ public class AuthenticationChallengeParser {
         return stripped;
     }    
 
+    /// A parsed authentication challenge.
+    ///
+    /// @param scheme the lowercased authentication scheme, e.g. `digest`
+    /// @param params the challenge parameters, unquoted, by name
     public record AuthenticationChallenge(String scheme, Map<String, String> params) {
     }
 

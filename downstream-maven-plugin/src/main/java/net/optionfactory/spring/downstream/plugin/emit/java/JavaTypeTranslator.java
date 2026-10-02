@@ -12,16 +12,35 @@ import java.util.Map;
 import net.optionfactory.spring.downstream.plugin.mapping.TypeRegistry;
 import net.optionfactory.spring.downstream.plugin.mapping.TypeRegistry.TargetName;
 
+/// Maps the java type of a source property to the type of the generated property.
+///
+/// In order of precedence a class is replaced by:
+/// 1. its translation, when it has one: the generated counterpart of the target when the target
+///    is a payload, otherwise the target itself, which can be a class (binary `Outer$Inner` names
+///    accepted), a primitive or an array of them (`byte[]`);
+/// 2. its generated counterpart, when it is a payload;
+/// 3. itself.
+///
+/// Arrays are mapped component by component, and parameterized types argument by argument. The
+/// raw class of a parameterized type is replaced by its translation only, used as is: it is
+/// neither looked up among the payloads nor read as a binary name, and the mapped arguments are
+/// kept unless the translation is a primitive or an array. A parameterized payload that is not
+/// translated keeps its source raw class: a `Page<User>` property where `Page` is a payload is
+/// generated as the source `Page` of the generated `User`, not as the generated `Page`.
 public class JavaTypeTranslator {
 
     private final TypeRegistry registry;
     private final Map<String, String> translations;
 
+    /// @param registry the payload types and their generated names
+    /// @param translations source class binary name to replacement type
     public JavaTypeTranslator(TypeRegistry registry, Map<String, String> translations) {
         this.registry = registry;
         this.translations = translations;
     }
 
+    /// @param annotatedType the type of a source property
+    /// @return the type of the generated property
     public TypeName translate(AnnotatedType annotatedType) {
         final var type = annotatedType.getType();
         if (annotatedType instanceof AnnotatedParameterizedType apt && type instanceof ParameterizedType pType) {

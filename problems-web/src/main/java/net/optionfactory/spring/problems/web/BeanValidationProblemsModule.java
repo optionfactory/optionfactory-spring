@@ -40,6 +40,7 @@ import org.springframework.web.method.HandlerMethod;
 /// after the java parameters and properties it runs through.
 public class BeanValidationProblemsModule implements ProblemsModule {
 
+    /// @return the module's single classifier
     @Override
     public List<ExceptionClassifier> classifiers() {
         return List.of(BeanValidationProblemsModule::classify);

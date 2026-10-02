@@ -86,7 +86,7 @@ public class JoinThroughEmbeddableWithJoinTypesTest {
                 .build();
 
         final var page = repo.findAll(fr, Pageable.unpaged());
-        Assertions.assertEquals(1, page.getTotalElements());
+        Assertions.assertEquals(1, page.getTotalElements(), "sibling associations in one embeddable are joined with their own join types");
     }
 
 }

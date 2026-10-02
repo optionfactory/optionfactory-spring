@@ -50,16 +50,6 @@ public class UnifiedValidationTest {
             resolver.setDefaultLocale(Locale.ITALIAN);
             return resolver;
         }
-//
-//        @Bean
-//        public LocalValidatorFactoryBean validator() {
-//            return new LocalValidatorFactoryBean();
-//        }
-//
-//        @Override
-//        public Validator getValidator() {
-//            return validator();
-//        }
 
         @Override
         public void extendHandlerExceptionResolvers(List<HandlerExceptionResolver> resolvers) {
@@ -70,18 +60,19 @@ public class UnifiedValidationTest {
 
     }
 
+    /// Any constraint on a handler parameter triggers spring's method validation, no `@Valid`
+    /// needed; the elements of a validated list are only validated when the element type is
+    /// annotated with `@Valid`. A `@Valid` body that is a plain bean is validated by the data binder
+    /// instead, nested list included, and fails with a `MethodArgumentNotValidException`.
     @RestController
     public static class MethodValidationController {
 
         @GetMapping("/request-param")
         public void requestParam(@Pattern(regexp = "[a-z]") @RequestParam("letter") String letter) {
-            //any @Constraint triggers the validation on arguments, no need to add @Valid
         }
 
         @PostMapping("/body-list")
         public void bodyList(@NotNull @RequestBody(required = false) List<@Valid @NotNull Dto> request) {
-            //any @Constraint triggers the validation on arguments, no need to add @Valid
-            //nested validation triggers only if the nested type is annotated with @Valid though
         }
 
         @PostMapping("/body-list-required")
@@ -90,8 +81,6 @@ public class UnifiedValidationTest {
 
         @PostMapping("/body-using-data-binder")
         public void bodyUsingDataBinder(@Valid @RequestBody ListWrapper request) {
-            // Triggers MethodArgumentNotValidException because the parameter is just a plain Bean, 
-            // and the DataBinder handles the nested list validation.            
         }
 
         @GetMapping("/manual-validation")

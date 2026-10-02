@@ -21,6 +21,14 @@ import org.springframework.expression.EvaluationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatus.Series;
 
+/// Turns the responses matching an `@Upstream.ErrorOnResponse` condition into a
+/// [RestClientUpstreamException] carrying the reason of the annotation.
+///
+/// Always registered by [net.optionfactory.spring.upstream.UpstreamBuilder], as the last handler:
+/// `4xx` and `5xx` responses are handled by [UpstreamErrorOnErrorStatusHandler] before reaching it.
+///
+/// The conditions are evaluated in [#hasError] and again in [#handleError], so they should not have
+/// side effects.
 public class UpstreamErrorOnResponseHandler implements UpstreamResponseErrorHandler {
 
     private record AnnotatedValues(Set<HttpStatus.Series> series, BooleanExpression predicate, StringExpression message) {
@@ -29,6 +37,12 @@ public class UpstreamErrorOnResponseHandler implements UpstreamResponseErrorHand
 
     private final Map<Method, List<AnnotatedValues>> conf = new ConcurrentHashMap<>();
 
+    /// Reads the `@Upstream.ErrorOnResponse` annotations of every endpoint, from the method or else from
+    /// the interface hierarchy, and parses their conditions and reasons.
+    ///
+    /// @param k the proxied interface
+    /// @param expressions the expressions of the client
+    /// @param endpoints the endpoints of the client, by method
     @Override
     public void preprocess(Class<?> k, Expressions expressions, Map<Method, EndpointDescriptor> endpoints) {
         for (final var endpoint : endpoints.values()) {
@@ -44,12 +58,22 @@ public class UpstreamErrorOnResponseHandler implements UpstreamResponseErrorHand
         }
     }
 
+    /// @param invocation the invocation
+    /// @param request the request sent
+    /// @param response the response received
+    /// @return true when an annotation of the endpoint applies to the status series and its condition
+    /// matches; false for the non-standard status codes (e.g. `999`), which belong to no series
+    /// and are let through rather than failing the response handling
     @Override
     public boolean hasError(InvocationContext invocation, RequestContext request, ResponseContext response) throws IOException {
         final var ectx = invocation.expressions().context(invocation, request, response);
         return firstMatching(ectx, invocation.endpoint().method(), response.status().value()).isPresent();
     }
 
+    /// @param invocation the invocation
+    /// @param request the request sent
+    /// @param response the response received, whose body is read into the exception
+    /// @throws RestClientUpstreamException always, with the reason of the first matching annotation
     @Override
     public void handleError(InvocationContext invocation, RequestContext request, ResponseContext response) throws IOException {
         final var ectx = invocation.expressions().context(invocation, request, response);
@@ -73,8 +97,6 @@ public class UpstreamErrorOnResponseHandler implements UpstreamResponseErrorHand
         if (expressions == null) {
             return Optional.empty();
         }
-        // resolve returns null for non-standard codes (e.g. 6xx, 999): no series can match,
-        // where valueOf would throw and turn the response handling itself into a failure
         final Series serie = Series.resolve(statusCode);
         if (serie == null) {
             return Optional.empty();

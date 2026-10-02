@@ -45,6 +45,6 @@ public class UpstreamTransformerOrderTest {
 
         er.resolveException(new MockHttpServletRequest(), new MockHttpServletResponse(), handler, ex);
 
-        Assertions.assertEquals(List.of("FIELD_ERROR"), seen);
+        Assertions.assertEquals(List.of("FIELD_ERROR"), seen, "an application transformer must run after the built-in upstream one");
     }
 }

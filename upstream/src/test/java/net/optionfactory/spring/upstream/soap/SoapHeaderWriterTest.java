@@ -49,6 +49,6 @@ public class SoapHeaderWriterTest {
         """, StandardCharsets.UTF_8);
         final var expected = bodyRendering.renderBody(BodiesStrategy.ABBREVIATED_REDACTED, 0, MediaType.APPLICATION_XML, bodySource, "X", 100_000);
 
-        Assertions.assertEquals(expected, new String(baos.toByteArrayUnsafe(), StandardCharsets.UTF_8));
+        Assertions.assertEquals(expected, new String(baos.toByteArrayUnsafe(), StandardCharsets.UTF_8), "the header must carry a mustUnderstand Security element with a credentials-derived token id and a plain text password");
     }
 }

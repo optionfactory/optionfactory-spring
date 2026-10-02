@@ -68,51 +68,51 @@ public class NumberCompareTest {
     @Test
     public void canFilterEqualityByNullValue() {
         final Page<Root> page = repo.findAll(null, filter("maxPersons", NumberCompare.Operator.EQ, null), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(1L), idsIn(page));
+        Assertions.assertEquals(Set.of(1L), idsIn(page), "EQ null matches the rows whose value is null");
     }
 
     @Test
     public void cannotFilterInequalityByNullValue() {
         Assertions.assertThrows(InvalidDataAccessApiUsageException.class, () -> {
             repo.findAll(null, filter("maxPersons", NumberCompare.Operator.LTE, null), Pageable.unpaged());
-        });
+        }, "an ordering operator rejects a null value");
     }
 
     @Test
     public void canFilterByBoxedValue() {
-        Assertions.assertEquals(Set.of(3L), idsIn(repo.findAll(null, filter("maxPersons", NumberCompare.Operator.EQ, "10"), Pageable.unpaged())));
-        Assertions.assertEquals(Set.of(4L), idsIn(repo.findAll(null, filter("maxPersons", NumberCompare.Operator.LT, "10"), Pageable.unpaged())));
-        Assertions.assertEquals(Set.of(2L), idsIn(repo.findAll(null, filter("maxPersons", NumberCompare.Operator.GT, "10"), Pageable.unpaged())));
-        Assertions.assertEquals(Set.of(3L, 4L), idsIn(repo.findAll(null, filter("maxPersons", NumberCompare.Operator.LTE, "10"), Pageable.unpaged())));
-        Assertions.assertEquals(Set.of(2L, 3L), idsIn(repo.findAll(null, filter("maxPersons", NumberCompare.Operator.GTE, "10"), Pageable.unpaged())));
+        Assertions.assertEquals(Set.of(3L), idsIn(repo.findAll(null, filter("maxPersons", NumberCompare.Operator.EQ, "10"), Pageable.unpaged())), "EQ on a boxed property matches the equal value only");
+        Assertions.assertEquals(Set.of(4L), idsIn(repo.findAll(null, filter("maxPersons", NumberCompare.Operator.LT, "10"), Pageable.unpaged())), "LT on a boxed property excludes the bound and the null value");
+        Assertions.assertEquals(Set.of(2L), idsIn(repo.findAll(null, filter("maxPersons", NumberCompare.Operator.GT, "10"), Pageable.unpaged())), "GT on a boxed property excludes the bound and the null value");
+        Assertions.assertEquals(Set.of(3L, 4L), idsIn(repo.findAll(null, filter("maxPersons", NumberCompare.Operator.LTE, "10"), Pageable.unpaged())), "LTE on a boxed property includes the bound");
+        Assertions.assertEquals(Set.of(2L, 3L), idsIn(repo.findAll(null, filter("maxPersons", NumberCompare.Operator.GTE, "10"), Pageable.unpaged())), "GTE on a boxed property includes the bound");
     }
 
     @Test
     public void canFilterByPrimitiveValue() {
-        Assertions.assertEquals(Set.of(3L), idsIn(repo.findAll(null, filter("rating", NumberCompare.Operator.EQ, Double.toString(Math.PI)), Pageable.unpaged())));
-        Assertions.assertEquals(Set.of(1L, 2L), idsIn(repo.findAll(null, filter("rating", NumberCompare.Operator.LT, Double.toString(Math.PI)), Pageable.unpaged())));
-        Assertions.assertEquals(Set.of(4L), idsIn(repo.findAll(null, filter("rating", NumberCompare.Operator.GT, Double.toString(Math.PI)), Pageable.unpaged())));
-        Assertions.assertEquals(Set.of(1L, 2L, 3L), idsIn(repo.findAll(null, filter("rating", NumberCompare.Operator.LTE, Double.toString(Math.PI)), Pageable.unpaged())));
-        Assertions.assertEquals(Set.of(3L, 4L), idsIn(repo.findAll(null, filter("rating", NumberCompare.Operator.GTE, Double.toString(Math.PI)), Pageable.unpaged())));
+        Assertions.assertEquals(Set.of(3L), idsIn(repo.findAll(null, filter("rating", NumberCompare.Operator.EQ, Double.toString(Math.PI)), Pageable.unpaged())), "EQ on a primitive double matches the equal value only");
+        Assertions.assertEquals(Set.of(1L, 2L), idsIn(repo.findAll(null, filter("rating", NumberCompare.Operator.LT, Double.toString(Math.PI)), Pageable.unpaged())), "LT on a primitive double excludes the bound");
+        Assertions.assertEquals(Set.of(4L), idsIn(repo.findAll(null, filter("rating", NumberCompare.Operator.GT, Double.toString(Math.PI)), Pageable.unpaged())), "GT on a primitive double excludes the bound");
+        Assertions.assertEquals(Set.of(1L, 2L, 3L), idsIn(repo.findAll(null, filter("rating", NumberCompare.Operator.LTE, Double.toString(Math.PI)), Pageable.unpaged())), "LTE on a primitive double includes the bound");
+        Assertions.assertEquals(Set.of(3L, 4L), idsIn(repo.findAll(null, filter("rating", NumberCompare.Operator.GTE, Double.toString(Math.PI)), Pageable.unpaged())), "GTE on a primitive double includes the bound");
     }
 
     @Test
     public void canFilterOnEmbeddedValues() {
-        Assertions.assertEquals(Set.of(1L), idsIn(repo.findAll(null, filter("container.value", NumberCompare.Operator.EQ, "42"), Pageable.unpaged())));
+        Assertions.assertEquals(Set.of(1L), idsIn(repo.findAll(null, filter("container.value", NumberCompare.Operator.EQ, "42"), Pageable.unpaged())), "a number inside an embeddable is filtered");
     }
 
     @Test
     public void filteringWithNeqIncludesNullValues() {
         final Page<Root> all = repo.findAll(Pageable.unpaged());
         final Page<Root> page = repo.findAll(null, filter("maxPersons", NumberCompare.Operator.NEQ, "9999"), Pageable.unpaged());
-        Assertions.assertEquals(all.getTotalElements(), page.getTotalElements());
+        Assertions.assertEquals(all.getTotalElements(), page.getTotalElements(), "NEQ keeps every row, the null one included");
     }
 
     @Test
     public void canFilterByBetweenRange() {
         final Set<Long> expected = Set.of(2L, 3L);
-        Assertions.assertEquals(expected, idsIn(repo.findAll(null, between("maxPersons", "10", "15"), Pageable.unpaged())));
-        Assertions.assertEquals(expected, idsIn(repo.findAll(null, between("maxPersons", "15", "10"), Pageable.unpaged())));
+        Assertions.assertEquals(expected, idsIn(repo.findAll(null, between("maxPersons", "10", "15"), Pageable.unpaged())), "BETWEEN includes both bounds");
+        Assertions.assertEquals(expected, idsIn(repo.findAll(null, between("maxPersons", "15", "10"), Pageable.unpaged())), "BETWEEN accepts its bounds in either order");
     }
 
     @Test
@@ -120,7 +120,7 @@ public class NumberCompareTest {
         final var fr = FilterRequest.builder()
                 .number("maxPersons", f -> new String[0])
                 .build();
-        final var thrown = Assertions.assertThrows(Exception.class, () -> repo.findAll(null, fr, Pageable.unpaged()));
+        final var thrown = Assertions.assertThrows(Exception.class, () -> repo.findAll(null, fr, Pageable.unpaged()), "an operator-less request fails the query");
         Throwable t = thrown;
         boolean foundInvalidFilterRequest = false;
         while (t != null) {

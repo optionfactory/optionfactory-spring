@@ -20,13 +20,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-/**
- * A malformed value is a bad request, not a bug: every conversion of client input must surface
- * as an {@link InvalidFilterRequest} rather than as whatever the underlying parser happens to
- * throw. {@code DateTimeParseException} and {@code StringIndexOutOfBoundsException} are not even
- * {@code IllegalArgumentException}s, so leaking them turns a bad request into a server error in
- * any caller mapping by exception type.
- */
+/// A malformed value is a bad request, not a bug: every conversion of client input must surface
+/// as an [InvalidFilterRequest] rather than as whatever the underlying parser happens to
+/// throw. `DateTimeParseException` and `StringIndexOutOfBoundsException` are not even
+/// `IllegalArgumentException`s, so leaking them turns a bad request into a server error in
+/// any caller mapping by exception type.
 @SpringJUnitConfig(HibernateOnH2TestConfig.class)
 @TransactionalPhases
 public class InvalidFilterValuesTest {
@@ -58,20 +56,18 @@ public class InvalidFilterValuesTest {
     @Inject
     private RootsRepository repo;
 
-    /**
-     * Values are passed as the raw arrays a request carries: the typed {@code FilterRequest}
-     * builders take a {@code LocalDate} or a {@code Number} and so cannot express a malformed
-     * one, which is exactly why these values can only arrive from the wire.
-     */
+    /// Values are passed as the raw arrays a request carries: the typed `FilterRequest`
+    /// builders take a `LocalDate` or a `Number` and so cannot express a malformed
+    /// one, which is exactly why these values can only arrive from the wire.
     private static FilterRequest request(String filter, String... values) {
         return new FilterRequest(java.util.Map.of(filter, values));
     }
 
     private InvalidFilterRequest assertInvalidFilterRequest(String expectedFragment, FilterRequest fr) {
-        final var thrown = Assertions.assertThrows(Exception.class, () -> repo.findAll(fr));
+        final var thrown = Assertions.assertThrows(Exception.class, () -> repo.findAll(fr), "a malformed value fails the query");
         for (Throwable t = thrown; t != null; t = t.getCause()) {
             if (t instanceof InvalidFilterRequest ifr) {
-                Assertions.assertTrue(t.getMessage().contains(expectedFragment), t.getMessage());
+                Assertions.assertTrue(t.getMessage().contains(expectedFragment), "the rejection explains '" + expectedFragment + "', got: " + t.getMessage());
                 return ifr;
             }
         }
@@ -81,7 +77,7 @@ public class InvalidFilterValuesTest {
     @Test
     public void aRejectionCarriesTheFilterNameAndAReasonSafeToShowTheClient() {
         final var rejected = assertInvalidFilterRequest("cannot parse 'not-a-date'", request("byDate", "EQ", "not-a-date"));
-        Assertions.assertEquals("byDate", rejected.filter);
+        Assertions.assertEquals("byDate", rejected.filter, "the rejection names the filter the client requested");
         Assertions.assertTrue(rejected.reason.startsWith("cannot parse 'not-a-date' as a local date"), rejected.reason);
         Assertions.assertTrue(rejected.getMessage().contains("@Root"), rejected.getMessage());
         Assertions.assertFalse(rejected.reason.contains("Root"), rejected.reason);

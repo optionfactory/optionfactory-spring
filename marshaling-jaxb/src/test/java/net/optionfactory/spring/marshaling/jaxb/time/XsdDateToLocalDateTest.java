@@ -5,6 +5,7 @@ import jakarta.xml.bind.annotation.XmlRootElement;
 import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.time.LocalDate;
 import java.time.Month;
+import java.time.format.DateTimeParseException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -15,13 +16,18 @@ public class XsdDateToLocalDateTest {
     @Test
     public void canParseDateWithoutOffset() {
         final LocalDate got = adapter.unmarshal("2003-02-01");
-        Assertions.assertEquals(LocalDate.of(2003, 2, 1), got);
+        Assertions.assertEquals(LocalDate.of(2003, 2, 1), got, "a plain xs:date is parsed as is");
     }
 
     @Test
     public void canParseDateWithOffset() {
         final var got = adapter.unmarshal("2003-02-01+01:00");
-        Assertions.assertEquals(LocalDate.of(2003, 2, 1), got);
+        Assertions.assertEquals(LocalDate.of(2003, 2, 1), got, "the optional offset of an xs:date is discarded");
+    }
+
+    @Test
+    public void rejectsMalformedDates() {
+        Assertions.assertThrows(DateTimeParseException.class, () -> adapter.unmarshal("2003-02-30"), "an invalid day of month is rejected");
     }
 
     @XmlRootElement(name = "B")
@@ -43,7 +49,7 @@ public class XsdDateToLocalDateTest {
     @Test
     public void canUnmarshalNotNull() throws JAXBException {
         BeanWithLocalDate b = Marshalling.unmarshal("<B><at>2020-03-02</at></B>", BeanWithLocalDate.class);
-        Assertions.assertEquals(LocalDate.of(2020, Month.MARCH, 2), b.at);
+        Assertions.assertEquals(LocalDate.of(2020, Month.MARCH, 2), b.at, "an xs:date element unmarshals to its date");
     }
 
     @Test
@@ -57,11 +63,11 @@ public class XsdDateToLocalDateTest {
     @Test
     public void canUnmarshalNull() throws JAXBException {
         BeanWithLocalDate b1 = Marshalling.unmarshal("<B/>", BeanWithLocalDate.class);
-        Assertions.assertEquals(null, b1.at);
+        Assertions.assertEquals(null, b1.at, "a missing element unmarshals to null");
         BeanWithLocalDate b2 = Marshalling.unmarshal("<B><at/></B>", BeanWithLocalDate.class);
-        Assertions.assertEquals(null, b2.at);
+        Assertions.assertEquals(null, b2.at, "an empty element unmarshals to null");
         BeanWithLocalDate b3 = Marshalling.unmarshal("<B><at xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:nil=\"true\"/></B>", BeanWithLocalDate.class);
-        Assertions.assertEquals(null, b3.at);
+        Assertions.assertEquals(null, b3.at, "a nil element unmarshals to null");
     }
 
 }

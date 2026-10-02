@@ -9,44 +9,58 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import net.optionfactory.spring.downstream.Downstream;
 
+/// Assigns the generated name of every payload type, and checks that no two of them collide.
+///
+/// A type is named after its simple name, or its `@Downstream.Rename` value. A nested type whose
+/// outer type is a payload too is then named according to the [Nesting]; one whose outer type is
+/// not is a top-level type. Every type lives in the same target package.
+///
+/// The collision check compares the [flat names][TargetName#flatName] whatever the nesting, so
+/// `Outer.Inner` and a top-level `OuterInner` collide even with [Nesting#NESTED], where the
+/// generated Java would not.
 public class TypeRegistry {
 
+    /// The generated name of a payload type.
+    ///
+    /// @param packageName the package of the generated type
+    /// @param names the simple names from the top-level type down to this one: a single name for
+    /// a top-level type, one per nesting level with [Nesting#NESTED]
     public record TargetName(String packageName, List<String> names) {
 
+        /// @return the name of the top-level type containing this one, the type itself when it is
+        /// top-level
         public String topLevelName() {
             return names.get(0);
         }
 
+        /// @return the names joined without separator, e.g. `OuterInner`: the name used by outputs
+        /// without nested types
         public String flatName() {
             return String.join("", names);
         }
     }
 
+    /// How a nested payload type whose outer type is a payload too is named.
     public enum Nesting {
 
-        /**
-         * Ignores the outer class hierarchy completely. Output is generated in
-         * the output package using its simple name only. Example:
-         * {@code Parent.Child} becomes a top-level class named {@code Child}.
-         */
+        /// Ignores the outer types: `Parent.Child` becomes a top-level `Child`. Nested types with
+        /// the same simple name in different outer types collide.
         FLATTEN,
-        /**
-         * Preserves the structural hierarchy, generating inner classes as
-         * actual static nested classes inside their parent (supported in Java
-         * output). Example: {@code Parent.Child} remains nested inside
-         * {@code Parent}.
-         */
+        /// Keeps the hierarchy: in Java `Parent.Child` stays a static nested type of `Parent`.
+        /// Outputs without nested types, such as TypeScript, use the flat name `ParentChild`.
         NESTED,
-        /**
-         * Flattens inner classes into top-level classes by prefixing them with
-         * their outer class names. Example: {@code Parent.Child} becomes a
-         * top-level class named {@code ParentChild}.
-         */
+        /// Moves nested types to the top level, prefixed with their outer type names:
+        /// `Parent.Child` becomes `ParentChild`.
         PREFIXED
     }
 
     private final Map<Class<?>, TargetName> dictionary = new HashMap<>();
 
+    /// @param rawPayloads the payload types to name
+    /// @param targetPackage the package of every generated type
+    /// @param nesting how nested types are named
+    /// @throws IllegalStateException when two types end up with the same flat name, listing the
+    /// colliding source classes
     public TypeRegistry(Set<Class<?>> rawPayloads, String targetPackage, Nesting nesting) {
         for (final Class<?> sourceClass : rawPayloads) {
             dictionary.put(sourceClass, resolveName(sourceClass, targetPackage, nesting, rawPayloads));
@@ -54,10 +68,15 @@ public class TypeRegistry {
         verifyNoCollisions();
     }
 
+    /// @param sourceClass a source class
+    /// @return its generated name, `null` when it is not a registered payload
     public TargetName getTargetName(Class<?> sourceClass) {
         return dictionary.get(sourceClass);
     }
 
+    /// @param className the binary (`Outer$Inner`) or canonical (`Outer.Inner`) name of a source
+    /// class
+    /// @return its generated name, `null` when no registered payload has that name
     public TargetName getTargetName(String className) {
         return allSourceClasses().stream()
                 .filter(c -> matchesName(c, className))
@@ -66,14 +85,19 @@ public class TypeRegistry {
                 .orElse(null);
     }
 
+    /// @return the registered payload types, in no particular order
     public Collection<Class<?>> allSourceClasses() {
         return dictionary.keySet();
     }
 
+    /// @param clazz a class, possibly `null`
+    /// @return true when it is a registered payload, false for `null`
     public boolean isRegistered(Class<?> clazz) {
         return clazz != null && dictionary.containsKey(clazz);
     }
 
+    /// @param className the binary or canonical name of a class
+    /// @return true when it is the name of a registered payload
     public boolean isRegistered(String className) {
         return allSourceClasses().stream()
                 .anyMatch(c -> matchesName(c, className));

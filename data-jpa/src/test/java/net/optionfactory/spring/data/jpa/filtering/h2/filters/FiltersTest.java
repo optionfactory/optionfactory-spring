@@ -84,7 +84,7 @@ public class FiltersTest {
             Filters.path(root, "asLeft", new Filters.Traversal(List.of(new Filters.Step("b", JoinType.LEFT)), "id", null, null));
             final var thrown = Assertions.assertThrows(InvalidFilterConfiguration.class, () -> {
                 Filters.path(root, "asInner", new Filters.Traversal(List.of(new Filters.Step("b", JoinType.INNER)), "id", null, null));
-            });
+            }, "joining a hop already joined with a different join type is a configuration error");
             Assertions.assertTrue(thrown.getMessage().contains("already joined as LEFT, requested as INNER"), thrown.getMessage());
         }
     }
@@ -96,7 +96,7 @@ public class FiltersTest {
             public Predicate toPredicate(Root<RootAgg> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
                 final var ts = Filters.traversal(root.getModel(), "myFilter", "");
                 final Path<?> path = Filters.path(root, "myFilter", ts);
-                Assertions.assertEquals(RootAgg.class, path.getJavaType());
+                Assertions.assertEquals(RootAgg.class, path.getJavaType(), "an empty path resolves to the root itself");
                 return null;
             }
         };
@@ -110,7 +110,7 @@ public class FiltersTest {
             public Predicate toPredicate(Root<RootAgg> root, CriteriaQuery<?> cq, CriteriaBuilder cb) {
                 final var ts = Filters.traversal(root.getModel(), "myFilter", "b.c.i.n");
                 final Expression<Object> path = Filters.path(root, "myFilter", ts);
-                Assertions.assertEquals(Long.class, path.getJavaType());
+                Assertions.assertEquals(Long.class, path.getJavaType(), "a chain of associations and an embeddable resolves to the leaf property");
                 return null;
             }
         };
@@ -130,7 +130,7 @@ public class FiltersTest {
 
         Assertions.assertThrows(InvalidDataAccessApiUsageException.class, () -> {
             repository.findOne(specification, FilterRequest.unfiltered());
-        });
+        }, "a path naming a missing attribute fails the query");
     }
 
     @Test
@@ -142,7 +142,7 @@ public class FiltersTest {
     public void ensureThrowsOnFalsePrecondition() {
         Assertions.assertThrows(InvalidFilterRequest.class, () -> {
             Filters.ensure(false, null, "name", "");
-        });
+        }, "a false precondition is rejected as an invalid filter request");
     }
 
 }

@@ -22,7 +22,7 @@ public class SingletonDialectTest {
 
         final var rendered = engine.process("[[${#money.formatCents(cents)}]]", context);
 
-        Assertions.assertEquals("1.234,56", rendered);
+        Assertions.assertEquals("1.234,56", rendered, "the object is called from the template as #money");
     }
 
     @Test
@@ -30,10 +30,10 @@ public class SingletonDialectTest {
         final var functions = new Money(new Money.ItalianSymbols());
         final var dialect = SingletonDialect.of("money", functions);
 
-        Assertions.assertEquals("money", dialect.getName());
+        Assertions.assertEquals("money", dialect.getName(), "the dialect is named after the expression object");
         final var factory = dialect.getExpressionObjectFactory();
-        Assertions.assertEquals(Set.of("money"), factory.getAllExpressionObjectNames());
-        Assertions.assertSame(functions, factory.buildObject(null, "money"));
-        Assertions.assertTrue(factory.isCacheable("money"));
+        Assertions.assertEquals(Set.of("money"), factory.getAllExpressionObjectNames(), "the factory exposes the module name only");
+        Assertions.assertSame(functions, factory.buildObject(null, "money"), "the configured instance is exposed, not a copy");
+        Assertions.assertTrue(factory.isCacheable("money"), "the object is declared cacheable");
     }
 }

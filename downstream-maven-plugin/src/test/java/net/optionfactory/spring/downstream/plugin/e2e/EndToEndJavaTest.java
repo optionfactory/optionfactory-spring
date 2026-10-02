@@ -19,10 +19,10 @@ public class EndToEndJavaTest {
     @Test
     public void javaGeneration(@TempDir File tempDir) throws Exception {
         final var contents = pipeline.java(tempDir, Nesting.NESTED, JavaEmitter.DtoStyle.RECORDS, Map.of());
-        Assertions.assertTrue(contents.get("net/generated/Page.java").contains("public record Page<T>("), "failed to output generic record");
-        Assertions.assertTrue(contents.get("net/generated/Page.java").contains("T[] data"), "failed to output generic array field");
-        Assertions.assertTrue(contents.get("net/generated/User.java").contains("@Nullable String email"), "failed to retain @Nullable annotation");
-        Assertions.assertTrue(contents.get("net/generated/Role.java").contains("public enum Role {"), "failed to output enum struct");
-        Assertions.assertTrue(contents.get("net/generated/Role.java").contains("ADMIN,"), "enum missing constants");
+        Assertions.assertTrue(contents.get("net/generated/Page.java").contains("public record Page<T>("), "a generic payload becomes a generic record");
+        Assertions.assertTrue(contents.get("net/generated/Page.java").contains("T[] data"), "a generic array field keeps the type variable");
+        Assertions.assertTrue(contents.get("net/generated/User.java").contains("@Nullable String email"), "a @Nullable component keeps @Nullable");
+        Assertions.assertTrue(contents.get("net/generated/Role.java").contains("public enum Role {"), "an enum becomes an enum");
+        Assertions.assertTrue(contents.get("net/generated/Role.java").contains("ADMIN,"), "the enum keeps its constants");
     }
 }

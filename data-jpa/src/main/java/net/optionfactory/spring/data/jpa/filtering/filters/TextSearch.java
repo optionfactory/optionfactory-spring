@@ -25,47 +25,43 @@ import org.hibernate.dialect.MySQLDialect;
 import org.hibernate.dialect.PostgreSQLDialect;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 
-/**
- * Full-text search over one or more text properties. The searched document is
- * composed of the given {@code paths}; how the document is indexed and matched
- * depends on the database: postgres renders
- * {@code to_tsvector(language, p1 || ' ' || p2) @@ <query>}, mysql (and
- * mariadb) render {@code MATCH(p1, p2) AGAINST(<query> IN BOOLEAN MODE)}.
- *
- * <p>
- * Elements are engine-neutral:
- * <ul>
- * <li>{@code paths}: the document's fields, in order. May cross singular
- * associations on postgres; mysql {@code MATCH()} needs plain columns of the
- * root table, so association crossings are rejected at startup there.
- * Collection paths are rejected at startup on every engine.</li>
- * <li>{@code language}: the document's language, consumed where the engine
- * supports linguistics. Postgres uses it as the {@code regconfig} (stemming,
- * stopwords); mysql has no per-query language support and matches whole words
- * with collation case-folding.</li>
- * <li>{@code syntax}: how the client query text is interpreted, with identical
- * semantics on every engine. Matching <i>recall</i> is not portable: stemming
- * means postgres finds {@code cat} when searching {@code cats}, mysql does
- * not.</li>
- * </ul>
- *
- * <p>
- * Index pairing, per engine (the predicate uses the index only if the DDL
- * matches what the filter renders):
- *
- * <pre>{@code
- * // postgres, @TextSearch(paths = {"title", "body"}, language = "english")
- * CREATE INDEX by_content_fts_idx ON article
- *     USING GIN (to_tsvector('english', coalesce(title, '') || ' ' || coalesce(body, '')));
- * // postgres, @TextSearch(paths = "title", language = "english")
- * CREATE INDEX by_title_fts_idx ON article USING GIN (to_tsvector('english', coalesce(title, '')));
- * // mysql, any @TextSearch(paths = {"title", "body"})
- * CREATE FULLTEXT INDEX by_content_fts_idx ON article (title, body);
- * }</pre>
- *
- * On mysql a fulltext index is required: without one the query fails with
- * {@code Can't find FULLTEXT index matching the column list}.
- */
+/// Whitelists a full-text search over one or more text properties.
+///
+/// The filter takes one value, the client's query text, which must not be blank. The searched
+/// document is composed of the given [#paths()]; how it is indexed and matched depends on the
+/// database: postgres renders
+/// `to_tsvector(language, coalesce(p1, '') || ' ' || coalesce(p2, '')) @@ <query>`, mysql (and
+/// mariadb) render `MATCH(p1, p2) AGAINST(<query> IN BOOLEAN MODE)`. Any other database is
+/// rejected when the repository is built.
+///
+/// Elements are engine-neutral:
+///
+/// - `paths`: the document's fields, in order. May cross singular associations on postgres; mysql
+///   `MATCH()` needs plain columns of the root table, so association crossings are rejected at
+///   startup there, as are more than [TextSearchFunctions#MAX_DOCUMENT_PATHS] paths. Collection
+///   paths are rejected at startup on every engine.
+/// - `language`: the document's language, consumed where the engine supports linguistics.
+///   Postgres uses it as the `regconfig` (stemming, stopwords); mysql has no per-query language
+///   support and matches whole words with collation case-folding.
+/// - `syntax`: how the client query text is interpreted, with identical semantics on every engine.
+///   Matching *recall* is not portable: stemming means postgres finds `cat` when searching `cats`,
+///   mysql does not.
+///
+/// Index pairing, per engine (the predicate uses the index only if the DDL matches what the filter
+/// renders):
+///
+/// ```sql
+/// -- postgres, @TextSearch(paths = {"title", "body"}, language = "english")
+/// CREATE INDEX by_content_fts_idx ON article
+///     USING GIN (to_tsvector('english', coalesce(title, '') || ' ' || coalesce(body, '')));
+/// -- postgres, @TextSearch(paths = "title", language = "english")
+/// CREATE INDEX by_title_fts_idx ON article USING GIN (to_tsvector('english', coalesce(title, '')));
+/// -- mysql, any @TextSearch(paths = {"title", "body"})
+/// CREATE FULLTEXT INDEX by_content_fts_idx ON article (title, body);
+/// ```
+///
+/// On mysql a fulltext index is required: without one the query fails with
+/// `Can't find FULLTEXT index matching the column list`.
 @Documented
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.RUNTIME)
@@ -73,52 +69,45 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 @Repeatable(TextSearch.RepeatableTextSearch.class)
 public @interface TextSearch {
 
-    /**
-     * How the client-provided query text is interpreted. The semantics hold
-     * on every supported engine.
-     */
+    /// How the client-provided query text is interpreted. The semantics hold on every supported
+    /// engine.
     public enum Syntax {
 
-        /**
-         * Every term must match, in any order; no client-controlled syntax.
-         * The default.
-         */
+        /// Every term must match, in any order; no client-controlled syntax. The default.
         PLAIN,
-        /**
-         * The client may use {@code "quoted phrases"}, {@code OR} between two
-         * terms and {@code -term} to exclude a term.
-         */
+        /// The client may use `"quoted phrases"`, `OR` between two terms and `-term` to exclude a
+        /// term.
         WEBSEARCH,
-        /**
-         * The terms must appear adjacent and in the given order.
-         */
+        /// The terms must appear adjacent and in the given order.
         PHRASE;
     }
 
+    /// @return the name the filter is whitelisted under, and requested by
     String name();
 
-    /**
-     * The text properties composing the searched document, in order.
-     */
+    /// @return the text properties composing the searched document, in order; at least one
     String[] paths();
 
-    /**
-     * The document's language: the postgres {@code regconfig} used both to
-     * normalize the document and to parse the query; ignored on mysql, which
-     * matches whole words with collation case-folding.
-     */
+    /// @return the document's language: the postgres `regconfig` used both to normalize the
+    /// document and to parse the query; ignored on mysql, which matches whole words with collation
+    /// case-folding
     String language() default "simple";
 
+    /// @return how the client's query text is interpreted
     Syntax syntax() default Syntax.PLAIN;
 
+    /// The container of repeated [TextSearch] annotations, used implicitly by the compiler when the
+    /// annotation is repeated on an entity.
     @Documented
     @Target(value = ElementType.TYPE)
     @Retention(value = RetentionPolicy.RUNTIME)
     public static @interface RepeatableTextSearch {
 
+        /// @return the repeated annotations
         TextSearch[] value();
     }
 
+    /// The filter whitelisted by [TextSearch].
     public static class TextSearchFilter implements net.optionfactory.spring.data.jpa.filtering.Filter {
 
         private final String name;
@@ -127,6 +116,14 @@ public @interface TextSearch {
         private final Syntax syntax;
         private final Support support;
 
+        /// Picks the rendering for the database dialect of the entity manager factory.
+        ///
+        /// @param annotation the whitelisting annotation
+        /// @param emf the entity manager factory, whose dialect is inspected
+        /// @param entity the entity the annotation is on
+        /// @throws InvalidFilterConfiguration when no path is given, a path is not a `String`
+        /// property or crosses a collection, the paths are not supported by the dialect, or the
+        /// dialect is neither postgres nor mysql
         public TextSearchFilter(TextSearch annotation, EntityManagerFactory emf, EntityType<?> entity) {
             this.name = annotation.name();
             this.language = annotation.language();
@@ -143,11 +140,15 @@ public @interface TextSearch {
             this.support = Support.of(emf, annotation.name(), entity, this.traversals);
         }
 
+        /// @return the name the filter is whitelisted under
+        /// @return the name the filter is whitelisted under
         @Override
         public String name() {
             return name;
         }
 
+        /// @throws net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequest when
+        /// the values are not a single query text, or the text is `null` or blank
         @Override
         public Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values) {
             Filters.ensure(values.length == 1, root, name, "expected query, got %s", Arrays.toString(values));
@@ -217,13 +218,10 @@ public @interface TextSearch {
                 return builder.isTrue(builder.function(functionName, Boolean.class, arguments));
             }
 
-            /**
-             * Translates the engine-neutral syntax to a mysql boolean mode
-             * query. Every term is double-quoted, so operators inside client
-             * text are literal; required terms get {@code +}, excluded ones
-             * {@code -}, and the two operands of a websearch {@code OR} lose
-             * their {@code +} (juxtaposition is mysql's OR).
-             */
+            /// Translates the engine-neutral syntax to a mysql boolean mode query. Every term is
+            /// double-quoted, so operators inside client text are literal; required terms get `+`,
+            /// excluded ones `-`, and the two operands of a websearch `OR` lose their `+`
+            /// (juxtaposition is mysql's OR).
             static String booleanModeQuery(Syntax syntax, String text) {
                 return switch (syntax) {
                     case PLAIN -> {
@@ -294,11 +292,8 @@ public @interface TextSearch {
                 }
             }
 
-            /**
-             * Splits websearch text into whitespace-separated parts, treating
-             * double-quoted segments as single parts and a {@code -} attached
-             * to the next part as an exclusion marker.
-             */
+            /// Splits websearch text into whitespace-separated parts, treating double-quoted segments
+            /// as single parts and a `-` attached to the next part as an exclusion marker.
             private static List<Part> tokenize(String text) {
                 final var parts = new ArrayList<Part>();
                 var current = new StringBuilder();
@@ -344,10 +339,14 @@ public @interface TextSearch {
         }
     }
 
+    /// Encodes the value of a [TextSearch] filter for a [net.optionfactory.spring.data.jpa.filtering.FilterRequest].
     public enum Filter {
 
+        /// The only instance.
         INSTANCE;
 
+        /// @param query the client's query text
+        /// @return the filter values
         public String[] of(String query) {
             return new String[]{query};
         }

@@ -47,7 +47,7 @@ public class StreamingJsonClientTest {
     @Test
     public void canReadUnbufferedStreamWhenMappingToAStream() throws IOException {
         try (final var stream = client.fetchStream()) {
-            Assertions.assertEquals(List.of(new Bean("k1", "v1"), new Bean("k2", "v2")), stream.toList());
+            Assertions.assertEquals(List.of(new Bean("k1", "v1"), new Bean("k2", "v2")), stream.toList(), "a Stream result must map every element of a json array");
         }
     }
 
@@ -55,14 +55,14 @@ public class StreamingJsonClientTest {
     public void canReadUnbufferedStreamWhenMappingToAResponseEntityWithStream() throws IOException {
         final var got = client.fetchStreamWithResponseEntity();
         try (final var stream = got.getBody()) {
-            Assertions.assertEquals(List.of(new Bean("k1", "v1"), new Bean("k2", "v2")), stream.toList());
+            Assertions.assertEquals(List.of(new Bean("k1", "v1"), new Bean("k2", "v2")), stream.toList(), "a ResponseEntity of Stream must map every element of a json array");
         }
     }
 
     @Test
     public void canReadUnbufferedStreamWhenMappingToAStreamFromJsonl() throws IOException {
         try (final var stream = client.fetchStreamFromJsonl()) {
-            Assertions.assertEquals(List.of(new Bean("k1", "v1"), new Bean("k2", "v2")), stream.toList());
+            Assertions.assertEquals(List.of(new Bean("k1", "v1"), new Bean("k2", "v2")), stream.toList(), "a Stream result must map every json line");
         }
     }
 

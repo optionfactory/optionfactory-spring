@@ -25,10 +25,12 @@ import org.springframework.security.authentication.BadCredentialsException;
 /// [Match#SKIP] leaves it to the next processor, [Match#STRICT] claims it, so that if this processor
 /// rejects it the token is rejected, and [Match#LAX] tries it and, if this processor rejects it,
 /// passes it on to the next one. A processor rejects a token when its signature (or decryption) fails,
-/// its claims do not satisfy the [ClaimsPolicy], or no principal is derived from it. Several issuers
+/// its claims do not satisfy the [ClaimsPolicy], no principal is derived from it, or its authority
+/// converter throws a `BadCredentialsException`. Several issuers
 /// can therefore share a header either with `LAX` processors, each trying the token in turn, or with
 /// matchers routing each token by its unverified header or claims (a `kid`, an `iss`) to the one
 /// processor that `STRICT`ly owns it, which also keeps a token from being checked against every key.
+/// Only the processors configured for the header and scheme the token was found on are consulted.
 ///
 /// A signed JWT is accepted once its signature verifies and its claims satisfy the processor's
 /// [ClaimsPolicy]. An encrypted JWT is decrypted first, and then trusted in one of two ways. With an
@@ -38,16 +40,23 @@ import org.springframework.security.authentication.BadCredentialsException;
 /// JWE only — the payload is read as raw claims, the shared secret being the trust root. See
 /// [JweAuthenticationConfigurer]. Each processor decrypts its own copy of the token, so one that fails
 /// halfway leaves nothing behind for the next.
+///
+/// A token that is not a JWT, an unsecured JWT (`alg: none`), and a signed JWT whose claims cannot be
+/// parsed are not for this processor: they are left to the next one, whatever the matchers say.
 public class JwtTokenProcessor implements TokenProcessor {
 
     final List<JwsProcessor> jwsProcessors;
     final List<JweProcessor> jweProcessors;
 
+    /// @param jwsProcessors the processors for signed tokens, consulted in order
+    /// @param jweProcessors the processors for encrypted tokens, consulted in order
     public JwtTokenProcessor(List<JwsProcessor> jwsProcessors, List<JweProcessor> jweProcessors) {
         this.jwsProcessors = jwsProcessors;
         this.jweProcessors = jweProcessors;
     }
 
+    /// @return what the first processor accepting the token grants, or `null` when none accepts it
+    /// @throws BadCredentialsException when a processor that `STRICT`ly claimed the token rejects it
     @Override
     public PrincipalAndAuthorities process(HeaderAndScheme hs, String token) {
         final JWT jwt;
@@ -166,10 +175,27 @@ public class JwtTokenProcessor implements TokenProcessor {
         return new PrincipalAndAuthorities(principal, authorities.convert(header, claims));
     }
 
+    /// A JWS configuration, as built by [JwsAuthenticationConfigurer.Builder#build()].
+    ///
+    /// @param hs the header and scheme the token must be found on
+    /// @param matcher decides how the token is treated, before verification
+    /// @param verifier verifies the signature
+    /// @param claimsVerifier enforces the [ClaimsPolicy]
+    /// @param authorities derives the authorities of an accepted token
+    /// @param principal derives the principal of an accepted token
     public record JwsProcessor(HeaderAndScheme hs, JwsMatcher matcher, JWSVerifier verifier, JWTClaimsSetVerifier<SecurityContext> claimsVerifier, JwtAuthoritiesConverter authorities, JwtPrincipalConverter principal) {
 
     }
 
+    /// A JWE configuration, as built by [JweAuthenticationConfigurer.Builder#build()].
+    ///
+    /// @param hs the header and scheme the token must be found on
+    /// @param matcher decides how the token is treated, before decryption
+    /// @param decrypter decrypts the token
+    /// @param innerVerifier verifies the nested JWS, or `null` to read the payload as raw claims
+    /// @param claimsVerifier enforces the [ClaimsPolicy]
+    /// @param authorities derives the authorities of an accepted token
+    /// @param principal derives the principal of an accepted token
     public record JweProcessor(HeaderAndScheme hs, JweMatcher matcher, JWEDecrypter decrypter, JWSVerifier innerVerifier, JWTClaimsSetVerifier<SecurityContext> claimsVerifier, JwtAuthoritiesConverter authorities, JwtPrincipalConverter principal) {
 
     }

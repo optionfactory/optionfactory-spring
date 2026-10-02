@@ -17,8 +17,8 @@ public class OauthClientTest {
     @Test
     public void jwtBearerExchangesAssertionForAccessToken() {
         final var got = client.jwtBearer("assertion-value");
-        Assertions.assertEquals("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtb2NrIn0.GZ6RFN2HiP5-lKMItClOuEqUfVDV-2akPWzHF4u_Q7I", got.path("access_token").asString());
-        Assertions.assertEquals("bearer", got.path("token_type").asString());
+        Assertions.assertEquals("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtb2NrIn0.GZ6RFN2HiP5-lKMItClOuEqUfVDV-2akPWzHF4u_Q7I", got.path("access_token").asString(), "the bundled mock token response must be returned");
+        Assertions.assertEquals("bearer", got.path("token_type").asString(), "the bundled mock token response must declare a bearer token");
     }
 
 }

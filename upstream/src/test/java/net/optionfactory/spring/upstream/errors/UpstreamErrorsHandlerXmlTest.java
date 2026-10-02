@@ -13,7 +13,7 @@ public class UpstreamErrorsHandlerXmlTest {
 
     @Test
     public void canMatchUsingXpath() {
-        UpstreamBuilder
+        final var got = UpstreamBuilder
                 .create(UpstreamErrorsSoapClient.class)
                 .soap(SoapJaxbHttpMessageConverter.Protocol.SOAP_1_1, Schemas.NONE, SoapHeaderWriter.NONE, AddResponse.class)
                 .requestFactoryMock(c -> {
@@ -34,6 +34,7 @@ public class UpstreamErrorsHandlerXmlTest {
                 .baseUri("http://example.com")
                 .build()
                 .callWithXpath();
+        Assertions.assertEquals(8, got.addResult, "a response not matching the xpath condition must be unmarshalled as usual");
     }
 
     @Test
@@ -60,7 +61,7 @@ public class UpstreamErrorsHandlerXmlTest {
                 .build();
         Assertions.assertThrows(RestClientUpstreamException.class, () -> {
             client.callWithXpath();
-        });
+        }, "a response matching the xpath condition must fail the call");
     }
 
 }

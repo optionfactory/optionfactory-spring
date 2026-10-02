@@ -14,25 +14,58 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.web.servlet.ModelAndView;
 
+/// Answers the exceptions of page handlers with an error view.
+///
+/// An exception is matched against the mappings registered with the [Builder], in registration
+/// order, the first mapping whose class the exception is an instance of answering it with its view,
+/// and with its status when it has one: a mapping without status leaves the response status as it
+/// is. An unmapped exception is answered with the default view, `error` unless configured
+/// otherwise, and the status of a `ResponseStatusException`, `502` for a `RestClientException`,
+/// logged at `WARN`, or `500`, logged at `WARN` with its stack trace, for anything else, spring's
+/// own exceptions for a missing parameter or an unsupported method included.
+///
+/// An `AccessDeniedException` is always declined, before any mapping is consulted, so that it
+/// reaches spring security's `ExceptionTranslationFilter`, which starts the authentication of an
+/// anonymous user and hands anyone else to its access denied handler.
+///
+/// The resolver answers any handler: it relies on its place in the chain, behind the rest and
+/// binary resolvers, to see only page handlers, see [ExceptionResolvers#configure()]. Every request
+/// is answered with the same `ModelAndView` instances, those given to the builder: they must not be
+/// modified.
+///
+/// ```java
+/// ExceptionResolvers.configurer(resolvers)
+///         .pages(pages -> pages
+///                 .with("errors/generic")
+///                 .with(EntityNotFoundException.class, "errors/not-found", 404))
+///         .configure();
+/// ```
 public class PagesExceptionResolver implements HandlerExceptionResolver {
 
     private final Logger logger = LoggerFactory.getLogger(PagesExceptionResolver.class);
     private final ModelAndView defaultMav;
     private final Map<Class<? extends Exception>, ModelViewStatus> exceptionToView;
 
+    /// @param defaultMav the answer to an exception no mapping matches
+    /// @param exceptionToView the mappings, consulted in the map's iteration order
     public PagesExceptionResolver(ModelAndView defaultMav, Map<Class<? extends Exception>, ModelViewStatus> exceptionToView) {
         this.defaultMav = defaultMav;
         this.exceptionToView = exceptionToView;
     }
 
+    /// @return a builder answering every exception with the `error` view
     public static Builder builder() {
         return new Builder();
     }
 
+    /// @param request the current request
+    /// @param response the current response, whose status is set
+    /// @param handler the handler that threw, possibly `null`
+    /// @param ex the exception
+    /// @return the view to render, or `null` for an `AccessDeniedException`
     @Override
     public ModelAndView resolveException(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
         if (ex instanceof AccessDeniedException) {
-            // Explicitly do nothing, just return null to trigger the next resolvers (notably the ones registered by spring security)
             return null;
         }
         for (var entry : exceptionToView.entrySet()) {
@@ -62,45 +95,74 @@ public class PagesExceptionResolver implements HandlerExceptionResolver {
         };
     }
 
+    /// How a mapped exception is answered.
+    ///
+    /// @param mav the view to render
+    /// @param status the status to set, or `null` to leave the response's as it is
     public record ModelViewStatus(ModelAndView mav, Integer status) {
 
     }
 
+    /// Configures a [PagesExceptionResolver]. Registering a mapping for a class already mapped
+    /// replaces its view and status, but keeps its place in the order.
     public static class Builder {
 
         private ModelAndView errorAction = new ModelAndView("error");
         private final Map<Class<? extends Exception>, ModelViewStatus> exceptionToView = new LinkedHashMap<>();
 
+        /// @param defaultView the name of the view answering an exception no mapping matches
+        /// @return this builder
         public Builder with(String defaultView) {
             this.errorAction = new ModelAndView(defaultView);
             return this;
         }
 
+        /// @param defaultMav the answer to an exception no mapping matches
+        /// @return this builder
         public Builder with(ModelAndView defaultMav) {
             this.errorAction = defaultMav;
             return this;
         }
 
+        /// @param clazz the exceptions to answer, subclasses included
+        /// @param view the name of the view answering them
+        /// @param status the status to set, or `null` to leave the response's as it is
+        /// @return this builder
         public Builder with(Class<? extends Exception> clazz, String view, Integer status) {
             this.exceptionToView.put(clazz, new ModelViewStatus(new ModelAndView(view), status));
             return this;
         }
 
+        /// Maps exceptions to a view, leaving the response status as it is.
+        ///
+        /// @param clazz the exceptions to answer, subclasses included
+        /// @param view the name of the view answering them
+        /// @return this builder
         public Builder with(Class<? extends Exception> clazz, String view) {
             this.exceptionToView.put(clazz, new ModelViewStatus(new ModelAndView(view), null));
             return this;
         }
 
+        /// @param clazz the exceptions to answer, subclasses included
+        /// @param mav the answer to them
+        /// @param status the status to set, or `null` to leave the response's as it is
+        /// @return this builder
         public Builder with(Class<? extends Exception> clazz, ModelAndView mav, Integer status) {
             this.exceptionToView.put(clazz, new ModelViewStatus(mav, status));
             return this;
         }
 
+        /// Maps exceptions to a view, leaving the response status as it is.
+        ///
+        /// @param clazz the exceptions to answer, subclasses included
+        /// @param mav the answer to them
+        /// @return this builder
         public Builder with(Class<? extends Exception> clazz, ModelAndView mav) {
             this.exceptionToView.put(clazz, new ModelViewStatus(mav, null));
             return this;
         }
 
+        /// @return the configured resolver
         public PagesExceptionResolver build() {
             return new PagesExceptionResolver(errorAction, exceptionToView);
         }

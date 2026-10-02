@@ -19,21 +19,60 @@ import java.util.Arrays;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.SignatureInterface;
 import org.springframework.util.Assert;
 
+/// The pdfbox [SignatureInterface] producing the detached PKCS#7 (CMS) `SignedData` of a PDF
+/// signature, encoded with [DerWriter] rather than with a crypto library such as BouncyCastle.
+///
+/// The structure follows RFC 2315 (PKCS#7), RFC 2985 (PKCS#9) and RFC 5652 (CMS):
+///
+/// - the signed content, the byte ranges of the PDF that pdfbox hands over, is digested with
+///   SHA-256 and not embedded: a detached signature, matching the `adbe.pkcs7.detached` subfilter
+///   [PdfSigner] declares;
+/// - every certificate of the chain is embedded, and the signer is identified by issuer and serial
+///   number of the first one, which must therefore be the signer certificate; the issuer is copied
+///   as the certificate encodes it, so that no distinguished name is re-encoded;
+/// - the signed attributes are the content type, the message digest, the signing time and the
+///   commitment type of the [SignatureInfo], the CMS algorithm protection (RFC 6211) and the
+///   signing certificate v2, binding the SHA-256 of the signer certificate (its optional
+///   `IssuerSerial` is omitted). They are sorted by their encoding, as DER requires of a `SET OF`.
+///   The signature is computed over their `SET` encoding (tag `0x31`), while the `SignerInfo`
+///   carries the same bytes as `[0] IMPLICIT` (tag `0xA0`);
+/// - RFC 6211 defines its module with implicit tags, so the signature algorithm in the CMS
+///   algorithm protection is a `[1]` tag directly wrapping the algorithm identifier fields, not a
+///   `SEQUENCE`;
+/// - the signature algorithm is `SHA256withRSA`, identified as `rsaEncryption`, for an RSA key of at
+///   least 2048 bits, and `SHA256withECDSA` for a 256 bit EC key.
+///
+/// The signing time is the one of the [SignatureInfo], not the current time, and no timestamp is
+/// requested from a TSA.
+///
+/// An instance signs for one [SignatureInfo]: [PdfSigner] creates one per signature.
 public class Pkcs7PdfSigner implements SignatureInterface {
 
+    /// SHA-256, the digest algorithm.
     public static final String OID_SHA256 = "2.16.840.1.101.3.4.2.1";
+    /// `rsaEncryption`, identifying the signature algorithm of RSA keys.
     public static final String OID_RSA = "1.2.840.113549.1.1.1";
+    /// `ecdsa-with-SHA256`, identifying the signature algorithm of EC keys.
     public static final String OID_ECDSA_WITH_SHA256 = "1.2.840.10045.4.3.2";
 
+    /// The PKCS#7 `data` content type, the type of the signed content.
     public static final String OID_PKCS7_DATA = "1.2.840.113549.1.7.1";
+    /// The PKCS#7 `signedData` content type, the type of the produced structure.
     public static final String OID_PKCS7_SIGNED_DATA = "1.2.840.113549.1.7.2";
+    /// The PKCS#9 content type attribute.
     public static final String OID_PKCS9_CONTENT_TYPE = "1.2.840.113549.1.9.3";
+    /// The PKCS#9 message digest attribute.
     public static final String OID_PKCS9_MESSAGE_DIGEST = "1.2.840.113549.1.9.4";
+    /// The PKCS#9 signing time attribute.
     public static final String OID_PKCS9_SIGNING_TIME = "1.2.840.113549.1.9.5";
+    /// The signing certificate v2 attribute of RFC 5035.
     public static final String OID_AA_SIGNING_CERTIFICATE_V2 = "1.2.840.113549.1.9.16.2.47";
+    /// The CMS algorithm protection attribute of RFC 6211.
     public static final String OID_AA_CMS_ALGORITHM_PROTECT = "1.2.840.113549.1.9.52";
 
+    /// The ETSI commitment type indication attribute.
     public static final String OID_AA_ETS_COMMITMENT_TYPE = "1.2.840.113549.1.9.16.2.16";
+    /// The ETSI signer location attribute, not currently signed.
     public static final String OID_AA_ETS_SIGNER_LOCATION = "1.2.840.113549.1.9.16.2.17";
 
     private final PrivateKey privateKey;
@@ -42,6 +81,11 @@ public class Pkcs7PdfSigner implements SignatureInterface {
     private final String signatureAlgorithmName;
     private final String signatureAlgorithmOid;
 
+    /// @param privateKey the signing key: RSA of at least 2048 bits, or EC (`EC` or `ECDSA`) with a
+    /// 256 bit order such as P-256
+    /// @param certificateChain the certificates to embed, the signer's first; it must not be empty
+    /// @param signatureInfo the signing time and commitment type to sign
+    /// @throws IllegalArgumentException when the key is of another algorithm, size or type
     public Pkcs7PdfSigner(PrivateKey privateKey, X509Certificate[] certificateChain, SignatureInfo signatureInfo) {
         this.privateKey = privateKey;
         this.certificateChain = certificateChain;
@@ -70,10 +114,12 @@ public class Pkcs7PdfSigner implements SignatureInterface {
 
     }
 
+    /// @param content the bytes to sign, read to the end and closed
+    /// @return the DER encoded `ContentInfo` of the `SignedData`
+    /// @throws IOException when the content cannot be read, or the signature cannot be computed
     @Override
     public byte[] sign(InputStream content) throws IOException {
         try {
-            //see: RFC 2315 (PKCS#7) RFC 2985 (PKCS#9) and RFC 5652 (CMS)
             final var contentHash = sha256Of(content);
             final var attributesSet = createAuthenticatedAttributes(contentHash);
             final var signatureBytes = signAttributes(attributesSet);
@@ -85,7 +131,7 @@ public class Pkcs7PdfSigner implements SignatureInterface {
 
     private byte[] createCmsContainer(byte[] attributesSet, byte[] signatureBytes) throws CertificateEncodingException, IOException {
         final var authenticatedAttributes = Arrays.copyOf(attributesSet, attributesSet.length);
-        authenticatedAttributes[0] = (byte) 0xA0; //[0] IMPLICIT SET of Attributes (changed tag 0x31 to 0xA0)
+        authenticatedAttributes[0] = (byte) 0xA0;
 
         final var certBytesList = new ArrayList<byte[]>();
         for (X509Certificate cert : certificateChain) {
@@ -102,33 +148,33 @@ public class Pkcs7PdfSigner implements SignatureInterface {
                 DerWriter.explicit(0,
                         DerWriter.seq(
                                 DerWriter.integer(1),
-                                DerWriter.set(// DigestAlgorithms
+                                DerWriter.set(
                                         DerWriter.seq(
                                                 DerWriter.oid(OID_SHA256),
                                                 DerWriter.nul()
                                         )
                                 ),
-                                DerWriter.seq( // ContentInfo
+                                DerWriter.seq(
                                         DerWriter.oid(OID_PKCS7_DATA),
-                                        null // Detached signature (no content)
+                                        null
                                 ),
-                                DerWriter.implicit( // [0] IMPLICIT Certificates
+                                DerWriter.implicit(
                                         0,
                                         certsBytes
                                 ),
-                                DerWriter.set(// SignerInfos
-                                        DerWriter.seq(DerWriter.integer(1), // Version 1
-                                                DerWriter.seq( // IssuerAndSerialNumber
-                                                        certificateChain[0].getIssuerX500Principal().getEncoded(), // Raw encoded principal to avoid parsing DNs
+                                DerWriter.set(
+                                        DerWriter.seq(DerWriter.integer(1),
+                                                DerWriter.seq(
+                                                        certificateChain[0].getIssuerX500Principal().getEncoded(),
                                                         DerWriter.integer(certificateChain[0].getSerialNumber())
                                                 ),
-                                                DerWriter.seq( // digestAlgorithm (SHA-256, the content/message digest)
+                                                DerWriter.seq(
                                                         DerWriter.oid(OID_SHA256),
                                                         DerWriter.nul()
                                                 ),
-                                                authenticatedAttributes, // SignedAttributes [0] IMPLICIT
-                                                signatureAlgorithm, // signatureAlgorithm (per key type: RSA or ECDSA-with-SHA256)
-                                                DerWriter.octetString(signatureBytes) // Signature (EncryptedDigest)
+                                                authenticatedAttributes,
+                                                signatureAlgorithm,
+                                                DerWriter.octetString(signatureBytes)
                                         )
                                 )
                         )
@@ -137,7 +183,6 @@ public class Pkcs7PdfSigner implements SignatureInterface {
     }
 
     private byte[] signAttributes(byte[] attributesSet) throws GeneralSecurityException {
-        //Sign the DER encoding of authenticatedAttributes (SET tag 0x31 + length + contents)
         final var sig = Signature.getInstance(signatureAlgorithmName);
         sig.initSign(privateKey);
         sig.update(attributesSet);
@@ -173,8 +218,6 @@ public class Pkcs7PdfSigner implements SignatureInterface {
                         )
                 )
         );
-        // CMSAlgorithmProtection (RFC 6211) is defined with IMPLICIT TAGS, so signatureAlgorithm is
-        // [1] IMPLICIT AlgorithmIdentifier: the [1] tag directly wraps {oid, params}, not a SEQUENCE.
         final var protectedSignatureAlgorithm = OID_RSA.equals(signatureAlgorithmOid)
                 ? DerWriter.implicit(1, DerWriter.oid(OID_RSA), DerWriter.nul())
                 : DerWriter.implicit(1, DerWriter.oid(signatureAlgorithmOid));
@@ -201,14 +244,11 @@ public class Pkcs7PdfSigner implements SignatureInterface {
                                 DerWriter.seq(
                                         DerWriter.seq(
                                                 DerWriter.octetString(certHash)
-                                        // TODO: IssuerSerial omitted 
-                                        // Sequence { GeneralNames (Sequence), SerialNumber (Integer) }
                                         )
                                 )
                         )
                 )
         );
-        // Attributes must be sorted (by binary repr of DER) 
         final byte[][] attributes = {attrContentType, attrMessageDigest, attrSigningTime, attrCommitmentType, attrAlgorithmProtect, attrSigningCertificateV2};
         Arrays.sort(attributes, Arrays::compareUnsigned);
         return DerWriter.set(attributes);

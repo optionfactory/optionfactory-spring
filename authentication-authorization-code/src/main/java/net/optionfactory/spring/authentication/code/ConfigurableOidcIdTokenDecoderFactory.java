@@ -21,7 +21,6 @@ import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.converter.ClaimConversionService;
 import org.springframework.security.oauth2.core.converter.ClaimTypeConverter;
 import org.springframework.security.oauth2.core.oidc.IdTokenClaimNames;
-import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
 import org.springframework.security.oauth2.jose.jws.JwsAlgorithm;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -35,9 +34,34 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
-/**
-* same as OidcIdTokenDecoderFactory, but so we can configure the clienthHttpRequestFactory used by NimbusJwtDecoder
- */
+/// Creates the decoders verifying the OIDC id tokens received at login: the same as spring's
+/// `OidcIdTokenDecoderFactory`, except that the issuer's jwk set is fetched through a configurable
+/// `ClientHttpRequestFactory`, so that proxies, timeouts and tls settings apply to it too.
+///
+/// The algorithm is resolved per client registration, RS256 by default, and decides how the id
+/// token is verified, as the OIDC core specification (3.1.3.7, "ID Token Validation") prescribes:
+///
+/// - a signature algorithm (`RS*`, `PS*`, `ES*`) verifies with the issuer's keys, fetched from the
+///   registration's jwk set uri;
+/// - a mac algorithm (`HS*`) verifies with the UTF-8 bytes of the registration's client secret,
+///   with no fetch at all.
+///
+/// Once verified, the token is validated by `JwtTimestampValidator` and `OidcIdTokenValidator` (the
+/// issuer, when the registration declares one; an audience naming this client; `azp`, `iat` and
+/// `exp`) unless another validator is configured, and its claims are converted to the types
+/// `OidcIdToken` expects.
+///
+/// A decoder is created once per registration id and cached: changes to a registration with the
+/// same id are not picked up.
+///
+/// `oauth2Login` picks the factory up as a `JwtDecoderFactory<ClientRegistration>` bean:
+///
+/// ```java
+/// @Bean
+/// public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(ClientHttpRequestFactory requestFactory) {
+///     return new ConfigurableOidcIdTokenDecoderFactory(requestFactory);
+/// }
+/// ```
 public final class ConfigurableOidcIdTokenDecoderFactory implements JwtDecoderFactory<ClientRegistration> {
 
     private static final String MISSING_SIGNATURE_VERIFIER_ERROR_CODE = "missing_signature_verifier";
@@ -56,17 +80,16 @@ public final class ConfigurableOidcIdTokenDecoderFactory implements JwtDecoderFa
     
     private final RestTemplate restTemplate;
 
+    /// @param oauthHttpRequestFactory the factory the jwk sets are fetched with
     public ConfigurableOidcIdTokenDecoderFactory(ClientHttpRequestFactory oauthHttpRequestFactory) {
         this.restTemplate = new RestTemplate(oauthHttpRequestFactory);
     }
 
-    /**
-     * Returns the default {@link Converter}'s used for type conversion of claim
-     * values for an {@link OidcIdToken}.
-     *
-     * @return a {@link Map} of {@link Converter}'s keyed by
-     * {@link IdTokenClaimNames claim name}
-     */
+    /// The default converters of the id token claims: `iss` to a `URL`; `aud` and `amr` to string
+    /// collections; `nonce` to a string; `exp`, `iat`, `auth_time` and `updated_at` to `Instant`s;
+    /// `email_verified` and `phone_number_verified` to booleans.
+    ///
+    /// @return the converters, keyed by claim name
     public static Map<String, Converter<Object, ?>> createDefaultClaimTypeConverters() {
         Converter<Object, ?> booleanConverter = getConverter(TypeDescriptor.valueOf(Boolean.class));
         Converter<Object, ?> instantConverter = getConverter(TypeDescriptor.valueOf(Instant.class));
@@ -94,6 +117,11 @@ public final class ConfigurableOidcIdTokenDecoderFactory implements JwtDecoderFa
         return source -> ClaimConversionService.getSharedInstance().convert(source, sourceDescriptor, targetDescriptor);
     }
 
+    /// @param clientRegistration the registration whose id tokens are decoded
+    /// @return the decoder for that registration id, created on first use
+    /// @throws OAuth2AuthenticationException with error code `missing_signature_verifier` when no
+    /// verifier can be made: a signature algorithm without a jwk set uri, a mac algorithm without a
+    /// client secret, or no algorithm at all
     @Override
     public JwtDecoder createDecoder(ClientRegistration clientRegistration) {
         Assert.notNull(clientRegistration, "clientRegistration cannot be null");
@@ -112,17 +140,6 @@ public final class ConfigurableOidcIdTokenDecoderFactory implements JwtDecoderFa
     private NimbusJwtDecoder buildDecoder(ClientRegistration clientRegistration) {
         JwsAlgorithm jwsAlgorithm = this.jwsAlgorithmResolver.apply(clientRegistration);
         if (jwsAlgorithm != null && SignatureAlgorithm.class.isAssignableFrom(jwsAlgorithm.getClass())) {
-            // https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation
-            //
-            // 6. If the ID Token is received via direct communication between the Client
-            // and the Token Endpoint (which it is in this flow),
-            // the TLS server validation MAY be used to validate the issuer in place of checking the token signature.
-            // The Client MUST validate the signature of all other ID Tokens according to JWS [JWS]
-            // using the algorithm specified in the JWT alg Header Parameter.
-            // The Client MUST use the keys provided by the Issuer.
-            //
-            // 7. The alg value SHOULD be the default of RS256 or the algorithm sent by the Client
-            // in the id_token_signed_response_alg parameter during Registration.
 
             String jwkSetUri = clientRegistration.getProviderDetails().getJwkSetUri();
             if (!StringUtils.hasText(jwkSetUri)) {
@@ -137,14 +154,6 @@ public final class ConfigurableOidcIdTokenDecoderFactory implements JwtDecoderFa
             }
             return NimbusJwtDecoder.withJwkSetUri(jwkSetUri).restOperations(restTemplate).jwsAlgorithm((SignatureAlgorithm) jwsAlgorithm).build();
         } else if (jwsAlgorithm != null && MacAlgorithm.class.isAssignableFrom(jwsAlgorithm.getClass())) {
-            // https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation
-            //
-            // 8. If the JWT alg Header Parameter uses a MAC based algorithm such as HS256, HS384, or HS512,
-            // the octets of the UTF-8 representation of the client_secret
-            // corresponding to the client_id contained in the aud (audience) Claim
-            // are used as the key to validate the signature.
-            // For MAC based algorithms, the behavior is unspecified if the aud is multi-valued or
-            // if an azp value is present that is different than the aud value.
 
             String clientSecret = clientRegistration.getClientSecret();
             if (!StringUtils.hasText(clientSecret)) {
@@ -173,44 +182,29 @@ public final class ConfigurableOidcIdTokenDecoderFactory implements JwtDecoderFa
         throw new OAuth2AuthenticationException(oauth2Error, oauth2Error.toString());
     }
 
-    /**
-     * Sets the factory that provides an {@link OAuth2TokenValidator}, which is
-     * used by the {@link JwtDecoder}. The default composes
-     * {@link JwtTimestampValidator} and {@link OidcIdTokenValidator}.
-     *
-     * @param jwtValidatorFactory the factory that provides an
-     * {@link OAuth2TokenValidator}
-     */
+    /// Sets the factory of the validators checking the verified id token. The default composes
+    /// `JwtTimestampValidator` and `OidcIdTokenValidator`: a replacement should keep their checks.
+    ///
+    /// @param jwtValidatorFactory provides the validator for a registration
     public void setJwtValidatorFactory(Function<ClientRegistration, OAuth2TokenValidator<Jwt>> jwtValidatorFactory) {
         Assert.notNull(jwtValidatorFactory, "jwtValidatorFactory cannot be null");
         this.jwtValidatorFactory = jwtValidatorFactory;
     }
 
-    /**
-     * Sets the resolver that provides the expected
-     * {@link JwsAlgorithm JWS algorithm} used for the signature or MAC on the
-     * {@link OidcIdToken ID Token}. The default resolves to
-     * {@link SignatureAlgorithm#RS256 RS256} for all
-     * {@link ClientRegistration clients}.
-     *
-     * @param jwsAlgorithmResolver the resolver that provides the expected
-     * {@link JwsAlgorithm JWS algorithm} for a specific
-     * {@link ClientRegistration client}
-     */
+    /// Sets the resolver of the algorithm expected on a registration's id tokens, which decides how
+    /// they are verified. The default resolves to RS256 for every registration.
+    ///
+    /// @param jwsAlgorithmResolver provides the expected algorithm for a registration
     public void setJwsAlgorithmResolver(Function<ClientRegistration, JwsAlgorithm> jwsAlgorithmResolver) {
         Assert.notNull(jwsAlgorithmResolver, "jwsAlgorithmResolver cannot be null");
         this.jwsAlgorithmResolver = jwsAlgorithmResolver;
     }
 
-    /**
-     * Sets the factory that provides a {@link Converter} used for type
-     * conversion of claim values for an {@link OidcIdToken}. The default is
-     * {@link ClaimTypeConverter} for all {@link ClientRegistration clients}.
-     *
-     * @param claimTypeConverterFactory the factory that provides a
-     * {@link Converter} used for type conversion of claim values for a specific
-     * {@link ClientRegistration client}
-     */
+    /// Sets the factory of the converters of the id token claims. The default is a
+    /// `ClaimTypeConverter` with [#createDefaultClaimTypeConverters()] for every registration; a
+    /// factory returning `null` leaves the claims as parsed.
+    ///
+    /// @param claimTypeConverterFactory provides the converter for a registration
     public void setClaimTypeConverterFactory(Function<ClientRegistration, Converter<Map<String, Object>, Map<String, Object>>> claimTypeConverterFactory) {
         Assert.notNull(claimTypeConverterFactory, "claimTypeConverterFactory cannot be null");
         this.claimTypeConverterFactory = claimTypeConverterFactory;

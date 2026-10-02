@@ -2,6 +2,8 @@ package net.optionfactory.spring.upstream.caching;
 
 import net.optionfactory.spring.upstream.UpstreamBuilder;
 import net.optionfactory.spring.upstream.caching.FetchModeClient.FetchMode;
+import java.util.Map;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import tools.jackson.databind.json.JsonMapper;
@@ -19,7 +21,7 @@ public class FetchModeArgumentResolverTest {
                 .baseUri("http://example.com")
                 .build();
 
-        client.get("a", FetchMode.ANY);
+        Assertions.assertEquals(Map.of(), client.get("a", FetchMode.ANY), "a @Upstream.Context argument must be accepted by the proxy instead of failing argument resolution");
     }
 
 }

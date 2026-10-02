@@ -26,8 +26,10 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 @TransactionalPhases
 public class EmbeddableTraversalOverrideTest {
 
+    /// The `@FilterTraversal` is redundant: overrides on `@Embedded` hops are ignored (no SQL join).
+    /// It is kept to assert that the traversal tolerates it.
     @Entity
-    @FilterTraversal(path = "a", joinType = JoinType.INNER) // redundant: overrides on @Embedded hops are ignored (no SQL join); kept to assert traversal tolerates it
+    @FilterTraversal(path = "a", joinType = JoinType.INNER)
     @NumberCompare(name = "byLeafId", path = "a.b.id")
     public static class Root {
 
@@ -76,7 +78,7 @@ public class EmbeddableTraversalOverrideTest {
                 .number("byLeafId", f -> f.of(NumberCompare.Operator.EQ, "42"))
                 .build();
         final var page = repo.findAll(fr, Pageable.unpaged());
-        Assertions.assertEquals(1, page.getTotalElements());
+        Assertions.assertEquals(1, page.getTotalElements(), "a join type override on an embedded hop is ignored, not rejected");
     }
 
 }

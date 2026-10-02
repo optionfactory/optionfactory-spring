@@ -20,8 +20,20 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.data.jpa.repository.support.JpaEntityInformation;
 import org.springframework.data.util.Pair;
 
+/// Reads the filter and sorter whitelists off an entity class, as the repository does when it is
+/// created.
+///
+/// Repeated annotations are read through their containers. The annotations are those present on
+/// the entity class: a superclass contributes only `@Inherited` ones, which the built-in
+/// annotations are not.
 public interface Repositories {
 
+    /// @param <T> the entity type
+    /// @param ei the entity metadata
+    /// @param em the entity manager, providing the metamodel and the dialect
+    /// @return a filter for each annotation meta-annotated with [WhitelistedFilter], by name
+    /// @throws IllegalStateException when two filters share a name, when a filter cannot be
+    /// instantiated, or, as an [InvalidFilterConfiguration], when one is misconfigured
     public static <T> Map<String, Filter> allowedFilters(JpaEntityInformation<T, ?> ei, EntityManager em) {
         return Stream
                 .of(ei.getJavaType().getAnnotations())
@@ -31,6 +43,12 @@ public interface Repositories {
                 .collect(Collectors.toMap(fspec -> fspec.name(), fspec -> fspec));
     }
 
+    /// @param <T> the entity type
+    /// @param ei the entity metadata
+    /// @param em the entity manager, providing the metamodel
+    /// @return the resolved path of each [Sortable], by name
+    /// @throws IllegalStateException when two sorters share a name, or, as an
+    /// [InvalidSortConfiguration], when one is misconfigured
     public static <T> Map<String, Traversal> allowedSorters(JpaEntityInformation<T, ?> ei, EntityManager em) {
         return Stream
                 .of(ei.getJavaType().getAnnotations())
@@ -48,6 +66,18 @@ public interface Repositories {
         return Stream.of(repeatableAnnotation);
     }
 
+    /// Instantiates the filter an annotation whitelists, through the only public constructor of the
+    /// [WhitelistedFilter] implementation whose parameters are all among: the annotation, the
+    /// `JpaEntityInformation`, the `EntityManager`, the `EntityManagerFactory` and the `EntityType`.
+    ///
+    /// @param <T> the entity type
+    /// @param annotation the whitelisting annotation
+    /// @param ei the entity metadata
+    /// @param em the entity manager
+    /// @return the filter
+    /// @throws IllegalStateException when there is no such constructor or more than one, or the
+    /// constructor fails with a checked exception; a runtime exception thrown by the constructor is
+    /// propagated as is
     public static <T> Filter createFilterFromAnnotation(Annotation annotation, JpaEntityInformation<T, ?> ei, EntityManager em) throws IllegalStateException {
         final Class<? extends Filter> filterClass = AnnotatedElementUtils.findMergedAnnotation(AnnotatedElementUtils.forAnnotations(annotation), WhitelistedFilter.class).value();
         try {
@@ -83,6 +113,12 @@ public interface Repositories {
         }
     }
 
+    /// @param <T> the entity type
+    /// @param annotation a [Sortable] annotation
+    /// @param ei the entity metadata
+    /// @param em the entity manager, providing the metamodel
+    /// @return the sorter name and its resolved path
+    /// @throws InvalidSortConfiguration when the path does not resolve or crosses a collection
     public static <T> Pair<String, Traversal> createSorterFromAnnotation(Annotation annotation, JpaEntityInformation<T, ?> ei, EntityManager em) throws IllegalStateException {
         final var ma = AnnotatedElementUtils.findMergedAnnotation(AnnotatedElementUtils.forAnnotations(annotation), Sortable.class);
         final var entity = em.getMetamodel().entity(ei.getJavaType());

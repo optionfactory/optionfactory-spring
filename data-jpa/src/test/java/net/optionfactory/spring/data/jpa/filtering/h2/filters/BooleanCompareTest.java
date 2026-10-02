@@ -54,21 +54,21 @@ public class BooleanCompareTest {
 
     @Test
     public void canFilterBooleanValueWithDefaultOptions() {
-        Assertions.assertEquals(Set.of(1L), idsIn(flags.findAll(null, filter("javaBoolean", "true"), Pageable.unpaged())));
-        Assertions.assertEquals(Set.of(2L), idsIn(flags.findAll(null, filter("javaBoolean", "false"), Pageable.unpaged())));
+        Assertions.assertEquals(Set.of(1L), idsIn(flags.findAll(null, filter("javaBoolean", "true"), Pageable.unpaged())), "the default true value matches the true rows");
+        Assertions.assertEquals(Set.of(2L), idsIn(flags.findAll(null, filter("javaBoolean", "false"), Pageable.unpaged())), "the default false value matches the false rows");
     }
 
     @Test
     public void canFilterBooleanValueWithCustomValues() {
-        Assertions.assertEquals(Set.of(1L), idsIn(flags.findAll(null, filter("YNMatchCaseBoolean", "Y"), Pageable.unpaged())));
-        Assertions.assertEquals(Set.of(2L), idsIn(flags.findAll(null, filter("YNMatchCaseBoolean", "N"), Pageable.unpaged())));
+        Assertions.assertEquals(Set.of(1L), idsIn(flags.findAll(null, filter("YNMatchCaseBoolean", "Y"), Pageable.unpaged())), "the custom true value matches the true rows");
+        Assertions.assertEquals(Set.of(2L), idsIn(flags.findAll(null, filter("YNMatchCaseBoolean", "N"), Pageable.unpaged())), "the custom false value matches the false rows");
     }
 
     @Test
     public void throwsWhenValueDoesNotMatch() {
         Assertions.assertThrows(InvalidDataAccessApiUsageException.class, () -> {
             flags.findAll(null, filter("yesNoBoolean", "maybe"), Pageable.unpaged());
-        });
+        }, "a value matching neither the true nor the false value is rejected");
     }
 
     private static FilterRequest filter(String filterName, String value) {

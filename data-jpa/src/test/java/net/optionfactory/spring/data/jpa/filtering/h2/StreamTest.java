@@ -56,15 +56,15 @@ public class StreamTest {
         final var all = repo.findAll(null, FilterRequest.unfiltered(), Sort.unsorted(), 100, SessionPolicy.Mode.DEFAULT, (sp, e) -> sp.detaching(e))
                 .toList();
 
-        Assertions.assertEquals(1, all.size());
-        Assertions.assertTrue(all.stream().noneMatch(em::contains));
+        Assertions.assertEquals(1, all.size(), "the single stored entity is streamed");
+        Assertions.assertTrue(all.stream().noneMatch(em::contains), "entities detached by the callback are no longer in the persistence context");
     }
 
     @Test
     public void canStreamAttachedObjects() {
         final var all = repo.findAll(null, FilterRequest.unfiltered(), Sort.unsorted(), 100, SessionPolicy.Mode.DEFAULT, (sp, e) -> e)
                 .toList();
-        Assertions.assertEquals(1, all.size());
+        Assertions.assertEquals(1, all.size(), "the single stored entity is streamed");
     }
 
     @Test
@@ -74,7 +74,7 @@ public class StreamTest {
             readOnly.add(em.unwrap(Session.class).isReadOnly(e));
             return e;
         }).toList();
-        Assertions.assertEquals(List.of(false), readOnly);
+        Assertions.assertEquals(List.of(false), readOnly, "DEFAULT mode loads entities writable");
     }
 
     @Test
@@ -84,7 +84,7 @@ public class StreamTest {
             readOnly.add(em.unwrap(Session.class).isReadOnly(e));
             return e;
         }).toList();
-        Assertions.assertEquals(List.of(true), readOnly);
+        Assertions.assertEquals(List.of(true), readOnly, "READ_ONLY mode loads entities read-only");
     }
 
     @Test
@@ -92,12 +92,12 @@ public class StreamTest {
         final var seen = new ArrayList<EntityForStream>();
         final var names = repo.findAll(null, FilterRequest.unfiltered(), Sort.unsorted(), 100, (EntityForStream e) -> {
             seen.add(e);
-            Assertions.assertTrue(em.unwrap(Session.class).isReadOnly(e));
+            Assertions.assertTrue(em.unwrap(Session.class).isReadOnly(e), "the mapping overload loads entities read-only");
             return e.name;
         }).toList();
-        Assertions.assertEquals(List.of("asd"), names);
-        Assertions.assertEquals(1, seen.size());
-        Assertions.assertTrue(seen.stream().noneMatch(em::contains));
+        Assertions.assertEquals(List.of("asd"), names, "the mapping overload streams the mapper results");
+        Assertions.assertEquals(1, seen.size(), "the mapper is called once per row");
+        Assertions.assertTrue(seen.stream().noneMatch(em::contains), "the mapping overload detaches each entity after mapping it");
     }
 
     @Test
@@ -113,7 +113,7 @@ public class StreamTest {
             currents.add(sp.current());
             return e;
         }).toList();
-        Assertions.assertEquals(List.of(1L, 2L, 3L, 4L), currents);
+        Assertions.assertEquals(List.of(1L, 2L, 3L, 4L), currents, "current() is the 1-based number of the row being mapped");
     }
 
     @Test
@@ -131,7 +131,7 @@ public class StreamTest {
             streamed.add(e);
             return e;
         }).toList();
-        Assertions.assertEquals(6, streamed.size());
+        Assertions.assertEquals(6, streamed.size(), "clearIf does not drop rows from the stream");
         Assertions.assertTrue(streamed.stream().noneMatch(em::contains),
                 "clearIf(2) must clear after every second row, leaving nothing behind on an even row count");
     }

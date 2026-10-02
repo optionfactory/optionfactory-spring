@@ -72,12 +72,12 @@ public class ResolverLoggingTest {
     @Test
     public void aClientErrorIsNotLoggedAsAWarning() throws NoSuchMethodException {
         final var levels = resolverLevelsWhenResolving(Failure.field("name", "required"));
-        Assertions.assertTrue(levels.stream().noneMatch(level -> level.isMoreSpecificThan(Level.WARN)), levels.toString());
+        Assertions.assertTrue(levels.stream().noneMatch(level -> level.isMoreSpecificThan(Level.WARN)), "a client error must be logged below WARN, got " + levels);
     }
 
     @Test
     public void anUnexpectedErrorIsStillLoggedAsAnError() throws NoSuchMethodException {
         final var levels = resolverLevelsWhenResolving(new IllegalStateException("a bug"));
-        Assertions.assertTrue(levels.contains(Level.ERROR), levels.toString());
+        Assertions.assertTrue(levels.contains(Level.ERROR), "an unexpected error must be logged at ERROR, got " + levels);
     }
 }

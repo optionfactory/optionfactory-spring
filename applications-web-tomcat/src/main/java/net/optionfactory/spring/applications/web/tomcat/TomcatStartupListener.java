@@ -9,6 +9,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.server.Cookie.SameSite;
 
+/// Logs, at `INFO`, the Tomcat version, the operating system, the JVM, the `catalina.base` and
+/// `catalina.home` directories and the service settings when the server is about to initialize, so
+/// that every startup records what it ran on.
+///
+/// Registered on the server by [EmbeddedTomcatWebMvcApplication.TomcatDefaultsCustomizer]. It logs
+/// through the logger of `TomcatDefaultsCustomizer`, not its own.
 public class TomcatStartupListener implements LifecycleListener {
 
     private static final Logger logger = LoggerFactory.getLogger(TomcatDefaultsCustomizer.class);
@@ -17,6 +23,12 @@ public class TomcatStartupListener implements LifecycleListener {
     private final int port;
     private final SameSite sameSite;
 
+    /// The settings to report: logged as given, not read back from Tomcat.
+    ///
+    /// @param useRemoteIpValve whether the remote ip valve is in use
+    /// @param registerDefaultServlet whether the default servlet is registered
+    /// @param port the service port
+    /// @param sameSite the `SameSite` cookie policy
     public TomcatStartupListener(boolean useRemoteIpValve, boolean registerDefaultServlet, int port, SameSite sameSite) {
         this.useRemoteIpValve = useRemoteIpValve;
         this.registerDefaultServlet = registerDefaultServlet;
@@ -24,6 +36,7 @@ public class TomcatStartupListener implements LifecycleListener {
         this.sameSite = sameSite;
     }
 
+    /// Logs on `before_init`, ignoring every other event.
     @Override
     public void lifecycleEvent(LifecycleEvent event) {
         if (!Lifecycle.BEFORE_INIT_EVENT.equals(event.getType())) {

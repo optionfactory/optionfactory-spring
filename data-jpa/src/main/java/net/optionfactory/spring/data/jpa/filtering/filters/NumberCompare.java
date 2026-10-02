@@ -23,13 +23,21 @@ import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Values;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter;
 
-/**
- * Compares a numeric path, either a primitive type (not {@code boolean}) or a
- * {@link Number} (such as boxed primitives, {@link BigInteger} or
- * {@link BigDecimal}). The first argument must be a whitelisted
- * {@link Operator}. All operators accept a single numeric argument, that must
- * be convertible to the relative path type.
- */
+/// Whitelists a filter comparing a numeric property with one value, or two for
+/// [Operator#BETWEEN].
+///
+/// The property is a numeric primitive or a concrete [Number] (boxed primitives, [BigInteger],
+/// [BigDecimal], ...). The first filter value is a whitelisted [Operator], followed by the operands,
+/// which are converted to the property type: a value that cannot be converted, or does not fit the
+/// type, is rejected. Only `EQ` and `NEQ` accept a `null` value, to compare with `NULL`.
+///
+/// ```java
+/// @Entity
+/// @NumberCompare(name = "byWeight", path = "weight")
+/// public class Pet { ... }
+///
+/// FilterRequest.builder().number("byWeight", f -> f.between(1, 5)).build();
+/// ```
 @Documented
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.RUNTIME)
@@ -37,39 +45,58 @@ import net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter
 @Repeatable(RepeatableNumberCompare.class)
 public @interface NumberCompare {
 
+    /// The comparison requested by the client, as the first filter value.
     public enum Operator {
-        EQ, NEQ, LT, GT, LTE, GTE, BETWEEN;
+        /// The property equals the value; a `null` value matches the `NULL` rows.
+        EQ,
+        /// The property differs from the value, `NULL` rows included; a `null` value matches the
+        /// rows that are not `NULL`.
+        NEQ,
+        /// The property is less than the value.
+        LT,
+        /// The property is greater than the value.
+        GT,
+        /// The property is less than or equal to the value.
+        LTE,
+        /// The property is greater than or equal to the value.
+        GTE,
+        /// The property lies between two values, both included, in either order.
+        BETWEEN;
     }
 
+    /// @return the name the filter is whitelisted under, and requested by
     String name();
 
+    /// @return the operators a client may request; must not be empty
     Operator[] operators() default {
         Operator.EQ, Operator.NEQ, Operator.LT, Operator.GT, Operator.LTE, Operator.GTE, Operator.BETWEEN
     };
 
+    /// @return the dot-separated path of the filtered property, from the entity
     String path();
 
-    /**
-     * The quantifier applied when {@link #path()} crosses a collection: whether a row is kept
-     * because <em>some</em> element matches ({@link Match#ANY}) or because <em>no</em> element
-     * does ({@link Match#NONE}). A negated filter over a collection is {@code NONE} over a
-     * positive condition, never {@code ANY} over a negated one. Required when the path crosses a
-     * collection, where leaving it {@link Match#UNSTATED} is rejected when the repository is
-     * built; unnecessary, and ignored, when it crosses none.
-     *
-     * @return the quantifier
-     */
+    /// The quantifier applied when [#path()] crosses a collection: whether a row is kept because
+    /// *some* element matches ([Match#ANY]) or because *no* element does ([Match#NONE]). A negated
+    /// filter over a collection is `NONE` over a positive condition, never `ANY` over a negated one.
+    /// Required when the path crosses a collection, where leaving it [Match#UNSTATED] is rejected
+    /// when the repository is built; unnecessary when it crosses none, where `ANY` and `UNSTATED`
+    /// read alike and `NONE` is rejected.
+    ///
+    /// @return the quantifier
     Match match() default Match.UNSTATED;
 
-
+    /// The container of repeated [NumberCompare] annotations, used implicitly by the compiler when the
+    /// annotation is repeated on an entity.
     @Documented
     @Target(value = ElementType.TYPE)
     @Retention(value = RetentionPolicy.RUNTIME)
     public static @interface RepeatableNumberCompare {
 
+        /// @return the repeated annotations
         NumberCompare[] value();
     }
 
+    /// The filter whitelisted by [NumberCompare].
     public static class NumberCompareFilter implements TraversalFilter<Number> {
 
         private final String name;
@@ -77,6 +104,10 @@ public @interface NumberCompare {
         private final Class<? extends Number> propertyClass;
         private final Traversal traversal;
 
+        /// @param annotation the whitelisting annotation
+        /// @param entity the entity the annotation is on
+        /// @throws net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterConfiguration
+        /// when the path does not lead to a numeric property, or misuses [Match]
         @SuppressWarnings("unchecked")
         public NumberCompareFilter(NumberCompare annotation, EntityType<?> entity) {
             this.name = annotation.name();
@@ -85,6 +116,10 @@ public @interface NumberCompare {
             this.operators = EnumSet.of(annotation.operators()[0], annotation.operators());
         }
 
+        /// @throws net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequest when
+        /// the operator is missing, unknown or not whitelisted, the number of values does not fit
+        /// it, a value cannot be converted, or a `null` value is given to an operator other than
+        /// `EQ` and `NEQ`
         @Override
         public Predicate condition(Root<?> root, Path<Number> lhs, CriteriaBuilder builder, String[] values) {
             Filters.ensure(values.length > 0, root, name, "missing operator");
@@ -127,24 +162,33 @@ public @interface NumberCompare {
             };
         }
 
+        /// @return the name the filter is whitelisted under
         @Override
         public String name() {
             return name;
         }
 
+        /// @return the resolved path of the filtered property
         @Override
         public Traversal traversal() {
             return traversal;
         }
     }
 
+    /// Encodes the values of a [NumberCompare] filter for a [net.optionfactory.spring.data.jpa.filtering.FilterRequest].
+    ///
+    /// Numbers are encoded with their `toString`, `null` as `null`.
     public enum Filter {
+        /// The only instance.
         INSTANCE;
 
         private static String str(Number n) {
             return n == null ? null : n.toString();
         }
 
+        /// @param op the operator
+        /// @param values the operands
+        /// @return the filter values
         public String[] of(Operator op, Number... values) {
             return Stream.concat(
                     Stream.of(op.name()),
@@ -152,6 +196,9 @@ public @interface NumberCompare {
             ).toArray(i -> new String[i]);
         }
 
+        /// @param op the operator
+        /// @param values the operands, already encoded
+        /// @return the filter values
         public String[] of(Operator op, String... values) {
             return Stream.concat(
                     Stream.of(op.name()),
@@ -159,30 +206,45 @@ public @interface NumberCompare {
             ).toArray(i -> new String[i]);
         }
 
+        /// @param value the operand, or `null` to match the `NULL` rows
+        /// @return the filter values
         public String[] eq(Number value) {
             return new String[]{Operator.EQ.name(), str(value)};
         }
 
+        /// @param value the operand, or `null` to match the rows that are not `NULL`
+        /// @return the filter values
         public String[] neq(Number value) {
             return new String[]{Operator.NEQ.name(), str(value)};
         }
 
+        /// @param value the operand
+        /// @return the filter values
         public String[] lt(Number value) {
             return new String[]{Operator.LT.name(), str(value)};
         }
 
+        /// @param value the operand
+        /// @return the filter values
         public String[] gt(Number value) {
             return new String[]{Operator.GT.name(), str(value)};
         }
 
+        /// @param value the operand
+        /// @return the filter values
         public String[] lte(Number value) {
             return new String[]{Operator.LTE.name(), str(value)};
         }
 
+        /// @param value the operand
+        /// @return the filter values
         public String[] gte(Number value) {
             return new String[]{Operator.GTE.name(), str(value)};
         }
 
+        /// @param value1 one bound, included
+        /// @param value2 the other bound, included
+        /// @return the filter values
         public String[] between(Number value1, Number value2) {
             return new String[]{Operator.BETWEEN.name(), str(value1), str(value2)};
         }

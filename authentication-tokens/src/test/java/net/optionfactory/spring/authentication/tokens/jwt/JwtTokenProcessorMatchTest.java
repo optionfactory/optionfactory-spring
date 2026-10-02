@@ -43,8 +43,8 @@ public class JwtTokenProcessorMatchTest {
                 jws(ClaimsPolicy.permissive(), KEY_B, Match.LAX, "b")
         ), List.of());
 
-        Assertions.assertEquals("a", processor.process(hs, signed(KEY_A, claims())).principal());
-        Assertions.assertEquals("b", processor.process(hs, signed(KEY_B, claims())).principal());
+        Assertions.assertEquals("a", processor.process(hs, signed(KEY_A, claims())).principal(), "the token signed with key A is accepted by processor a");
+        Assertions.assertEquals("b", processor.process(hs, signed(KEY_B, claims())).principal(), "the token signed with key B is passed on by a and accepted by b");
     }
 
     @Test
@@ -54,7 +54,7 @@ public class JwtTokenProcessorMatchTest {
                 jws(ClaimsPolicy.permissive(), KEY_B, Match.LAX, "b")
         ), List.of());
 
-        Assertions.assertNull(processor.process(hs, signed(KEY_C, claims())));
+        Assertions.assertNull(processor.process(hs, signed(KEY_C, claims())), "a token no lax processor accepts is not authenticated");
     }
 
     @Test
@@ -66,7 +66,7 @@ public class JwtTokenProcessorMatchTest {
 
         final var token = signed(KEY_A, claims().audience("service-b").expirationTime(Date.from(Instant.now().plusSeconds(60))));
 
-        Assertions.assertEquals("b", processor.process(hs, token).principal());
+        Assertions.assertEquals("b", processor.process(hs, token).principal(), "a claims failure on a lax processor passes the token on");
     }
 
     @Test
@@ -78,7 +78,7 @@ public class JwtTokenProcessorMatchTest {
 
         final var token = signed(KEY_B, claims());
 
-        Assertions.assertThrows(BadCredentialsException.class, () -> processor.process(hs, token));
+        Assertions.assertThrows(BadCredentialsException.class, () -> processor.process(hs, token), "a strict processor rejecting a token keeps it from later processors");
     }
 
     @Test
@@ -90,7 +90,7 @@ public class JwtTokenProcessorMatchTest {
 
         final var token = signed(KEY_B, claims().issuer("issuer-b").expirationTime(Date.from(Instant.now().plusSeconds(60))));
 
-        Assertions.assertEquals("b", processor.process(hs, token).principal());
+        Assertions.assertEquals("b", processor.process(hs, token).principal(), "the token is routed by its unverified issuer to the processor owning it");
     }
 
     @Test
@@ -105,7 +105,7 @@ public class JwtTokenProcessorMatchTest {
 
         final PrincipalAndAuthorities result = processor.process(hs, nested(recipient, issuerB));
 
-        Assertions.assertEquals("b", result.principal());
+        Assertions.assertEquals("b", result.principal(), "lax jwe processors each verify the inner signature with their own issuer key");
     }
 
     private static JwsMatcher byIssuer(String issuer) {

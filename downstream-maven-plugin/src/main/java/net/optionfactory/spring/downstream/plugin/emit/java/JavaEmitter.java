@@ -21,6 +21,16 @@ import net.optionfactory.spring.downstream.plugin.mapping.TypeRegistry;
 import net.optionfactory.spring.downstream.plugin.mapping.TypeRegistry.TargetName;
 import net.optionfactory.spring.downstream.plugin.reflection.Reflection;
 
+/// Emits Java sources: one file per top-level generated type, records or classes for the DTOs and
+/// enums with the same constants for the enums.
+///
+/// DTO properties keep their generic types, translated through [JavaTypeTranslator], and their
+/// nullability as jspecify `@Nullable`/`@NonNull`; DTO type parameters keep their bounds. With
+/// [TypeRegistry.Nesting#NESTED] a nested type is emitted as a static member of its generated
+/// outer type. Each top-level type documents its source class in its javadoc.
+///
+/// A type whose `src/main/java/{package}/{Name}.java` already exists under the project base
+/// directory is skipped, so a hand-written class takes the place of the generated one.
 public class JavaEmitter implements SourceEmitter {
 
     private final File outputDir;
@@ -31,10 +41,21 @@ public class JavaEmitter implements SourceEmitter {
     private static final ClassName NULLABLE = ClassName.get("org.jspecify.annotations", "Nullable");
     private static final ClassName NONNULL = ClassName.get("org.jspecify.annotations", "NonNull");
 
+    /// The shape of the generated DTOs.
     public enum DtoStyle {
-        RECORDS, CLASSES;
+        /// Records, with one component per property.
+        RECORDS,
+        /// Classes with one public field per property and the default constructor.
+        CLASSES;
     }
 
+    /// @param outputDir the source root to write to
+    /// @param projectBaseDir the base directory of the project, where hand-written sources are
+    /// looked for
+    /// @param translations source class binary name to replacement type, see [JavaTypeTranslator]
+    /// @param dtoStyle the shape of the generated DTOs
+    /// @param outputStyleOverrides binary names of the source classes generated with the other
+    /// [DtoStyle]
     public JavaEmitter(File outputDir, File projectBaseDir, Map<String, String> translations, DtoStyle dtoStyle, Set<String> outputStyleOverrides) {
         this.outputDir = outputDir;
         this.projectBaseDir = projectBaseDir;
@@ -43,6 +64,8 @@ public class JavaEmitter implements SourceEmitter {
         this.outputStyleOverrides = outputStyleOverrides;
     }
 
+    /// @return one outcome per top-level type, named after its path relative to the project base
+    /// directory (`src/main/java/...`), not generated when a hand-written source exists there
     @Override
     public List<GenerateOutcome> emit(TypeRegistry registry) throws Exception {
         final var outcomes = new ArrayList<GenerateOutcome>();
@@ -132,7 +155,6 @@ public class JavaEmitter implements SourceEmitter {
         for (final var nested : dtoClass.getDeclaredClasses()) {
             if (registry.isRegistered(nested)) {
                 final TargetName nestedTarget = registry.getTargetName(nested);
-                // only embed the code inside the parent if the registry says it's NESTED
                 if (nestedTarget.names().size() > 1) {
                     typeBuilder.addType(buildSpec(nested, registry, translator, false));
                 }

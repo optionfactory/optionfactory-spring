@@ -40,7 +40,7 @@ public class StreamingClientTest {
     public void canReadUnbufferedStreamWhenMappingToAnInputStream() throws IOException {
         final var got = client.fetch();
         try (final var is = got) {
-            Assertions.assertEquals("content", new String(is.readAllBytes(), StandardCharsets.UTF_8));
+            Assertions.assertEquals("content", new String(is.readAllBytes(), StandardCharsets.UTF_8), "an InputStream result must expose the whole body");
         }
     }
 
@@ -48,7 +48,7 @@ public class StreamingClientTest {
     public void canReadUnbufferedStreamWhenMappingToAResponseEntityWithInputStream() throws IOException {
         final var got = client.fetchWithResponseEntity();
         try (final var is = got.getBody()) {
-            Assertions.assertEquals("content", new String(is.readAllBytes(), StandardCharsets.UTF_8));
+            Assertions.assertEquals("content", new String(is.readAllBytes(), StandardCharsets.UTF_8), "a ResponseEntity of InputStream must expose the whole body");
         }
     }
 }

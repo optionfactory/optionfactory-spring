@@ -15,18 +15,33 @@ import net.optionfactory.spring.downstream.plugin.emit.SourceEmitter.GenerateOut
 import net.optionfactory.spring.downstream.plugin.mapping.TypeRegistry;
 import net.optionfactory.spring.downstream.plugin.reflection.Reflection;
 
+/// Emits a single TypeScript declaration file, `spec.d.ts`, holding every generated type.
+///
+/// The file starts with the type aliases (`export type {SimpleName} = {type};`), then the types
+/// sorted by package and simple name: a DTO becomes an `export interface`, keeping its type
+/// parameter names but not their bounds, with a property per [candidate field][Reflection#candidateFields]
+/// (optional, `?`, when the property is `Optional` or nullable); an enum becomes a union of its
+/// constant names as string literals, or `never` when it has no constant. Types are named after
+/// their [flat name][TypeRegistry.TargetName#flatName], TypeScript having no nested types.
+///
+/// The file is overwritten on every run, and the output directory created when missing.
 public class TypeScriptEmitter implements SourceEmitter {
 
     private final File outputDir;
     private final Map<String, String> translations;
     private final Map<String, String> typeAliases;
 
+    /// @param outputDir the directory of `spec.d.ts`
+    /// @param translations source class binary name to replacement java type, see
+    /// [TypeScriptTypeTranslator]
+    /// @param typeAliases source class binary name to the TypeScript type it is an alias of
     public TypeScriptEmitter(File outputDir, Map<String, String> translations, Map<String, String> typeAliases) {
         this.outputDir = outputDir;
         this.translations = translations;
         this.typeAliases = typeAliases;
     }
 
+    /// @return one generated outcome per type, named after its TypeScript name
     @Override
     public List<GenerateOutcome> emit(TypeRegistry registry) throws Exception {
         if (!outputDir.exists()) {

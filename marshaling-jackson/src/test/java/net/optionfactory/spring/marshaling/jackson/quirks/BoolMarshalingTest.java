@@ -135,7 +135,7 @@ public class BoolMarshalingTest {
                     {"value": null}
                     """
             );
-        }, "cannot deserialize null to nonnulable field");
+        }, "cannot deserialize null to nonnullable field");
     }
 
     @Test
@@ -166,7 +166,7 @@ public class BoolMarshalingTest {
                 {"value":false}
                 """.trim(),
                 ser(false, new NullableSiNo(Boolean.FALSE)),
-                "can seserialize Boolean.False to false"
+                "can serialize Boolean.FALSE to false"
         );
 
         Assertions.assertEquals(
@@ -228,7 +228,6 @@ public class BoolMarshalingTest {
 
     @Test
     public void rejectsNativeBooleansWhenQuirksAreEnabled() {
-        // Because text matches strictly against "SI"/"NO", raw booleans are now rejected
         Assertions.assertThrows(MismatchedInputException.class, () -> {
             deser(NullableSiNo.class, true,
                     """
@@ -236,5 +235,42 @@ public class BoolMarshalingTest {
                     """
             );
         }, "Should reject literal boolean tokens under strict text quirk mapping profile");
+    }
+
+    public record CustomStrings(@Quirks.Bool(t = "1", f = "0") Boolean value) {
+
+    }
+
+    @Test
+    public void customStringsApplyBothWays() {
+        Assertions.assertEquals("""
+                {"value":"0"}
+                """.trim(), ser(true, new CustomStrings(false)), "false is written as the configured string");
+        Assertions.assertEquals(new CustomStrings(true), deser(CustomStrings.class, true, """
+                {"value":"1"}
+                """), "the configured string is read as true");
+    }
+
+    @Test
+    public void theTextOfAnyScalarTokenIsMatched() {
+        Assertions.assertEquals(new CustomStrings(true), deser(CustomStrings.class, true, """
+                {"value":1}
+                """), "a number whose text is the configured string matches");
+    }
+
+    @Test
+    public void stringsAreMatchedCaseSensitively() {
+        Assertions.assertThrows(MismatchedInputException.class, () -> {
+            deser(NullableSiNo.class, true, """
+                    {"value": "si"}
+                    """);
+        }, "si is not SI");
+    }
+
+    @Test
+    public void aMissingPrimitiveCreatorPropertyIsRejected() {
+        Assertions.assertThrows(MismatchedInputException.class, () -> {
+            deser(NonnullableSiNo.class, true, "{}");
+        }, "a missing boolean record component is treated as null, which a primitive cannot hold");
     }
 }

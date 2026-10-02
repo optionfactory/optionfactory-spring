@@ -20,6 +20,32 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 
+/// Delivers the emails found in the spool directory of an [EmailPaths] to an smtp server.
+///
+/// The spool is a plain directory of `.eml` files, written by [EmailMarshaller#marshalToSpool], so
+/// that producing an email never waits on, nor fails because of, the smtp server. Each call to
+/// [#processSpool()] makes one pass over it:
+///
+/// 1. emails older than `deadAfter` are given up on: moved to the `dead` directory, or deleted
+///    when there is none, without being sent;
+/// 2. every remaining email is sent, then moved to the `sent` directory, or deleted when there is
+///    none.
+///
+/// An email that fails to send is logged at WARN and left in the spool, to be retried at the next
+/// pass until it is sent or dies. Files not ending in `.eml`, such as the `.tmp` files of an email
+/// still being written, are ignored.
+///
+/// An archiving failure never causes a second delivery: an email that was sent (or that died) but
+/// cannot be moved to its archive directory is deleted from the spool, and logged at ERROR, rather
+/// than left there to be sent again.
+///
+/// Usually driven by a [ScheduledEmailSender]:
+///
+/// ```java
+/// final var paths = EmailPaths.provide(Path.of("/var/spool/app/emails"), Path.of("/var/spool/app/sent"), null);
+/// final var sender = new EmailSender(paths, conf);
+/// new ScheduledEmailSender(sender, applicationContext, taskScheduler, Duration.ofSeconds(10), Duration.ofMinutes(1));
+/// ```
 public class EmailSender {
 
     private final Logger logger = LoggerFactory.getLogger(EmailSender.class);
@@ -28,6 +54,10 @@ public class EmailSender {
     private final JavaMailSenderImpl javaMail;
     private final Optional<Duration> deadAfter;
 
+    /// No connection is opened here.
+    ///
+    /// @param paths the spool to read and the directories to archive to
+    /// @param conf the smtp server and the retry policy
     public EmailSender(EmailPaths paths, EmailSenderConfiguration conf) {
         this.paths = paths;
         this.placebo = conf.placebo();
@@ -35,12 +65,15 @@ public class EmailSender {
         this.javaMail = createJavaMail(conf);
     }
 
-    /// Sends the spool's contents.
+    /// Makes one pass over the spool, as described in the class documentation. Failures to send
+    /// or archive a single email are logged and never thrown.
     ///
     /// Assumes a single EmailSender per machine and a spool directory owned by this process
     /// alone: nothing here claims files atomically, so concurrent invocations would race and
     /// double-send. The scheduled path is serialized by `ScheduledEmailSender`'s lock; any other
     /// caller must arrange its own mutual exclusion.
+    ///
+    /// @throws java.io.UncheckedIOException when the spool directory cannot be listed
     public void processSpool() {
         try {
             try (final Stream<Path> emls = Files.walk(paths.spool(), 1)) {

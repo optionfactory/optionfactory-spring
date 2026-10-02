@@ -19,6 +19,26 @@ import org.springframework.util.StreamUtils;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+/// Renders Thymeleaf templates, or XHTML produced elsewhere, to PDF/A-3a documents with
+/// openhtmltopdf.
+///
+/// Every document is a tagged PDF 1.7 declaring PDF/A-3a and PDF/UA conformance, with an
+/// embedded sRGB color profile. The markup is laid out by openhtmltopdf, so it must be well-formed
+/// XHTML styled with the CSS openhtmltopdf supports; since PDF/A requires embedded fonts, the text
+/// should use only the font families of the configured [PdfFontInfo]s.
+///
+/// A renderer is meant to be built once and shared: every render uses its own builder and
+/// document, while the font metrics are cached across renders in a concurrent map. It is therefore
+/// safe for concurrent use as long as the template engine is. Building a renderer disables
+/// openhtmltopdf logging for the whole JVM.
+///
+/// ```java
+/// final var renderer = new ThymeleafToPdfRenderer(templateEngine, List.of(
+///         PdfFontInfo.of("font_opensans.ttf", "OpenSans", 400, FontStyle.NORMAL, true),
+///         PdfFontInfo.of("font_opensans_bold.ttf", "OpenSans", 700, FontStyle.NORMAL, true)
+/// ), Optional.of("my-app"));
+/// final Resource pdf = renderer.render("invoice", context);
+/// ```
 public class ThymeleafToPdfRenderer {
 
     private final TemplateEngine templateEngine;
@@ -28,6 +48,11 @@ public class ThymeleafToPdfRenderer {
     private final String producer;
 
 
+    /// @param templateEngine the engine processing the templates given to
+    /// [#render(String, Context)]
+    /// @param fonts the fonts made available to the documents
+    /// @param producer the `Producer` written in the document information; when empty the producer
+    /// is blank, rather than openhtmltopdf's own
     public ThymeleafToPdfRenderer(TemplateEngine templateEngine, List<PdfFontInfo> fonts, Optional<String> producer) {
         try (final InputStream is = ThymeleafToPdfRenderer.class.getResourceAsStream("sRGB.icc")) {
             this.colorProfile = StreamUtils.copyToByteArray(is);
@@ -41,12 +66,24 @@ public class ThymeleafToPdfRenderer {
         XRLog.setLoggingEnabled(false);
     }
 
+    /// Processes a template and renders the resulting markup as [#renderXhtml(String)] does.
+    ///
+    /// @param template the template name, as the template engine resolves it
+    /// @param context the template variables and locale
+    /// @return the PDF, in memory
+    /// @throws org.thymeleaf.exceptions.TemplateEngineException when the template cannot be
+    /// resolved or processed
+    /// @throws java.io.UncheckedIOException when the rendering fails on I/O
     public Resource render(String template, Context context) {
         return renderXhtml(templateEngine.process(template, context));
     }
 
-    /// Renders an XHTML document produced elsewhere, e.g. by an XSL transformation, without going through Thymeleaf:
-    /// its text is never evaluated as template expressions.
+    /// Renders an XHTML document produced elsewhere, e.g. by an XSL transformation, without going
+    /// through Thymeleaf: its text is never evaluated as template expressions.
+    ///
+    /// @param xhtml the document
+    /// @return the PDF, in memory
+    /// @throws java.io.UncheckedIOException when the rendering fails on I/O
     public Resource renderXhtml(String xhtml) {
         try(final var doc = new PDDocument()){
             final var nonSigned = new FastByteArrayOutputStream(64 * 1024);

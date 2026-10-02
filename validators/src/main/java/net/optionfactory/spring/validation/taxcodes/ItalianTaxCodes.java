@@ -11,12 +11,26 @@ import java.util.stream.IntStream;
 import static net.optionfactory.spring.validation.taxcodes.ItalianTaxCodeValidator.CODICE_FISCALE_LENGTH;
 import static net.optionfactory.spring.validation.taxcodes.ItalianTaxCodeValidator.PARTITA_IVA_LENGTH;
 
+/// Italian tax code utilities: normalization, check character validation of codici fiscali and
+/// partite IVA, and the birth date a codice fiscale encodes. Used by [ItalianTaxCode] and usable on
+/// its own.
 public class ItalianTaxCodes {
 
+    /// The kind of tax code.
     public enum Type {
-        CODICE_FISCALE, PARTITA_IVA, ANY;
+        /// The 16 character code of a person.
+        CODICE_FISCALE,
+        /// The 11 digit VAT number of a business.
+        PARTITA_IVA,
+        /// Either, told apart by length.
+        ANY;
     }
 
+    /// Brings a tax code as people write it to its canonical form: trimmed, uppercased, with every
+    /// character other than ASCII letters and digits removed. Normalization does not validate.
+    ///
+    /// @param taxcode the tax code, possibly `null`
+    /// @return the normalized tax code, or `null` when `taxcode` is `null`
     public static String normalize(String taxcode) {
         if (taxcode == null) {
             return null;
@@ -24,6 +38,18 @@ public class ItalianTaxCodes {
         return taxcode.trim().toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "");
     }
 
+    /// Validates a tax code in its canonical form, uppercase and without separators.
+    ///
+    /// The kind is told by length: 11 characters are checked as a partita IVA, which must be all
+    /// digits, and 16 as a codice fiscale, made of ASCII uppercase letters and digits; any other
+    /// length is invalid, as is a length the requested `type` does not admit. Only the check
+    /// character is verified, computed from the others with the official algorithms: neither the
+    /// structure of a codice fiscale (where letters and digits go, whether its date exists) nor
+    /// whether a partita IVA was ever issued is checked.
+    ///
+    /// @param taxcode the tax code, possibly `null`
+    /// @param type the kind of tax code accepted
+    /// @return true when the check character is correct, false otherwise, `null` included
     public static boolean isValid(String taxcode, Type type) {
         if (taxcode == null) {
             return false;
@@ -54,6 +80,19 @@ public class ItalianTaxCodes {
         return sb.toString();
     }
 
+    /// Reads the birth date a codice fiscale encodes, guessing the century.
+    ///
+    /// The code carries only the last two digits of the year, so the year chosen is the latest one
+    /// that puts the birth date no later than `minAge` years before `referenceDate`: with a
+    /// reference date in 2026, `25` is read as 2025 when `minAge` is `0` and as 1925 when it is
+    /// `18`. Women's codes, whose day is increased by 40, and *omocodia* substitutions of digits by
+    /// letters are decoded. The check character is not verified.
+    ///
+    /// @param value the codice fiscale, normalized first with [#normalize(String)]
+    /// @param referenceDate the date the age is computed at, typically today
+    /// @param minAge the minimum age the holder is known to have, `0` when unknown
+    /// @return the birth date, or `null` when the value is `null`, is not 16 characters long once
+    ///         normalized, or does not encode a valid date
     public static LocalDate guessBirthDate(String value, LocalDate referenceDate, int minAge) {
         final var fiscalCode = normalize(value);
         if (fiscalCode == null || fiscalCode.length() != CODICE_FISCALE_LENGTH) {
@@ -98,6 +137,13 @@ public class ItalianTaxCodes {
                 || (month.getValue() == latestAllowed.getMonthValue() && day > latestAllowed.getDayOfMonth());
     }
 
+    /// Computes the check digit of a partita IVA from its first ten digits.
+    ///
+    /// @param piva the partita IVA, at least its first ten digits; characters past the tenth are
+    ///        ignored
+    /// @return the expected eleventh digit, or empty when `piva` is `null` or contains anything but
+    ///         digits
+    /// @throws StringIndexOutOfBoundsException when `piva` is made of fewer than ten digits
     public static Optional<Character> controlCodePartitaIva(String piva) {
         if (piva == null || !piva.chars().allMatch(Character::isDigit)) {
             return Optional.empty();
@@ -126,6 +172,14 @@ public class ItalianTaxCodes {
         return IntStream.of(1, 3, 5, 7, 9, 11, 13).map(fiscalCode::charAt);
     }
 
+    /// Computes the check character of a codice fiscale from its first fifteen characters.
+    ///
+    /// @param fiscalCode the codice fiscale, at least its first fifteen characters; characters past
+    ///        the fifteenth are ignored
+    /// @return the expected sixteenth character, an uppercase letter, or empty when one of the
+    ///         first fifteen characters is neither an ASCII uppercase letter nor a digit
+    /// @throws NullPointerException when `fiscalCode` is `null`
+    /// @throws StringIndexOutOfBoundsException when `fiscalCode` is shorter than fifteen characters
     public static Optional<Character> controlCodeCodiceFiscale(String fiscalCode) {
         if (!oddChars(fiscalCode).allMatch(ODD_CODES::containsKey)) {
             return Optional.empty();

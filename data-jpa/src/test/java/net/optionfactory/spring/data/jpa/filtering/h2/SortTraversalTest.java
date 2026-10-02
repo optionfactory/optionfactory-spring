@@ -66,10 +66,8 @@ public class SortTraversalTest {
         public List<Tag> tags;
     }
 
-    /**
-     * Has no repository of its own: its sorters are resolved explicitly, so the
-     * context still starts.
-     */
+    /// Has no repository of its own: its sorters are resolved explicitly, so the
+    /// context still starts.
     @Entity
     @Sortable(name = "byTagLabel", path = "tags.label")
     @Sortable(name = "byMissing", path = "nonExistent")
@@ -102,13 +100,13 @@ public class SortTraversalTest {
     @Test
     public void canSortThroughASingularAssociation() {
         final var sorted = pets.findAll(FilterRequest.unfiltered(), Sort.by("byOwnerName"));
-        Assertions.assertEquals(List.of("b", "c", "a"), sorted.stream().map(p -> p.name).toList());
+        Assertions.assertEquals(List.of("b", "c", "a"), sorted.stream().map(p -> p.name).toList(), "pets are ordered by their owner's name");
     }
 
     @Test
     public void canSortThroughASingularAssociationIgnoringCase() {
         final var sorted = pets.findAll(FilterRequest.unfiltered(), Sort.by(Sort.Order.desc("byOwnerName").ignoreCase()));
-        Assertions.assertEquals(List.of("a", "c", "b"), sorted.stream().map(p -> p.name).toList());
+        Assertions.assertEquals(List.of("a", "c", "b"), sorted.stream().map(p -> p.name).toList(), "ignoring case, pets are ordered by their owner's name, descending");
     }
 
     @Test
@@ -126,7 +124,7 @@ public class SortTraversalTest {
             new WhitelistFilteringSpecificationAdapter<Pet>(fr, allowedFilters).toPredicate(root, query, builder);
             new WhitelistSortingSpecificationAdapter<Pet>(Sort.by("byOwnerName"), allowedSorters).toPredicate(root, query, builder);
 
-            Assertions.assertEquals(1, root.getJoins().size());
+            Assertions.assertEquals(1, root.getJoins().size(), "the sorter reuses the owner join created by the filter");
         }
     }
 
@@ -134,7 +132,7 @@ public class SortTraversalTest {
     public void sortersAreResolvedWhenTheRepositoryIsBuilt() {
         try (final var em = emf.createEntityManager()) {
             final var ei = JpaEntityInformationSupport.getEntityInformation(UnsortablePet.class, em);
-            final var thrown = Assertions.assertThrows(InvalidSortConfiguration.class, () -> Repositories.allowedSorters(ei, em));
+            final var thrown = Assertions.assertThrows(InvalidSortConfiguration.class, () -> Repositories.allowedSorters(ei, em), "a repository with an invalid sorter is rejected when its sorters are resolved");
             Assertions.assertTrue(thrown.getMessage().contains("in sorter by"), thrown.getMessage());
         }
     }
@@ -142,24 +140,25 @@ public class SortTraversalTest {
     @Test
     public void sortablePathCrossingACollectionIsRejected() {
         final var entity = emf.getMetamodel().entity(UnsortablePet.class);
-        final var thrown = Assertions.assertThrows(InvalidSortConfiguration.class, () -> Sorters.traversal(entity, "byTagLabel", "tags.label"));
+        final var thrown = Assertions.assertThrows(InvalidSortConfiguration.class, () -> Sorters.traversal(entity, "byTagLabel", "tags.label"), "a sorter path crossing a collection is rejected");
         Assertions.assertTrue(thrown.getMessage().contains("crosses a collection"), thrown.getMessage());
     }
 
     @Test
     public void unresolvableSortablePathIsRejected() {
         final var entity = emf.getMetamodel().entity(UnsortablePet.class);
-        final var thrown = Assertions.assertThrows(InvalidSortConfiguration.class, () -> Sorters.traversal(entity, "byMissing", "nonExistent"));
+        final var thrown = Assertions.assertThrows(InvalidSortConfiguration.class, () -> Sorters.traversal(entity, "byMissing", "nonExistent"), "a sorter path naming no attribute is rejected");
         Assertions.assertTrue(thrown.getMessage().contains("cannot resolve path"), thrown.getMessage());
     }
 
+    /// Spring's persistence exception translation wraps the [InvalidSortRequest], an
+    /// `IllegalArgumentException`.
     @Test
     public void unwhitelistedSorterIsRejected() {
-        // spring's persistence exception translation wraps the InvalidSortRequest, an IllegalArgumentException
-        final var thrown = Assertions.assertThrows(InvalidDataAccessApiUsageException.class, () -> pets.findAll(FilterRequest.unfiltered(), Sort.by("byTagLabel")));
-        final var rejected = Assertions.assertInstanceOf(InvalidSortRequest.class, thrown.getCause());
+        final var thrown = Assertions.assertThrows(InvalidDataAccessApiUsageException.class, () -> pets.findAll(FilterRequest.unfiltered(), Sort.by("byTagLabel")), "spring wraps the rejection of an unwhitelisted sorter");
+        final var rejected = Assertions.assertInstanceOf(InvalidSortRequest.class, thrown.getCause(), "the cause is the InvalidSortRequest");
         Assertions.assertTrue(thrown.getMessage().contains("sorter not configured"), thrown.getMessage());
-        Assertions.assertEquals("byTagLabel", rejected.sorter);
+        Assertions.assertEquals("byTagLabel", rejected.sorter, "the rejection names the requested sorter");
         Assertions.assertFalse(rejected.reason.contains("Pet"), rejected.reason);
     }
 

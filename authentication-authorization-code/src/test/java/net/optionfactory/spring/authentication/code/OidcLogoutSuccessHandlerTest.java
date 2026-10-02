@@ -22,7 +22,7 @@ public class OidcLogoutSuccessHandlerTest {
         handler.onLogoutSuccess(req, res, null);
 
         final var redirectedUrl = res.getRedirectedUrl();
-        Assertions.assertNotNull(redirectedUrl);
+        Assertions.assertNotNull(redirectedUrl, "logout redirects to the identity provider");
         Assertions.assertFalse(redirectedUrl.contains("attacker"),
                 "redirect_uri must not honor a client-supplied X-Forwarded-Host");
         Assertions.assertTrue(redirectedUrl.contains("app.example.com"),
@@ -43,8 +43,24 @@ public class OidcLogoutSuccessHandlerTest {
         handler.onLogoutSuccess(req, res, null);
 
         final var redirectedUrl = res.getRedirectedUrl();
-        Assertions.assertNotNull(redirectedUrl);
+        Assertions.assertNotNull(redirectedUrl, "logout redirects to the identity provider");
         Assertions.assertEquals("https://idp.example.com/logout?redirect_uri=https://app.example.com/app/home", redirectedUrl,
                 "the redirect target is scheme+host+port+path: the incoming query must never ride along");
+    }
+
+    @Test
+    public void relativeRedirectsDropTheIdentityProvidersOrigin() throws Exception {
+        final var handler = new OidcLogoutSuccessHandler(URI.create("https://idp.example.com:8443/realms/app"), "/app/home", true);
+        final var req = new MockHttpServletRequest();
+        req.setScheme("https");
+        req.setServerName("app.example.com");
+        req.setServerPort(-1);
+        req.setRequestURI("/app/logout");
+
+        final var res = new MockHttpServletResponse();
+        handler.onLogoutSuccess(req, res, null);
+
+        Assertions.assertEquals("/realms/app/logout?redirect_uri=https://app.example.com/app/home", res.getRedirectedUrl(),
+                "a relative redirect keeps the identity provider's path, resolved by the browser against the application's own origin");
     }
 }

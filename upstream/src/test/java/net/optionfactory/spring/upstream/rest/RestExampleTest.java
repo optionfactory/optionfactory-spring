@@ -23,7 +23,7 @@ public class RestExampleTest {
                 .baseUri("https://hub.dummyapis.com/statuscode/")
                 .build();
         final var response = client.ok("asd");
-        Assertions.assertEquals("b", response.get("a"));
+        Assertions.assertEquals("b", response.get("a"), "the mocked json body must be mapped to the return type");
     }
 
     @Test
@@ -38,7 +38,7 @@ public class RestExampleTest {
                 .build();
         Assertions.assertThrows(RestClientUpstreamException.class, () -> {
             client.error("asd");
-        });
+        }, "a 400 response must fail the call");
     }
 
 }

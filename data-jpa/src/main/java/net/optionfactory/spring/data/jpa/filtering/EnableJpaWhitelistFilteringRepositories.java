@@ -14,10 +14,30 @@ import org.springframework.data.jpa.repository.support.JpaRepositoryFactoryBean;
 import org.springframework.data.repository.config.BootstrapMode;
 import org.springframework.data.repository.query.QueryLookupStrategy.Key;
 
-/**
- * Enable use of JPA repositories extending the
- * {@link WhitelistFilteringRepository} interface.
- */
+/// Enables spring data jpa repositories whose interfaces may also extend
+/// [WhitelistFilteringRepository], by making [JpaWhitelistFilteringRepositoryBase] the base class
+/// of every repository it creates.
+///
+/// It is `@EnableJpaRepositories` with that base class fixed and three defaults changed:
+/// [#considerNestedRepositories()] is `true`, [#enableDefaultTransactions()] is `false`, and
+/// [#transactionManagerRef()] names a bean that is not meant to exist. Repositories found by this
+/// annotation therefore open no transaction of their own: they are meant to run inside one
+/// demarcated by the caller, typically a service.
+///
+/// ```java
+/// @Configuration
+/// @EnableJpaWhitelistFilteringRepositories(basePackageClasses = Pet.class)
+/// public class JpaConfig {
+/// }
+///
+/// @Entity
+/// @TextCompare(name = "byName", path = "name")
+/// @Sortable(name = "name", path = "name")
+/// public class Pet { ... }
+///
+/// public interface PetRepository extends JpaRepository<Pet, Long>, WhitelistFilteringRepository<Pet> {
+/// }
+/// ```
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
@@ -26,64 +46,94 @@ import org.springframework.data.repository.query.QueryLookupStrategy.Key;
 )
 public @interface EnableJpaWhitelistFilteringRepositories {
 
+    /// @return the packages to scan for repositories, an alias for [#basePackages()]
     @AliasFor(annotation = EnableJpaRepositories.class)
     String[] value() default {};
 
+    /// @return the packages to scan for repositories; the package of the annotated class when
+    /// neither this nor [#basePackageClasses()] is set
     @AliasFor(annotation = EnableJpaRepositories.class)
     String[] basePackages() default {};
 
+    /// @return classes whose packages are scanned for repositories, a type-safe alternative to
+    /// [#basePackages()]
     @AliasFor(annotation = EnableJpaRepositories.class)
     Class<?>[] basePackageClasses() default {};
 
+    /// @return the filters narrowing the scanned interfaces to the ones to be made repositories
     @AliasFor(annotation = EnableJpaRepositories.class)
     Filter[] includeFilters() default {};
 
+    /// @return the filters excluding scanned interfaces from becoming repositories
     @AliasFor(annotation = EnableJpaRepositories.class)
     Filter[] excludeFilters() default {};
 
+    /// @return the suffix of the class names looked up as custom repository implementation
+    /// fragments
     @AliasFor(annotation = EnableJpaRepositories.class)
     String repositoryImplementationPostfix() default "Impl";
 
+    /// @return the location of the named queries properties file; empty for spring data's default,
+    /// `META-INF/jpa-named-queries.properties`
     @AliasFor(annotation = EnableJpaRepositories.class)
     String namedQueriesLocation() default "";
 
+    /// @return how queries of query methods are resolved
     @AliasFor(annotation = EnableJpaRepositories.class)
     Key queryLookupStrategy() default Key.CREATE_IF_NOT_FOUND;
 
+    /// @return the factory bean creating each repository
     @AliasFor(annotation = EnableJpaRepositories.class)
     Class<?> repositoryFactoryBeanClass() default JpaRepositoryFactoryBean.class;
 
+    /// @return the generator of the repository bean names; `BeanNameGenerator` itself for the
+    /// context default
     @AliasFor(annotation = EnableJpaRepositories.class)
     Class<? extends BeanNameGenerator> nameGenerator() default BeanNameGenerator.class;
 
+    /// @return the name of the `EntityManagerFactory` bean the repositories use
     @AliasFor(annotation = EnableJpaRepositories.class)
     String entityManagerFactoryRef() default "entityManagerFactory";
 
+    /// The transaction manager used by the transactions the repositories open themselves.
+    ///
+    /// The default deliberately names a bean that is not expected to exist, rather than spring
+    /// data's `transactionManager`: with [#enableDefaultTransactions()] off, it is only used by the
+    /// methods a repository interface declares under a `@Transactional` without a qualifier, which
+    /// then fail when invoked (with a `NoSuchBeanDefinitionException`) instead of silently opening a
+    /// transaction of their own. Set it, together with [#enableDefaultTransactions()], to have the
+    /// repositories demarcate transactions.
+    ///
+    /// @return the name of the transaction manager bean
     @AliasFor(annotation = EnableJpaRepositories.class)
     String transactionManagerRef() default "badIdeaTransactionManagerRef";
 
-    /**
-     * Default has been changed to true.
-     *
-     * @return true
-     */
+    /// Changed to `true` from spring data's default, so that repository interfaces nested in
+    /// another type (an entity, a test class) are found as well.
+    ///
+    /// @return whether nested repository interfaces are discovered
     @AliasFor(annotation = EnableJpaRepositories.class)
     boolean considerNestedRepositories() default true;
 
-    /**
-     * Default has been changed to false.
-     *
-     * @return false
-     */
+    /// Changed to `false` from spring data's default: the `@Transactional` annotations of the
+    /// repository implementation classes are ignored, so a repository method joins the caller's
+    /// transaction and runs without one when there is none. Only `@Transactional` annotations on
+    /// the repository interfaces apply, to the methods those interfaces declare.
+    ///
+    /// @return whether the transactional defaults of the implementation classes apply
     @AliasFor(annotation = EnableJpaRepositories.class)
     boolean enableDefaultTransactions() default false;
 
+    /// @return when the repositories are initialized during the context bootstrap
     @AliasFor(annotation = EnableJpaRepositories.class)
     BootstrapMode bootstrapMode() default BootstrapMode.DEFAULT;
 
+    /// @return the character escaping `_` and `%` in derived `like` queries (`Containing`,
+    /// `StartingWith`, `EndingWith`)
     @AliasFor(annotation = EnableJpaRepositories.class)
     char escapeCharacter() default '\\';
 
+    /// @return the selector of the query enhancer used to introspect and rewrite string queries
     @AliasFor(annotation = EnableJpaRepositories.class)
     Class<? extends QueryEnhancerSelector> queryEnhancerSelector() default QueryEnhancerSelector.DefaultQueryEnhancerSelector.class;
 

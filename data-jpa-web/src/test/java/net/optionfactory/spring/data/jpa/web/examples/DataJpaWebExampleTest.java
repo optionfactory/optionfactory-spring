@@ -34,6 +34,10 @@ import tools.jackson.databind.json.JsonMapper;
 @SpringJUnitWebConfig(WebConfig.class)
 public class DataJpaWebExampleTest {
 
+    /// The setup an application needs: the [PageMixin] registered on the mapper, so that a `Page`
+    /// is written as its total `size` and its `data`; that same mapper handed to the
+    /// `JacksonJsonHttpMessageConverter`, or the mixin would not apply to responses; and the
+    /// [FilterRequestArgumentResolver] mapping the `filters` query parameter to a `FilterRequest`.
     @Configuration
     @EnableWebMvc
     public static class WebConfig implements WebMvcConfigurer {
@@ -41,10 +45,6 @@ public class DataJpaWebExampleTest {
         @Bean
         public JsonMapper restJsonMapper() {
             return JsonMapper.builder()
-                    /**
-                     * Registering this mixin simplifies the Page mapping
-                     * exposing only size and data.
-                     */
                     .addMixIn(Page.class, PageMixin.class)
                     .build();
         }
@@ -54,10 +54,6 @@ public class DataJpaWebExampleTest {
 
         @Override
         public void configureMessageConverters(HttpMessageConverters.ServerBuilder builder) {
-            /**
-             * the jsonMapper needs to be configured in the
-             * JacksonJsonHttpMessageConverter so the Page mixin is used
-             */
             builder.withJsonConverter(new JacksonJsonHttpMessageConverter(restJsonMapper));
         }
 
@@ -67,10 +63,6 @@ public class DataJpaWebExampleTest {
             pageableResolver.setFallbackPageable(PageRequest.of(0, 100));
             pageableResolver.setMaxPageSize(Integer.MAX_VALUE);
             resolvers.add(pageableResolver);
-            /**
-             * this resolver handles mapping FilterRequests from query
-             * parameters
-             */
             resolvers.add(new FilterRequestArgumentResolver(restJsonMapper));
         }
 
@@ -85,11 +77,11 @@ public class DataJpaWebExampleTest {
 
         @GetMapping("/items")
         public Page<Object> search(Pageable pr, FilterRequest fr) {
-            Assertions.assertEquals(2, pr.getPageNumber());
-            Assertions.assertEquals(345, pr.getPageSize());
+            Assertions.assertEquals(2, pr.getPageNumber(), "the page parameter is mapped to the pageable");
+            Assertions.assertEquals(345, pr.getPageSize(), "the size parameter is mapped to the pageable");
             Assertions.assertTrue(fr.filters().containsKey("byPetType"), "expected byPetType to be mapped");
-            Assertions.assertTrue(fr.filters().containsKey("byPetType"), "expected byPetBirthDate to be mapped");
-            Assertions.assertTrue(fr.filters().containsKey("byPetType"), "expected byPetName to be mapper");
+            Assertions.assertTrue(fr.filters().containsKey("byPetBirthDate"), "expected byPetBirthDate to be mapped");
+            Assertions.assertTrue(fr.filters().containsKey("byPetName"), "expected byPetName to be mapped");
             return Page.empty();
         }
 

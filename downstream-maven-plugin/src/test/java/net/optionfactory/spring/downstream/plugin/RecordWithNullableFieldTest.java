@@ -29,11 +29,11 @@ public class RecordWithNullableFieldTest {
         emitter.emit(registry);
 
         final var file = new File(tempDir, "spec.d.ts");
-        Assertions.assertTrue(file.exists());
+        Assertions.assertTrue(file.exists(), "the TypeScript spec file is generated");
 
         final var content = Files.readString(file.toPath());
 
-        Assertions.assertTrue(content.contains("username?: string;"), "TS emitter missed the optional/nullable signifier on the record component");
+        Assertions.assertTrue(content.contains("username?: string;"), "a @Nullable record component is an optional TypeScript property");
     }
 
     @Test
@@ -45,9 +45,9 @@ public class RecordWithNullableFieldTest {
         emitter.emit(registry);
 
         final var file = new File(tempDir, "net/generated/Account.java");
-        Assertions.assertTrue(file.exists());
+        Assertions.assertTrue(file.exists(), "the Java source file is generated");
 
         final var content = Files.readString(file.toPath());
-        Assertions.assertTrue(content.contains("public record Account(@Nullable String username) {"), "Java emitter failed to output standard record structural shell syntax");
+        Assertions.assertTrue(content.contains("public record Account(@Nullable String username) {"), "a @Nullable record component keeps @Nullable on the generated record component");
     }
 }

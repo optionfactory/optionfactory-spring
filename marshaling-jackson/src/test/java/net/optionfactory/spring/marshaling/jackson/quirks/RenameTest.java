@@ -17,7 +17,7 @@ public class RenameTest {
         final var expected = """
         {"originalName":"a"}
         """;
-        Assertions.assertEquals(expected.trim(), got);
+        Assertions.assertEquals(expected.trim(), got, "without the module the java name is used");
     }
 
     @Test
@@ -27,7 +27,7 @@ public class RenameTest {
         {"originalName":"a"}
         """;
         final var got = om.readValue(source, Bean.class);
-        Assertions.assertEquals(new Bean("a"), got);
+        Assertions.assertEquals(new Bean("a"), got, "without the module the java name is read");
     }
 
     @Test
@@ -38,7 +38,7 @@ public class RenameTest {
         final var expected = """
         {"renamed":"a"}
         """;
-        Assertions.assertEquals(expected.trim(), got);
+        Assertions.assertEquals(expected.trim(), got, "the property is written under the fixed name");
     }
 
     @Test
@@ -48,6 +48,15 @@ public class RenameTest {
         {"renamed":"a"}
         """;
         final var got = om.readValue(source, Bean.class);
-        Assertions.assertEquals(new Bean("a"), got);
+        Assertions.assertEquals(new Bean("a"), got, "the property is read from the fixed name");
+    }
+
+    @Test
+    public void theOriginalNameOfACreatorPropertyIsNotRead() {
+        final var om = JsonMapper.builder().addModule(Quirks.defaults().build()).build();
+        final var got = om.readValue("""
+        {"originalName":"a"}
+        """, Bean.class);
+        Assertions.assertEquals(new Bean(null), got, "a record component is bound to the fixed name only");
     }
 }

@@ -29,6 +29,10 @@ import org.springframework.http.HttpStatus;
 /// Registered through [DataJpaProblemsModule].
 public class FilteringExceptionClassifier implements ExceptionClassifier {
 
+    /// @param context unused, may be `null`
+    /// @param ex the exception, whose cause chain is searched, cycles included
+    /// @return a `400` with a `FIELD_ERROR` problem for the first rejected filter or sort request
+    ///         in the cause chain, `null` when there is none
     @Override
     public @Nullable HttpStatusAndProblems classify(Context context, Exception ex) {
         final Set<Throwable> seen = Collections.newSetFromMap(new IdentityHashMap<>());

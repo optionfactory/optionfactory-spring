@@ -178,8 +178,8 @@ public class FilteringExceptionClassifierTest {
                 .andReturn();
 
         final var resolved = result.getResolvedException();
-        Assertions.assertInstanceOf(InvalidDataAccessApiUsageException.class, resolved);
-        Assertions.assertInstanceOf(InvalidFilterRequest.class, resolved.getCause());
+        Assertions.assertInstanceOf(InvalidDataAccessApiUsageException.class, resolved, "spring's exception translation must have wrapped the rejection");
+        Assertions.assertInstanceOf(InvalidFilterRequest.class, resolved.getCause(), "the rejection must be found as the cause");
     }
 
     @Test
@@ -239,18 +239,18 @@ public class FilteringExceptionClassifierTest {
         final var b = new IllegalStateException("b");
         a.initCause(b);
         b.initCause(a);
-        Assertions.assertNull(new FilteringExceptionClassifier().classify(null, a));
+        Assertions.assertNull(new FilteringExceptionClassifier().classify(null, a), "a cyclic cause chain must be declined, not loop forever");
     }
 
     @Test
     public void anUnrelatedExceptionIsDeclined() {
-        Assertions.assertNull(new FilteringExceptionClassifier().classify(null, new IllegalStateException("a bug")));
+        Assertions.assertNull(new FilteringExceptionClassifier().classify(null, new IllegalStateException("a bug")), "an exception that is no rejection must be declined");
     }
 
     @Test
     public void aRejectionNotWrappedIsMappedToo() {
         final var mapped = new FilteringExceptionClassifier().classify(null, new InvalidFilterRequest("byName", null, "operator LIKE not whitelisted"));
-        Assertions.assertEquals(400, mapped.status().value());
-        Assertions.assertEquals("byName", mapped.problems().get(0).context);
+        Assertions.assertEquals(400, mapped.status().value(), "an unwrapped rejection is a bad request");
+        Assertions.assertEquals("byName", mapped.problems().get(0).context, "the problem must name the filter");
     }
 }

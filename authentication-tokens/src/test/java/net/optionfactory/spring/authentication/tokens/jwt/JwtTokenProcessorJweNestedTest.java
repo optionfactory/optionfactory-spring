@@ -95,8 +95,8 @@ public class JwtTokenProcessorJweNestedTest {
 
         final PrincipalAndAuthorities result = processor.process(hs, jwe.serialize());
         Assertions.assertNotNull(result, "symmetric raw-claims JWE should be accepted without an inner signature");
-        Assertions.assertEquals("bob", result.principal());
-        Assertions.assertTrue(result.authorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_USER")));
+        Assertions.assertEquals("bob", result.principal(), "the principal is derived from the decrypted claims");
+        Assertions.assertTrue(result.authorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_USER")), "the authorities are derived from the decrypted claims");
     }
 
     @Test
@@ -109,9 +109,9 @@ public class JwtTokenProcessorJweNestedTest {
         final var token = nestedJwe(issuerPrivate, claims);
 
         final PrincipalAndAuthorities result = processor.process(hs, token);
-        Assertions.assertNotNull(result);
-        Assertions.assertEquals("alice", result.principal());
-        Assertions.assertTrue(result.authorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_USER")));
+        Assertions.assertNotNull(result, "a jwe wrapping a jws signed by the issuer is accepted");
+        Assertions.assertEquals("alice", result.principal(), "the principal is derived from the inner claims");
+        Assertions.assertTrue(result.authorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_USER")), "the authorities are derived from the inner claims");
     }
 
     /// An attacker encrypts arbitrary claims to the recipient, using only the recipient's public key.
@@ -123,7 +123,7 @@ public class JwtTokenProcessorJweNestedTest {
                 .issueTime(Date.from(Instant.now()))
                 .build();
         final var token = rawClaimsJwe(claims);
-        Assertions.assertThrows(BadCredentialsException.class, () -> processor.process(hs, token));
+        Assertions.assertThrows(BadCredentialsException.class, () -> processor.process(hs, token), "an asymmetric jwe without an inner signature is rejected, since anyone can encrypt to the public key");
     }
 
     /// An attacker signs the inner JWS with their own key rather than the issuer's, then encrypts it to
@@ -137,6 +137,6 @@ public class JwtTokenProcessorJweNestedTest {
                 .issueTime(Date.from(Instant.now()))
                 .build();
         final var token = nestedJwe(attackerKey.toECPrivateKey(), claims);
-        Assertions.assertThrows(BadCredentialsException.class, () -> processor.process(hs, token));
+        Assertions.assertThrows(BadCredentialsException.class, () -> processor.process(hs, token), "an inner jws signed with a key other than the issuer's is rejected");
     }
 }

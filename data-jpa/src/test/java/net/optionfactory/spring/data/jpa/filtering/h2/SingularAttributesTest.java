@@ -102,7 +102,7 @@ public class SingularAttributesTest {
                 .build();
         final Pageable pr = Pageable.unpaged();
         final Page<Appointment> page = appointments.findAll(null, fr, pr);
-        Assertions.assertEquals(Set.of(1L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(1L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "only the appointments whose performer is named pietro are kept");
     }
 
     @Test
@@ -112,7 +112,7 @@ public class SingularAttributesTest {
                 .build();
         final Pageable pr = Pageable.unpaged();
         final Page<Appointment> page = appointments.findAll(null, fr, pr);
-        Assertions.assertTrue(page.isEmpty());
+        Assertions.assertTrue(page.isEmpty(), "an enum filter with no values matches nothing");
     }
 
     @Test
@@ -123,7 +123,7 @@ public class SingularAttributesTest {
 
         final Pageable pr = Pageable.unpaged();
         final Page<Appointment> page = appointments.findAll(null, fr, pr);
-        Assertions.assertEquals(Set.of(1L, 2L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(1L, 2L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "only the confirmed appointments are kept");
     }
 
     @Test
@@ -134,7 +134,7 @@ public class SingularAttributesTest {
 
         final Pageable pr = Pageable.unpaged();
         final Page<Appointment> page = appointments.findAll(null, fr, pr);
-        Assertions.assertEquals(Set.of(4L, 5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(4L, 5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "only the appointments whose activity is in summer are kept");
     }
 
     @Test
@@ -142,7 +142,7 @@ public class SingularAttributesTest {
         final var fr = FilterRequest.builder()
                 .inEnum("status", f -> new String[]{"NOT_A_REAL_STATUS"})
                 .build();
-        final var thrown = Assertions.assertThrows(Exception.class, () -> appointments.findAll(null, fr, Pageable.unpaged()));
+        final var thrown = Assertions.assertThrows(Exception.class, () -> appointments.findAll(null, fr, Pageable.unpaged()), "an unknown enum value fails the query");
         Throwable t = thrown;
         boolean foundInvalidFilterRequest = false;
         while (t != null) {

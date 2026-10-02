@@ -38,7 +38,7 @@ public class SubinterfaceAnnotationsTest {
                 .json(tools.jackson.databind.json.JsonMapper.builder().build())
                 .publisher(publisher)
                 .build();
-        Assertions.assertTrue(client.parent().isEmpty());
+        Assertions.assertTrue(client.parent().isEmpty(), "the mocked response is an empty json object");
         Assertions.assertEquals(1, events.stream().filter(e -> e instanceof UpstreamAlertEvent).count(),
                 "an @Upstream.AlertOnResponse declared on the proxied subinterface must configure inherited endpoints");
     }

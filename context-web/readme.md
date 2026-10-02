@@ -1,6 +1,6 @@
 # optionfactory-spring/context-web
 
-Property source configuration, conditional beans and WebMvc direct field access configuration.
+Spring MVC configuration with direct field access binding and a custom locale resolver.
 
 ## Maven
 
@@ -33,5 +33,23 @@ with `@Qualifier("customLocaleResolver")`); when none is present the default
 
 Direct field access is the point of the annotation: use plain `@EnableWebMvc` when you do not
 want it.
+
+### What direct field access protects from, and what it costs
+
+Spring's default data binder writes request parameters (query strings, forms: `@ModelAttribute`
+and other complex handler arguments) through setters only. A DTO class with public fields and no
+setters is left empty, without any binding error. Direct field access binds those fields. It does
+not affect `@RequestBody`, `@RequestParam`, `@PathVariable` or responses.
+
+The costs:
+
+- **records cannot be bound from request parameters**: the request is answered `400` ("Field is
+  not accessible"), and a class with a nested record property fails with a `500`. Plain
+  `@EnableWebMvc` binds them correctly.
+- **every field is bindable**, private ones without setters included: a request parameter named
+  after an internal field writes it.
+
+It can be dropped once every type bound from request parameters is a record or a JavaBean; types
+read only from json bodies do not count. See [ADR 0011](../docs/decisions/0011-field-binding.md).
 
 

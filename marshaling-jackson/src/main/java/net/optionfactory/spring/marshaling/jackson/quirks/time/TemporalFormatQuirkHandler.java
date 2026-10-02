@@ -31,6 +31,7 @@ import tools.jackson.databind.ValueSerializer;
 import tools.jackson.databind.deser.SettableBeanProperty;
 import tools.jackson.databind.ser.BeanPropertyWriter;
 
+/// Handles [Quirks.TemporalFormat]: see the annotation for the supported types and failure modes.
 public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalFormat> {
 
     private static final Map<Class<?>, TemporalQuery<?>> TEMPORAL_TYPE_TO_QUERY = new HashMap<>();
@@ -49,11 +50,16 @@ public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalF
         TEMPORAL_TYPE_TO_QUERY.put(ZoneOffset.class, ZoneOffset::from);
     }
 
+    /// @return [Quirks.TemporalFormat]
     @Override
     public Class<TemporalFormat> annotation() {
         return Quirks.TemporalFormat.class;
     }
 
+    /// @param ann the annotation, with the pattern
+    /// @param bpw the writer of the property
+    /// @return the same writer, with a [Serializer] assigned
+    /// @throws IllegalArgumentException when the pattern is invalid
     @Override
     public BeanPropertyWriter serialization(TemporalFormat ann, BeanPropertyWriter bpw) {
         final var dtf = DateTimeFormatter.ofPattern(ann.value());
@@ -62,6 +68,11 @@ public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalF
         return bpw;
     }
 
+    /// @param ann the annotation, with the pattern
+    /// @param sbp the property
+    /// @return a copy of the property with a [Deserializer] for its type
+    /// @throws IllegalArgumentException when the pattern is invalid
+    /// @throws IllegalStateException when the property type is not a supported `java.time` type
     @Override
     public SettableBeanProperty deserialization(TemporalFormat ann, SettableBeanProperty sbp) {
         final var dtf = DateTimeFormatter.ofPattern(ann.value());
@@ -74,32 +85,48 @@ public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalF
         return sbp.withValueDeserializer(deserializer);
     }
 
+    /// Writes a temporal value as a string through a formatter.
     public static class Serializer extends ValueSerializer<Object> {
 
         private final DateTimeFormatter dtf;
 
+        /// @param dtf the formatter
         public Serializer(DateTimeFormatter dtf) {
             this.dtf = dtf;
         }
 
+        /// @param value the value, which must be a `TemporalAccessor` carrying the fields the
+        /// formatter prints
+        /// @param gen the generator
+        /// @param ctxt the serialization context
         @Override
         public void serialize(Object value, JsonGenerator gen, SerializationContext ctxt) throws JacksonException {
             gen.writeString(dtf.format((TemporalAccessor) value));
         }
     }
 
+    /// Reads a temporal value from a string through a formatter.
     public static class Deserializer extends ValueDeserializer<Object> {
 
         private final DateTimeFormatter dtf;
         private final TemporalQuery<?> query;
         private final Class<?> targetType;
 
+        /// @param dtf the formatter
+        /// @param query the query extracting the target type from the parsed fields, e.g.
+        /// `LocalDate::from`
+        /// @param targetType the target type, named in the failures
         public Deserializer(DateTimeFormatter dtf, TemporalQuery<?> query, Class<?> targetType) {
             this.dtf = dtf;
             this.query = query;
             this.targetType = targetType;
         }
 
+        /// @param jp the parser, on the value token
+        /// @param dc the deserialization context
+        /// @return the parsed value
+        /// @throws tools.jackson.databind.exc.MismatchedInputException for a token that is not a
+        /// string, and for a blank string or one the formatter cannot parse into the target type
         @Override
         public Object deserialize(JsonParser jp, DeserializationContext dc) {
             if (!jp.hasToken(JsonToken.VALUE_STRING)) {
@@ -116,6 +143,8 @@ public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalF
             }
         }
 
+        /// @param ctxt the deserialization context
+        /// @return `null`
         @Override
         public TemporalAccessor getNullValue(DeserializationContext ctxt) {
             return null;

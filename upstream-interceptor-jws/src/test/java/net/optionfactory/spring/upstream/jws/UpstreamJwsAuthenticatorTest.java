@@ -27,15 +27,15 @@ public class UpstreamJwsAuthenticatorTest {
         final var request = new UpstreamJwtBearerGrantAuthenticatorTest.StubClientHttpRequest();
         authenticator.initialize(null, request);
         final var authorization = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-        Assertions.assertTrue(authorization.startsWith("Bearer "));
+        Assertions.assertTrue(authorization.startsWith("Bearer "), "the jws is sent as a bearer token");
         final var jwt = SignedJWT.parse(authorization.substring("Bearer ".length()));
-        Assertions.assertEquals(JWSAlgorithm.RS256, jwt.getHeader().getAlgorithm());
-        Assertions.assertEquals(JOSEObjectType.JWT, jwt.getHeader().getType());
-        Assertions.assertTrue(jwt.verify(new RSASSAVerifier((RSAPublicKey) keys.getPublic())));
+        Assertions.assertEquals(JWSAlgorithm.RS256, jwt.getHeader().getAlgorithm(), "the header names the configured algorithm");
+        Assertions.assertEquals(JOSEObjectType.JWT, jwt.getHeader().getType(), "the header declares a JWT type");
+        Assertions.assertTrue(jwt.verify(new RSASSAVerifier((RSAPublicKey) keys.getPublic())), "the jws verifies with the public key of the signing key");
         final var claims = jwt.getJWTClaimsSet();
-        Assertions.assertEquals("my-issuer", claims.getIssuer());
-        Assertions.assertEquals("custom-subject", claims.getSubject());
-        Assertions.assertEquals(List.of("my-audience"), claims.getAudience());
+        Assertions.assertEquals("my-issuer", claims.getIssuer(), "iss is the configured issuer");
+        Assertions.assertEquals("custom-subject", claims.getSubject(), "sub is the one produced from the invocation");
+        Assertions.assertEquals(List.of("my-audience"), claims.getAudience(), "aud is the configured audience");
     }
 
 }

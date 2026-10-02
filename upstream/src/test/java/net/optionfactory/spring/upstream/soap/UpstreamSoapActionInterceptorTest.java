@@ -53,7 +53,7 @@ public class UpstreamSoapActionInterceptorTest {
                 .build()
                 .add(new Add());
 
-        Assertions.assertEquals("\"http://tempuri.org/Add\"", capturedHeaders.get().getFirst("SOAPAction"));
+        Assertions.assertEquals("\"http://tempuri.org/Add\"", capturedHeaders.get().getFirst("SOAPAction"), "SOAP 1.1 must send the quoted action as the SOAPAction header");
     }
 
     @Test
@@ -89,7 +89,7 @@ public class UpstreamSoapActionInterceptorTest {
                 .build()
                 .add(new Add());
 
-        Assertions.assertEquals("\"http://tempuri.org/Add\"", capturedHeaders.get().getContentType().getParameter("action"));
+        Assertions.assertEquals("\"http://tempuri.org/Add\"", capturedHeaders.get().getContentType().getParameter("action"), "SOAP 1.2 must send the quoted action as a Content-Type parameter");
     }
 
 }

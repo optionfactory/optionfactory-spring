@@ -17,10 +17,10 @@ public class LocalizationTest {
 
     public static class Conf {
 
+        /// The message source can be a dedicated one, as here, or the application context itself,
+        /// which then delegates to the `messageSource` bean, when one is defined.
         @Bean
         public EmailMessage.Prototype email(ConfigurableApplicationContext ac) {
-            //Here you can either create a specific messageSource, or pass the ac as the message source.
-            //In the latter case if you defined a @Bean called messageSource(), that's what's being used.
             final var ms = new ResourceBundleMessageSource();
             ms.setDefaultEncoding(StandardCharsets.UTF_8.displayName());
             ms.setBasenames("net/optionfactory/spring/email/l10n/test-l10n");
@@ -47,6 +47,6 @@ public class LocalizationTest {
                 .locale(Locale.ITALIAN)
                 .marshal();
         final var output = new String(out, StandardCharsets.UTF_8);
-        Assertions.assertTrue(output.contains("Content: italian"), output);
+        Assertions.assertTrue(output.contains("Content: italian"), "the message is resolved in the builder locale, got: " + output);
     }
 }

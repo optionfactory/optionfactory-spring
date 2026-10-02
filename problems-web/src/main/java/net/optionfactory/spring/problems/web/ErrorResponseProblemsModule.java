@@ -19,6 +19,7 @@ public class ErrorResponseProblemsModule implements ProblemsModule {
 
     private static final Logger logger = LoggerFactory.getLogger(ErrorResponseProblemsModule.class);
 
+    /// @return the module's single classifier
     @Override
     public List<ExceptionClassifier> classifiers() {
         return List.of(ErrorResponseProblemsModule::classify);

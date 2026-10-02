@@ -29,10 +29,8 @@ import tools.jackson.databind.json.JsonMapper;
 @EnableJpaWhitelistFilteringRepositories(basePackageClasses = HibernateOnPsqlTestConfig.class)
 public class HibernateOnPsqlTestConfig {
 
-    /**
-     * Postgres shared by every test declaring {@code @SharedContainer(Postgres.class)}: started before the first
-     * one, stopped after the last one; its coordinates are exposed to the environment as {@code db.*}.
-     */
+    /// Postgres shared by every test declaring `@SharedContainer(Postgres.class)`: started before the first
+    /// one, stopped after the last one; its coordinates are exposed to the environment as `db.*`.
     public static class Postgres implements ContainerDefinition<GenericContainer> {
 
         @Override

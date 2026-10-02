@@ -10,23 +10,41 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+/// Computes the `Authorization` header answering an HTTP digest challenge.
+///
+/// Only the `MD5` algorithm with `qop=auth` is implemented, whatever the challenge offers, and each
+/// challenge is answered once: the nonce count is always `00000001`. The `opaque` of the challenge is
+/// echoed when present.
 public class DigestAuth {
     
     private final String clientId;
     private final String clientSecret;
     private final Supplier<Integer> clientNonceFactory;
 
+    /// @param clientId the username
+    /// @param clientSecret the password
+    /// @param clientNonceFactory supplies a client nonce for each header, rendered as 8 hex digits;
+    /// fixed values are only suitable for tests
     public DigestAuth(String clientId, String clientSecret, Supplier<Integer> clientNonceFactory) {
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.clientNonceFactory = clientNonceFactory;
     }
 
+    /// @param clientId the username
+    /// @param clientSecret the password
+    /// @return a `DigestAuth` drawing its client nonces from a `SecureRandom`
     public static DigestAuth fromCredentials(String clientId, String clientSecret) {
         final SecureRandom sr = new SecureRandom();
         return new DigestAuth(clientId, clientSecret, sr::nextInt);
     }
 
+    /// @param method the method of the request to authenticate
+    /// @param requestUri the request-target to digest: the raw path, followed by the raw query if any
+    /// @param serverChallenge the `WWW-Authenticate` header value
+    /// @return the `Authorization` header value
+    /// @throws IllegalStateException when the challenge is missing or not a `Digest` one
+    /// @throws NullPointerException when the challenge has no `realm` or no `nonce`
     public String authHeader(String method, String requestUri, String serverChallenge) {
         final AuthenticationChallengeParser.AuthenticationChallenge challenge = new AuthenticationChallengeParser().parse(serverChallenge);
         if (!"digest".equalsIgnoreCase(challenge.scheme())) {

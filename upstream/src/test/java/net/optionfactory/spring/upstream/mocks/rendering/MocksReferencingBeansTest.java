@@ -71,13 +71,13 @@ public class MocksReferencingBeansTest {
     public void canReferenceApplicationContextBeansInJsonTemplates() throws Exception {
         final var got = client.jsont("1");
 
-        Assertions.assertEquals(Map.of("key", "help"), got);
+        Assertions.assertEquals(Map.of("key", "help"), got, "json templates must resolve @bean references against the application context");
     }
 
     @Test
     public void canReferenceApplicationContextBeansInThymeleafTemplates() throws Exception {
         final var got = client.thymeleaf("1");
 
-        Assertions.assertEquals(Map.of("key", "help"), got);
+        Assertions.assertEquals(Map.of("key", "help"), got, "thymeleaf templates must resolve @bean references against the application context");
     }
 }

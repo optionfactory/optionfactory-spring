@@ -23,12 +23,12 @@ public class StaticStrictTokenProcessorTest {
     @Test
     public void returnsAuthoritiesWhenSchemeAndTokenMatch() {
         final var strict = new TokenProcessor.StaticStrict(BASIC, "secret", PAA);
-        Assertions.assertSame(PAA, strict.process(BASIC, "secret"));
+        Assertions.assertSame(PAA, strict.process(BASIC, "secret"), "a matching scheme and token grant the configured principal and authorities");
     }
 
     @Test
     public void throwsWhenSchemeMatchesButTokenDoesNot() {
         final var strict = new TokenProcessor.StaticStrict(BASIC, "secret", PAA);
-        Assertions.assertThrows(BadCredentialsException.class, () -> strict.process(BASIC, "wrong"));
+        Assertions.assertThrows(BadCredentialsException.class, () -> strict.process(BASIC, "wrong"), "a wrong token on the strict scheme is rejected outright");
     }
 }

@@ -80,8 +80,8 @@ public class DeterministicPredicatesTest {
         final var entity = emf.getMetamodel().entity(Root.class);
         final var first = Filters.traversal(entity, "byLeafA", "leaves.a", Match.ANY);
         final var second = Filters.traversal(entity, "byLeafA", "leaves.a", Match.ANY);
-        Assertions.assertEquals(first.group(), second.group());
-        Assertions.assertEquals("leaves!byLeafA#ANY", first.group());
+        Assertions.assertEquals(first.group(), second.group(), "an isolated group token is the same at every resolution");
+        Assertions.assertEquals("leaves!byLeafA#ANY", first.group(), "an isolated group token is derived from path, filter name and quantifier");
     }
 
     @Test
@@ -89,18 +89,16 @@ public class DeterministicPredicatesTest {
         final var entity = emf.getMetamodel().entity(Root.class);
         Assertions.assertNotEquals(
                 Filters.traversal(entity, "byLeafA", "leaves.a", Match.ANY).group(),
-                Filters.traversal(entity, "byLeafB", "leaves.b", Match.ANY).group());
+                Filters.traversal(entity, "byLeafB", "leaves.b", Match.ANY).group(), "isolated groups of different filters are distinct");
     }
 
     @Test
     public void predicatesAreEmittedInFilterNameOrderWhateverTheRequestOrder() {
-        Assertions.assertEquals(rendered(orderedRequest("byLeafB", "byLeafA")), rendered(orderedRequest("byLeafA", "byLeafB")));
+        Assertions.assertEquals(rendered(orderedRequest("byLeafB", "byLeafA")), rendered(orderedRequest("byLeafA", "byLeafB")), "the same filters render the same query whatever the request order");
     }
 
-    /**
-     * {@code reuse = false} puts each filter in its own EXISTS, so both are rendered and
-     * their order is observable in the generated query.
-     */
+    /// `reuse = false` puts each filter in its own EXISTS, so both are rendered and
+    /// their order is observable in the generated query.
     private String rendered(FilterRequest fr) {
         try (final var em = emf.createEntityManager()) {
             final var ei = JpaEntityInformationSupport.getEntityInformation(Root.class, em);
@@ -134,7 +132,7 @@ public class DeterministicPredicatesTest {
                 .text("byLeafA", f -> f.eq("x"))
                 .text("byLeafB", f -> f.eq("y"))
                 .build();
-        Assertions.assertEquals(1, roots.findAll(fr).size());
-        Assertions.assertEquals(0, roots.findAll(FilterRequest.builder().text("byLeafA", f -> f.eq("nope")).build()).size());
+        Assertions.assertEquals(1, roots.findAll(fr).size(), "both isolated subqueries match the same leaf");
+        Assertions.assertEquals(0, roots.findAll(FilterRequest.builder().text("byLeafA", f -> f.eq("nope")).build()).size(), "a non-matching filter excludes the root");
     }
 }

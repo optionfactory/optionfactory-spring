@@ -18,25 +18,24 @@ public class SharedContainersExtensionTest {
     public void containerIsStartedOnceForAllClassesAndStoppedAfterTheLastTest() {
         final var summary = Jupiter.run(FirstUser.class, NoContainers.class, SecondUser.class);
 
-        Assertions.assertEquals(3, summary.getTestsSucceededCount());
+        Assertions.assertEquals(3, summary.getTestsSucceededCount(), "every fixture test sees its container");
         final var container = FakeContainer.created(Shared.class);
-        Assertions.assertEquals(1, container.size());
-        Assertions.assertEquals(1, container.get(0).starts);
-        Assertions.assertEquals(1, container.get(0).stops);
+        Assertions.assertEquals(1, container.size(), "one container instance shared by every class declaring it");
+        Assertions.assertEquals(1, container.get(0).starts, "the shared container is started once");
+        Assertions.assertEquals(1, container.get(0).stops, "the shared container is stopped once, after the last test");
     }
 
     @Test
     public void declarationsAreFoundThroughComposedAnnotationsSuperclassesAndNestedClasses() {
         final var summary = Jupiter.run(InheritingUser.class);
 
-        Assertions.assertEquals(1, summary.getTestsSucceededCount());
+        Assertions.assertEquals(1, summary.getTestsSucceededCount(), "the nested test sees both containers");
         for (final var definition : List.of(ComposedA.class, ComposedB.class)) {
-            Assertions.assertEquals(1, FakeContainer.created(definition).size(), definition.getSimpleName());
-            Assertions.assertEquals(1, FakeContainer.created(definition).get(0).stops, definition.getSimpleName());
+            Assertions.assertEquals(1, FakeContainer.created(definition).size(), "one container created for " + definition.getSimpleName());
+            Assertions.assertEquals(1, FakeContainer.created(definition).get(0).stops, "the container for " + definition.getSimpleName() + " is stopped once");
         }
     }
 
-    /* fixtures */
     public static class Shared extends FakeContainer.Definition {
     }
 
@@ -51,7 +50,7 @@ public class SharedContainersExtensionTest {
 
         @Test
         public void containerIsRunning() {
-            Assertions.assertTrue(FakeContainer.created(Shared.class).get(0).running);
+            Assertions.assertTrue(FakeContainer.created(Shared.class).get(0).running, "the shared container is running during the test");
         }
     }
 
@@ -84,8 +83,8 @@ public class SharedContainersExtensionTest {
 
             @Test
             public void bothContainersAreRunning() {
-                Assertions.assertTrue(FakeContainer.created(ComposedA.class).get(0).running);
-                Assertions.assertTrue(FakeContainer.created(ComposedB.class).get(0).running);
+                Assertions.assertTrue(FakeContainer.created(ComposedA.class).get(0).running, "the container declared through the composed annotation is running");
+                Assertions.assertTrue(FakeContainer.created(ComposedB.class).get(0).running, "every container of the composed annotation is running");
             }
         }
     }

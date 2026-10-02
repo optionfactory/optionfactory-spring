@@ -37,7 +37,7 @@ public class PayloadsTest {
         final var traverser = new Payloads("net.optionfactory");
         final var method = EndpointHolder.class.getMethod("endpointWithGenericType");
         final var payloads = traverser.discover(List.of(method));
-        Assertions.assertTrue(payloads.contains(DeepGenericDto.class), "Failed to unpack deep generic arguments");
+        Assertions.assertTrue(payloads.contains(DeepGenericDto.class), "payloads nested deep in generic arguments are discovered");
     }
 
     @Test
@@ -46,7 +46,7 @@ public class PayloadsTest {
         final var method = EndpointHolder.class.getMethod("endpointWithRecursiveDataStructure");
         Assertions.assertDoesNotThrow(() -> {
             final Set<Class<?>> payloads = traverser.discover(List.of(method));
-            Assertions.assertTrue(payloads.contains(RecursiveDataStruct.class));
-        }, "Cyclic graph lookup caused a StackOverflowError");
+            Assertions.assertTrue(payloads.contains(RecursiveDataStruct.class), "a self referencing payload is discovered");
+        }, "a cyclic payload graph is walked once, without recursing forever");
     }
 }

@@ -134,8 +134,8 @@ public class OauthAuthenticatorsCachingTest {
         final var second = new RecordingRequest();
         authenticator.initialize(null, second);
         Assertions.assertEquals(1, oauth.grants, "two requests in the same validity window must share one grant");
-        Assertions.assertEquals("Bearer t0", first.headers.getFirst(HttpHeaders.AUTHORIZATION));
-        Assertions.assertEquals("Bearer t0", second.headers.getFirst(HttpHeaders.AUTHORIZATION));
+        Assertions.assertEquals("Bearer t0", first.headers.getFirst(HttpHeaders.AUTHORIZATION), "the first request must carry the granted token");
+        Assertions.assertEquals("Bearer t0", second.headers.getFirst(HttpHeaders.AUTHORIZATION), "the second request must carry the cached token");
 
         clock.advanceSeconds(539);
         final var stillCached = new RecordingRequest();
@@ -147,7 +147,7 @@ public class OauthAuthenticatorsCachingTest {
         final var refreshed = new RecordingRequest();
         authenticator.initialize(null, refreshed);
         Assertions.assertEquals(2, oauth.grants, "the cached token must be refreshed once past the refresh point");
-        Assertions.assertEquals("Bearer t1", refreshed.headers.getFirst(HttpHeaders.AUTHORIZATION));
+        Assertions.assertEquals("Bearer t1", refreshed.headers.getFirst(HttpHeaders.AUTHORIZATION), "the refreshed token must replace the expired one");
     }
 
     @Test
@@ -158,7 +158,7 @@ public class OauthAuthenticatorsCachingTest {
                 .clientId("id")
                 .clientSecret("secret")
                 .build();
-        Assertions.assertThrows(IllegalStateException.class, () -> authenticator.initialize(null, new RecordingRequest()));
+        Assertions.assertThrows(IllegalStateException.class, () -> authenticator.initialize(null, new RecordingRequest()), "a token response without access_token must fail instead of sending an empty bearer");
     }
 
     @Test
@@ -174,14 +174,14 @@ public class OauthAuthenticatorsCachingTest {
         authenticator.initialize(null, first);
         final var second = new RecordingRequest();
         authenticator.initialize(null, second);
-        Assertions.assertEquals(1, oauth.grants);
-        Assertions.assertEquals("Bearer t0", second.headers.getFirst(HttpHeaders.AUTHORIZATION));
+        Assertions.assertEquals(1, oauth.grants, "two requests in the same validity window must share one password grant");
+        Assertions.assertEquals("Bearer t0", second.headers.getFirst(HttpHeaders.AUTHORIZATION), "the second request must carry the cached token");
         Assertions.assertEquals(Map.of(
                 "grant_type", "password",
                 "username", "user",
                 "password", "pass",
                 "client_id", "id",
                 "client_secret", "secret"
-        ), oauth.lastParams.get(0));
+        ), oauth.lastParams.get(0), "the password grant must send the resource owner and client credentials as form parameters");
     }
 }

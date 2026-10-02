@@ -168,30 +168,30 @@ public class UpstreamJwtBearerGrantAuthenticatorTest {
         final var authenticator = authenticator();
         final var request = new StubClientHttpRequest();
         authenticator.initialize(null, request);
-        Assertions.assertEquals("Bearer token-1", request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
-        Assertions.assertEquals(1, oauth.requests.size());
+        Assertions.assertEquals("Bearer token-1", request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION), "the exchanged access token is sent as a bearer token");
+        Assertions.assertEquals(1, oauth.requests.size(), "one exchange for the first request");
     }
 
     @Test
     public void exchangeCarriesJwtBearerGrantAndSignedAssertion() throws Exception {
         final var authenticator = authenticator();
         authenticator.accessToken();
-        Assertions.assertEquals(1, oauth.requests.size());
+        Assertions.assertEquals(1, oauth.requests.size(), "one exchange per access token");
         final var params = oauth.requests.get(0);
-        Assertions.assertEquals(UpstreamJwtBearerGrantAuthenticator.GRANT_TYPE, params.get("grant_type"));
+        Assertions.assertEquals(UpstreamJwtBearerGrantAuthenticator.GRANT_TYPE, params.get("grant_type"), "the exchange uses the jwt-bearer grant");
         final var assertion = (String) params.get("assertion");
         final var jwt = SignedJWT.parse(assertion);
-        Assertions.assertEquals(JWSAlgorithm.RS256, jwt.getHeader().getAlgorithm());
-        Assertions.assertEquals(JOSEObjectType.JWT, jwt.getHeader().getType());
-        Assertions.assertTrue(jwt.verify(new RSASSAVerifier((RSAPublicKey) keys.getPublic())));
+        Assertions.assertEquals(JWSAlgorithm.RS256, jwt.getHeader().getAlgorithm(), "the assertion is signed with the configured algorithm");
+        Assertions.assertEquals(JOSEObjectType.JWT, jwt.getHeader().getType(), "the assertion declares a JWT type");
+        Assertions.assertTrue(jwt.verify(new RSASSAVerifier((RSAPublicKey) keys.getPublic())), "the assertion verifies with the public key of the signing key");
         final var claims = jwt.getJWTClaimsSet();
-        Assertions.assertEquals("sa@project.iam.gserviceaccount.com", claims.getIssuer());
-        Assertions.assertEquals(claims.getIssuer(), claims.getSubject());
-        Assertions.assertEquals(List.of("https://oauth2.googleapis.com/token"), claims.getAudience());
-        Assertions.assertEquals(START, claims.getIssueTime().toInstant());
-        Assertions.assertEquals(START.plus(Duration.ofHours(1)), claims.getExpirationTime().toInstant());
-        Assertions.assertFalse(claims.getJWTID().isBlank());
-        Assertions.assertEquals("https://www.googleapis.com/auth/firebase.messaging", claims.getStringClaim("scope"));
+        Assertions.assertEquals("sa@project.iam.gserviceaccount.com", claims.getIssuer(), "iss is the configured issuer");
+        Assertions.assertEquals(claims.getIssuer(), claims.getSubject(), "sub defaults to the issuer");
+        Assertions.assertEquals(List.of("https://oauth2.googleapis.com/token"), claims.getAudience(), "aud is the configured audience");
+        Assertions.assertEquals(START, claims.getIssueTime().toInstant(), "iat is the current instant");
+        Assertions.assertEquals(START.plus(Duration.ofHours(1)), claims.getExpirationTime().toInstant(), "the assertion expires one hour after issue");
+        Assertions.assertFalse(claims.getJWTID().isBlank(), "every assertion carries a jti");
+        Assertions.assertEquals("https://www.googleapis.com/auth/firebase.messaging", claims.getStringClaim("scope"), "the configured scope is carried in the scope claim");
     }
 
     @Test
@@ -205,15 +205,15 @@ public class UpstreamJwtBearerGrantAuthenticatorTest {
         authenticator.accessToken();
         final var assertion = (String) oauth.requests.get(0).get("assertion");
         final var claims = SignedJWT.parse(assertion).getJWTClaimsSet();
-        Assertions.assertEquals("impersonated@project.iam.gserviceaccount.com", claims.getSubject());
-        Assertions.assertNull(claims.getStringClaim("scope"));
+        Assertions.assertEquals("impersonated@project.iam.gserviceaccount.com", claims.getSubject(), "a configured subject overrides the issuer as sub");
+        Assertions.assertNull(claims.getStringClaim("scope"), "no scope claim when no scope is configured");
     }
 
     @Test
     public void missingAccessTokenInTokenResponseFails() {
         oauth.includeAccessToken = false;
         final var authenticator = authenticator();
-        Assertions.assertThrows(IllegalStateException.class, authenticator::accessToken);
+        Assertions.assertThrows(IllegalStateException.class, authenticator::accessToken, "a token response without access_token fails the exchange");
     }
 
     @Test
@@ -227,20 +227,21 @@ public class UpstreamJwtBearerGrantAuthenticatorTest {
         authenticator.accessToken();
         final var assertion = (String) oauth.requests.get(0).get("assertion");
         final var claims = SignedJWT.parse(assertion).getJWTClaimsSet();
-        Assertions.assertEquals("scope-a scope-b", claims.getStringClaim("scope"));
+        Assertions.assertEquals("scope-a scope-b", claims.getStringClaim("scope"), "multiple scopes are joined by spaces");
     }
 
+    /// `expires_in` is 600s and the default refresh margin is 60s: a refresh is expected at
+    /// START+540s.
     @Test
     public void accessTokenIsCachedUntilExpiryMinusMargin() {
         final var authenticator = authenticator();
-        //expires_in is 600s, default refresh margin is 60s: refresh expected at START+540s
-        Assertions.assertEquals("token-1", authenticator.accessToken());
+        Assertions.assertEquals("token-1", authenticator.accessToken(), "the first call exchanges a token");
         clock.set(START.plusSeconds(500));
-        Assertions.assertEquals("token-1", authenticator.accessToken());
-        Assertions.assertEquals(1, oauth.requests.size());
+        Assertions.assertEquals("token-1", authenticator.accessToken(), "the cached token is reused before the refresh margin");
+        Assertions.assertEquals(1, oauth.requests.size(), "no exchange while the cached token is fresh");
         clock.set(START.plusSeconds(541));
-        Assertions.assertEquals("token-2", authenticator.accessToken());
-        Assertions.assertEquals(2, oauth.requests.size());
+        Assertions.assertEquals("token-2", authenticator.accessToken(), "a new token is exchanged once within the refresh margin");
+        Assertions.assertEquals(2, oauth.requests.size(), "one more exchange after the refresh margin");
     }
 
 }

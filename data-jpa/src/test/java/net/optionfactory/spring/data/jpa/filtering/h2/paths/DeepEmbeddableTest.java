@@ -80,7 +80,7 @@ public class DeepEmbeddableTest {
                 .number("byLeafId", f -> f.of(NumberCompare.Operator.EQ, "100"))
                 .build();
         final var page = repo.findAll(fr, Pageable.unpaged());
-        Assertions.assertEquals(1, page.getTotalElements());
+        Assertions.assertEquals(1, page.getTotalElements(), "the association nested in embeddables is joined and filtered");
     }
 
 

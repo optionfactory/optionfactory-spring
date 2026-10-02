@@ -9,10 +9,12 @@ import java.security.SecureRandom;
 import org.springframework.security.crypto.codec.Hex;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-/**
- * should be registered before HeaderWriterFilter.class
- *
- */
+/// Generates the nonce of each request: 16 bytes from a `SecureRandom`, hex-encoded, exposed as a
+/// [Csp] in the `csp` request attribute.
+///
+/// It must run before `HeaderWriterFilter`, which writes the policy carrying the nonce. Error
+/// dispatches are filtered too, so that an error page rendered by the container still finds a
+/// nonce.
 public class StrictContentSecurityPolicyNonceFilter extends OncePerRequestFilter {
 
     private final SecureRandom sr = new SecureRandom();
@@ -31,16 +33,15 @@ public class StrictContentSecurityPolicyNonceFilter extends OncePerRequestFilter
         return false;
     }
 
-    /**
-     * We are using a record instead of just the value when setting the nonce as
-     * a request attribute/model attribute to always prevent the value to be
-     * exposed as a query parameter during redirects. This behaviour is defined
-     * by {@code RedirectView}s configured with {@code exposeModelAttributes}
-     * and {@code RequestMappingHandlerAdapter} configured without
-     * {@code ignoreDefaultModelOnRedirect}. Wrapping the value in a record
-     * makes it ineligible for forwarding as per the implementation in
-     * {@code RedirectView.isEligibleValue}
-     */
+    /// The request's nonce, as exposed to the request and to templates (`${csp.nonce}`).
+    ///
+    /// A record is used instead of the bare value so that the nonce is never exposed as a query
+    /// parameter on redirects: a `RedirectView` configured with `exposeModelAttributes` (and a
+    /// `RequestMappingHandlerAdapter` configured without `ignoreDefaultModelOnRedirect`) appends the
+    /// model's simple values to the redirect url, and `RedirectView.isEligibleValue` does not
+    /// consider a record one.
+    ///
+    /// @param nonce the hex-encoded nonce
     public record Csp(String nonce) {
 
     }

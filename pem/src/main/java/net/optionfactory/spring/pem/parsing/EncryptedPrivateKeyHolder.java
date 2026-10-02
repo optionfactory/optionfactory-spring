@@ -9,14 +9,23 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import net.optionfactory.spring.pem.PemException;
 
+/// Holds an encrypted PKCS#8 private key, decrypting it on every [#decrypt(char\[\])] call.
+///
+/// The encryption scheme is the one named by the key itself, so any password based scheme the
+/// installed JCE providers support is accepted; the decrypted key must be an RSA key.
 public class EncryptedPrivateKeyHolder implements PrivateKeyHolder {
 
     private final EncryptedPrivateKeyInfo pki;
 
+    /// @param pki the encrypted key
     public EncryptedPrivateKeyHolder(EncryptedPrivateKeyInfo pki) {
         this.pki = pki;
     }
 
+    /// @param passphrase the passphrase the key was encrypted with
+    /// @return the decrypted RSA key
+    /// @throws PemException when the passphrase is null or wrong, the scheme is not supported, or
+    /// the key is not an RSA key
     @Override
     public PrivateKey decrypt(char[] passphrase) {
         PemException.ensure(passphrase != null, "trying to use a null passphrase to unmarshal an encrypted PKCS#8 PrivateKey");

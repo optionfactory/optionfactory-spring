@@ -23,16 +23,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-/**
- * Shows the mysql full-text search filter together with the FULLTEXT indexes
- * that serve it: the index must cover exactly the filter's paths, in the same
- * order. Unlike postgres, where a missing index degrades to a scan, mysql
- * refuses to run the query at all without one.
- *
- * Note the mysql-specific semantics: no stemming ("cats" does not match
- * "cat"), matching is case-folded by the column collation, and tokens shorter
- * than innodb_ft_min_token_size (3 by default) are not indexed.
- */
+/// Shows the mysql full-text search filter together with the FULLTEXT indexes
+/// that serve it: the index must cover exactly the filter's paths, in the same
+/// order. Unlike postgres, where a missing index degrades to a scan, mysql
+/// refuses to run the query at all without one.
+///
+/// Note the mysql-specific semantics: no stemming ("cats" does not match
+/// "cat"), matching is case-folded by the column collation, and tokens shorter
+/// than `innodb_ft_min_token_size` (3 by default) are not indexed.
 @SharedContainer(HibernateOnMysqlTestConfig.Mysql.class)
 @SpringJUnitConfig(HibernateOnMysqlTestConfig.class)
 @TransactionalPhases
@@ -89,7 +87,7 @@ public class TextSearchOnMysqlTest {
                 null;
         });
         final var entity = emf.getMetamodel().entity(Article.class);
-        final var thrown = Assertions.assertThrows(InvalidFilterConfiguration.class, () -> new TextSearch.TextSearchFilter(annotation, emf, entity));
+        final var thrown = Assertions.assertThrows(InvalidFilterConfiguration.class, () -> new TextSearch.TextSearchFilter(annotation, emf, entity), "more paths than the registered MATCH functions support are rejected at construction");
         Assertions.assertTrue(thrown.getMessage().contains("at most 8 paths"), thrown.getMessage());
     }
 
@@ -105,7 +103,7 @@ public class TextSearchOnMysqlTest {
         save(5, "O'Brien's cats", null);
     }
 
-    // mysql has no CREATE INDEX IF NOT EXISTS
+    /// Mysql has no `CREATE INDEX IF NOT EXISTS`.
     private void createFulltextIndexOnce(String name, String columns) {
         final var exists = (Number) em.createNativeQuery("""
                 SELECT COUNT(*) FROM information_schema.statistics
@@ -134,42 +132,42 @@ public class TextSearchOnMysqlTest {
 
     @Test
     public void plainMatchesWholeTermsAcrossAllPaths() {
-        Assertions.assertEquals(List.of(1L), search("byContent", "cats running"));
-        Assertions.assertEquals(List.of(1L), search("byContent", "running loudly"));
+        Assertions.assertEquals(List.of(1L), search("byContent", "cats running"), "PLAIN matches whole terms of the title");
+        Assertions.assertEquals(List.of(1L), search("byContent", "running loudly"), "PLAIN matches terms spread across title and body");
     }
 
     @Test
     public void plainFoldsCaseByCollation() {
-        Assertions.assertEquals(List.of(1L), search("byContent", "CATS RUNNING"));
+        Assertions.assertEquals(List.of(1L), search("byContent", "CATS RUNNING"), "PLAIN matching is case-folded by the column collation");
     }
 
     @Test
     public void plainDoesNotStem() {
-        Assertions.assertEquals(List.of(), search("byContent", "cat runn"));
+        Assertions.assertEquals(List.of(), search("byContent", "cat runn"), "PLAIN does not stem: partial or singular terms do not match");
     }
 
     @Test
     public void plainRequiresEveryTerm() {
-        Assertions.assertEquals(List.of(), search("byContent", "cats sheepdog"));
+        Assertions.assertEquals(List.of(), search("byContent", "cats sheepdog"), "PLAIN requires every term to match");
     }
 
     @Test
     public void websearchSupportsOrQuotedPhrasesAndNegation() {
-        Assertions.assertEquals(List.of(1L, 2L, 5L), search("byFreeText", "cats OR dogs"));
-        Assertions.assertEquals(List.of(5L), search("byFreeText", "cats -running"));
-        Assertions.assertEquals(List.of(1L), search("byFreeText", "\"were running\""));
+        Assertions.assertEquals(List.of(1L, 2L, 5L), search("byFreeText", "cats OR dogs"), "WEBSEARCH OR keeps the articles matching either term");
+        Assertions.assertEquals(List.of(5L), search("byFreeText", "cats -running"), "WEBSEARCH -term excludes the articles matching it");
+        Assertions.assertEquals(List.of(1L), search("byFreeText", "\"were running\""), "a WEBSEARCH quoted phrase matches its terms adjacent");
     }
 
+    /// `e` is shorter than `innodb_ft_min_token_size`, but the gap still breaks adjacency.
     @Test
     public void phraseRequiresTermsToBeAdjacent() {
-        Assertions.assertEquals(List.of(3L), search("byTitle", "cani randagi"));
-        // 'e' is shorter than innodb_ft_min_token_size, but the gap still breaks adjacency
-        Assertions.assertEquals(List.of(), search("byTitle", "cani gatti"));
+        Assertions.assertEquals(List.of(3L), search("byTitle", "cani randagi"), "PHRASE matches its terms adjacent and in order");
+        Assertions.assertEquals(List.of(), search("byTitle", "cani gatti"), "PHRASE does not match terms that are not adjacent");
     }
 
     @Test
     public void quotesInTheQueryAreEscaped() {
-        Assertions.assertEquals(List.of(5L), search("byContent", "O'Brien's"));
+        Assertions.assertEquals(List.of(5L), search("byContent", "O'Brien's"), "quotes in the client text are bound as data, not parsed as syntax");
     }
 
     @Test

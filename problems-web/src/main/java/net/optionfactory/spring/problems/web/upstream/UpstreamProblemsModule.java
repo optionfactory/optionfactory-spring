@@ -9,6 +9,7 @@ import net.optionfactory.spring.problems.web.ProblemsModule;
 /// [UpstreamProblems.MapContext]. Inert on handlers declaring neither.
 public class UpstreamProblemsModule implements ProblemsModule {
 
+    /// @return a single [UpstreamFailureTransformer]
     @Override
     public List<FailureTransformer> transformers() {
         return List.of(new UpstreamFailureTransformer());

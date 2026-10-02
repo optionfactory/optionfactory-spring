@@ -36,7 +36,7 @@ public class StreamingXmlClientTest {
     @Test
     public void canReadUnbufferedStreamWhenMappingToAStream() throws IOException {
         try (final var stream = client.fetchStream()) {
-            Assertions.assertEquals(List.of(new Bean("k1", "v1"), new Bean("k2", "v2")), stream.toList());
+            Assertions.assertEquals(List.of(new Bean("k1", "v1"), new Bean("k2", "v2")), stream.toList(), "a Stream result must map every repeated xml element");
         }
     }
 

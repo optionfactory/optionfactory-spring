@@ -40,7 +40,7 @@ public class TextSearchUnsupportedDialectTest {
                 null;
         });
         final EntityType<?> entity = emf.getMetamodel().entity(Root.class);
-        final var thrown = Assertions.assertThrows(InvalidFilterConfiguration.class, () -> new TextSearch.TextSearchFilter(annotation, emf, entity));
+        final var thrown = Assertions.assertThrows(InvalidFilterConfiguration.class, () -> new TextSearch.TextSearchFilter(annotation, emf, entity), "@TextSearch is rejected on a dialect other than postgres or mysql");
         Assertions.assertTrue(thrown.getMessage().contains("requires postgres or mysql"), thrown.getMessage());
     }
 }

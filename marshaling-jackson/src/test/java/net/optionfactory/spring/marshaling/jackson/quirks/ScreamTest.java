@@ -18,7 +18,7 @@ public class ScreamTest {
         final var expected = """
         {"assignedValue":"a"}
         """;
-        Assertions.assertEquals(expected.trim(), got);
+        Assertions.assertEquals(expected.trim(), got, "without the module the java name is used");
     }
 
     @Test
@@ -28,7 +28,7 @@ public class ScreamTest {
         {"assignedValue":"a"}
         """;
         final var got = om.readValue(source, Bean.class);
-        Assertions.assertEquals(new Bean("a"), got);
+        Assertions.assertEquals(new Bean("a"), got, "without the module the java name is read");
     }
 
     @Test
@@ -38,7 +38,7 @@ public class ScreamTest {
         final var expected = """
         {"ASSIGNED_VALUE":"a"}
         """;
-        Assertions.assertEquals(expected.trim(), got);
+        Assertions.assertEquals(expected.trim(), got, "the camelCase name is written in SCREAMING_SNAKE_CASE");
     }
 
     @Test
@@ -48,6 +48,20 @@ public class ScreamTest {
         {"ASSIGNED_VALUE":"a"}
         """;
         final var got = om.readValue(source, Bean.class);
-        Assertions.assertEquals(new Bean("a"), got);
+        Assertions.assertEquals(new Bean("a"), got, "the property is read from the SCREAMING_SNAKE_CASE name");
+    }
+
+    public record AcronymBean(@Scream String userID) {
+
+    }
+
+    @Test
+    public void acronymsAreSplitLetterByLetter() {
+        final var om = JsonMapper.builder().addModule(Quirks.defaults().build()).build();
+        final var json = om.writeValueAsString(new AcronymBean("a"));
+        Assertions.assertEquals("""
+        {"USER_I_D":"a"}
+        """.trim(), json, "every uppercase letter starts a new word");
+        Assertions.assertEquals(new AcronymBean("a"), om.readValue(json, AcronymBean.class), "the same name is read back");
     }
 }

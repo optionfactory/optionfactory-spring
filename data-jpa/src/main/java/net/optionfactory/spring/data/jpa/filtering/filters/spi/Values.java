@@ -3,16 +3,28 @@ package net.optionfactory.spring.data.jpa.filtering.filters.spi;
 import jakarta.persistence.criteria.Root;
 import org.springframework.util.NumberUtils;
 
+/// Conversions of the string values a client sends to the types of the filtered properties.
 public interface Values {
 
-    /**
-     * Converts a client-provided value to the filtered property's type.
-     *
-     * Every failure is reported as an {@link InvalidFilterRequest}: the value comes from the
-     * request, so a malformed one is a bad request, not a bug. Letting the underlying
-     * {@code NumberFormatException} or {@code StringIndexOutOfBoundsException} escape would make
-     * it indistinguishable from one.
-     */
+    /// Converts a client-provided value to the filtered property's type.
+    ///
+    /// Supported targets are `String` (returned as is), `char`/`Character` (a value of exactly one
+    /// character), the numeric primitives (parsed with the `valueOf` of their wrapper), and the boxed
+    /// numeric types, `BigInteger` and `BigDecimal` (a plain `Number` reading as a `BigDecimal`),
+    /// parsed with spring's `NumberUtils.parseNumber`, which drops any whitespace and accepts the
+    /// `0x` hex notation for the integral types.
+    ///
+    /// Every failure is reported as an [InvalidFilterRequest]: the value comes from the request, so a
+    /// malformed one is a bad request, not a bug. Letting the underlying `NumberFormatException` or
+    /// `StringIndexOutOfBoundsException` escape would make it indistinguishable from one.
+    ///
+    /// @param filterName the filter name, for the rejection
+    /// @param root the query root, naming the entity in the message; may be `null`
+    /// @param value the client's value, `null` being returned as `null`
+    /// @param target the property type
+    /// @return the converted value, boxed for a primitive target
+    /// @throws InvalidFilterRequest when the value cannot be converted, or the target type is not
+    /// supported
     public static Object convert(String filterName, Root<?> root, String value, Class<?> target) {
         if (value == null) {
             return null;

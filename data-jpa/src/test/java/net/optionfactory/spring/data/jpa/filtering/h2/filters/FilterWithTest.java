@@ -111,13 +111,13 @@ public class FilterWithTest {
         final var fr = FilterRequest.builder().with("custom").build();
         Assertions.assertThrows(InvalidDataAccessApiUsageException.class, () -> {
             customs.findAll(null, fr, Pageable.unpaged());
-        });
+        }, "a custom filter rejects a request without its single parameter");
     }
 
     @Test
     public void canApplyCustomFilterWithParameter() {
         final var fr = FilterRequest.builder().with("custom", CustomFilter.Check.LESS.name()).build();
         final Page<RootAgg> page = customs.findAll(null, fr, Pageable.unpaged());
-        Assertions.assertEquals(Set.of(3L, 5L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(3L, 5L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "the custom filter keeps the rows whose id is less than x");
     }
 }

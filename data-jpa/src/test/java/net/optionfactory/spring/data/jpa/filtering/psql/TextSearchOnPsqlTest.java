@@ -21,12 +21,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-/**
- * Shows the postgres full-text search filter together with the GIN expression
- * indexes that make it fast: the index expression must be exactly the one the
- * filter renders, with the same language, the same paths in the same order,
- * and null-safe concatenation.
- */
+/// Shows the postgres full-text search filter together with the GIN expression
+/// indexes that make it fast: the index expression must be exactly the one the
+/// filter renders, with the same language, the same paths in the same order,
+/// and null-safe concatenation.
 @SharedContainer(HibernateOnPsqlTestConfig.Postgres.class)
 @SpringJUnitConfig(HibernateOnPsqlTestConfig.class)
 @TransactionalPhases
@@ -55,16 +53,15 @@ public class TextSearchOnPsqlTest {
     @PersistenceContext
     private EntityManager em;
 
+    /// The full-text indexes cannot be declared via `@Index`: jakarta.persistence's `columnList`
+    /// only accepts mapped column names (no `tsvector()` expression) and cannot request the GIN
+    /// access method (everything is rendered as btree). In production they belong in a
+    /// Flyway/Liquibase migration; hbm2ddl import scripts would not run either, being
+    /// create/create-drop only, while this suite boots with "update". The DDL must mirror the
+    /// expression the filter renders, same language, same paths, same order.
     @BeforeEach
     public void setup() {
         articles.deleteAll();
-        // These indexes cannot be declared via @Index: jakarta.persistence's
-        // columnList only accepts mapped column names (no tsvector() expression)
-        // and cannot request the GIN access method (everything is rendered as
-        // btree). In production they belong in a Flyway/Liquibase migration;
-        // hbm2ddl import scripts would not run either, being create/create-drop
-        // only, while this suite boots with "update". The DDL must mirror the
-        // expression the filter renders, same language, same paths, same order.
         em.createNativeQuery("CREATE INDEX IF NOT EXISTS article_by_content_fts_idx ON text_search_on_psql_test$article USING GIN (to_tsvector('english', coalesce(title, '') || ' ' || coalesce(body, '')))").executeUpdate();
         em.createNativeQuery("CREATE INDEX IF NOT EXISTS article_by_title_fts_idx ON text_search_on_psql_test$article USING GIN (to_tsvector('italian', coalesce(title, '')))").executeUpdate();
         save(1, "The cats were running", "quickly and loudly");
@@ -92,31 +89,31 @@ public class TextSearchOnPsqlTest {
 
     @Test
     public void plainMatchesStemmedTermsAcrossAllPaths() {
-        Assertions.assertEquals(List.of(1L), search("byContent", "cats running"));
-        Assertions.assertEquals(List.of(1L), search("byContent", "running loudly"));
+        Assertions.assertEquals(List.of(1L), search("byContent", "cats running"), "PLAIN matches stemmed terms of the title");
+        Assertions.assertEquals(List.of(1L), search("byContent", "running loudly"), "PLAIN matches terms spread across title and body");
     }
 
     @Test
     public void plainRequiresEveryTerm() {
-        Assertions.assertEquals(List.of(), search("byContent", "cats sheepdog"));
+        Assertions.assertEquals(List.of(), search("byContent", "cats sheepdog"), "PLAIN requires every term to match");
     }
 
     @Test
     public void websearchSupportsOrQuotedPhrasesAndNegation() {
-        Assertions.assertEquals(List.of(1L, 2L, 5L), search("byFreeText", "cats OR dogs"));
-        Assertions.assertEquals(List.of(5L), search("byFreeText", "cats -running"));
-        Assertions.assertEquals(List.of(1L), search("byFreeText", "\"were running\""));
+        Assertions.assertEquals(List.of(1L, 2L, 5L), search("byFreeText", "cats OR dogs"), "WEBSEARCH OR keeps the articles matching either term");
+        Assertions.assertEquals(List.of(5L), search("byFreeText", "cats -running"), "WEBSEARCH -term excludes the articles matching it");
+        Assertions.assertEquals(List.of(1L), search("byFreeText", "\"were running\""), "a WEBSEARCH quoted phrase matches its terms adjacent");
     }
 
     @Test
     public void phraseRequiresTermsToBeAdjacent() {
-        Assertions.assertEquals(List.of(3L), search("byTitle", "cani randagi"));
-        Assertions.assertEquals(List.of(), search("byTitle", "cani gatti"));
+        Assertions.assertEquals(List.of(3L), search("byTitle", "cani randagi"), "PHRASE matches its terms adjacent and in order");
+        Assertions.assertEquals(List.of(), search("byTitle", "cani gatti"), "PHRASE does not match terms that are not adjacent");
     }
 
     @Test
     public void quotesInTheQueryAreEscaped() {
-        Assertions.assertEquals(List.of(5L), search("byContent", "O'Brien's"));
+        Assertions.assertEquals(List.of(5L), search("byContent", "O'Brien's"), "quotes in the client text are bound as data, not parsed as syntax");
     }
 
     @Test
@@ -133,11 +130,9 @@ public class TextSearchOnPsqlTest {
         Assertions.assertTrue(planText.contains("article_by_title_fts_idx"), planText);
     }
 
-    /**
-     * EXPLAINs the SQL the criteria predicate actually renders, not a
-     * hand-written lookalike: if the dialect or the literal handling changes
-     * enough to stop matching the index expression, this is where it shows.
-     */
+    /// EXPLAINs the SQL the criteria predicate actually renders, not a
+    /// hand-written lookalike: if the dialect or the literal handling changes
+    /// enough to stop matching the index expression, this is where it shows.
     private String explainRenderedPredicate(String filter, String query) {
         final var sqls = CapturingStatementInspector.capture(() -> search(filter, query));
         final var select = sqls.stream()

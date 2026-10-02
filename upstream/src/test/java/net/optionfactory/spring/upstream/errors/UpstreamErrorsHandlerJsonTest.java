@@ -28,11 +28,12 @@ public class UpstreamErrorsHandlerJsonTest {
                     );
                 })
                 .baseUri("http://example.com")
+                .json(JsonMapper.builder().build())
                 .build();
 
         Assertions.assertThrows(RestClientUpstreamException.class, () -> {
             client.callWithJsonPath();
-        });
+        }, "a response matching the @Upstream.ErrorOnResponse json path condition must fail the call");
 
     }
 
@@ -54,7 +55,7 @@ public class UpstreamErrorsHandlerJsonTest {
                 .build()
                 .callWithJsonPath();
 
-        Assertions.assertEquals(true, response.metadata.success);
+        Assertions.assertEquals(true, response.metadata.success, "a response not matching the condition must be mapped as usual");
     }
     
     @Test
@@ -76,7 +77,7 @@ public class UpstreamErrorsHandlerJsonTest {
 
         Assertions.assertThrows(RestClientUpstreamException.class, () -> {
             client.callWithJsonPath();
-        });
+        }, "a 4xx response must fail the call regardless of its body");
 
     }
 

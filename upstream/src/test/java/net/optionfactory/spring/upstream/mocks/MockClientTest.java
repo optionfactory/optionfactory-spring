@@ -20,19 +20,19 @@ public class MockClientTest {
     @Test
     public void canUseMockResources() {
         final var got = client.add("a", "b");
-        Assertions.assertEquals(Map.of("a", "b"), got.getBody());
+        Assertions.assertEquals(Map.of("a", "b"), got.getBody(), "the body must come from the resource named by the evaluated template");
     }
 
     @Test
     public void canUseMockResponseStatus() {
         final var got = client.add("a", "b");
-        Assertions.assertEquals(HttpStatus.CREATED.value(), got.getStatusCode().value());
+        Assertions.assertEquals(HttpStatus.CREATED.value(), got.getStatusCode().value(), "the status must be the one of the annotation");
     }
 
     @Test
     public void canUseMockContentType() {
         final var got = client.add("a", "b");
-        Assertions.assertEquals(MediaType.parseMediaType("application/json;charset=utf-8"), got.getHeaders().getContentType());
+        Assertions.assertEquals(MediaType.parseMediaType("application/json;charset=utf-8"), got.getHeaders().getContentType(), "the Content-Type must default to the interface DefaultContentType");
     }
 
 }

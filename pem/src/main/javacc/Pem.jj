@@ -12,8 +12,20 @@ import java.util.ArrayList;
 import java.util.List;
 import net.optionfactory.spring.pem.PemException;
 
+/// The JavaCC generated parser of PEM streams.
+///
+/// A stream is a sequence of entries separated by spaces and line breaks, each optionally preceded by
+/// `key: value` or `key = value` metadata lines. Labels are the printable ASCII characters but
+/// `-`, plus spaces and tabs, as RFC 7468 defines them; the label of the `-----END` line is not
+/// checked against the one of the `-----BEGIN` line. Within an entry, whitespace between the base64
+/// characters is ignored. Any other text is a parse failure.
 public class PemParser {
 
+    /// Parses a UTF-8 PEM stream, without decoding the entries and without closing the stream.
+    ///
+    /// @param is the stream
+    /// @return the entries, in file order, empty for an empty or blank stream
+    /// @throws PemException when the stream is not well-formed PEM
     public static List<PemEntry> parse(InputStream is) {
         try{
             final var r = new InputStreamReader(is, StandardCharsets.UTF_8);
@@ -55,7 +67,7 @@ PARSER_END(PemParser)
 
 <IN_END_LABEL> TOKEN: {
       <END_SUFFIX:       "-----">: DEFAULT
-    | <END_LABEL: (["\u0021"-"\u002c","\u002e"-"\u007e", " ", "\t"])+ > // %x21-2C / %x2E-7E
+    | <END_LABEL: (["\u0021"-"\u002c","\u002e"-"\u007e", " ", "\t"])+ >
 
 }
 

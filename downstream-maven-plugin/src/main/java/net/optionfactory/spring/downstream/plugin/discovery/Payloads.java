@@ -10,14 +10,28 @@ import java.util.Set;
 import net.optionfactory.spring.downstream.Downstream;
 import net.optionfactory.spring.downstream.plugin.reflection.Reflection;
 
+/// Collects the payload types an endpoint exchanges: the DTOs and enums to generate.
+///
+/// Starting from the return type and the parameters of every endpoint, it follows type arguments,
+/// array components, the [candidate fields][Reflection#candidateFields] of each collected class
+/// and its nested classes, so a nested class is collected even when no field references it.
+/// Enums are collected but not walked into. Cycles are walked once.
+///
+/// Only classes whose package starts with the source package are collected, so `String`, `List`
+/// or a framework type stop the walk, as do annotation types, classes annotated with
+/// `@Downstream.Ignore` and parameters annotated with it. The match is a plain prefix match on the
+/// package name: `com.example` also matches `com.examples`.
 public class Payloads {
 
     private final String sourcePackage;
 
+    /// @param sourcePackage the package prefix of the payload types to collect
     public Payloads(String sourcePackage) {
         this.sourcePackage = sourcePackage;
     }
 
+    /// @param endpoints the endpoint methods
+    /// @return the payload types reachable from the endpoints, empty when there is none
     public Set<Class<?>> discover(List<Method> endpoints) {
         final var result = new HashSet<Class<?>>();
         for (final var method : endpoints) {

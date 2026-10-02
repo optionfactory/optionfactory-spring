@@ -40,6 +40,7 @@ public class SpringWebProblemsModule implements ProblemsModule {
 
     private static final Logger logger = LoggerFactory.getLogger(SpringWebProblemsModule.class);
 
+    /// @return the module's single classifier
     @Override
     public List<ExceptionClassifier> classifiers() {
         return List.of(SpringWebProblemsModule::classify);

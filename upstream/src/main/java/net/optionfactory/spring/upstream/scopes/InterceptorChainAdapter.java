@@ -18,6 +18,18 @@ import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 
+/// Runs a list of [UpstreamHttpInterceptor]s as the single `ClientHttpRequestInterceptor` of a
+/// `RestClient`.
+///
+/// The interceptors run in list order, each receiving the current invocation, the request as a
+/// [RequestContext] and the rest of the chain. An interceptor can pass a different request
+/// context on (e.g. [RequestContext#withUri(java.net.URI)]): the one reaching the end of the chain
+/// is what is executed, its method, uri, headers, attributes and body included.
+///
+/// The request executed and the response received are published to the given consumers, which
+/// keep them for the alerts raised later in the invocation; both are reset to `null` first. The
+/// returned response is a [ResponseAdapter], which carries the contexts on to the response error
+/// handlers.
 public class InterceptorChainAdapter implements ClientHttpRequestInterceptor {
 
     private final List<UpstreamHttpInterceptor> interceptors;
@@ -26,6 +38,11 @@ public class InterceptorChainAdapter implements ClientHttpRequestInterceptor {
     private final Consumer<ResponseContext> responses;
     private final InstantSource clock;
 
+    /// @param interceptors the interceptors, in execution order
+    /// @param invocations supplies the invocation in progress
+    /// @param requests receives the request reaching the end of the chain
+    /// @param responses receives the response context
+    /// @param clock timestamps the request and the response contexts
     public InterceptorChainAdapter(
             List<UpstreamHttpInterceptor> interceptors,
             Supplier<InvocationContext> invocations,
@@ -39,6 +56,11 @@ public class InterceptorChainAdapter implements ClientHttpRequestInterceptor {
         this.clock = clock;
     }
 
+    /// @param request the request built by the `RestClient`
+    /// @param body the request body
+    /// @param execution executes the request
+    /// @return a [ResponseAdapter] over the response context the chain returns
+    /// @throws IOException when an interceptor or the execution fails
     @Override
     public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
         requests.accept(null);

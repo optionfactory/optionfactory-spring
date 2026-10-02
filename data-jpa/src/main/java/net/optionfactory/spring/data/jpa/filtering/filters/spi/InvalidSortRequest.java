@@ -7,9 +7,14 @@ package net.optionfactory.spring.data.jpa.filtering.filters.spi;
 /// exactly what the name-based sorter contract keeps private, so it should not reach a client.
 public class InvalidSortRequest extends IllegalArgumentException {
 
+    /// The name of the rejected sorter, as the client requested it.
     public final String sorter;
+    /// Why the request was rejected.
     public final String reason;
 
+    /// @param sorterName the rejected sorter
+    /// @param root the queried entity class, named in the message; `null` reads as `?`
+    /// @param reason why the request was rejected, safe to show to the client
     public InvalidSortRequest(String sorterName, Class<?> root, String reason) {
         super(String.format("in sorter %s@%s: %s", sorterName, root == null ? "?" : root.getSimpleName(), reason));
         this.sorter = sorterName;

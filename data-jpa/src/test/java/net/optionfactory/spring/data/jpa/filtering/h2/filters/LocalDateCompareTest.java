@@ -55,44 +55,44 @@ public class LocalDateCompareTest {
     @Test
     public void canFilterByLocalDateEquality() {
         final Page<Root> page = repo.findAll(null, filter(LocalDateCompare.Operator.EQ, "2019-01-11"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "EQ matches the rows on that date only");
     }
 
     @Test
     public void canFilterByLocalDateLessThan() {
         final Page<Root> page = repo.findAll(null, filter(LocalDateCompare.Operator.LT, "2019-01-11"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(1L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(1L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "LT excludes the bound date and the null one");
     }
 
     @Test
     public void canFilterByLocalDateGreaterThan() {
         final Page<Root> page = repo.findAll(null, filter(LocalDateCompare.Operator.GT, "2019-01-11"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(4L, 5L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(4L, 5L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "GT excludes the bound date and the null one");
     }
 
     @Test
     public void canFilterByLocalDateLessThanOrEqualTo() {
         final Page<Root> page = repo.findAll(null, filter(LocalDateCompare.Operator.LTE, "2019-01-11"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(1L, 2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(1L, 2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "LTE includes the bound date");
     }
 
     @Test
     public void canFilterByLocalDateGreaterThanOrEqualTo() {
         final Page<Root> page = repo.findAll(null, filter(LocalDateCompare.Operator.GTE, "2019-01-11"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(2L, 3L, 4L, 5L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(2L, 3L, 4L, 5L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "GTE includes the bound date");
     }
 
     @Test
     public void canFilterByLocalDateBetween() {
         final Page<Root> page = repo.findAll(null, filter(LocalDateCompare.Operator.BETWEEN, "2019-01-11", "2019-09-30"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(2L, 3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(2L, 3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "BETWEEN includes both bounds");
     }
 
     @Test
     public void filteringWithNeqIncludesNullValues() {
         final Page<Root> all = repo.findAll(Pageable.unpaged());
         final Page<Root> page = repo.findAll(null, filter(LocalDateCompare.Operator.NEQ, "2222-02-02"), Pageable.unpaged());
-        Assertions.assertEquals(all.getTotalElements(), page.getTotalElements());
+        Assertions.assertEquals(all.getTotalElements(), page.getTotalElements(), "NEQ keeps every row, the null one included");
     }
 
     private static FilterRequest filter(LocalDateCompare.Operator operator, String... values) {

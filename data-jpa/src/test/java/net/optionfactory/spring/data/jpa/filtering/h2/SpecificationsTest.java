@@ -59,6 +59,6 @@ public class SpecificationsTest {
                 .text("byDesc", f -> f.eq("description"))
                 .build();
         List<EntityForSpecification> page = repo.findAllByName("name2", fr);
-        Assertions.assertEquals(1, page.size());
+        Assertions.assertEquals(1, page.size(), "the base specification and the filter request are both applied");
     }
 }

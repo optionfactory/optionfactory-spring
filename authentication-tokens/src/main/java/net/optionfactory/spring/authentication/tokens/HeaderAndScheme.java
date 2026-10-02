@@ -14,6 +14,9 @@ import java.util.Locale;
 /// @param scheme the auth-scheme its value is prefixed with, or blank for a bare token
 public record HeaderAndScheme(String header, String scheme) {
 
+    /// Normalises the scheme as described above.
+    ///
+    /// @throws NullPointerException when the scheme is `null`: use a blank one for a bare token
     public HeaderAndScheme {
         final var normalized = scheme.toUpperCase(Locale.ROOT).trim();
         scheme = normalized.isEmpty() ? "" : normalized + " ";

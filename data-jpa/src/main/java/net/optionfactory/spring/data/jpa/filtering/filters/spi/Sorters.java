@@ -36,6 +36,7 @@ public class Sorters {
     /// @param sorterName the identifier of the sorter being evaluated
     /// @param path the raw dot-separated target path
     /// @return the resolved graph traversal
+    /// @throws InvalidSortConfiguration when the path does not resolve, or crosses a collection
     public static Traversal traversal(EntityType<?> entity, String sorterName, String path) {
         final Traversal traversal;
         try {
@@ -49,6 +50,12 @@ public class Sorters {
         return traversal;
     }
 
+    /// @param root the query root
+    /// @param builder the criteria builder
+    /// @param requested the requested sort, by sorter name
+    /// @param allowed the whitelisted sorters, by name
+    /// @return the query orders, in the requested sequence; empty for an unsorted request
+    /// @throws InvalidSortRequest when a requested sorter is not whitelisted
     public static List<Order> orders(Root<?> root, CriteriaBuilder builder, Sort requested, Map<String, Traversal> allowed) {
         final var orders = new ArrayList<Order>();
         for (Sort.Order order : requested) {
@@ -57,6 +64,16 @@ public class Sorters {
         return orders;
     }
 
+    /// Translates one requested order, honouring its direction and null handling, and its
+    /// ignore-case flag when the sorted property is a `String` (lower-casing it); the flag is
+    /// ignored on other types.
+    ///
+    /// @param root the query root
+    /// @param builder the criteria builder
+    /// @param requested the requested order, by sorter name
+    /// @param allowed the whitelisted sorters, by name
+    /// @return the query order
+    /// @throws InvalidSortRequest when the sorter is not whitelisted
     @SuppressWarnings("unchecked")
     public static Order order(Root<?> root, CriteriaBuilder builder, Sort.Order requested, Map<String, Traversal> allowed) {
         final String name = requested.getProperty();

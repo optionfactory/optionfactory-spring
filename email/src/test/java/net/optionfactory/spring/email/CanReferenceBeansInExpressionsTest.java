@@ -48,6 +48,6 @@ public class CanReferenceBeansInExpressionsTest {
                 .builder()
                 .marshal();
 
-        Assertions.assertTrue(new String(out, StandardCharsets.UTF_8).contains("Help Message"));
+        Assertions.assertTrue(new String(out, StandardCharsets.UTF_8).contains("Help Message"), "the template renders the value returned by the referenced bean");
     }
 }

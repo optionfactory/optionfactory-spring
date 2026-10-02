@@ -21,6 +21,24 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.util.UriUtils;
 
+/// Appends the query parameters declared by the endpoints' [Upstream.QueryParam] annotations to
+/// their request uris.
+///
+/// Each annotation whose `condition` holds appends the evaluated `key` (a template by default)
+/// and `value` (an expression by default) to the query, after the existing parameters and in
+/// declaration order. The expressions see `#upstream`, `#endpoint`, `#invocation`, `#request`, `#args` and the method parameters by
+/// name. The annotations are read from the method only.
+///
+/// The request uri reaching the interceptors is already encoded, so its query is kept as it is,
+/// and only the appended key and value are encoded, once: `a b&c` becomes `a%20b%26c`.
+///
+/// ```java
+/// @GetExchange("/search")
+/// @Upstream.QueryParam(key = "lang", value = "#locale.language", condition = "#locale != null")
+/// Results search(@RequestParam String q, @Upstream.Context Locale locale);
+/// ```
+///
+/// Installed on every client by `UpstreamBuilder`.
 public class UpstreamAnnotatedQueryParamsInterceptor implements UpstreamHttpInterceptor {
 
     private final Map<Method, List<AnnotatedValues>> conf = new ConcurrentHashMap<>();
@@ -29,6 +47,11 @@ public class UpstreamAnnotatedQueryParamsInterceptor implements UpstreamHttpInte
 
     }
 
+    /// Compiles the [Upstream.QueryParam] annotations of every endpoint.
+    ///
+    /// @param k the client interface
+    /// @param expressions the parser of the annotations' expressions
+    /// @param endpoints the endpoints of the client, by method
     @Override
     public void preprocess(Class<?> k, Expressions expressions, Map<Method, EndpointDescriptor> endpoints) {
         for (final var endpoint : endpoints.values()) {
@@ -45,6 +68,12 @@ public class UpstreamAnnotatedQueryParamsInterceptor implements UpstreamHttpInte
 
     }
 
+    /// @param invocation the invocation in progress
+    /// @param request the request
+    /// @param execution the rest of the chain, which receives the request with the extended uri,
+    /// or the same request when no parameter is appended
+    /// @return the response of the rest of the chain
+    /// @throws IOException when the rest of the chain fails
     @Override
     public ResponseContext intercept(InvocationContext invocation, RequestContext request, UpstreamHttpRequestExecution execution) throws IOException {
         final var aqps = conf.get(invocation.endpoint().method());
@@ -62,9 +91,6 @@ public class UpstreamAnnotatedQueryParamsInterceptor implements UpstreamHttpInte
             );
         }
         if (!queryParams.isEmpty()) {
-            // request.uri() is already encoded (DefaultUriBuilderFactory runs before interceptors):
-            // components must be treated as encoded (build(true)) or every existing %XX is re-encoded
-            // to %25XX; the added values are encoded once here instead.
             final var newUri = UriComponentsBuilder.fromUri(request.uri())
                     .queryParams(queryParams)
                     .build(true)

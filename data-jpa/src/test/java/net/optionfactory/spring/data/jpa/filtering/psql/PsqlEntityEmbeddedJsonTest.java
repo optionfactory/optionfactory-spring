@@ -33,33 +33,27 @@ public class PsqlEntityEmbeddedJsonTest {
         @GeneratedValue
         public long id;
 
-        /**
-         * will be mapped to a jsonb column on postgres, json on mariadb
-         */
+        /// Mapped to a jsonb column on postgres, json on mariadb.
         @JdbcTypeCode(SqlTypes.JSON)
         public Embed embedded;
 
     }
 
-    /**
-     * Only PSQL, ORACLE and DB2 dialects support querying inside a json column.
-     *
-     * @Embeddable must be present on the embedded record/class IF fields are
-     * used in queries. An UnsupportedException will be thrown "Dialect does not
-     * support aggregateComponentAssignmentExpression:
-     * org.hibernate.dialect.aggregate.AggregateSupportImpl" when using other
-     * dialects.
-     * @JdbcTypeCode(SqlTypes.JSON) without @Embeddable can still be used with
-     * other dialects. Using @Embeddable:
-     * <ul>
-     * <li>the object is serialized as jsonb BUT the configured
-     * JacksonJsonFormatMapper will not be used.
-     * <li>the deduced JavaType is EmbeddableAggregateJavaType instead of
-     * JsonJavaType.
-     * <li>the ImplicitNamingStrategy will be used to rename the aggregate
-     * components in the serialized jsonb.
-     * </ul>
-     */
+    /// Only PSQL, ORACLE and DB2 dialects support querying inside a json column.
+    ///
+    /// `@Embeddable` must be present on the embedded record/class IF fields are
+    /// used in queries. An UnsupportedException will be thrown "Dialect does not
+    /// support aggregateComponentAssignmentExpression:
+    /// org.hibernate.dialect.aggregate.AggregateSupportImpl" when using other
+    /// dialects. `@JdbcTypeCode(SqlTypes.JSON)` without `@Embeddable` can still be used with
+    /// other dialects. Using `@Embeddable`:
+    ///
+    /// - the object is serialized as jsonb BUT the configured
+    ///   JacksonJsonFormatMapper will not be used.
+    /// - the deduced JavaType is EmbeddableAggregateJavaType instead of
+    ///   JsonJavaType.
+    /// - the ImplicitNamingStrategy will be used to rename the aggregate
+    ///   components in the serialized jsonb.
     @Embeddable
     public record Embed(String a, String b, String c) {
 
@@ -89,6 +83,6 @@ public class PsqlEntityEmbeddedJsonTest {
 
         final var found = entities.findAll(fr);
 
-        Assertions.assertEquals(1, found.size());
+        Assertions.assertEquals(1, found.size(), "a property inside the jsonb column is filtered");
     }
 }

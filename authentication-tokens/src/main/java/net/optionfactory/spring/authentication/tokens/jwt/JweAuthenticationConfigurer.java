@@ -39,17 +39,48 @@ import org.springframework.util.Assert;
 ///
 /// The runtime parsing mode is keyed on the presence of an inner verifier: if set, the decrypted
 /// payload must be a `SignedJWT` and is verified before any claim is trusted; otherwise it is parsed
-/// as raw claims. To remain on the symmetric raw-claims path, simply omit `verify(...)`.
+/// as raw claims. To remain on the symmetric raw-claims path, simply omit `verify(...)`. Only
+/// `AESDecrypter` and `DirectDecrypter` count as symmetric: any other decrypter requires an inner
+/// verifier.
+///
+/// ```java
+/// c.jwe(ClaimsPolicy.issuer("https://issuer.example.com").audience("my-service"), jwe -> {
+///     jwe.decrypt(recipientPrivateKey);
+///     jwe.verify(issuerPublicKey);
+///     jwe.principal((header, claims) -> claims.getSubject());
+/// });
+/// ```
+///
+/// The token is looked for on `Authorization: Bearer` by default, and claimed [Match#STRICT]ly.
 public interface JweAuthenticationConfigurer extends JwtAuthenticationConfigurer<JweAuthenticationConfigurer> {
 
+    /// Decides, per token, whether this configuration claims it, tries it or skips it: see
+    /// [JwtTokenProcessor] for how several configurations share a header.
+    ///
+    /// @param matcher inspects the still encrypted token
+    /// @return this configurer
     JweAuthenticationConfigurer matchToken(JweMatcher matcher);
 
+    /// Treats every token found on the header the same way. The JWS counterpart is
+    /// `JwsAuthenticationConfigurer.matchToken(Match)`.
+    ///
+    /// @param m how every token is treated
+    /// @return this configurer
     default JweAuthenticationConfigurer match(Match m) {
         return matchToken((header, jwe) -> m);
     }
 
+    /// @param decrypter decrypts the token; required, and deciding the trust model as described
+    /// above
+    /// @return this configurer
     JweAuthenticationConfigurer decrypter(JWEDecrypter decrypter);
 
+    /// Decrypts tokens whose content key is wrapped with AES key wrap (`A*KW`, `A*GCMKW`): the
+    /// symmetric mode, where the key holders are trusted as issuers.
+    ///
+    /// @param aesKey the shared key
+    /// @return this configurer
+    /// @throws IllegalStateException when the key length is not an AES one
     default JweAuthenticationConfigurer decrypt(SecretKey aesKey) {
         try {
             return decrypter(new AESDecrypter(aesKey));
@@ -58,6 +89,11 @@ public interface JweAuthenticationConfigurer extends JwtAuthenticationConfigurer
         }
     }
 
+    /// As [#decrypt(SecretKey)].
+    ///
+    /// @param aesKey the shared key bytes
+    /// @return this configurer
+    /// @throws IllegalStateException when the key length is not an AES one
     default JweAuthenticationConfigurer decrypt(byte[] aesKey) {
         try {
             return decrypter(new AESDecrypter(aesKey));
@@ -66,6 +102,11 @@ public interface JweAuthenticationConfigurer extends JwtAuthenticationConfigurer
         }
     }
 
+    /// Decrypts `ECDH-ES*` tokens: the asymmetric mode, requiring an inner verifier.
+    ///
+    /// @param key this recipient's private key
+    /// @return this configurer
+    /// @throws IllegalStateException when the key's curve is not supported
     default JweAuthenticationConfigurer decrypt(ECPrivateKey key) {
         try {
             return decrypter(new ECDHDecrypter(key));
@@ -79,12 +120,24 @@ public interface JweAuthenticationConfigurer extends JwtAuthenticationConfigurer
     /// Mandatory for asymmetric JWE (ECDH/RSA): the public key lets anyone encrypt, so only the inner
     /// signature authenticates the issuer. Optional for symmetric JWE (AES/direct), where the shared
     /// secret is the trust root and raw claims may be accepted without an inner signature.
+    ///
+    /// @param verifier verifies the inner token's signature
+    /// @return this configurer
     JweAuthenticationConfigurer verifier(JWSVerifier verifier);
 
+    /// Verifies inner `RS*` and `PS*` signatures.
+    ///
+    /// @param key the issuer's public key
+    /// @return this configurer
     default JweAuthenticationConfigurer verify(RSAPublicKey key) {
         return verifier(new RSASSAVerifier(key));
     }
 
+    /// Verifies inner `ES*` signatures.
+    ///
+    /// @param key the issuer's public key
+    /// @return this configurer
+    /// @throws IllegalStateException when the key's curve is not supported
     default JweAuthenticationConfigurer verify(ECPublicKey key) {
         try {
             return verifier(new ECDSAVerifier(key));
@@ -93,6 +146,11 @@ public interface JweAuthenticationConfigurer extends JwtAuthenticationConfigurer
         }
     }
 
+    /// Verifies inner `HS*` signatures.
+    ///
+    /// @param shared the shared secret, at least 256 bits long
+    /// @return this configurer
+    /// @throws IllegalStateException when the secret is shorter than 256 bits
     default JweAuthenticationConfigurer verify(byte[] shared) {
         try {
             return verifier(new MACVerifier(shared));
@@ -101,6 +159,11 @@ public interface JweAuthenticationConfigurer extends JwtAuthenticationConfigurer
         }
     }
 
+    /// Verifies inner `EdDSA` (Ed25519) signatures.
+    ///
+    /// @param key the issuer's public key
+    /// @return this configurer
+    /// @throws IllegalStateException when the key is not an Ed25519 key
     default JweAuthenticationConfigurer verify(OctetKeyPair key) {
         try {
             return verifier(new Ed25519Verifier(key));
@@ -115,6 +178,7 @@ public interface JweAuthenticationConfigurer extends JwtAuthenticationConfigurer
         return new Builder(claims);
     }
 
+    /// Collects a JWE configuration and builds its processor.
     public static class Builder implements JweAuthenticationConfigurer {
 
         private HeaderAndScheme hs = new HeaderAndScheme(HttpHeaders.AUTHORIZATION, "BEARER ");
@@ -125,11 +189,14 @@ public interface JweAuthenticationConfigurer extends JwtAuthenticationConfigurer
         private JwtAuthoritiesConverter authorities = new RolesGroupsAndScopesFromClaims(List.of());
         private JwtPrincipalConverter principal;
 
+        /// @param claims the claims a token must carry to be accepted
+        /// @throws IllegalArgumentException when the policy is `null`
         public Builder(ClaimsPolicy claims) {
             Assert.notNull(claims, "ClaimsPolicy cannot be null");
             this.claims = claims;
         }
 
+        /// @throws IllegalArgumentException when the header or the scheme is `null`
         @Override
         public Builder matchHeader(String header, String authScheme) {
             Assert.notNull(header, "header cannot be null");
@@ -138,6 +205,7 @@ public interface JweAuthenticationConfigurer extends JwtAuthenticationConfigurer
             return this;
         }
 
+        /// @throws IllegalArgumentException when the matcher is `null`
         @Override
         public JweAuthenticationConfigurer matchToken(JweMatcher matcher) {
             Assert.notNull(matcher, "JweMatcher cannot be null");
@@ -145,6 +213,7 @@ public interface JweAuthenticationConfigurer extends JwtAuthenticationConfigurer
             return this;
         }
 
+        /// @throws IllegalArgumentException when the decrypter is `null`
         @Override
         public Builder decrypter(JWEDecrypter decrypter) {
             Assert.notNull(decrypter, "JWEDecrypter cannot be null");
@@ -152,6 +221,7 @@ public interface JweAuthenticationConfigurer extends JwtAuthenticationConfigurer
             return this;
         }
 
+        /// @throws IllegalArgumentException when the verifier is `null`
         @Override
         public Builder verifier(JWSVerifier verifier) {
             Assert.notNull(verifier, "JWSVerifier cannot be null");
@@ -159,6 +229,7 @@ public interface JweAuthenticationConfigurer extends JwtAuthenticationConfigurer
             return this;
         }
 
+        /// @throws IllegalArgumentException when the converter is `null`
         @Override
         public Builder authorities(JwtAuthoritiesConverter authorities) {
             Assert.notNull(authorities, "JwtAuthoritiesConverter cannot be null");
@@ -166,6 +237,7 @@ public interface JweAuthenticationConfigurer extends JwtAuthenticationConfigurer
             return this;
         }
 
+        /// @throws IllegalArgumentException when the converter is `null`
         @Override
         public Builder principal(JwtPrincipalConverter principal) {
             Assert.notNull(principal, "JwtPrincipalConverter cannot be null");
@@ -173,6 +245,9 @@ public interface JweAuthenticationConfigurer extends JwtAuthenticationConfigurer
             return this;
         }
 
+        /// @return the processor for this configuration
+        /// @throws IllegalArgumentException when no decrypter or no principal is configured, or
+        /// when an asymmetric decrypter has no inner verifier
         public JweProcessor build() {
             Assert.notNull(hs, "HeaderAndSchemeMatcher must be configured");
             Assert.notNull(tokenMatcher, "JweMatcher must be configured");

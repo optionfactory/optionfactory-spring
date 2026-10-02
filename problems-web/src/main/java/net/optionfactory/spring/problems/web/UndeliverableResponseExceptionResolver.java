@@ -21,6 +21,14 @@ public class UndeliverableResponseExceptionResolver implements HandlerExceptionR
 
     private static final Logger logger = LoggerFactory.getLogger(UndeliverableResponseExceptionResolver.class);
 
+    /// @param request the current request
+    /// @param response the current response
+    /// @param handler the handler that threw, unused
+    /// @param ex the exception
+    /// @return an empty `ModelAndView`, meaning answered with nothing, when the client is gone (as
+    ///         spring's `DisconnectedClientHelper` judges from the exception and its causes) or the
+    ///         response is committed; `null` otherwise, leaving the exception to the resolvers
+    ///         behind
     @Override
     public ModelAndView resolveException(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
         if (DisconnectedClientHelper.isClientDisconnectedException(ex)) {

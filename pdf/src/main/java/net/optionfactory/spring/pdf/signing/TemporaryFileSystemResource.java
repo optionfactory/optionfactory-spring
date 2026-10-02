@@ -10,6 +10,17 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/// A [FileSystemResource] over a temporary file that is consumed once, and deleted when no longer
+/// needed.
+///
+/// The resource is consumed either by [#getInputStream()], whose stream deletes the file when
+/// closed, or by [#moveTo(Path)], which keeps the file at a permanent location. A second attempt
+/// to consume it throws an `IllegalStateException`. The file is also deleted by [#discard()], and,
+/// as a safety net, when the resource is garbage collected without having been moved; relying on
+/// the latter keeps the file on disk for an unpredictable time.
+///
+/// The other [FileSystemResource] methods, [#getFile()] included, are not guarded, and still point
+/// to the temporary path once it is deleted or moved.
 public class TemporaryFileSystemResource extends FileSystemResource {
 
     private static final Cleaner CLEANER = Cleaner.create();
@@ -18,22 +29,29 @@ public class TemporaryFileSystemResource extends FileSystemResource {
     private final AtomicBoolean consumed = new AtomicBoolean(false);
     private final Cleaner.Cleanable cleanable;
 
+    /// Creates an empty file in the default temporary directory.
+    ///
+    /// @param prefix the prefix of the file name
+    /// @param suffix the suffix of the file name, such as `.pdf`
+    /// @throws IOException when the file cannot be created
     public TemporaryFileSystemResource(String prefix, String suffix) throws IOException {
         super(Files.createTempFile(prefix, suffix).toFile());
         this.cleanable = CLEANER.register(this, new FileDeleter(this.getFile().toPath(), shouldDelete));
     }
 
+    /// Deletes the file, unless it was moved. Idempotent, and failures to delete are ignored.
     public void discard() {
         cleanable.clean();
     }
 
-    /**
-     * Moves the temporary file to a permanent location.
-     *
-     * @param target The destination path.
-     * @return A new FileSystemResource pointing to the permanent file.
-     * @throws IOException If the move fails.
-     */
+    /// Moves the file to a permanent location, replacing any file already there, and consumes the
+    /// resource.
+    ///
+    /// @param target the destination path
+    /// @return a resource over the moved file, which is no longer deleted
+    /// @throws IOException when the move fails; the resource is consumed nevertheless, and the
+    /// file is still deleted by [#discard()] or on garbage collection
+    /// @throws IllegalStateException when the resource was already consumed
     public FileSystemResource moveTo(Path target) throws IOException {
         if (!consumed.compareAndSet(false, true)) {
             throw new IllegalStateException("This TemporaryFileSystemResource has already been consumed and cannot be moved.");
@@ -44,6 +62,9 @@ public class TemporaryFileSystemResource extends FileSystemResource {
         return new FileSystemResource(target);
     }
 
+    /// @return a stream over the file, which deletes the file when closed
+    /// @throws IOException when the file cannot be opened
+    /// @throws IllegalStateException when the resource was already consumed
     @Override
     public FilterInputStream getInputStream() throws IOException {
         if (!consumed.compareAndSet(false, true)) {
@@ -78,7 +99,6 @@ public class TemporaryFileSystemResource extends FileSystemResource {
                 try {
                     Files.deleteIfExists(path);
                 } catch (IOException ignored) {
-                    // ignored
                 }
             }
         }

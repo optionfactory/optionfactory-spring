@@ -34,7 +34,7 @@ public class FieldOrderTest {
         emitter.emit(registry);
 
         final File generatedFile = new File(tempDir, "spec.d.ts");
-        Assertions.assertTrue(generatedFile.exists(), "TypeScript definition file was not generated");
+        Assertions.assertTrue(generatedFile.exists(), "the TypeScript spec file is generated");
         final String contents = Files.readString(generatedFile.toPath());
 
         var actual = contents.lines()
@@ -43,7 +43,7 @@ public class FieldOrderTest {
                 .toList();
 
         var expected = Arrays.stream(ExampleDto.class.getDeclaredFields()).map(Field::getName).toList();
-        Assertions.assertEquals(expected, actual);
+        Assertions.assertEquals(expected, actual, "properties are emitted in field declaration order");
     }
 }
 

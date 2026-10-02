@@ -21,6 +21,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 
+/// Logs the exchanges of the endpoints configured by `@Upstream.Logging`, or by the configurations
+/// given to [net.optionfactory.spring.upstream.UpstreamBuilder#logging(Upstream.Logging.Conf)], at
+/// `INFO` on the `net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor` logger.
+///
+/// The configuration of an endpoint is, in order of precedence: the one given for its method, the one
+/// given for every method, the closest `@Upstream.Logging` annotation. An endpoint with none is not
+/// logged at all.
+///
+/// Each line starts with `[boot:...][upstream:...][ep:...][req:...]`, followed by `[user:...]` when
+/// the invocation has a principal whose string form is not blank, and by a tag: `[t:oh]` and
+/// `[t:ob]` for the outgoing headers and body, `[t:ih]` and `[t:ib]` for the incoming ones, `[t:ie]`
+/// for a failed exchange; the incoming and failure lines also carry the elapsed milliseconds
+/// (`[ms:...]`). Payloads are rendered, and redacted, by the
+/// [net.optionfactory.spring.upstream.rendering.PayloadsRendering] of the invocation. The request
+/// is logged before it is sent.
+///
+/// Always registered by [net.optionfactory.spring.upstream.UpstreamBuilder].
 public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
 
     private final Logger logger = LoggerFactory.getLogger(UpstreamLoggingInterceptor.class);
@@ -28,11 +45,19 @@ public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
     private final Map<Method, Upstream.Logging.Conf> overrides;
     private final Map<Method, Upstream.Logging.Conf> confs = new ConcurrentHashMap<>();
 
+    /// @param override the configuration of every endpoint, winning over the annotations
+    /// @param overrides the configurations of single endpoints, winning over everything else
     public UpstreamLoggingInterceptor(Optional<Upstream.Logging.Conf> override, Map<Method, Upstream.Logging.Conf> overrides) {
         this.override = override;
         this.overrides = overrides;
     }
 
+    /// Reads the closest `@Upstream.Logging` of every endpoint: on the method, or else on the
+    /// interface hierarchy.
+    ///
+    /// @param k the proxied interface
+    /// @param expressions the expressions of the client, unused
+    /// @param endpoints the endpoints of the client, by method
     @Override
     public void preprocess(Class<?> k, Expressions expressions, Map<Method, EndpointDescriptor> endpoints) {
         for (final var endpoint : endpoints.values()) {
@@ -52,6 +77,11 @@ public class UpstreamLoggingInterceptor implements UpstreamHttpInterceptor {
         }
     }
 
+    /// @param invocation the invocation in progress
+    /// @param request the request to send
+    /// @param execution the rest of the chain
+    /// @return the response, untouched
+    /// @throws IOException the failure of the exchange, rethrown after being logged
     @Override
     public ResponseContext intercept(InvocationContext invocation, RequestContext request, UpstreamHttpRequestExecution execution) throws IOException {
         final Method m = invocation.endpoint().method();

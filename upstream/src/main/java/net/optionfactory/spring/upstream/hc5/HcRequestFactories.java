@@ -28,12 +28,35 @@ import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 
+/// Creates request factories backed by a pooled Apache HttpComponents 5 client.
+///
+/// Usually reached through [net.optionfactory.spring.upstream.UpstreamBuilder#requestFactoryHttpComponents],
+/// whose customizer receives the [Builder]:
+///
+/// ```java
+/// UpstreamBuilder.create(PaymentsClient.class)
+///         .requestFactoryHttpComponents(c -> c
+///                 .connectionTimeout(Duration.ofSeconds(2))
+///                 .socketTimeout(Duration.ofSeconds(10))
+///                 .tlsSocketStrategy(tls -> tls.key(keyStore, keyPassword).build()))
+///         ...
+/// ```
 public class HcRequestFactories {
 
+    /// @return a builder with no customization
     public static Builder builder() {
         return new Builder();
     }
 
+    /// Configures the HttpComponents client of a request factory.
+    ///
+    /// Starting from the `@Upstream.HttpComponents` configuration of the client interface (or its
+    /// defaults), the customizations registered here are applied in registration order, each group after
+    /// the corresponding annotation values, so they win over the annotation: socket settings start from
+    /// `SO_KEEPALIVE` enabled, connection settings from the annotation timeouts, the connection manager
+    /// from its pool sizes and the client builder from its `disable*` flags.
+    ///
+    /// Every built factory owns a new connection pool.
     public static class Builder {
 
         private final List<Consumer<SocketConfig.Builder>> socketConfigCustomizers = new ArrayList<>();
@@ -41,58 +64,88 @@ public class HcRequestFactories {
         private final List<Consumer<PoolingHttpClientConnectionManagerBuilder>> connectionManagerCustomizers = new ArrayList<>();
         private final List<Consumer<HttpClientBuilder>> clientBuilderCustomizers = new ArrayList<>();
 
+        /// @param c customizes the pooling connection manager
+        /// @return this builder
         public Builder connectionManager(Consumer<PoolingHttpClientConnectionManagerBuilder> c) {
             this.connectionManagerCustomizers.add(c);
             return this;
         }
 
+        /// Configures TLS through an [HcSocketStrategies.Builder], invoked whenever a factory is built.
+        ///
+        /// @param customizer builds the TLS strategy from a fresh builder
+        /// @return this builder
         public Builder tlsSocketStrategy(Function<HcSocketStrategies.Builder, TlsSocketStrategy> customizer) {
             connectionManager(c -> c.setTlsSocketStrategy(customizer.apply(HcSocketStrategies.builder())));
             return this;
         }
 
+        /// @param strategy the TLS strategy, or `null` for the HttpComponents default (see
+        /// [HcSocketStrategies#defaults])
+        /// @return this builder
         public Builder tlsSocketStrategy(@Nullable TlsSocketStrategy strategy) {
             return connectionManager(c -> c.setTlsSocketStrategy(strategy));
         }
 
+        /// @param max the maximum number of pooled connections
+        /// @return this builder
         public Builder maxConnections(int max) {
             return connectionManager(c -> c.setMaxConnTotal(max));
         }
 
+        /// @param max the maximum number of pooled connections per route
+        /// @return this builder
         public Builder maxConnectionsPerRoute(int max) {
             return connectionManager(c -> c.setMaxConnPerRoute(max));
         }
 
+        /// @param c customizes the socket configuration
+        /// @return this builder
         public Builder socketConfig(Consumer<SocketConfig.Builder> c) {
             this.socketConfigCustomizers.add(c);
             return this;
         }
 
+        /// @param value whether to enable `SO_KEEPALIVE`, enabled by default
+        /// @return this builder
         public Builder socketKeepAlive(boolean value) {
             return socketConfig(c -> c.setSoKeepAlive(value));
         }
 
+        /// @param value whether to enable `TCP_NODELAY`
+        /// @return this builder
         public Builder socketTcpNoDelay(boolean value) {
             return socketConfig(c -> c.setTcpNoDelay(value));
         }
 
+        /// @param address the SOCKS proxy to connect through
+        /// @return this builder
         public Builder socketSocksProxy(SocketAddress address) {
             return socketConfig(c -> c.setSocksProxyAddress(address));
         }
 
+        /// @param c customizes the connection configuration
+        /// @return this builder
         public Builder connectionConfig(Consumer<ConnectionConfig.Builder> c) {
             this.connectionConfigCustomizers.add(c);
             return this;
         }
 
+        /// @param d the timeout for establishing a connection, with millisecond precision
+        /// @return this builder
         public Builder connectionTimeout(Duration d) {
             return connectionConfig(c -> c.setConnectTimeout(d.toMillis(), TimeUnit.MILLISECONDS));
         }
 
+        /// @param d the timeout for waiting for data on an established connection, with millisecond
+        /// precision
+        /// @return this builder
         public Builder socketTimeout(Duration d) {
             return connectionConfig(c -> c.setSocketTimeout((int) d.toMillis(), TimeUnit.MILLISECONDS));
         }
 
+        /// @param d how long a connection can be reused, or `null` (the default) for no limit
+        /// @return this builder
         public Builder connectionTimeToLive(Duration d) {
             return connectionConfig(c -> {
                 if (d == null) {
@@ -103,6 +156,9 @@ public class HcRequestFactories {
             });
         }
 
+        /// @param d the inactivity after which a pooled connection is validated before reuse, or `null`
+        /// (the default) for no validation
+        /// @return this builder
         public Builder connectionValidateAfterInactivity(Duration d) {
             return connectionConfig(c -> {
                 if (d == null) {
@@ -113,51 +169,82 @@ public class HcRequestFactories {
             });
         }
 
+        /// @param c customizes the client builder
+        /// @return this builder
         public Builder clientBuilder(Consumer<HttpClientBuilder> c) {
             this.clientBuilderCustomizers.add(c);
             return this;
         }
 
+        /// @param strategy decides whether a connection can be kept alive
+        /// @return this builder
         public Builder connectionReuseStrategy(ConnectionReuseStrategy strategy) {
             return clientBuilder(c -> c.setConnectionReuseStrategy(strategy));
         }
 
+        /// @param proxy the HTTP proxy every request goes through
+        /// @return this builder
         public Builder proxy(HttpHost proxy) {
             return clientBuilder(c -> c.setProxy(proxy));
         }
 
+        /// @param selector chooses the proxy of each request
+        /// @return this builder
         public Builder proxySelector(ProxySelector selector) {
             return clientBuilder(c -> c.setProxySelector(selector));
         }
 
+        /// @param strategy chooses how to authenticate against the proxy
+        /// @return this builder
         public Builder proxyAuthenticator(AuthenticationStrategy strategy) {
             return clientBuilder(c -> c.setProxyAuthenticationStrategy(strategy));
         }
 
+        /// Disables the caching of authentication schemes between requests.
+        ///
+        /// @return this builder
         public Builder disableAuthCaching() {
             return clientBuilder(c -> c.disableAuthCaching());
         }
 
+        /// Disables the automatic retries of failed requests.
+        ///
+        /// @return this builder
         public Builder disableAutomaticRetries() {
             return clientBuilder(c -> c.disableAutomaticRetries());
         }
 
+        /// Disables the tracking of the connection state (`HttpClientBuilder.disableConnectionState`).
+        ///
+        /// @return this builder
         public Builder disableConnectionState() {
             return clientBuilder(c -> c.disableConnectionState());
         }
 
+        /// Disables the transparent request of compressed responses and their decompression.
+        ///
+        /// @return this builder
         public Builder disableContentCompression() {
             return clientBuilder(c -> c.disableContentCompression());
         }
 
+        /// Disables the cookie store: cookies set by the upstream are not sent back.
+        ///
+        /// @return this builder
         public Builder disableCookieManagement() {
             return clientBuilder(c -> c.disableCookieManagement());
         }
 
+        /// Disables the default `User-Agent` header.
+        ///
+        /// @return this builder
         public Builder disableDefaultUserAgent() {
             return clientBuilder(c -> c.disableDefaultUserAgent());
         }
 
+        /// Disables following redirects: `3xx` responses reach the client.
+        ///
+        /// @return this builder
         public Builder disableRedirectHandling() {
             return clientBuilder(c -> c.disableRedirectHandling());
         }
@@ -192,6 +279,12 @@ public class HcRequestFactories {
             return new HttpComponentsClientHttpRequestFactory(clientBuilder.build());
         }
 
+        /// Builds a standalone factory, e.g. for a plain `RestClient`. The `@Upstream.HttpComponents`
+        /// annotation is not read: its default values apply, under the customizations.
+        ///
+        /// @param buffering `BUFFERED` to wrap the factory in spring's `BufferingClientHttpRequestFactory`,
+        /// anything else for the plain HttpComponents factory
+        /// @return the factory
         public ClientHttpRequestFactory build(Buffering buffering) {
             final var defaults = AnnotationUtils.synthesizeAnnotation(HttpComponents.class);
             final var connTimeout = Duration.parse(defaults.connectionTimeout());
@@ -207,6 +300,12 @@ public class HcRequestFactories {
             };
         }
 
+        /// Builds the provider [net.optionfactory.spring.upstream.UpstreamBuilder] uses, which reads the
+        /// `@Upstream.HttpComponents` annotation of the client interface when the client is built.
+        ///
+        /// @param buffering `UNBUFFERED` for the plain HttpComponents factory; anything else wraps it in a
+        /// [BufferingUpstreamHttpRequestFactory], which buffers each response according to its endpoint
+        /// @return the provider
         public RequestFactoryProvider buildConfigurer(Buffering buffering) {
             return (scopeHandler, klass, expressions, endpoints) -> {
                 final var conf = Annotations.closest(klass, Upstream.HttpComponents.class).orElseGet(() -> AnnotationUtils.synthesizeAnnotation(HttpComponents.class));

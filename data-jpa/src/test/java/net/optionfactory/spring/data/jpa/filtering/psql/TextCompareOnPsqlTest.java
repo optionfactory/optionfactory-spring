@@ -61,7 +61,7 @@ public class TextCompareOnPsqlTest {
                 .text("byName", f -> f.contains(CaseSensitivity.IGNORE_CASE, "PH"))
                 .build();
         final Page<Root> page = repo.findAll(null, fr, Pageable.unpaged());
-        Assertions.assertEquals(2, page.getTotalElements());
+        Assertions.assertEquals(2, page.getTotalElements(), "case-insensitive CONTAINS matches both names containing ph in any case");
     }
 
     @Test
@@ -70,8 +70,8 @@ public class TextCompareOnPsqlTest {
                 .text("byName", f -> f.contains(CaseSensitivity.IGNORE_CASE, "A_B"))
                 .build();
         final Page<Root> page = repo.findAll(null, fr, Pageable.unpaged());
-        Assertions.assertEquals(1, page.getTotalElements());
-        Assertions.assertEquals(1L, page.getContent().get(0).id);
+        Assertions.assertEquals(1, page.getTotalElements(), "an underscore in the value is a literal, not a single-character wildcard");
+        Assertions.assertEquals(1L, page.getContent().get(0).id, "only the name with a literal underscore matches");
     }
 
     @Test
@@ -80,7 +80,7 @@ public class TextCompareOnPsqlTest {
                 .text("byName", f -> f.startsWith(CaseSensitivity.IGNORE_CASE, "alPhA"))
                 .build();
         final Page<Root> page = repo.findAll(null, fr, Pageable.unpaged());
-        Assertions.assertEquals(2, page.getTotalElements());
+        Assertions.assertEquals(2, page.getTotalElements(), "case-insensitive STARTS_WITH matches both names starting with alpha in any case");
     }
 
     @Test
@@ -89,8 +89,8 @@ public class TextCompareOnPsqlTest {
                 .text("byName", f -> f.endsWith(CaseSensitivity.IGNORE_CASE, "_BETA"))
                 .build();
         final Page<Root> page = repo.findAll(null, fr, Pageable.unpaged());
-        Assertions.assertEquals(1, page.getTotalElements());
-        Assertions.assertEquals(1L, page.getContent().get(0).id);
+        Assertions.assertEquals(1, page.getTotalElements(), "an underscore in the value is a literal, not a single-character wildcard");
+        Assertions.assertEquals(1L, page.getContent().get(0).id, "only the name with a literal underscore matches");
     }
 
     @Test
@@ -99,7 +99,7 @@ public class TextCompareOnPsqlTest {
                 .text("byName", f -> f.contains(CaseSensitivity.CASE_SENSITIVE, "lpha"))
                 .build();
         final Page<Root> page = repo.findAll(null, fr, Pageable.unpaged());
-        Assertions.assertEquals(2, page.getTotalElements());
+        Assertions.assertEquals(2, page.getTotalElements(), "case-sensitive CONTAINS matches both names containing lpha");
     }
 
     @Test
@@ -108,6 +108,6 @@ public class TextCompareOnPsqlTest {
                 .text("byName", f -> f.contains(CaseSensitivity.CASE_SENSITIVE, "LPHA"))
                 .build();
         final Page<Root> page = repo.findAll(null, fr, Pageable.unpaged());
-        Assertions.assertEquals(0, page.getTotalElements());
+        Assertions.assertEquals(0, page.getTotalElements(), "case-sensitive CONTAINS does not fold case");
     }
 }

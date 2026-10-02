@@ -12,6 +12,7 @@ import net.optionfactory.spring.problems.web.ProblemsModule;
 /// of `problems-web`, and applications not using it never load this class.
 public class DataJpaProblemsModule implements ProblemsModule {
 
+    /// @return the module's single classifier
     @Override
     public List<ExceptionClassifier> classifiers() {
         return List.of(new FilteringExceptionClassifier());

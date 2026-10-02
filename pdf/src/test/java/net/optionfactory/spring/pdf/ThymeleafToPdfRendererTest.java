@@ -1,22 +1,18 @@
 package net.optionfactory.spring.pdf;
 
 import com.openhtmltopdf.outputdevice.helper.BaseRendererBuilder;
-
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.Resource;
-import org.springframework.util.StreamUtils;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 import org.thymeleaf.templatemode.TemplateMode;
@@ -24,10 +20,16 @@ import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
 public class ThymeleafToPdfRendererTest {
 
-    private ThymeleafToPdfRenderer renderer;
+    private static final List<PdfFontInfo> FONTS = List.of(
+            PdfFontInfo.of("font_opensans.ttf", "OpenSans", 400, BaseRendererBuilder.FontStyle.NORMAL, true),
+            PdfFontInfo.of("font_opensans_bold.ttf", "OpenSans", 700, BaseRendererBuilder.FontStyle.NORMAL, true)
+    );
 
-    @BeforeEach
-    public void setup() throws Exception {
+    private static SpringTemplateEngine templateEngine;
+    private static ThymeleafToPdfRenderer renderer;
+
+    @BeforeAll
+    public static void setup() throws Exception {
         final var resolver = new ClassLoaderTemplateResolver();
         resolver.setOrder(1);
         resolver.setResolvablePatterns(Set.of("*.html"));
@@ -36,22 +38,31 @@ public class ThymeleafToPdfRendererTest {
         resolver.setCharacterEncoding("utf-8");
         resolver.setCacheable(true);
 
-        final var templateEngine = new SpringTemplateEngine();
+        templateEngine = new SpringTemplateEngine();
         templateEngine.addTemplateResolver(resolver);
 
-        this.renderer = new ThymeleafToPdfRenderer(templateEngine, List.of(
-                PdfFontInfo.of("font_opensans.ttf", "OpenSans", 400, BaseRendererBuilder.FontStyle.NORMAL, true),
-                PdfFontInfo.of("font_opensans_bold.ttf", "OpenSans", 700, BaseRendererBuilder.FontStyle.NORMAL, true)
-        ), Optional.of("producer"));
+        renderer = new ThymeleafToPdfRenderer(templateEngine, FONTS, Optional.of("producer"));
+    }
+
+    private static PDDocument load(Resource pdf) throws IOException {
+        return Loader.loadPDF(pdf.getContentAsByteArray());
     }
 
     @Test
     public void canRender() throws Exception {
-        Resource rendered = renderer.render("example.html", new Context());
-        dump(rendered, "target/example.rendered.pdf");
-        try (final var doc = Loader.loadPDF(new File("target/example.rendered.pdf"))) {
+        try (final var doc = load(renderer.render("example.html", new Context()))) {
             final var got = new PDFTextStripper().getText(doc);
-            Assertions.assertEquals("test", got.trim());
+            Assertions.assertEquals("test", got.trim(), "the template text is rendered");
+        }
+    }
+
+    @Test
+    public void renderEvaluatesTheTemplateWithTheContext() throws Exception {
+        final var context = new Context();
+        context.setVariable("name", "world");
+        try (final var doc = load(renderer.render("greeting.html", context))) {
+            final var got = new PDFTextStripper().getText(doc);
+            Assertions.assertEquals("hello world", got.trim(), "the context variables are evaluated before rendering");
         }
     }
 
@@ -63,19 +74,29 @@ public class ThymeleafToPdfRendererTest {
                     <body>[[${1 + 1}]] <span th:text="'replaced'" xmlns:th="http://www.thymeleaf.org">kept</span></body>
                 </html>
                 """;
-        dump(renderer.renderXhtml(xhtml), "target/example.xhtml.pdf");
-        try (final var doc = Loader.loadPDF(new File("target/example.xhtml.pdf"))) {
+        try (final var doc = load(renderer.renderXhtml(xhtml))) {
             final var got = new PDFTextStripper().getText(doc);
             Assertions.assertEquals("[[${1 + 1}]] kept", got.trim(), "the xhtml is rendered as it is, its text not evaluated");
         }
     }
 
-    public void dump(Resource in, String out) {
-        try (var fos = new FileOutputStream(out); var is = in.getInputStream()) {
-            StreamUtils.copy(is, fos);
-        } catch (IOException ex) {
-            throw new UncheckedIOException(ex);
+    @Test
+    public void documentsArePdfA3aWithTheConfiguredProducer() throws Exception {
+        try (final var doc = load(renderer.render("example.html", new Context()))) {
+            Assertions.assertEquals(1.7f, doc.getVersion(), "documents are PDF 1.7");
+            Assertions.assertEquals("producer", doc.getDocumentInformation().getProducer(), "the configured producer is written in the document information");
+            final var xmp = new String(doc.getDocumentCatalog().getMetadata().toByteArray(), StandardCharsets.UTF_8);
+            Assertions.assertTrue(xmp.contains("<pdfaid:part>3</pdfaid:part>") && xmp.contains("<pdfaid:conformance>A</pdfaid:conformance>"), "the XMP metadata declares PDF/A-3a conformance");
+            Assertions.assertTrue(doc.getDocumentCatalog().getMarkInfo().isMarked(), "documents are tagged, as PDF/UA requires");
+            Assertions.assertFalse(doc.getDocumentCatalog().getOutputIntents().isEmpty(), "the sRGB output intent is embedded");
         }
+    }
 
+    @Test
+    public void withoutProducerTheProducerIsEmpty() throws Exception {
+        final var anonymous = new ThymeleafToPdfRenderer(templateEngine, FONTS, Optional.empty());
+        try (final var doc = load(anonymous.render("example.html", new Context()))) {
+            Assertions.assertEquals("", doc.getDocumentInformation().getProducer(), "no producer means an empty one, not the openhtmltopdf default");
+        }
     }
 }

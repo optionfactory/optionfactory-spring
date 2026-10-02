@@ -28,17 +28,46 @@ import org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolv
 import org.springframework.web.servlet.view.json.JacksonJsonView;
 import tools.jackson.databind.json.JsonMapper;
 
-/**
- * A custom exception resolver resolving Spring and Jackson2 exceptions thrown
- * from an HandlerMethod annotated with
- * &#64;{@link org.springframework.web.bind.annotation.ResponseBody} with a
- * MappingJackson2JsonView. Sample serialized form of the response is:  <code>
- * [
- *   {"type": "", "context": "fieldName", "reason": a field validation error", "details": null},
- *   {"type": "", "context": null, "reason": "a global error", "details": null},
- * ]
- * </code> Content-Type header is set to <code>application/failures+json</code>
- */
+/// Answers the exceptions thrown by `@ResponseBody` handlers, `@RestController`s included, with a
+/// json list of [Problem]s and an http status, served as `application/failures+json`:
+///
+/// ```json
+/// [
+///   {"type": "FIELD_ERROR", "context": "name", "reason": "must not be null", "details": null},
+///   {"type": "OBJECT_ERROR", "context": null, "reason": "a global error", "details": null}
+/// ]
+/// ```
+///
+/// Each exception is offered to the [ExceptionClassifier]s: those registered with the [Builder]
+/// first, in registration order, then the built-in ones, which answer spring mvc's own exceptions
+/// ([SpringWebProblemsModule]), bean validation's ([BeanValidationProblemsModule]), the
+/// application's [Failure][net.optionfactory.spring.problems.Failure]s ([FailureProblemsModule]),
+/// spring security's `AccessDeniedException` ([SpringSecurityProblemsModule]), spring's remaining
+/// `ErrorResponse`s ([ErrorResponseProblemsModule]) and, when those libraries are on the classpath,
+/// `upstream`'s and `data-jpa`'s. The resolver logs a classified exception at `DEBUG`, as a client
+/// error; modules log the server-side failures they classify themselves.
+///
+/// An exception no classifier claims is unexpected, and answered with a single `SERVER_ERROR`
+/// problem: with the status spring's `DefaultHandlerExceptionResolver` picks for it, logged at
+/// `WARN`, when spring knows the exception, and with a `500`, logged at `ERROR`, otherwise. In both
+/// cases an exception class annotated with `@ResponseStatus` is answered with that status instead,
+/// but still logged as unexpected.
+///
+/// The [FailureTransformer]s then run, built-in ones first, and finally, unless details are
+/// included, the problems' `details` are cleared: they carry exception messages and other internal
+/// state that must not reach clients in production (see [Details]).
+///
+/// The resolver declines handlers that are not `HandlerMethod`s or not `@ResponseBody`, leaving
+/// them to the resolvers behind it. It is usually installed with [ExceptionResolvers]:
+///
+/// ```java
+/// @Override
+/// public void extendHandlerExceptionResolvers(List<HandlerExceptionResolver> resolvers) {
+///     ExceptionResolvers.configurer(resolvers)
+///             .rest(jsonMapper, rest -> rest.withMessageSource(messageSource).withClassifier(new MyLibraryClassifier()))
+///             .configure();
+/// }
+/// ```
 public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
 
     private final Map<HandlerMethod, Boolean> methodToIsRest = new ConcurrentHashMap<>();
@@ -47,28 +76,33 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
     private final List<FailureTransformer> transformers;
     private final MessageSource messageSource;
 
-    /**
-     * Controls whether problem {@code details} (e.g. raw exception messages) are
-     * serialized in error responses.
-     * <p>
-     * {@link #OMIT} is the default and <strong>must be used in production</strong>:
-     * it strips any internal detail (exception messages, SQL state, class names,
-     * file paths) so that only the localized {@code reason} is exposed to clients.
-     * <p>
-     * {@link #INCLUDE} is intended for <strong>development and debugging only</strong>:
-     * it preserves the original {@code details} to help diagnose failures, but those
-     * details may carry sensitive internal information and must never be exposed in a
-     * production deployment.
-     */
+    /// Controls whether problem `details` (e.g. raw exception messages) are serialized in error
+    /// responses.
+    ///
+    /// [#OMIT] is the default and **must be used in production**: it strips any internal detail
+    /// (exception messages, SQL state, class names, file paths) so that only the localized `reason`
+    /// is exposed to clients.
+    ///
+    /// [#INCLUDE] is intended for **development and debugging only**: it preserves the original
+    /// `details` to help diagnose failures, but those details may carry sensitive internal
+    /// information and must never be exposed in a production deployment.
     public enum Details {
-        INCLUDE, OMIT
+        /// Keep the problems' details, for development and debugging only.
+        INCLUDE,
+        /// Clear the problems' details after every transformer has run, the default.
+        OMIT
 
     }
 
+    /// @return a builder for a resolver with the built-in classifiers, details omitted
     public static Builder builder() {
         return new Builder();
     }
 
+    /// Configures a [RestExceptionResolver]. The built-in modules are always registered: their
+    /// classifiers are consulted after those registered here, so that these can refine a built-in
+    /// case, and their transformers run before those registered here, so that these see the
+    /// built-in transformations.
     public static class Builder {
 
         private static final ClassLoader LOADER = RestExceptionResolver.class.getClassLoader();
@@ -105,11 +139,24 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
         private final List<FailureTransformer> transformers = new ArrayList<>();
         private MessageSource messageSource;
 
+        /// Sets the message source reasons are localized with.
+        ///
+        /// Without one, messages are resolved from the `ValidationMessages` and hibernate
+        /// validator's bundles, then from every `ContributorValidationMessages` bundle on the
+        /// classpath, where this module ships its own messages (`error.missing_parameter`,
+        /// `error.invalid_format`, ...). With one, it is consulted first and those bundles only for
+        /// the codes it does not know: a message source configured to use the code as the default
+        /// message knows every code, and so hides them.
+        ///
+        /// @param messageSource the application's message source
+        /// @return this builder
         public Builder withMessageSource(MessageSource messageSource) {
             this.messageSource = messageSource;
             return this;
         }
 
+        /// @return this builder
+        /// @throws IllegalStateException when `upstream` is not on the classpath
         /// @deprecated upstream support is registered by default whenever `upstream` is on the
         ///             classpath; this only still fails when it is not
         @Deprecated
@@ -120,48 +167,73 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             return this;
         }
 
+        /// @return this builder
         /// @deprecated upstream support is registered by default whenever `upstream` is on the classpath
         @Deprecated
         public Builder withUpstreamTransformerIfPresent() {
             return this;
         }
 
+        /// @param options whether the problems' details reach the response
+        /// @return this builder
         public Builder withDetails(Details options) {
             this.options = options;
             return this;
         }
 
+        /// @param include true to include the problems' details, for development only
+        /// @return this builder
         public Builder withDetails(boolean include) {
             this.options = include ? Details.INCLUDE : Details.OMIT;
             return this;
         }
 
+        /// Includes the problems' details in responses, for development only.
+        ///
+        /// @return this builder
         public Builder withDetails() {
             this.options = Details.INCLUDE;
             return this;
         }
 
+        /// Omits the problems' details from responses, the default.
+        ///
+        /// @return this builder
         public Builder withoutDetails() {
             this.options = Details.OMIT;
             return this;
         }
 
+        /// Registers a transformer, run after the built-in ones and before details are omitted.
+        ///
+        /// @param t the transformer
+        /// @return this builder
         public Builder withTransformer(FailureTransformer t) {
             this.transformers.add(t);
             return this;
         }
 
+        /// Registers a classifier, consulted before the built-in ones in registration order.
+        ///
+        /// @param c the classifier
+        /// @return this builder
         public Builder withClassifier(ExceptionClassifier c) {
             this.classifiers.add(c);
             return this;
         }
 
+        /// Registers every classifier and transformer of a module, in the module's order.
+        ///
+        /// @param module the module
+        /// @return this builder
         public Builder withModule(ProblemsModule module) {
             module.classifiers().forEach(this::withClassifier);
             module.transformers().forEach(this::withTransformer);
             return this;
         }
 
+        /// @param mapper the mapper problems are serialized with
+        /// @return the configured resolver
         public RestExceptionResolver build(JsonMapper mapper) {
             final var cs = new ArrayList<ExceptionClassifier>(classifiers);
             final var fts = new ArrayList<FailureTransformer>();
@@ -183,6 +255,13 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
 
     }
 
+    /// Builds a resolver from exactly what is given: unlike [#builder()], it registers no built-in
+    /// classifier, and omits details only if an [OmitDetails] is among the transformers.
+    ///
+    /// @param mapper the mapper problems are serialized with
+    /// @param messageSource the message source classifiers localize with
+    /// @param classifiers the classifiers, in the order they are consulted
+    /// @param transformers the transformers, in the order they run
     public RestExceptionResolver(JsonMapper mapper, MessageSource messageSource, List<ExceptionClassifier> classifiers, List<FailureTransformer> transformers) {
         setWarnLogCategory(null);
         this.mapper = mapper;
@@ -258,24 +337,35 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
         return new ModelAndView(view, "errors", transformed.problems());
     }
 
+    /// What an exception is answered with.
+    ///
+    /// @param status the response status
+    /// @param problems the problems serialized as the response body
     public static record HttpStatusAndProblems(HttpStatusCode status, List<Problem> problems) {
 
     }
 
+    /// Turns `sendError` into `setStatus`, so that spring's `DefaultHandlerExceptionResolver` can
+    /// pick a status without committing the response with the container's error page: the
+    /// resolver still has to write the problems.
     public static class SendErrorToSetStatusHttpServletResponse extends HttpServletResponseWrapper {
 
         private final HttpServletResponse inner;
 
+        /// @param inner the response to set the status of
         public SendErrorToSetStatusHttpServletResponse(HttpServletResponse inner) {
             super(inner);
             this.inner = inner;
         }
 
+        /// @param sc the status to set
+        /// @param msg ignored
         @Override
         public void sendError(int sc, String msg) throws IOException {
             inner.setStatus(sc);
         }
 
+        /// @param sc the status to set
         @Override
         public void sendError(int sc) throws IOException {
             inner.setStatus(sc);

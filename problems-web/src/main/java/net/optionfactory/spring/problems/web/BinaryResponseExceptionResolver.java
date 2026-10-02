@@ -25,6 +25,31 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.web.server.ResponseStatusException;
 
+/// Answers a failed download with a bare status and no body.
+///
+/// A download cannot carry a problem document or an error page: the client expects a file, and
+/// may already have been told its name with a `Content-Disposition` header. So when such a handler
+/// fails before the response is committed, this resolver resets the response, discarding the
+/// headers and anything buffered, and sets the status alone: the one of [BinaryResponseErrorStatus]
+/// when the handler declares one, else the status of a `ResponseStatusException`, `502` for a
+/// `RestClientException`, and `500` for anything else. When the response is already committed it
+/// is left as it is. Either way the exception is logged at `WARN` and the resolver answers it.
+///
+/// A handler method is taken for a download, judging once per method, when it:
+///
+/// 1. is annotated with [BinaryResponseErrorStatus];
+/// 2. returns a `Resource`, a `StreamingResponseBody` or a `byte[]`;
+/// 3. returns an `HttpEntity` or a `ResponseEntity` of a `Resource` or a `byte[]`;
+/// 4. returns `void` and takes the `HttpServletResponse` or an `OutputStream` to write to;
+/// 5. declares, in its `@RequestMapping`, that it `produces` `application/octet-stream`,
+///    `application/pdf` or `application/zip`, which catches the downloads written by a message
+///    converter.
+///
+/// Any other handler is also treated as a download when the response it failed on already has a
+/// `Content-Disposition` header. Handlers that are not `HandlerMethod`s are declined.
+///
+/// Installed with [ExceptionResolvers#binaries()], behind [RestExceptionResolver]: the downloads
+/// of `@ResponseBody` handlers are answered by the latter.
 public class BinaryResponseExceptionResolver implements HandlerExceptionResolver {
 
     private final Logger logger = LoggerFactory.getLogger(BinaryResponseExceptionResolver.class);
@@ -40,6 +65,12 @@ public class BinaryResponseExceptionResolver implements HandlerExceptionResolver
 
     private final Map<HandlerMethod, EndpointConfig> methodCache = new ConcurrentHashMap<>();
 
+    /// @param request the current request
+    /// @param response the current response, reset when the download failed before committing it
+    /// @param handler the handler that threw
+    /// @param ex the exception
+    /// @return an empty `ModelAndView` for a download, meaning answered with no body, `null` to
+    ///         decline anything else
     @Override
     public ModelAndView resolveException(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
         if (!(handler instanceof HandlerMethod hm)) {
@@ -101,7 +132,6 @@ public class BinaryResponseExceptionResolver implements HandlerExceptionResolver
 
         final var reqMapping = AnnotatedElementUtils.findMergedAnnotation(hm.getMethod(), RequestMapping.class);
         if (reqMapping != null) {
-            //this helps when a MessageConverter is used to produce a download
             for (final var produces : reqMapping.produces()) {
                 if (DETECTED_DOWNLOAD_MEDIA_TYPES.stream().anyMatch(produces::contains)) {
                     return new EndpointConfig(true, null);

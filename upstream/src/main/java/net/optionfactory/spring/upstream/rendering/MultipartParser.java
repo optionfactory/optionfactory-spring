@@ -9,14 +9,24 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
+/// Splits a multipart payload into its parts, so that each can be rendered on its own in logs.
+///
+/// A lenient parser meant for diagnostics: it does not validate the payload, and stops at the
+/// first thing it cannot make sense of, returning the parts found until then.
 public class MultipartParser {
 
     private static final byte[] HEADER_END_DELIMITER = "\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1);
 
+    /// A part of a multipart payload.
+    ///
+    /// @param headers the part headers
+    /// @param body the part body, as raw bytes
     public record ParsedPart(HttpHeaders headers, byte[] body) {
 
     }
 
+    /// @param mediaType the media type, possibly `null`
+    /// @return true for any `multipart/*` type, regardless of case
     public static boolean isMultipart(MediaType mediaType) {
         if (mediaType == null) {
             return false;
@@ -24,6 +34,18 @@ public class MultipartParser {
         return mediaType.getType().equalsIgnoreCase("multipart");
     }
 
+    /// Parses the parts delimited by the `boundary` parameter of the media type.
+    ///
+    /// Anything before the first delimiter is ignored, and parsing ends at the closing delimiter.
+    /// Each part's headers, decoded as UTF-8, end at the first empty line, and its body at the next
+    /// delimiter; a header line without a name or a `:` is skipped. A part without the empty line
+    /// ending its headers ends the parsing, and a body without a following delimiter runs to the
+    /// end of the payload.
+    ///
+    /// @param bodySource the multipart payload
+    /// @param mediaType the payload media type, carrying the boundary
+    /// @return the parts, in order; empty when no delimiter is found
+    /// @throws IllegalArgumentException when the media type has no `boundary` parameter
     public static List<ParsedPart> parse(BodySource bodySource, MediaType mediaType) {
         final var boundary = mediaType.getParameter("boundary");
         if (boundary == null) {

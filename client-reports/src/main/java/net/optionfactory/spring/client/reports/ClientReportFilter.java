@@ -17,6 +17,27 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
+/// Receives reports that browsers POST about themselves (e.g. javascript errors), and turns each
+/// into an application event, optionally logged.
+///
+/// A `POST` whose path, with the context path stripped, equals the configured uri is a report: its
+/// body is parsed as json, an event is built from it and the current principal and published, and
+/// the request is answered with `202 Accepted` without reaching the rest of the chain. The uri is
+/// matched exactly, so `/client-errors` does not match `/client-errors/`. Every other request
+/// proceeds down the chain untouched.
+///
+/// Reports are untrusted input, accepted from anyone, so the body is read up to `maxBodySize`
+/// bytes only. A body that is larger, empty or not json is reported as the text node
+/// `"unparseable report"` rather than rejected: the client is never told its report was refused.
+///
+/// The principal is whatever the `SecurityContextHolder` holds when the filter runs, `null` when
+/// there is no authentication. Where it runs is up to the application: see
+/// [net.optionfactory.spring.client.reports.errors.ClientErrors] for a ready-made registration.
+///
+/// When logging is enabled, each report is logged at WARN by a logger named after the filter,
+/// as `[op:<name>]<rendered principal> <json>`.
+///
+/// @param <ET> the type of the published events
 public class ClientReportFilter<ET> extends OncePerRequestFilter {
 
     private final Logger reportLogger;
@@ -29,6 +50,14 @@ public class ClientReportFilter<ET> extends OncePerRequestFilter {
     private final Function<Object, String> principalRenderer;
     private final JsonMapper mapper = new JsonMapper();
 
+    /// @param name names the logger and appears in each log line
+    /// @param reportUri the path reports are posted to, relative to the context path
+    /// @param publisher receives the events, synchronously on the request thread
+    /// @param maxBodySize the number of body bytes read, beyond which the report is unparseable
+    /// @param log whether each report is also logged
+    /// @param eventFactory builds the event from the principal (possibly `null`) and the report
+    /// @param principalRenderer renders the principal (possibly `null`) for the log line, only
+    /// invoked when logging is enabled
     public ClientReportFilter(String name, String reportUri, ApplicationEventPublisher publisher, int maxBodySize, boolean log,
             BiFunction<Object, JsonNode, ET> eventFactory,
             Function<Object, String> principalRenderer) {
@@ -44,9 +73,6 @@ public class ClientReportFilter<ET> extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        // getRequestURI() carries the deployment's context path: the configured uri is matched
-        // against the request path with the context path stripped, or an application deployed
-        // under /app silently never receives any report
         final var requestPath = request.getRequestURI().substring(request.getContextPath().length());
         if ("POST".equals(request.getMethod()) && reportUri.equals(requestPath)) {
             final var auth = SecurityContextHolder.getContext().getAuthentication();
@@ -64,8 +90,6 @@ public class ClientReportFilter<ET> extends OncePerRequestFilter {
 
     private JsonNode bodyToJson(HttpServletRequest req) {
         try (final var is = req.getInputStream()) {
-            // readNBytes caps at exactly maxBodySize: a larger body is truncated and reported
-            // as unparseable, by design
             return mapper.readValue(is.readNBytes(maxBodySize), JsonNode.class);
         } catch (IOException | JacksonException ex) {
             return mapper.getNodeFactory().stringNode("unparseable report");

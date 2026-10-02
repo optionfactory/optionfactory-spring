@@ -5,11 +5,9 @@ import java.util.List;
 import java.util.function.Supplier;
 import org.hibernate.resource.jdbc.spi.StatementInspector;
 
-/**
- * Captures the SQL Hibernate sends while the given action runs, on the current
- * thread: used to EXPLAIN the statements the criteria-built predicates really
- * render, instead of a hand-rewritten lookalike.
- */
+/// Captures the SQL Hibernate sends while the given action runs, on the current
+/// thread: used to EXPLAIN the statements the criteria-built predicates really
+/// render, instead of a hand-rewritten lookalike.
 public class CapturingStatementInspector implements StatementInspector {
 
     private static final ThreadLocal<List<String>> CAPTURE = new ThreadLocal<>();

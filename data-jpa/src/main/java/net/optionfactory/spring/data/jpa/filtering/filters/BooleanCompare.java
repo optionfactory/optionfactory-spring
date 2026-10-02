@@ -20,11 +20,21 @@ import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter;
 
-/**
- * Filters a boolean property. Accepts a single parameter as truth value, which
- * should match either {@link BooleanCompare#trueValue() trueValue} or
- * {@link BooleanCompare#falseValue() falseValue}.
- */
+/// Whitelists a filter comparing a `boolean` or `Boolean` property with a truth value.
+///
+/// The filter takes two values: a whitelisted [Operator] and the truth value, which must be exactly
+/// (case included) [#trueValue()] or [#falseValue()], letting a client speak its own vocabulary
+/// (`yes`/`no`, `Y`/`N`). A `null` truth value compares with `NULL`: `EQ` matches the rows where
+/// the property is `NULL`, `NEQ` those where it is not. A non-null truth value is rendered as an
+/// `IS TRUE`/`IS FALSE` test, so a `NULL` property matches neither `EQ` nor `NEQ`.
+///
+/// ```java
+/// @Entity
+/// @BooleanCompare(name = "active", path = "active")
+/// public class Account { ... }
+///
+/// FilterRequest.builder().bool("active", f -> f.eq(true)).build();
+/// ```
 @Documented
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.RUNTIME)
@@ -32,43 +42,52 @@ import net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter
 @Repeatable(RepeatableBooleanCompare.class)
 public @interface BooleanCompare {
 
+    /// The comparison requested by the client, as the first filter value.
     public enum Operator {
-        EQ, NEQ;
+        /// The property equals the truth value.
+        EQ,
+        /// The property differs from the truth value.
+        NEQ;
     }
 
+    /// @return the name the filter is whitelisted under, and requested by
     String name();
 
+    /// @return the operators a client may request; must not be empty
     Operator[] operators() default {
         Operator.EQ, Operator.NEQ
     };
 
+    /// @return the dot-separated path of the filtered property, from the entity
     String path();
 
-    /**
-     * The quantifier applied when {@link #path()} crosses a collection: whether a row is kept
-     * because <em>some</em> element matches ({@link Match#ANY}) or because <em>no</em> element
-     * does ({@link Match#NONE}). A negated filter over a collection is {@code NONE} over a
-     * positive condition, never {@code ANY} over a negated one. Required when the path crosses a
-     * collection, where leaving it {@link Match#UNSTATED} is rejected when the repository is
-     * built; unnecessary, and ignored, when it crosses none.
-     *
-     * @return the quantifier
-     */
+    /// The quantifier applied when [#path()] crosses a collection: whether a row is kept because
+    /// *some* element matches ([Match#ANY]) or because *no* element does ([Match#NONE]). A negated
+    /// filter over a collection is `NONE` over a positive condition, never `ANY` over a negated one.
+    /// Required when the path crosses a collection, where leaving it [Match#UNSTATED] is rejected
+    /// when the repository is built; unnecessary when it crosses none, where `ANY` and `UNSTATED`
+    /// read alike and `NONE` is rejected.
+    ///
+    /// @return the quantifier
     Match match() default Match.UNSTATED;
-
-
+    /// @return the value a client sends for `true`
     String trueValue() default "true";
 
+    /// @return the value a client sends for `false`
     String falseValue() default "false";
 
+    /// The container of repeated [BooleanCompare] annotations, used implicitly by the compiler when the
+    /// annotation is repeated on an entity.
     @Documented
     @Target(value = ElementType.TYPE)
     @Retention(value = RetentionPolicy.RUNTIME)
     public static @interface RepeatableBooleanCompare {
 
+        /// @return the repeated annotations
         BooleanCompare[] value();
     }
 
+    /// The filter whitelisted by [BooleanCompare].
     public static class BooleanCompareFilter implements TraversalFilter<Boolean> {
 
         private final String name;
@@ -77,6 +96,10 @@ public @interface BooleanCompare {
         private final Set<String> validValues;
         private final Traversal traversal;
 
+        /// @param annotation the whitelisting annotation
+        /// @param entity the entity the annotation is on
+        /// @throws net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterConfiguration
+        /// when the path does not lead to a boolean property, or misuses [Match]
         public BooleanCompareFilter(BooleanCompare annotation, EntityType<?> entity) {
             this.name = annotation.name();
             this.trueValue = annotation.trueValue();
@@ -86,6 +109,9 @@ public @interface BooleanCompare {
             this.operators = EnumSet.of(annotation.operators()[0], annotation.operators());
         }
 
+        /// @throws net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequest when
+        /// the values are not an operator and a truth value, the operator is unknown or not
+        /// whitelisted, or the truth value is neither of the configured ones
         @Override
         public Predicate condition(Root<?> root, Path<Boolean> path, CriteriaBuilder builder, String[] values) {
             Filters.ensure(values.length == 2, root, name, "expected operator and value, got %d values", values.length);
@@ -99,11 +125,13 @@ public @interface BooleanCompare {
             return operator == Operator.EQ == trueValue.equals(value) ? builder.isTrue(path) : builder.isFalse(path);
         }
 
+        /// @return the name the filter is whitelisted under
         @Override
         public String name() {
             return name;
         }
 
+        /// @return the resolved path of the filtered property
         @Override
         public Traversal traversal() {
             return traversal;
@@ -111,33 +139,52 @@ public @interface BooleanCompare {
 
     }
 
+    /// Encodes the values of a [BooleanCompare] filter for a [net.optionfactory.spring.data.jpa.filtering.FilterRequest].
+    ///
+    /// The `Boolean` overloads encode the default `true`/`false` truth values, and `null` as `null`;
+    /// the `String` overloads pass the value through, for filters with custom truth values.
     public enum Filter {
+        /// The only instance.
         INSTANCE;
 
         private String str(Boolean b) {
             return b == null ? null : b.toString();
         }
 
+        /// @param op the operator
+        /// @param value the truth value, as the filter expects it
+        /// @return the filter values
         public String[] of(Operator op, String value) {
             return new String[]{op.name(), value};
         }
 
+        /// @param op the operator
+        /// @param value the truth value, or `null` to compare with `NULL`
+        /// @return the filter values
         public String[] of(Operator op, Boolean value) {
             return new String[]{op.name(), str(value)};
         }
 
+        /// @param value the truth value, as the filter expects it
+        /// @return the filter values
         public String[] eq(String value) {
             return new String[]{Operator.EQ.name(), value};
         }
 
+        /// @param value the truth value, or `null` to match a `NULL` property
+        /// @return the filter values
         public String[] eq(Boolean value) {
             return new String[]{Operator.EQ.name(), str(value)};
         }
 
+        /// @param value the truth value, as the filter expects it
+        /// @return the filter values
         public String[] neq(String value) {
             return new String[]{Operator.NEQ.name(), value};
         }
 
+        /// @param value the truth value, or `null` to match a non-`NULL` property
+        /// @return the filter values
         public String[] neq(Boolean value) {
             return new String[]{Operator.NEQ.name(), str(value)};
         }

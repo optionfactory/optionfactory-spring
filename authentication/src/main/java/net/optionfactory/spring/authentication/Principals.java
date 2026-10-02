@@ -14,31 +14,79 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.session.SessionManagementFilter;
 
+/// Entry point for principal coalescing: an application that authenticates callers in several
+/// ways (form login, an authorization code login, static or jwt tokens, a resource server) sees
+/// each one surface its own principal type. Coalescing maps all of them to the application's own
+/// principal type, so that controllers and services can rely on a single type, e.g. with
+/// `@AuthenticationPrincipal AppUser user`.
+///
+/// ```java
+/// http.with(Principals.coalescing(AppUser.class), c -> {
+///     c.principal(UserDetails.class, (auth, user) -> users.byUsername(user.getUsername()));
+///     c.principal(OidcUser.class, (auth, user) -> users.bySubject(user.getSubject()));
+///     c.principal("anonymousUser", AppUser.GUEST);
+/// });
+/// ```
+///
+/// See [AuthenticationsCoalescingFilter] for how a request's authentication is replaced.
 public class Principals {
 
+    /// @param <T> the application principal type
+    /// @param principalType the application principal type: principals already of this type are
+    /// left as they are
+    /// @return a configurer to register with `HttpSecurity.with(...)`
     public static <T> PrincipalsConfigurer<T> coalescing(Class<T> principalType) {
         return new PrincipalsConfigurer<>(principalType);
     }
 
+    /// Collects the principal mappings and installs an [AuthenticationsCoalescingFilter] in the
+    /// security filter chain.
+    ///
+    /// Mappings are consulted in registration order, and the first one supporting a principal
+    /// maps it. The filter is added before `SessionManagementFilter`, so after every
+    /// authentication filter and the anonymous one. It uses the chain's shared
+    /// `SecurityContextHolderStrategy`, `SecurityContextRepository` and
+    /// `AuthenticationTrustResolver` when there are any, and spring's defaults otherwise
+    /// (`SecurityContextHolder`'s strategy, `HttpSessionSecurityContextRepository`,
+    /// `AuthenticationTrustResolverImpl`).
+    ///
+    /// @param <R> the application principal type
     public static class PrincipalsConfigurer<R> extends SecurityConfigurerAdapter<DefaultSecurityFilterChain, HttpSecurity> {
 
         private final List<PrincipalMappingStrategy<?, R>> mappers = new ArrayList<>();
         private final Class<R> principalType;
 
+        /// @param principalType the application principal type
         public PrincipalsConfigurer(Class<R> principalType) {
             this.principalType = principalType;
         }
 
+        /// Adds a mapping with its own notion of which principals it supports.
+        ///
+        /// @param mapper the strategy to add
+        /// @return this configurer
         public PrincipalsConfigurer principal(PrincipalMappingStrategy<Object, R> mapper) {
             this.mappers.add(mapper);
             return this;
         }
 
+        /// Maps the principals that are instances of a type, subtypes included.
+        ///
+        /// @param <T> the principal type handled
+        /// @param old the principal type handled
+        /// @param mapper maps a principal of that type
+        /// @return this configurer
         public <T> PrincipalsConfigurer principal(Class<T> old, PrincipalMapper<T, R> mapper) {
             this.mappers.add(new PrincipalMappingStrategy.ByType<>(old, mapper));
             return this;
         }
 
+        /// Replaces the principals equal to a value with a fixed one, e.g. spring's anonymous
+        /// `anonymousUser` with a guest principal.
+        ///
+        /// @param old the principal handled, compared with `equals`
+        /// @param replacement the application principal used in its place
+        /// @return this configurer
         public PrincipalsConfigurer principal(Object old, R replacement) {
             this.mappers.add(new PrincipalMappingStrategy.ByInstance<>(old, (Authentication auth, Object principal) -> {
                 return replacement;
@@ -46,10 +94,11 @@ public class Principals {
             return this;
         }
 
+        /// Adds the filter to the chain, see the type's documentation for where and with what.
+        ///
+        /// @param http the security being built
         @Override
         public void configure(HttpSecurity http) {
-            //see FilterOrderRegistration
-
             final var scr = http.getSharedObject(SecurityContextRepository.class);
             final var mscr = scr != null ? scr : new HttpSessionSecurityContextRepository();
 

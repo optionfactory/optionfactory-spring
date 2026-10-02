@@ -16,32 +16,58 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.PostExchange;
 import tools.jackson.databind.JsonNode;
 
+/// An upstream client of an oauth2 token endpoint, used by the oauth authenticators to obtain access
+/// tokens.
+///
+/// Build it with [net.optionfactory.spring.upstream.UpstreamBuilder] and a JSON configuration, with
+/// the token endpoint itself as base uri: every method posts a form to it. It alerts on remoting
+/// errors and on error statuses, and its mock serves a bundled bearer token valid for 600 seconds.
+///
+/// The `authenticate` overloads send `params` as the form body and `headers` as request headers; the
+/// default methods build the parameters of the standard grants, leaving out the `null` ones.
 @Upstream("oauth-client")
 @Upstream.AlertOnRemotingError
 @Upstream.AlertOnResponse(STATUS_IS_ERROR)
 @Upstream.Mock.DefaultContentType("application/json")
 public interface OauthClient {
 
+    /// @param params the form parameters
+    /// @param headers the request headers
+    /// @return the token endpoint response
     @PostExchange(contentType = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @Upstream.Endpoint("token")
     @Upstream.Mock("oauth-token-response.json")
     JsonNode authenticate(@RequestParam Map<String, ?> params, @RequestHeader Map<String, ?> headers);
 
+    /// @param params the form parameters
+    /// @param headers the request headers
+    /// @return the token endpoint response
     @PostExchange(contentType = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @Upstream.Endpoint("token")
     @Upstream.Mock("oauth-token-response.json")
     JsonNode authenticate(@RequestParam MultiValueMap<String, ?> params, @RequestHeader MultiValueMap<String, ?> headers);
 
+    /// @param params the form parameters
+    /// @return the token endpoint response
     @PostExchange(contentType = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @Upstream.Endpoint("token")
     @Upstream.Mock("oauth-token-response.json")
     JsonNode authenticate(@RequestParam Map<String, ?> params);
 
+    /// @param params the form parameters
+    /// @return the token endpoint response
     @PostExchange(contentType = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @Upstream.Endpoint("token")
     @Upstream.Mock("oauth-token-response.json")
     JsonNode authenticate(@RequestParam MultiValueMap<String, ?> params);
 
+    /// Executes the client-credentials grant, authenticating the client with `Basic` authentication
+    /// (UTF-8 encoded).
+    ///
+    /// @param clientId the client id
+    /// @param clientSecret the client secret
+    /// @param scope the requested scope, or `null` to request none
+    /// @return the token endpoint response
     default JsonNode clientCredentials(String clientId, String clientSecret, @Nullable String scope) {
         final var params = Stream.of(
                 new SimpleEntry<>("grant_type", "client_credentials"),
@@ -57,6 +83,14 @@ public interface OauthClient {
         );
     }
 
+    /// Executes the resource-owner password grant, sending the client credentials, when given, as form
+    /// parameters.
+    ///
+    /// @param clientId the client id, or `null` not to send one
+    /// @param clientSecret the client secret, or `null` not to send one
+    /// @param username the resource owner username
+    /// @param password the resource owner password
+    /// @return the token endpoint response
     default JsonNode password(@Nullable String clientId, @Nullable String clientSecret, String username, String password) {
         final var params = Stream.of(
                 new SimpleEntry<>("grant_type", "password"),
@@ -71,6 +105,15 @@ public interface OauthClient {
         return authenticate(params);
     }
 
+    /// Exchanges an authorization code for tokens, sending the client credentials, when given, as form
+    /// parameters.
+    ///
+    /// @param code the authorization code
+    /// @param redirectUri the redirect uri of the authorization request
+    /// @param clientId the client id, or `null` not to send one
+    /// @param clientSecret the client secret, or `null` not to send one
+    /// @param codeVerifier the PKCE code verifier, or `null` when PKCE is not used
+    /// @return the token endpoint response
     default JsonNode authorizationCode(String code, String redirectUri, @Nullable String clientId, @Nullable String clientSecret, @Nullable String codeVerifier) {
         final var params = Stream.of(
                 new SimpleEntry<>("grant_type", "authorization_code"),

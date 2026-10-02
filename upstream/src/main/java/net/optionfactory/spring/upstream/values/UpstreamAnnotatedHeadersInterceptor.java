@@ -17,6 +17,21 @@ import net.optionfactory.spring.upstream.expressions.BooleanExpression;
 import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.expressions.StringExpression;
 
+/// Adds the headers declared by the endpoints' [Upstream.Header] annotations to their requests.
+///
+/// Each annotation whose `condition` holds adds a value, the evaluated `value` (an expression by
+/// default), to the header named by the evaluated `key` (a template by default), in declaration
+/// order; values already present are kept. The expressions see `#upstream`, `#endpoint`, `#invocation`, `#request`, `#args` and the method parameters by
+/// name. The annotations are read
+/// from the method only.
+///
+/// ```java
+/// @GetExchange("/orders")
+/// @Upstream.Header(key = "X-Tenant", value = "#tenant")
+/// List<Order> orders(@Upstream.Context String tenant);
+/// ```
+///
+/// Installed on every client by `UpstreamBuilder`.
 public class UpstreamAnnotatedHeadersInterceptor implements UpstreamHttpInterceptor {
 
     private final Map<Method, List<AnnotatedHeader>> conf = new ConcurrentHashMap<>();
@@ -25,6 +40,11 @@ public class UpstreamAnnotatedHeadersInterceptor implements UpstreamHttpIntercep
 
     }
 
+    /// Compiles the [Upstream.Header] annotations of every endpoint.
+    ///
+    /// @param k the client interface
+    /// @param expressions the parser of the annotations' expressions
+    /// @param endpoints the endpoints of the client, by method
     @Override
     public void preprocess(Class<?> k, Expressions expressions, Map<Method, EndpointDescriptor> endpoints) {
         for (final var endpoint : endpoints.values()) {
@@ -41,6 +61,11 @@ public class UpstreamAnnotatedHeadersInterceptor implements UpstreamHttpIntercep
 
     }
 
+    /// @param invocation the invocation in progress
+    /// @param request the request, whose headers receive the values
+    /// @param execution the rest of the chain
+    /// @return the response of the rest of the chain
+    /// @throws IOException when the rest of the chain fails
     @Override
     public ResponseContext intercept(InvocationContext invocation, RequestContext request, UpstreamHttpRequestExecution execution) throws IOException {
         final var annotatedHeaders = conf.get(invocation.endpoint().method());

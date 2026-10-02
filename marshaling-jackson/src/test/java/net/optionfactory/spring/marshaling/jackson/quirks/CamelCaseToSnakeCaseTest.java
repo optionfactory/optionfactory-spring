@@ -18,6 +18,8 @@ public class CamelCaseToSnakeCaseTest {
                 Arguments.of("value", "VALUE"),
                 Arguments.of("a", "A"),
                 Arguments.of("A", "A"),
+                Arguments.of("userID", "USER_I_D"),
+                Arguments.of("value2", "VALUE2"),
                 Arguments.of("", "")
         );
     }
@@ -25,7 +27,7 @@ public class CamelCaseToSnakeCaseTest {
     @ParameterizedTest(name = "transform({0}) should yield {1}")
     @MethodSource("camelToScreamData")
     public void canTransformCamelToScreamSnake(String camel, String expectedScreamSnake) {
-        Assertions.assertEquals(expectedScreamSnake, transformer.transform(camel));
+        Assertions.assertEquals(expectedScreamSnake, transformer.transform(camel), "uppercased, with an underscore before every inner uppercase letter");
     }
 
     public static Stream<Arguments> screamToCamelData() {
@@ -46,6 +48,6 @@ public class CamelCaseToSnakeCaseTest {
     @ParameterizedTest(name = "reverse({0}) should yield {1}")
     @MethodSource("screamToCamelData")
     public void canReverseScreamSnakeToCamel(String screamSnake, String expectedCamel) {
-        Assertions.assertEquals(expectedCamel, transformer.reverse(screamSnake));
+        Assertions.assertEquals(expectedCamel, transformer.reverse(screamSnake), "lowercased, underscores dropped, each word after the first capitalized");
     }
 }

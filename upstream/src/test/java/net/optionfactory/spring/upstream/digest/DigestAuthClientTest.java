@@ -43,7 +43,7 @@ public class DigestAuthClientTest {
         Assertions.assertEquals(
                 "Digest username=\"Mufasa\", realm=\"test\", nonce=\"%s\", uri=\"/dir/page?x=1\", qop=auth, nc=00000001, cnonce=\"0a4f113b\", response=\"%s\", opaque=\"%s\""
                         .formatted(NONCE, response, OPAQUE),
-                got);
+                got, "the digest must cover the actual method and the path with its query, answering the mocked 401 challenge");
     }
 
     @Test
@@ -66,9 +66,18 @@ public class DigestAuthClientTest {
         final var authenticator = new DigestAuthenticator("id", "secret", stub);
         final var request = new StubRequest(HttpMethod.GET, URI.create("http://example.com/dir/page?x=1"));
         authenticator.initialize(null, request);
-        Assertions.assertEquals(HttpMethod.GET, seenMethod[0]);
-        Assertions.assertEquals(URI.create("http://example.com/dir/page?x=1"), seenUri[0]);
-        Assertions.assertEquals("Digest test", request.getHeaders().getFirst("Authorization"));
+        Assertions.assertEquals(HttpMethod.GET, seenMethod[0], "the authenticated request method must be digested");
+        Assertions.assertEquals(URI.create("http://example.com/dir/page?x=1"), seenUri[0], "the authenticated request uri must be digested");
+        Assertions.assertEquals("Digest test", request.getHeaders().getFirst("Authorization"), "the computed header must be set on the request");
+    }
+
+    @Test
+    public void pathWithoutQueryIsDigestedAsIs() {
+        final var da = new DigestAuth("Mufasa", "Circle Of Life", () -> 172953915);
+        final var got = CLIENT.authenticate(da, HttpMethod.PUT, URI.create("http://example.com/dir/page"));
+        Assertions.assertTrue(got.contains("uri=\"/dir/page\""), "a uri without query must be digested without a trailing question mark");
+        final var response = md5(String.format("%s:%s:%s:%s:%s:%s", md5("Mufasa:test:Circle Of Life"), NONCE, "00000001", "0a4f113b", "auth", md5("PUT:/dir/page")));
+        Assertions.assertTrue(got.contains("response=\"%s\"".formatted(response)), "the digest must cover the PUT method");
     }
 
     private static class StubRequest implements ClientHttpRequest {

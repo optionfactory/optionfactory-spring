@@ -35,7 +35,8 @@ public class DateParsingTest {
 
         Assertions.assertEquals(
                 Instant.parse("2016-03-17T16:40:46Z"),
-                got
+                got,
+                "the UTCTime value is decoded as an instant"
         );
 
     }

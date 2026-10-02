@@ -29,6 +29,28 @@ public class JsonRedactorTest {
         {"password":"<redacted>","nested":{"password":"<redacted>"}}
         """;
 
-        Assertions.assertEquals(expected.strip(), got);
+        Assertions.assertEquals(expected.strip(), got, "the addressed values must be redacted and the document compacted");
+    }
+
+    private static String redact(Map<JsonPointer, String> pointers, String input) {
+        return new JsonRedactor(new JsonMapper(), pointers).redact(new ByteArrayResource(input.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    @Test
+    public void canRedactArrayElements() {
+        final var got = redact(Map.of(JsonPointer.compile("/tokens/1"), "R"), "{\"tokens\": [\"a\", \"b\", \"c\"]}");
+        Assertions.assertEquals("{\"tokens\":[\"a\",\"R\",\"c\"]}", got, "a pointer to an array element must redact that element only");
+    }
+
+    @Test
+    public void aContainerIsReplacedWholeByTheReplacement() {
+        final var got = redact(Map.of(JsonPointer.compile("/credentials"), "R"), "{\"credentials\": {\"user\": \"u\", \"secret\": \"s\"}, \"n\": 1}");
+        Assertions.assertEquals("{\"credentials\":\"R\",\"n\":1}", got, "an addressed object must be replaced whole by the replacement string");
+    }
+
+    @Test
+    public void aPointerAddressingNothingIsIgnored() {
+        final var got = redact(Map.of(JsonPointer.compile("/missing/secret"), "R"), "{ \"a\" : 1 }");
+        Assertions.assertEquals("{\"a\":1}", got, "a pointer addressing nothing must leave the document unchanged, if compacted");
     }
 }

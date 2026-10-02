@@ -33,6 +33,18 @@ public class UpstreamRestExampleTest {
     @Configuration
     public static class ClientConfig {
 
+        /// Builds the client the way an application would: mocked when `myclient.type` is `mock`,
+        /// backed by Apache HttpComponents otherwise.
+        ///
+        /// - the mock request factory serves the `@Upstream.Mock` resources, here
+        ///   `src/test/resources/net/optionfactory/spring/upstream/examples/ok.json`;
+        /// - the HttpComponents factory is where TLS, retries and timeouts are customized;
+        /// - initializers (here the oauth client credentials authenticator) and interceptors are
+        ///   registered on the builder;
+        /// - `json` configures the converters for a JSON/HTTP api;
+        /// - `observations` is optional monitoring;
+        /// - `expressions` exposes the bean factory to the annotations' SpEL expressions;
+        /// - `publisher` is where alert events are published.
         @Bean
         public ExampleRestClient exampleRestClient(
                 @Value("${myclient.type}") String type,
@@ -47,47 +59,28 @@ public class UpstreamRestExampleTest {
 
             final var oauthClient = UpstreamBuilder.named(OauthClient.class, "example-auth")
                     .requestFactoryMockIf(isMock, c -> {
-                        //mocks behaviour can be customized here
                     })
                     .requestFactoryHttpComponentsIf(!isMock, c -> {
-                        //http components configuration can be customized here
-                        //e.g: TLS configuration, retries, timeouts                        
                         c.tlsSocketStrategy(HcSocketStrategies.system());
                     })
-                    //Configures the client for JSON/HTTP 
                     .json(mapper)
                     .observations(observations.orElse(null))
-                    //cofigures the beanFactory so you can reference beans
-                    //in annotations' SpEl expressions
                     .expressions(ac)
-                    //configures where events (e.g: Alerts) are published
                     .publisher(ac)
                     .baseUri("https://hub.dummyapis.com/auth/")
                     .build();
 
             return UpstreamBuilder
-                    // the interface to be implemented
                     .create(ExampleRestClient.class)
                     .requestFactoryMockIf(isMock, c -> {
-                        //mocks behaviour can be customized here
-                        //check src/test/resources/net/optionfactory/spring/upstream/examples/ok.json 
-                        //for this example
                     })
                     .requestFactoryHttpComponentsIf(!isMock, c -> {
-                        //http components configuration can be customized here
-                        //e.g: TLS configuration, retries, timeouts
                         c.disableAutomaticRetries();
                     })
-                    //initializers and interceptors can be registered 
                     .initializer(OauthClientCredentialsAuthenticator.builder(oauthClient).clientId(clientId).clientSecret(clientSecret).build())
-                    //Configures the client for JSON/HTTP 
                     .json(mapper)
-                    //optional monitoring 
                     .observations(observations.orElse(null))
-                    //cofigures the beanFactory so you can reference beans
-                    //in annotations' SpEl expressions
                     .expressions(ac)
-                    //configures where events (e.g: Alerts) are published
                     .publisher(ac)
                     .baseUri("https://hub.dummyapis.com/statuscode/")
                     .build();
@@ -102,9 +95,12 @@ public class UpstreamRestExampleTest {
     @Upstream.Mock.DefaultContentType("application/json")
     public interface ExampleRestClient {
 
+        /// Mock resources are tried in order: `ok-1.json` does not exist, so `ok.json` is served.
+        ///
+        /// @param id the identifier
+        /// @return the response
         @GetExchange("/200")
         @Upstream.Endpoint("ok-endpoint")
-        //mock resources are tried in order
         @Upstream.Mock("ok-#{#id}.json")
         @Upstream.Mock("ok.json")
         Map<String, String> ok(@RequestParam String id);
@@ -118,6 +114,6 @@ public class UpstreamRestExampleTest {
     public void canUseClientConfiguredWithMocks() throws Exception {
         final var got = client.ok("1");
 
-        Assertions.assertEquals(Map.of("mocked", "response"), got);
+        Assertions.assertEquals(Map.of("mocked", "response"), got, "the first existing mock resource must be served, through the mocked oauth authentication");
     }
 }

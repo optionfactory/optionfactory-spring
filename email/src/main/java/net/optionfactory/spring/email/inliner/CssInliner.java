@@ -18,10 +18,44 @@ import org.w3c.css.sac.InputSource;
 import org.w3c.dom.css.CSSRuleList;
 import org.w3c.dom.css.CSSStyleRule;
 
+/// Moves css rules into `style` attributes, for the many mail clients that ignore `<style>` elements.
+///
+/// Only `<style data-inlined>` elements are inlined, and removed from the document; other `<style>`
+/// elements are kept as they are, which is where rules that cannot be inlined belong, such as media
+/// queries:
+///
+/// ```html
+/// <style data-inlined>.warning { color: red; }</style>
+/// <style>@media (max-width: 600px) { .warning { font-size: 12px; } }</style>
+/// <p class="warning">careful</p>
+/// ```
+///
+/// becomes `<p class="warning" style="color:red;">careful</p>`, the second style element staying
+/// in place. The inlining is deliberately simple:
+///
+/// - selectors are matched with jsoup, so a selector jsoup cannot parse, such as a pseudo-class
+///   like `:hover`, fails the whole postprocessing with a jsoup `SelectorParseException`;
+/// - specificity is ignored: when several rules set the same property on an element, the last
+///   one in the stylesheet wins;
+/// - `!important` is dropped;
+/// - rules other than style rules (e.g. `@media`, `@font-face`) in a `data-inlined` element are
+///   discarded;
+/// - declarations already in an element's `style` attribute are kept after the inlined ones, so
+///   they win.
+///
+/// The result is a whole html document (`<html>`, `<head>` and `<body>` are added when missing),
+/// pretty-printed.
+///
+/// An instance is not thread-safe, since the underlying css parser is not: do not share one between
+/// threads rendering emails concurrently.
 public class CssInliner implements HtmlBodyPostprocessor {
 
     private final CSSOMParser cssParser = new CSSOMParser(new SACParserCSS3());
 
+    /// @param html the html to inline, never `null`
+    /// @return the html document with the inlined styles
+    /// @throws NullPointerException when `html` is `null`, which is what a message without an html
+    /// body passes
     @Override
     public String postprocess(String html) {
         try {
@@ -68,6 +102,10 @@ public class CssInliner implements HtmlBodyPostprocessor {
         return result;
     }
 
+    /// The `data-inlined` style elements of a document and the css rules they contain.
+    ///
+    /// @param tags the style elements, removed from the document once inlined
+    /// @param rules the rules of all the style elements, in document order
     public record StyleTagsAndRules(Elements tags, CSSRuleList rules) {
 
     }

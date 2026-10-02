@@ -39,12 +39,12 @@ public class TranslationToRegisteredTypeTest {
         emitter.emit(registry);
 
         final var file = new File(tempDir, "spec.d.ts");
-        Assertions.assertTrue(file.exists(), "TypeScript definition file was not generated");
+        Assertions.assertTrue(file.exists(), "the TypeScript spec file is generated");
         
         final var content = Files.readString(file.toPath());
 
-        Assertions.assertTrue(content.contains("type: NewType;"), "TS Emitter failed to map translated OldUser to registered NewUser");
-        Assertions.assertFalse(content.contains("type: any;"), "TS Emitter incorrectly fell back to 'any'");
+        Assertions.assertTrue(content.contains("type: NewType;"), "a type translated to a registered type references the generated type");
+        Assertions.assertFalse(content.contains("type: any;"), "a type translated to a registered type does not fall back to any");
     }
 
     @Test
@@ -60,11 +60,11 @@ public class TranslationToRegisteredTypeTest {
         emitter.emit(registry);
 
         final var file = new File(tempDir, "net/generated/User.java");
-        Assertions.assertTrue(file.exists(), "Java class file was not generated");
+        Assertions.assertTrue(file.exists(), "the Java source file is generated");
 
         final var content = Files.readString(file.toPath());
 
-        Assertions.assertTrue(content.contains("NewType type"), "Java Emitter failed to map translated OldUser to generated NewUser");
-        Assertions.assertFalse(content.contains(NewType.class.getName()), "Java Emitter incorrectly used the original backend class FQN");
+        Assertions.assertTrue(content.contains("NewType type"), "a type translated to a registered type references the generated type");
+        Assertions.assertFalse(content.contains(NewType.class.getName()), "a type translated to a registered type does not reference the source class");
     }
 }

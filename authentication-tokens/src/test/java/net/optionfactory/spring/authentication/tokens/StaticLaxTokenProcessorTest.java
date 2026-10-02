@@ -14,19 +14,19 @@ public class StaticLaxTokenProcessorTest {
     @Test
     public void returnsAuthoritiesWhenSchemeAndTokenMatch() {
         final var lax = new TokenProcessor.StaticLax(BASIC, "secret", PAA);
-        Assertions.assertSame(PAA, lax.process(BASIC, "secret"));
+        Assertions.assertSame(PAA, lax.process(BASIC, "secret"), "a matching scheme and token grant the configured principal and authorities");
     }
 
     @Test
     public void returnsNullWhenSchemeDoesNotMatch() {
         final var lax = new TokenProcessor.StaticLax(BASIC, "secret", PAA);
         final var presented = new HeaderAndScheme("Authorization", "BEARER ");
-        Assertions.assertNull(lax.process(presented, "secret"));
+        Assertions.assertNull(lax.process(presented, "secret"), "a token on another scheme is left to the next processor");
     }
 
     @Test
     public void returnsNullWhenTokenDoesNotMatch() {
         final var lax = new TokenProcessor.StaticLax(BASIC, "secret", PAA);
-        Assertions.assertNull(lax.process(BASIC, "wrong"));
+        Assertions.assertNull(lax.process(BASIC, "wrong"), "a wrong token is left to the next processor, not rejected");
     }
 }

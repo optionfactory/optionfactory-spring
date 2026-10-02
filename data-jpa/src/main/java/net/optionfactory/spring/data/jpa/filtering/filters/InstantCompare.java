@@ -24,11 +24,20 @@ import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequ
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters.Traversal;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter;
 
-/**
- * Compares an {@link Instant} property. The first argument must be a
- * whitelisted {@link Operator}. Operators accept a single argument, while
- * {@link Operator#BETWEEN} (inclusive on both bounds) accepts a range.
- */
+/// Whitelists a filter comparing an [Instant] property with one value, or two for
+/// [Operator#BETWEEN].
+///
+/// The first filter value is a whitelisted [Operator], followed by the instants in the configured
+/// [#format()]; a value that cannot be parsed is rejected. Only `EQ` and `NEQ` accept a `null`
+/// value, to compare with `NULL`.
+///
+/// ```java
+/// @Entity
+/// @InstantCompare(name = "createdAt", path = "createdAt", format = Format.UNIX_MS)
+/// public class Order { ... }
+///
+/// FilterRequest.builder().instant("createdAt", f -> f.gte(Format.UNIX_MS, since)).build();
+/// ```
 @Documented
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.RUNTIME)
@@ -36,45 +45,73 @@ import net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter
 @Repeatable(RepeatableInstantCompare.class)
 public @interface InstantCompare {
 
+    /// The comparison requested by the client, as the first filter value.
     public enum Operator {
-        EQ, NEQ, LT, GT, LTE, GTE, BETWEEN;
+        /// The property equals the value; a `null` value matches the `NULL` rows.
+        EQ,
+        /// The property differs from the value, `NULL` rows included; a `null` value matches the
+        /// rows that are not `NULL`.
+        NEQ,
+        /// The property is less than the value.
+        LT,
+        /// The property is greater than the value.
+        GT,
+        /// The property is less than or equal to the value.
+        LTE,
+        /// The property is greater than or equal to the value.
+        GTE,
+        /// The property lies between two values, both included, in either order.
+        BETWEEN;
     }
 
+    /// How the instants are written in the filter values.
     public enum Format {
-        ISO_8601, UNIX_S, UNIX_MS, UNIX_NS;
+        /// An ISO-8601 instant in UTC, as [Instant#parse] reads it, e.g. `2020-01-01T10:00:00Z`.
+        ISO_8601,
+        /// Decimal seconds since the epoch.
+        UNIX_S,
+        /// Decimal milliseconds since the epoch.
+        UNIX_MS,
+        /// Decimal nanoseconds since the epoch.
+        UNIX_NS;
     }
 
+    /// @return the name the filter is whitelisted under, and requested by
     String name();
 
+    /// @return the operators a client may request; must not be empty
     Operator[] operators() default {
         Operator.EQ, Operator.NEQ, Operator.LT, Operator.GT, Operator.LTE, Operator.GTE, Operator.BETWEEN
     };
 
+    /// @return the format of the instants in the filter values
     Format format() default Format.ISO_8601;
 
+    /// @return the dot-separated path of the filtered property, from the entity
     String path();
 
-    /**
-     * The quantifier applied when {@link #path()} crosses a collection: whether a row is kept
-     * because <em>some</em> element matches ({@link Match#ANY}) or because <em>no</em> element
-     * does ({@link Match#NONE}). A negated filter over a collection is {@code NONE} over a
-     * positive condition, never {@code ANY} over a negated one. Required when the path crosses a
-     * collection, where leaving it {@link Match#UNSTATED} is rejected when the repository is
-     * built; unnecessary, and ignored, when it crosses none.
-     *
-     * @return the quantifier
-     */
+    /// The quantifier applied when [#path()] crosses a collection: whether a row is kept because
+    /// *some* element matches ([Match#ANY]) or because *no* element does ([Match#NONE]). A negated
+    /// filter over a collection is `NONE` over a positive condition, never `ANY` over a negated one.
+    /// Required when the path crosses a collection, where leaving it [Match#UNSTATED] is rejected
+    /// when the repository is built; unnecessary when it crosses none, where `ANY` and `UNSTATED`
+    /// read alike and `NONE` is rejected.
+    ///
+    /// @return the quantifier
     Match match() default Match.UNSTATED;
 
-
+    /// The container of repeated [InstantCompare] annotations, used implicitly by the compiler when the
+    /// annotation is repeated on an entity.
     @Documented
     @Target(value = ElementType.TYPE)
     @Retention(value = RetentionPolicy.RUNTIME)
     public static @interface RepeatableInstantCompare {
 
+        /// @return the repeated annotations
         InstantCompare[] value();
     }
 
+    /// The filter whitelisted by [InstantCompare].
     public static class InstantCompareFilter implements TraversalFilter<Instant> {
 
         private final String name;
@@ -82,6 +119,10 @@ public @interface InstantCompare {
         private final Format format;
         private final Traversal traversal;
 
+        /// @param annotation the whitelisting annotation
+        /// @param entity the entity the annotation is on
+        /// @throws net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterConfiguration
+        /// when the path does not lead to an `Instant` property, or misuses [Match]
         public InstantCompareFilter(InstantCompare annotation, EntityType<?> entity) {
             this.name = annotation.name();
             this.traversal = Filters.traversal(entity, annotation.name(), annotation.path(), annotation.match());
@@ -90,6 +131,9 @@ public @interface InstantCompare {
             this.format = annotation.format();
         }
 
+        /// @throws InvalidFilterRequest when the operator is missing, unknown or not whitelisted,
+        /// the number of values does not fit it, a value cannot be parsed, or a `null` value is
+        /// given to an operator other than `EQ` and `NEQ`
         @Override
         public Predicate condition(Root<?> root, Path<Instant> lhs, CriteriaBuilder builder, String[] values) {
             Filters.ensure(values.length > 0, root, name, "missing operator");
@@ -157,18 +201,25 @@ public @interface InstantCompare {
             }
         }
 
+        /// @return the name the filter is whitelisted under
         @Override
         public String name() {
             return name;
         }
 
+        /// @return the resolved path of the filtered property
         @Override
         public Traversal traversal() {
             return traversal;
         }
     }
 
+    /// Encodes the values of an [InstantCompare] filter for a [net.optionfactory.spring.data.jpa.filtering.FilterRequest].
+    ///
+    /// The format passed must be the one the filter is configured with; `null` instants are encoded
+    /// as `null`.
     public enum Filter {
+        /// The only instance.
         INSTANCE;
 
         private String str(Format format, Instant value) {
@@ -192,6 +243,10 @@ public @interface InstantCompare {
             };
         }
 
+        /// @param op the operator
+        /// @param format the format of the filter
+        /// @param values the operands
+        /// @return the filter values
         public String[] of(Operator op, Format format, Instant... values) {
             return Stream.concat(
                     Stream.of(op.name()),
@@ -199,6 +254,9 @@ public @interface InstantCompare {
             ).toArray(i -> new String[i]);
         }
 
+        /// @param op the operator
+        /// @param values the operands, already formatted
+        /// @return the filter values
         public String[] of(Operator op, String... values) {
             return Stream.concat(
                     Stream.of(op.name()),
@@ -206,30 +264,52 @@ public @interface InstantCompare {
             ).toArray(i -> new String[i]);
         }
 
+        /// @param format the format of the filter
+        /// @param value the operand, or `null` to match the `NULL` rows
+        /// @return the filter values
         public String[] eq(Format format, Instant value) {
             return new String[]{Operator.EQ.name(), str(format, value)};
         }
 
+        /// @param format the format of the filter
+        /// @param value the operand, or `null` to match the rows that are not `NULL`
+        /// @return the filter values
         public String[] neq(Format format, Instant value) {
             return new String[]{Operator.NEQ.name(), str(format, value)};
         }
 
+        /// @param format the format of the filter
+        /// @param value the operand
+        /// @return the filter values
         public String[] lt(Format format, Instant value) {
             return new String[]{Operator.LT.name(), str(format, value)};
         }
 
+        /// @param format the format of the filter
+        /// @param value the operand
+        /// @return the filter values
         public String[] gt(Format format, Instant value) {
             return new String[]{Operator.GT.name(), str(format, value)};
         }
 
+        /// @param format the format of the filter
+        /// @param value the operand
+        /// @return the filter values
         public String[] lte(Format format, Instant value) {
             return new String[]{Operator.LTE.name(), str(format, value)};
         }
 
+        /// @param format the format of the filter
+        /// @param value the operand
+        /// @return the filter values
         public String[] gte(Format format, Instant value) {
             return new String[]{Operator.GTE.name(), str(format, value)};
         }
 
+        /// @param format the format of the filter
+        /// @param value1 one bound, included
+        /// @param value2 the other bound, included
+        /// @return the filter values
         public String[] between(Format format, Instant value1, Instant value2) {
             return new String[]{Operator.BETWEEN.name(), str(format, value1), str(format, value2)};
         }

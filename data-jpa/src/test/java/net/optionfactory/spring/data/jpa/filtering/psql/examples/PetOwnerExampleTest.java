@@ -143,7 +143,7 @@ public class PetOwnerExampleTest {
                 .map(po -> po.firstName)
                 .toList();
 
-        Assertions.assertEquals(List.of("Tintin"), foundNames);
+        Assertions.assertEquals(List.of("Tintin"), foundNames, "the owner of the pet named snowy, in any case, is found");
 
     }
 
@@ -160,7 +160,7 @@ public class PetOwnerExampleTest {
                 .map(po -> po.firstName)
                 .toList();
 
-        Assertions.assertEquals(List.of("Dorothy", "Tintin"), foundNames);
+        Assertions.assertEquals(List.of("Dorothy", "Tintin"), foundNames, "only the owners of dogs born after the bound, named with an o, are found");
 
     }
 
@@ -177,7 +177,7 @@ public class PetOwnerExampleTest {
                 .map(po -> po.firstName)
                 .toList();
 
-        Assertions.assertEquals(List.of("Dorothy", "Tintin"), foundNames);
+        Assertions.assertEquals(List.of("Dorothy", "Tintin"), foundNames, "a FilterRequest built from a raw map applies every filter");
     }
 
     @Test
@@ -197,7 +197,7 @@ public class PetOwnerExampleTest {
                 .map(po -> po.firstName)
                 .toList();
 
-        Assertions.assertEquals(List.of("Dorothy", "Tintin"), foundNames);
+        Assertions.assertEquals(List.of("Dorothy", "Tintin"), foundNames, "a FilterRequest deserialized from json applies every filter");
     }
 
     @Test
@@ -210,6 +210,6 @@ public class PetOwnerExampleTest {
                 .stream()
                 .map(po -> po.firstName)
                 .toList();
-        Assertions.assertEquals(List.of("Dorothy"), foundNames);
+        Assertions.assertEquals(List.of("Dorothy"), foundNames, "a property inside the json embeddable is filtered");
     }
 }

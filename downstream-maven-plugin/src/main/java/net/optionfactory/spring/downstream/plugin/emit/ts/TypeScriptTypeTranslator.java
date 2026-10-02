@@ -13,21 +13,51 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import net.optionfactory.spring.downstream.plugin.mapping.TypeRegistry;
 
+/// Maps the java type of a source property to a TypeScript type.
+///
+/// For a class, in order of precedence:
+/// 1. an aliased class is referenced by its simple name, the alias being declared by the emitter;
+/// 2. a translated class is replaced by the TypeScript type of its translation target (a
+///    well-known java type or a payload), or else by the target simple name;
+/// 3. a payload is referenced by its [flat name][TypeRegistry.TargetName#flatName], and an enum
+///    that is not a payload by its simple name;
+/// 4. strings and `char` become `string`, numeric primitives, their wrappers, `BigDecimal` and
+///    `BigInteger` become `number`, `boolean` becomes `boolean`, `void` becomes `void`;
+/// 5. anything else, `Object` included, becomes `any`.
+///
+/// `Optional<T>` becomes `T` (the emitter marks the property optional), a `Collection<T>` or an
+/// array becomes `T[]`, a `Map<K, V>` becomes `Record<K, V>` with `K` replaced by `string` unless
+/// it maps to `string`, `number`, an enum or an alias. Other parameterized types keep their
+/// arguments, but a generic class translated to a TypeScript primitive drops them.
+/// Type variables keep their name and wildcards become their upper bound, or `any`.
+///
+/// A translation target with no TypeScript counterpart is used by simple name verbatim, e.g.
+/// `byte[]` stays `byte[]`, which TypeScript does not know. A translation whose target is itself
+/// aliased references the simple name of the translated class, not the one of the alias.
 public class TypeScriptTypeTranslator {
 
     private final TypeRegistry registry;
     private final Map<String, String> translations;
     private final Map<String, String> typeAliases;
 
+    /// The TypeScript types kept as `Record` keys; other map keys, enums and aliases aside, become
+    /// `string`.
     public static final Set<String> VALID_RECORD_KEY_TYPES = Set.of("string", "number");
+    /// The TypeScript types that take no type arguments: a generic class translated to one of them
+    /// drops its arguments.
     public static final Set<String> TS_PRIMITIVES = Set.of("string", "number", "boolean", "any", "void");
 
+    /// @param registry the payload types and their generated names
+    /// @param translations source class binary name to replacement java type
+    /// @param typeAliases source class binary name to TypeScript type
     public TypeScriptTypeTranslator(TypeRegistry registry, Map<String, String> translations, Map<String, String> typeAliases) {
         this.registry = registry;
         this.translations = translations;
         this.typeAliases = typeAliases;
     }
 
+    /// @param type the generic type of a source property
+    /// @return the TypeScript type, `any` when the type cannot be mapped
     public String translate(Type type) {
         if (type instanceof GenericArrayType gat) {
             return translate(gat.getGenericComponentType()) + "[]";
@@ -121,6 +151,8 @@ public class TypeScriptTypeTranslator {
         return "any";
     }
 
+    /// @param fqn a binary or canonical class name
+    /// @return the name after the last `.` or `$`, `null` for `null`
     public static String simpleName(String fqn) {
         if (fqn == null) {
             return null;

@@ -24,17 +24,47 @@ import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 
+/// Authenticates requests by a token carried in a request header: static tokens (api keys, basic
+/// credentials of a technical user) and signed or encrypted JWTs.
+///
+/// ```java
+/// http.with(HttpHeaderAuthentication.configurer(), c -> {
+///     c.bearer(System.getenv("M2M_TOKEN"), "batch", "ROLE_M2M");
+///     c.basic("monitoring", System.getenv("MONITORING_PASSWORD"), "monitoring", "ROLE_MONITORING");
+///     c.jws(ClaimsPolicy.issuer("https://issuer.example.com").audience("my-service"), jws -> {
+///         jws.verify(issuerPublicKey);
+///         jws.principal((header, claims) -> claims.getSubject());
+///     });
+/// });
+/// ```
+///
+/// The configured headers and schemes are searched by a [HttpHeaderAuthenticationFilter], which
+/// hands the token it finds to a [HttpHeaderAuthenticationProvider] running the configured
+/// [TokenProcessor]s. A request carrying no token, or a token that is rejected, proceeds with
+/// whatever authentication earlier mechanisms established, if any, leaving the decision to the
+/// authorization rules and the entry point (see `UnauthorizedStatusEntryPoint`).
 public class HttpHeaderAuthentication {
 
+    /// @return a configurer to register with `HttpSecurity.with(...)`
     public static Configurer configurer() {
         return new Configurer();
     }
 
-    /**
-     * Configures the {@link HttpHeaderAuthenticationFilter} by injecting the
-     * Spring managed {@link AuthenticationManager} and registers it with the
-     * HTTP security.
-     */
+    /// Collects the tokens to accept, registering their header and scheme with the filter and their
+    /// processors with the provider.
+    ///
+    /// Processors run in configuration order, except that all the `jws(...)` and `jwe(...)`
+    /// configurations are gathered into one [JwtTokenProcessor] that runs after every other
+    /// processor, whatever the order they were configured in.
+    ///
+    /// A static token is either lax or strict. A lax one (`bearer`, `token`, `basic`) authenticates
+    /// a matching token and lets any other token on its header through to the next processor. A
+    /// strict one (`bearerStrict`, `tokenStrict`) owns its header and scheme: any other token found
+    /// there is rejected without reaching later processors, so a strict static token cannot share
+    /// its header with other static tokens configured after it, nor with JWTs.
+    ///
+    /// The filter is added before `UsernamePasswordAuthenticationFilter`, and the provider is
+    /// registered with the chain's shared `AuthenticationManager`.
     public static class Configurer extends SecurityConfigurerAdapter<DefaultSecurityFilterChain, HttpSecurity> {
 
         private final static String BEARER_AUTH_SCHEME = "Bearer";
@@ -45,24 +75,60 @@ public class HttpHeaderAuthentication {
         private final List<JwsProcessor> jwsProcessors = new ArrayList<>();
         private final List<JweProcessor> jweProcessors = new ArrayList<>();
 
+        /// Accepts a static token on `Authorization: Bearer`, letting other bearer tokens through to
+        /// the next processors.
+        ///
+        /// @param token the expected token, compared in constant time
+        /// @param principal the principal of a request carrying it
+        /// @param authorities the authorities granted to it
+        /// @return this configurer
         public Configurer bearer(String token, Object principal, Collection<? extends GrantedAuthority> authorities) {
             return token(HttpHeaders.AUTHORIZATION, BEARER_AUTH_SCHEME, token, principal, authorities);
         }
 
+        /// Accepts a static token on `Authorization: Bearer`, rejecting any other bearer token
+        /// before later processors see it.
+        ///
+        /// @param token the expected token, compared in constant time
+        /// @param principal the principal of a request carrying it
+        /// @param authorities the authorities granted to it
+        /// @return this configurer
         public Configurer bearerStrict(String token, Object principal, Collection<? extends GrantedAuthority> authorities) {
             return tokenStrict(HttpHeaders.AUTHORIZATION, BEARER_AUTH_SCHEME, token, principal, authorities);
         }
 
+        /// As [#bearer(String, Object, Collection)].
+        ///
+        /// @param token the expected token, compared in constant time
+        /// @param principal the principal of a request carrying it
+        /// @param authorities the names of the authorities granted to it, e.g. `ROLE_M2M`
+        /// @return this configurer
         public Configurer bearer(String token, Object principal, String... authorities) {
             final var sgas = Stream.of(authorities).map(SimpleGrantedAuthority::new).toList();
             return bearer(token, principal, sgas);
         }
 
+        /// As [#bearerStrict(String, Object, Collection)].
+        ///
+        /// @param token the expected token, compared in constant time
+        /// @param principal the principal of a request carrying it
+        /// @param authorities the names of the authorities granted to it, e.g. `ROLE_M2M`
+        /// @return this configurer
         public Configurer bearerStrict(String token, Object principal, String... authorities) {
             final var sgas = Stream.of(authorities).map(SimpleGrantedAuthority::new).toList();
             return bearerStrict(token, principal, sgas);
         }
 
+        /// Accepts a static token on any header, letting other tokens on it through to the next
+        /// processors.
+        ///
+        /// @param headerName the header carrying the token
+        /// @param authScheme the scheme prefixing the token, matched case-insensitively, or blank
+        /// for a header carrying the bare token
+        /// @param token the expected token, compared in constant time
+        /// @param principal the principal of a request carrying it
+        /// @param authorities the authorities granted to it
+        /// @return this configurer
         public Configurer token(String headerName, String authScheme, String token, Object principal, Collection<? extends GrantedAuthority> authorities) {
             final var hs = new HeaderAndScheme(headerName, authScheme);
             headerAndSchemes.add(hs);
@@ -70,6 +136,16 @@ public class HttpHeaderAuthentication {
             return this;
         }
 
+        /// Accepts a static token on any header, rejecting any other token found there before later
+        /// processors see it.
+        ///
+        /// @param headerName the header carrying the token
+        /// @param authScheme the scheme prefixing the token, matched case-insensitively, or blank
+        /// for a header carrying the bare token
+        /// @param token the expected token, compared in constant time
+        /// @param principal the principal of a request carrying it
+        /// @param authorities the authorities granted to it
+        /// @return this configurer
         public Configurer tokenStrict(String headerName, String authScheme, String token, Object principal, Collection<? extends GrantedAuthority> authorities) {
             final var hs = new HeaderAndScheme(headerName, authScheme);
             headerAndSchemes.add(hs);
@@ -77,26 +153,69 @@ public class HttpHeaderAuthentication {
             return this;
         }
 
+        /// As [#token(String, String, String, Object, Collection)].
+        ///
+        /// @param headerName the header carrying the token
+        /// @param authScheme the scheme prefixing the token, or blank for a bare token
+        /// @param token the expected token, compared in constant time
+        /// @param principal the principal of a request carrying it
+        /// @param authorities the names of the authorities granted to it
+        /// @return this configurer
         public Configurer token(String headerName, String authScheme, String token, Object principal, String... authorities) {
             final var sgas = Stream.of(authorities).map(SimpleGrantedAuthority::new).toList();
             return token(headerName, authScheme, token, principal, sgas);
         }
 
+        /// As [#tokenStrict(String, String, String, Object, Collection)].
+        ///
+        /// @param headerName the header carrying the token
+        /// @param authScheme the scheme prefixing the token, or blank for a bare token
+        /// @param token the expected token, compared in constant time
+        /// @param principal the principal of a request carrying it
+        /// @param authorities the names of the authorities granted to it
+        /// @return this configurer
         public Configurer tokenStrict(String headerName, String authScheme, String token, Object principal, String... authorities) {
             final var sgas = Stream.of(authorities).map(SimpleGrantedAuthority::new).toList();
             return tokenStrict(headerName, authScheme, token, principal, sgas);
         }
 
+        /// Accepts static `Authorization: Basic` credentials, letting other basic credentials through
+        /// to the next processors.
+        ///
+        /// The credentials are compared in their encoded form, the base64 of the UTF-8
+        /// `username:password`, so both parts are case-sensitive and must be encoded by the client
+        /// exactly that way.
+        ///
+        /// @param username the expected username
+        /// @param password the expected password
+        /// @param principal the principal of a request carrying them
+        /// @param authorities the authorities granted to it
+        /// @return this configurer
         public Configurer basic(String username, String password, Object principal, Collection<? extends GrantedAuthority> authorities) {
             var encodedValue = Base64.getEncoder().encodeToString("%s:%s".formatted(username, password).getBytes(StandardCharsets.UTF_8));
             return token(HttpHeaders.AUTHORIZATION, BASIC_AUTH_SCHEME, encodedValue, principal, authorities);
         }
 
+        /// As [#basic(String, String, Object, Collection)].
+        ///
+        /// @param username the expected username
+        /// @param password the expected password
+        /// @param principal the principal of a request carrying them
+        /// @param authorities the names of the authorities granted to it
+        /// @return this configurer
         public Configurer basic(String username, String password, Object principal, String... authorities) {
             final var sgas = Stream.of(authorities).map(SimpleGrantedAuthority::new).toList();
             return basic(username, password, principal, sgas);
         }
 
+        /// Adds a custom processor.
+        ///
+        /// Unlike every other method, this one registers no header with the filter: the processor
+        /// only sees tokens found on the headers and schemes some other configuration registered,
+        /// and it should therefore check the [HeaderAndScheme] it is given.
+        ///
+        /// @param processor the processor to add, run after the processors configured before it
+        /// @return this configurer
         public Configurer processor(TokenProcessor processor) {
             processors.add(processor);
             return this;
@@ -138,14 +257,21 @@ public class HttpHeaderAuthentication {
             return Stream.concat(processors.stream(), Stream.of(jwt)).toList();
         }
 
+        /// Registers the [HttpHeaderAuthenticationProvider]. It happens at init time because
+        /// `HttpSecurity` builds the shared `AuthenticationManager` after init and before configure:
+        /// a configure-time registration only worked because `ProviderManager` kept the builder's
+        /// live provider list by reference.
+        ///
+        /// @param http the security being built
         @Override
         public void init(HttpSecurity http) {
-            // HttpSecurity builds the shared AuthenticationManager after init and before configure:
-            // the provider must be registered by then. A configure-time registration only worked
-            // because ProviderManager kept the builder's live provider list by reference.
             http.authenticationProvider(new HttpHeaderAuthenticationProvider(makeProcessors(processors, jwsProcessors, jweProcessors)));
         }
 
+        /// Adds the [HttpHeaderAuthenticationFilter], searching every configured header and scheme,
+        /// before `UsernamePasswordAuthenticationFilter`.
+        ///
+        /// @param http the security being built
         @Override
         public void configure(HttpSecurity http) {
             final var authenticationManager = http.getSharedObject(AuthenticationManager.class);
@@ -156,6 +282,10 @@ public class HttpHeaderAuthentication {
 
     }
 
+    /// What a [TokenProcessor] grants to the request carrying a token it accepts.
+    ///
+    /// @param principal the principal of the authenticated request
+    /// @param authorities its authorities
     public record PrincipalAndAuthorities(Object principal, Collection<? extends GrantedAuthority> authorities) {
 
     }
@@ -171,6 +301,10 @@ public class HttpHeaderAuthentication {
         private final HeaderAndScheme hs;
         private final String token;
 
+        /// @param hs where the token was found
+        /// @param token the token, without the scheme
+        /// @param request the request carrying it, whose remote address and session id become the
+        /// details
         public UnauthenticatedToken(HeaderAndScheme hs, String token, HttpServletRequest request) {
             super((Collection<? extends GrantedAuthority>)null);
             this.hs = hs;
@@ -179,26 +313,36 @@ public class HttpHeaderAuthentication {
             super.setDetails(new WebAuthenticationDetails(request));
         }
 
+        /// @return the token, without the scheme
         @Override
         public String getCredentials() {
             return token;
         }
 
+        /// @return where the token was found, never the token itself
         @Override
         public HeaderAndScheme getPrincipal() {
             return hs;
         }
 
+        /// @return where the token was found
         public HeaderAndScheme getHeaderAndScheme() {
             return hs;
         }
     }
 
+    /// A token a [TokenProcessor] accepted: the authentication a request carrying it runs with.
+    ///
+    /// The token stays available as the credentials; `toString()` masks them.
     public static class AuthenticatedToken extends AbstractAuthenticationToken {
 
         private final String token;
         private final Object principal;
 
+        /// @param token the accepted token
+        /// @param principal the principal the processor granted
+        /// @param details the details of the [UnauthenticatedToken] it was found as
+        /// @param authorities the authorities the processor granted
         public AuthenticatedToken(String token, Object principal, Object details, Collection<? extends GrantedAuthority> authorities) {
             super(authorities);
             this.token = token;
@@ -207,50 +351,82 @@ public class HttpHeaderAuthentication {
             super.setAuthenticated(true);
         }
 
+        /// @return the accepted token
         @Override
         public String getCredentials() {
             return token;
         }
 
+        /// @return the principal the processor granted
         @Override
         public Object getPrincipal() {
             return principal;
         }
     }
 
+    /// Decides whether a token found in a request is accepted, and what it grants.
+    ///
+    /// [HttpHeaderAuthenticationProvider] runs its processors in order until one accepts the token.
+    /// A processor has three answers: a [PrincipalAndAuthorities] accepts the token, `null` leaves
+    /// it to the next processor, and an `AuthenticationException` (usually a
+    /// `BadCredentialsException`) rejects it outright, with no later processor consulted.
     public interface TokenProcessor {
 
+        /// @param hs the header and scheme the token was found on
+        /// @param token the token, without the scheme
+        /// @return what the token grants, or `null` when this processor does not accept it and
+        /// leaves it to the next one
+        /// @throws org.springframework.security.core.AuthenticationException to reject the token
+        /// without consulting later processors
         HttpHeaderAuthentication.PrincipalAndAuthorities process(HeaderAndScheme hs, String token);
+
+        /// Accepts a static token on a given header and scheme, leaving any other token to the next
+        /// processor. The token is compared in constant time.
         public static class StaticLax implements TokenProcessor {
 
             private final HeaderAndScheme hs;
             private final String token;
             private final HttpHeaderAuthentication.PrincipalAndAuthorities paa;
 
+            /// @param hs the header and scheme the token must be found on
+            /// @param token the expected token
+            /// @param paa what the token grants
             public StaticLax(HeaderAndScheme hs, String token, PrincipalAndAuthorities paa) {
                 this.hs = hs;
                 this.token = token;
                 this.paa = paa;
             }
 
+            /// @return what the token grants when both the header and scheme and the token match,
+            /// `null` otherwise
             @Override
             public HttpHeaderAuthentication.PrincipalAndAuthorities process(HeaderAndScheme hs, String token) {
                 return this.hs.equals(hs) && constantTimeEquals(this.token, token) ? paa : null;
             }
         }
 
+        /// Accepts a static token on a given header and scheme, and rejects any other token found
+        /// there: the header and scheme belong to this token alone. Tokens on other headers are left
+        /// to the next processor. The token is compared in constant time.
         public static class StaticStrict implements TokenProcessor {
 
             private final HeaderAndScheme hs;
             private final String token;
             private final HttpHeaderAuthentication.PrincipalAndAuthorities paa;
 
+            /// @param hs the header and scheme the token must be found on
+            /// @param token the expected token
+            /// @param paa what the token grants
             public StaticStrict(HeaderAndScheme hs, String token, HttpHeaderAuthentication.PrincipalAndAuthorities paa) {
                 this.hs = hs;
                 this.token = token;
                 this.paa = paa;
             }
 
+            /// @return what the token grants when it matches, `null` when it was found on another
+            /// header or scheme
+            /// @throws BadCredentialsException when it was found on this header and scheme but does
+            /// not match
             @Override
             public HttpHeaderAuthentication.PrincipalAndAuthorities process(HeaderAndScheme hs, String token) {
                 if (!this.hs.equals(hs)) {

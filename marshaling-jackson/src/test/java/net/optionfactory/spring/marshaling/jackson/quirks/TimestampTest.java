@@ -28,7 +28,7 @@ public class TimestampTest {
 
         Assertions.assertEquals("""
                 {"value":1784325600000}
-                """.trim(), got.trim());
+                """.trim(), got.trim(), "milliseconds since the epoch by default");
     }
 
     @Test
@@ -38,7 +38,7 @@ public class TimestampTest {
                 """;
         final var got = om.readValue(json, DefaultBean.class);
 
-        Assertions.assertEquals(new DefaultBean(testInstant), got);
+        Assertions.assertEquals(new DefaultBean(testInstant), got, "an integer is read as milliseconds by default");
     }
 
     @Test
@@ -48,7 +48,7 @@ public class TimestampTest {
                 """;
         final var got = om.readValue(json, DefaultBean.class);
 
-        Assertions.assertEquals(new DefaultBean(testInstant), got);
+        Assertions.assertEquals(new DefaultBean(testInstant), got, "a string holding an integer is accepted too");
     }
 
     @Test
@@ -58,7 +58,7 @@ public class TimestampTest {
 
         Assertions.assertEquals("""
                 {"value":1784325600}
-                """.trim(), got.trim());
+                """.trim(), got.trim(), "seconds since the epoch when millis = false");
     }
 
     @Test
@@ -68,7 +68,7 @@ public class TimestampTest {
                 """;
         final var got = om.readValue(json, SecondsBean.class);
 
-        Assertions.assertEquals(new SecondsBean(testInstant), got);
+        Assertions.assertEquals(new SecondsBean(testInstant), got, "an integer is read as seconds when millis = false");
     }
 
     @Test
@@ -78,7 +78,7 @@ public class TimestampTest {
 
         Assertions.assertEquals("""
                 {"value":null}
-                """.trim(), got.trim());
+                """.trim(), got.trim(), "a null instant is written as json null");
     }
 
     @Test
@@ -88,7 +88,7 @@ public class TimestampTest {
                 """;
         final var got = om.readValue(json, DefaultBean.class);
 
-        Assertions.assertEquals(new DefaultBean(null), got);
+        Assertions.assertEquals(new DefaultBean(null), got, "a json null is read as null");
     }
 
     @Test
@@ -109,5 +109,39 @@ public class TimestampTest {
         Assertions.assertThrows(tools.jackson.databind.exc.MismatchedInputException.class, () -> {
             om.readValue(json, DefaultBean.class);
         }, "Should throw MismatchedInputException when receiving an Object token instead of number/string");
+    }
+
+    @Test
+    public void serializingSecondsDropsTheSubSecondPart() {
+        final String got = om.writeValueAsString(new SecondsBean(Instant.ofEpochMilli(1999)));
+        Assertions.assertEquals("""
+                {"value":1}
+                """.trim(), got, "the precision seconds cannot carry is dropped");
+    }
+
+    @Test
+    public void acceptsNumericStringsSurroundedByWhitespace() {
+        final var got = om.readValue("""
+                {"value":" 1784325600000 "}
+                """, DefaultBean.class);
+        Assertions.assertEquals(new DefaultBean(testInstant), got, "the numeric string is trimmed before parsing");
+    }
+
+    @Test
+    public void rejectsBlankStrings() {
+        Assertions.assertThrows(tools.jackson.databind.exc.MismatchedInputException.class, () -> {
+            om.readValue("""
+                {"value":" "}
+                """, DefaultBean.class);
+        }, "a blank string holds no timestamp");
+    }
+
+    @Test
+    public void rejectsDecimalNumbers() {
+        Assertions.assertThrows(tools.jackson.databind.exc.MismatchedInputException.class, () -> {
+            om.readValue("""
+                {"value":1784325600000.5}
+                """, DefaultBean.class);
+        }, "a timestamp must be an integer");
     }
 }

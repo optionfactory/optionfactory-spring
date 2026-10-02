@@ -10,14 +10,28 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
+/// Derives the authorities from the `roles`, `groups` and `scope` claims, the default
+/// [JwtAuthoritiesConverter].
+///
+/// Each value becomes an authority prefixed by its kind, upper-cased (independently of the default
+/// locale) and with `-` replaced by `_`: a `roles` of `["admin"]` grants `ROLE_ADMIN`, a `groups` of
+/// `["sales-team"]` grants `GROUP_SALES_TEAM`, a `scope` of `"read write"` grants `SCOPE_READ` and
+/// `SCOPE_WRITE`. The `scope` claim may be a space-separated string, as in RFC 8693, or a list.
+/// Missing claims grant nothing. The default authorities come first, then roles, groups and scopes.
+///
+/// A token whose `roles` or `groups` is not a list of strings, or whose `scope` is neither a string
+/// nor a list, is rejected with a `BadCredentialsException`.
 public class RolesGroupsAndScopesFromClaims implements JwtAuthoritiesConverter {
 
     private final List<? extends GrantedAuthority> defaultAuthorities;
 
+    /// @param defaultAuthorities granted to every token, besides those derived from its claims
     public RolesGroupsAndScopesFromClaims(List<? extends GrantedAuthority> defaultAuthorities) {
         this.defaultAuthorities = defaultAuthorities;
     }
 
+    /// @return the default authorities followed by those derived from the claims
+    /// @throws BadCredentialsException when a claim has an unexpected type
     @Override
     public Collection<? extends GrantedAuthority> convert(Header header, JWTClaimsSet claims) {
         try {

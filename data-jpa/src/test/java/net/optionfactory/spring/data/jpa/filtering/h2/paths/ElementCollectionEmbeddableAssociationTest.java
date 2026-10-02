@@ -86,7 +86,7 @@ public class ElementCollectionEmbeddableAssociationTest {
                 .text("byCountryName", f -> f.eq("Italy"))
                 .build();
         final var page = repo.findAll(fr, Pageable.unpaged());
-        Assertions.assertEquals(1, page.getTotalElements());
+        Assertions.assertEquals(1, page.getTotalElements(), "the association inside an element collection of embeddables is filtered");
     }
 
 }

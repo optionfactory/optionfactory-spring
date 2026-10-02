@@ -21,8 +21,20 @@ import org.w3c.dom.DOMException;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
+/// Compiles the xml `Schema` a SOAP client validates its messages against.
+///
+/// ```java
+/// final var schema = Schemas.fromWsdl(new ClassPathResource("/calculator/service.wsdl")).schema();
+/// UpstreamBuilder.create(CalculatorClient.class)
+///         .soap(Protocol.SOAP_1_1, schema, SoapHeaderWriter.NONE, Add.class)
+///         ...
+/// ```
+///
+/// Every document is parsed with doctype declarations rejected, and schema locations are never
+/// fetched: each imported namespace must be provided, inline in the wsdl or as a companion xsd.
 public class Schemas {
 
+    /// No schema: messages are not validated. A readable `null` for the `soap` builder methods.
     public static final Schema NONE = null;
 
     private record SchemasAndImports(Map<String, Element> nsToSchema, Map<String, List<String>> nsToImports) {
@@ -40,19 +52,28 @@ public class Schemas {
         }
     }
 
+    /// The outcome of [Schemas#fromWsdl(InputStreamSource, InputStreamSource...)].
+    ///
+    /// @param schema the compiled schema
+    /// @param protocols the SOAP versions the wsdl has bindings for, 1.1 first; empty when it has
+    /// none
     public record SchemaAndProtocols(Schema schema, List<SoapJaxbHttpMessageConverter.Protocol> protocols) {
 
     }
 
-    /// Compiles a single unified `Schema` validator from a primary WSDL resource and any optional 
-    /// standalone companion XSD companion documents.
+    /// Compiles the schemas inlined in a wsdl, together with companion xsds, into a single
+    /// `Schema`, and detects the SOAP versions the wsdl binds.
     ///
-    /// Dependencies are automatically sorted.
+    /// The schemas are collected by target namespace, a companion xsd replacing an inline schema
+    /// with the same one, and compiled imported namespaces first, so they can be given in any
+    /// order. An import of a namespace that is not provided is not an ordering constraint, and is
+    /// then left to the compilation.
     ///
-    /// @param wsdlSource the primary WSDL stream input source containing core services and inline types
-    /// @param companionXsds optional secondary standalone XSD streams containing cross-referenced definitions
-    /// @return a configured, sequentially ordered `Schema` validation instance and detected supported protocols
-    /// @throws IllegalStateException if an XML parsing error occurs, a circular schema dependency loop is found, or validator compilation fails
+    /// @param wsdlSource the wsdl, with its schemas in `wsdl:types`
+    /// @param companionXsds standalone xsds the wsdl schemas import
+    /// @return the schema and the protocols with a binding in the wsdl
+    /// @throws IllegalStateException when a document cannot be read or parsed, the imports are
+    /// circular, or the schema does not compile
     public static SchemaAndProtocols fromWsdl(InputStreamSource wsdlSource, InputStreamSource... companionXsds) {
         try {
             final var dbf = Xml.documentBuilderFactory();
@@ -134,14 +155,16 @@ public class Schemas {
         orderedSources.add(new DOMSource(sai.schemaFor(namespace)));
     }
 
-    /// Compiles a combined `Schema` context directly from an ordered varargs sequence of linear, standalone XSD resource streams.
+    /// Compiles standalone xsds into a single `Schema`.
     ///
-    /// **Note**: This method assumes that the caller provides the files manually in their required step-by-step dependency sequence.
+    /// Unlike [#fromWsdl(InputStreamSource, InputStreamSource...)] the xsds are not sorted: one
+    /// importing another's namespace must come after it.
     ///
-    /// @param firstSchema the first xsd source
-    /// @param otherSchemas optional additional xsd sources
-    /// @return a compiled `Schema` validation instance
-    /// @throws IllegalStateException if a underlying SAX validation syntax error or environmental failure occurs
+    /// @param firstSchema the first xsd
+    /// @param otherSchemas the following xsds, in dependency order
+    /// @return the compiled schema
+    /// @throws IllegalStateException when an xsd cannot be parsed or the schema does not compile
+    /// @throws java.io.UncheckedIOException when an xsd cannot be opened
     public static Schema fromXsds(InputStreamSource firstSchema, InputStreamSource... otherSchemas) {
         try {
             final var sources = Stream.concat(Stream.of(firstSchema), Stream.of(otherSchemas))

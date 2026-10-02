@@ -6,6 +6,31 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver;
 import tools.jackson.databind.json.JsonMapper;
 
+/// Installs this module's exception resolvers into spring mvc's chain, each in the place it needs.
+///
+/// Spring asks the resolvers in order, and the first returning a `ModelAndView` answers the
+/// exception: where a resolver sits decides which exceptions it gets to see. Pick the resolvers the
+/// application needs, then [#configure()] places them:
+///
+/// ```java
+/// @Configuration
+/// @EnableWebMvc
+/// public class WebConfig implements WebMvcConfigurer {
+///
+///     @Override
+///     public void extendHandlerExceptionResolvers(List<HandlerExceptionResolver> resolvers) {
+///         ExceptionResolvers.configurer(resolvers)
+///                 .undeliverables()
+///                 .rest(jsonMapper, rest -> rest.withMessageSource(messageSource))
+///                 .binaries()
+///                 .pages()
+///                 .configure();
+///     }
+/// }
+/// ```
+///
+/// Nothing is installed until [#configure()] is called; configuring the same resolver twice keeps
+/// the last configuration.
 public class ExceptionResolvers {
 
     private final List<HandlerExceptionResolver> container;
@@ -14,10 +39,16 @@ public class ExceptionResolvers {
     private RestExceptionResolver rest;
     private PagesExceptionResolver pages;
 
+    /// @param container spring's resolver chain, modified in place by [#configure()]
     public ExceptionResolvers(List<HandlerExceptionResolver> container) {
         this.container = container;
     }
 
+    /// Answers the exceptions of `@ResponseBody` handlers with problems, see [RestExceptionResolver].
+    ///
+    /// @param mapper the mapper problems are serialized with
+    /// @param c customizes the resolver's builder
+    /// @return this configurer
     public ExceptionResolvers rest(JsonMapper mapper, Consumer<RestExceptionResolver.Builder> c) {
         final var builder = RestExceptionResolver.builder();
         c.accept(builder);
@@ -25,16 +56,28 @@ public class ExceptionResolvers {
         return this;
     }
 
+    /// Answers the exceptions of `@ResponseBody` handlers with problems, see [RestExceptionResolver],
+    /// with the default configuration: built-in classifiers only, details omitted.
+    ///
+    /// @param mapper the mapper problems are serialized with
+    /// @return this configurer
     public ExceptionResolvers rest(JsonMapper mapper) {
         this.rest = RestExceptionResolver.builder().build(mapper);
         return this;
     }
 
+    /// Answers the exceptions of page handlers with the `error` view, see [PagesExceptionResolver].
+    ///
+    /// @return this configurer
     public ExceptionResolvers pages() {
         this.pages = PagesExceptionResolver.builder().build();
         return this;
     }
 
+    /// Answers the exceptions of page handlers with views, see [PagesExceptionResolver].
+    ///
+    /// @param c customizes the resolver's builder
+    /// @return this configurer
     public ExceptionResolvers pages(Consumer<PagesExceptionResolver.Builder> c) {
         final var builder = PagesExceptionResolver.builder();
         c.accept(builder);
@@ -47,38 +90,49 @@ public class ExceptionResolvers {
     /// answer with a problem document or an error page the request can no longer
     /// carry. Add it when anything in the application streams: server-sent events,
     /// a `StreamingResponseBody` download, or any response written incrementally.
+    ///
+    /// @return this configurer
     public ExceptionResolvers undeliverables() {
         this.undeliverables = new UndeliverableResponseExceptionResolver();
         return this;
     }
 
+    /// Answers the exceptions of download handlers with a bare status, see
+    /// [BinaryResponseExceptionResolver].
+    ///
+    /// @return this configurer
     public ExceptionResolvers binaries() {
         this.binaries = new BinaryResponseExceptionResolver();
         return this;
     }
 
-    /// Places the configured exception resolvers in the chain, in this order:
-    ///   - UndeliverableResponseExceptionResolver: ahead of everything, so the
-    ///     resolvers below are never asked to write a response that is gone
-    ///   - RestExceptionResolver: on top 
-    ///   - BinaryResponseExceptionResolver: on top, after the
-    ///     RestExceptionResolver if it's configured'
-    ///   - PagesExceptionResolver: after ExceptionHandlerExceptionResolver
-    ///     if it's confifgured, on top after BinaryResponseExceptionResolver
-    ///     otherwhise'(if it's configured'))
+    /// Places the configured resolvers in the chain:
     ///
-    ///  By default, if they are all configured the chain looks like this:
+    /// - [UndeliverableResponseExceptionResolver] first, so that the resolvers behind it are never
+    ///   asked to write a response that is gone;
+    /// - then [RestExceptionResolver];
+    /// - then [BinaryResponseExceptionResolver], so that it only sees the downloads of handlers
+    ///   that are not `@ResponseBody`: a `@RestController` serving a file is answered by the rest
+    ///   resolver, whenever both are configured;
+    /// - [PagesExceptionResolver] right after spring's `ExceptionHandlerExceptionResolver`, so that
+    ///   `@ExceptionHandler` methods still take precedence for pages, or ahead of every resolver
+    ///   already in the chain when there is none.
     ///
-    /// | handler | notes  |
-    /// | ------- | ------ |
+    /// With `@EnableWebMvc` and every resolver configured, the chain becomes:
+    ///
+    /// | resolver | notes |
+    /// | -------- | ----- |
     /// | `UndeliverableResponseExceptionResolver` | declines when the client is gone or the response is committed |
-    /// | `RestExceptionResolver` |  |
-    /// | `BinaryResponseExceptionResolver` | |
-    /// | `ExceptionHandlerExceptionResolver` | handles `@ExceptionHandler`, but only for pages |
-    /// | `PagesExceptionResolver` |  |
-    /// | `ResponseStatusExceptionResolver` | generally useless, handled by the other resolvers if configured |
-    /// | `AccessDeniedExceptionResolver` | rethrows `AccessDeniedException`s so they can be handled by the `ExceptionTranslationFilter` |
-    /// | `DefaultHandlerExceptionResolver` | generally useless, handled by other resolvers if configured |
+    /// | `RestExceptionResolver` | `@ResponseBody` handlers |
+    /// | `BinaryResponseExceptionResolver` | download handlers |
+    /// | `ExceptionHandlerExceptionResolver` | `@ExceptionHandler` methods, in practice only for pages |
+    /// | `PagesExceptionResolver` | every other exception except `AccessDeniedException` |
+    /// | `ResponseStatusExceptionResolver` | generally unused, the resolvers above answer first |
+    /// | `DefaultHandlerExceptionResolver` | generally unused, the resolvers above answer first |
+    ///
+    /// An `AccessDeniedException` thrown by a page handler, and not handled by an
+    /// `@ExceptionHandler`, is declined by every resolver, and so reaches spring security's
+    /// `ExceptionTranslationFilter`. Call this method once: each call adds the resolvers again.
     public void configure() {
         int eherIndex = -1;
         for (int i = 0; i < container.size(); i++) {
@@ -101,6 +155,9 @@ public class ExceptionResolvers {
         }
     }
 
+    /// @param container spring's resolver chain, as passed to
+    ///        `WebMvcConfigurer.extendHandlerExceptionResolvers`
+    /// @return a configurer installing nothing until told to
     public static ExceptionResolvers configurer(List<HandlerExceptionResolver> container) {
         return new ExceptionResolvers(container);
     }

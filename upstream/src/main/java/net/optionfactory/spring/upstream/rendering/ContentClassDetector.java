@@ -5,13 +5,28 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.http.MediaType;
 
 
+/// Tells text payloads, which can be rendered in logs, from binary ones, which are only described.
 public final class ContentClassDetector {
 
+    /// The class of a payload.
     public enum ContentClass {
+        /// Renderable as text.
         TEXT,
+        /// To be described rather than rendered.
         BINARY
     }
 
+    /// Classifies a payload by its media type when that is conclusive, by its content otherwise.
+    ///
+    /// The media types taken as text are `text/*`, `json`, `xml`, `+json` and `+xml` subtypes,
+    /// `javascript` and `x-www-form-urlencoded`. Any other payload is text unless one of its first
+    /// 1024 bytes is a control character other than tab, line feed and carriage return; bytes
+    /// beyond those are not inspected, and non-ASCII bytes do not make a payload binary.
+    ///
+    /// @param mediaType the declared media type, or `null` when unknown
+    /// @param content the payload
+    /// @return [ContentClass#TEXT] for an empty payload, a text media type or text-looking content,
+    /// [ContentClass#BINARY] otherwise
     public static ContentClass detect(@Nullable MediaType mediaType, @NonNull byte[] content) {
         if (content.length == 0) {
             return ContentClass.TEXT;
@@ -43,7 +58,6 @@ public final class ContentClassDetector {
             if (b == 0x00) {
                 return false;
             }
-            // tab lf and cr are ok
             if (b < 32 && b != 9 && b != 10 && b != 13) {
                 return false;
             }

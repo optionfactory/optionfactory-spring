@@ -19,14 +19,31 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.client.RestTemplate;
 
-/*
- * so we can customize the RestTemplate
-**/
+/// Loads the OIDC user at login, as spring's `OidcUserService` does, with two additions: the
+/// userinfo endpoint is called through a configurable `ClientHttpRequestFactory` (so that proxies,
+/// timeouts and tls settings apply to it too), and the user's groups become authorities.
+///
+/// Each value of the `groups` attribute (from the id token or the userinfo response) is granted as
+/// `ROLE_GROUP_<GROUP>`, upper-cased independently of the default locale and with `-` replaced by
+/// `_`: `sales-team` grants `ROLE_GROUP_SALES_TEAM`, so that `hasRole("GROUP_SALES_TEAM")` checks it.
+/// They are added to the authorities spring grants (`OIDC_USER` and the access token's `SCOPE_`
+/// ones), and the result is handed to the user factory, which builds the application's own user.
+///
+/// ```java
+/// http.oauth2Login(login -> login.userInfoEndpoint(u -> u.oidcUserService(
+///         new ConfigurableOauth2UserService<>(requestFactory, events, (authorities, oidcUser) -> new AppUser(authorities, oidcUser)))));
+/// ```
+///
+/// @param <U> the application's user type
 public class ConfigurableOauth2UserService<U extends OidcUser> implements OAuth2UserService<OidcUserRequest, OidcUser> {
 
     private final OidcUserService delegate;
     private final BiFunction<Set<GrantedAuthority>, OidcUser, U> userFactory;
 
+    /// @param httpRequestFactory the factory the userinfo endpoint is called with
+    /// @param events currently unused
+    /// @param userFactory builds the application user from the augmented authorities and the user
+    /// spring loaded
     public ConfigurableOauth2UserService(ClientHttpRequestFactory httpRequestFactory, ApplicationEventPublisher events, BiFunction<Set<GrantedAuthority>, OidcUser, U> userFactory) {
         final var oauth2RestTemplate = new RestTemplate(httpRequestFactory);
         oauth2RestTemplate.setErrorHandler(new OAuth2ErrorResponseErrorHandler());
@@ -37,6 +54,11 @@ public class ConfigurableOauth2UserService<U extends OidcUser> implements OAuth2
         this.userFactory = userFactory;
     }
 
+    /// @param userRequest the tokens received at login, and the registration they are for
+    /// @return the user built by the user factory
+    /// @throws OAuth2AuthenticationException when the user cannot be loaded, e.g. when the
+    /// userinfo endpoint fails or answers for another subject
+    /// @throws ClassCastException when `groups` is not a list of strings
     @Override
     public OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
         final var oidcUser = delegate.loadUser(userRequest);

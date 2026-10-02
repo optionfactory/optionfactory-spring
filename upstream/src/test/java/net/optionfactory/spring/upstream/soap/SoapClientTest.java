@@ -41,7 +41,7 @@ public class SoapClientTest {
         req.intA = 3;
         req.intB = 5;
         final var got = client.add(req);
-        Assertions.assertEquals(8, got.addResult);
+        Assertions.assertEquals(8, got.addResult, "the SOAP 1.1 response body must be unmarshalled");
     }
 
     @Test
@@ -69,7 +69,7 @@ public class SoapClientTest {
         req.intA = 3;
         req.intB = 5;
         final var got = client.add(req);
-        Assertions.assertEquals(8, got.addResult);
+        Assertions.assertEquals(8, got.addResult, "the SOAP 1.2 response body must be unmarshalled");
     }
 
     @Test
@@ -100,10 +100,10 @@ public class SoapClientTest {
         req.intB = 5;
         try {
             client.faultingAdd(req);
-            Assertions.fail("should not happen");
+            Assertions.fail("a fault response must fail the call");
         } catch (RestClientUpstreamException ex) {
             SOAPFault o = ex.getResponseBodyAs(SOAPFault.class);
-            Assertions.assertEquals("soap:Client", o.getFaultCode());
+            Assertions.assertEquals("soap:Client", o.getFaultCode(), "the fault must be readable from the upstream exception");
         }
     }
 }

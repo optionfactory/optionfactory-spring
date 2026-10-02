@@ -31,7 +31,7 @@ public class SharedContainerPropertiesSpringTest {
     public void containerPropertiesAreExposedToTheContext() {
         final var container = SharedContainerRegistry.get(Postgresish.class);
 
-        Assertions.assertTrue(container.running);
-        Assertions.assertEquals("fake://" + System.identityHashCode(container), url);
+        Assertions.assertTrue(container.running, "the container is started before the context is built");
+        Assertions.assertEquals("fake://" + System.identityHashCode(container), url, "the container properties resolve placeholders in the context");
     }
 }

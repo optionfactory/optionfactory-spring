@@ -1,5 +1,8 @@
 package net.optionfactory.spring.upstream.alerts.spooler;
 
+import jakarta.mail.Multipart;
+import jakarta.mail.Session;
+import jakarta.mail.internet.MimeMessage;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -8,6 +11,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Properties;
 import net.optionfactory.spring.email.EmailMessage;
 import net.optionfactory.spring.email.EmailPaths;
 import net.optionfactory.spring.upstream.alerts.UpstreamAlertEvent;
@@ -58,11 +62,10 @@ public class AlertsEmailsSpoolerRoutingTest {
         final var shared = prototype(paths, "example-email.alerts.inlined.html");
         final var other = prototype(paths, "example-email.alerts.inlined.html");
 
-        // two upstreams owned by the same people must not produce two near-duplicate emails
         final var spooled = new AlertsEmailsSpooler(upstream -> upstream.startsWith("salesforce") ? shared : other)
                 .spool(List.of(alert("salesforce"), alert("salesforce-log")));
 
-        Assertions.assertEquals(1, spooled.size(), "grouping is by prototype, not by upstream");
+        Assertions.assertEquals(1, spooled.size(), "upstreams owned by the same people get one email, not near-duplicates: grouping is by prototype, not by upstream");
     }
 
     @Test
@@ -74,9 +77,7 @@ public class AlertsEmailsSpoolerRoutingTest {
         final var spooled = new AlertsEmailsSpooler(upstream -> "upstream-broken".equals(upstream) ? broken : good)
                 .spool(List.of(alert("upstream-broken"), alert("upstream-ok")));
 
-        // the returned list is built with List.copyOf, which rejects nulls, so a
-        // dropped group can only ever be absent rather than a null entry
-        Assertions.assertEquals(1, spooled.size(), "the healthy upstream is still spooled");
+        Assertions.assertEquals(1, spooled.size(), "the healthy upstream is still spooled, and the dropped group is absent rather than a null entry");
     }
 
     @Test
@@ -97,7 +98,6 @@ public class AlertsEmailsSpoolerRoutingTest {
     @Test
     public void theLayoutResolvesForATemplateKeptUnderAnyPrefix() throws Exception {
         final var paths = EmailPaths.provide(Files.createDirectories(tmp.resolve("spool")), null, null);
-        // the including template lives nowhere near the layout's own /email/ prefix
         final var engine = AlertsEmailsSpooler.templateEngine("/elsewhere/deeply/nested/", null);
         final var prototype = EmailMessage.builder()
                 .sender("test@example.com", null)
@@ -113,6 +113,69 @@ public class AlertsEmailsSpoolerRoutingTest {
         Assertions.assertTrue(eml.contains("Elsewhere"), "the layout rendered the title it was given");
         Assertions.assertTrue(eml.contains("upstream-a"), "the layout iterated the alerts");
         Assertions.assertTrue(eml.contains("an-endpoint"), "the layout rendered a field only it emits");
+    }
+
+    @Test
+    public void aPrototypeWithoutSpoolingLosesOnlyItsGroup() throws Exception {
+        final var paths = EmailPaths.provide(Files.createDirectories(tmp.resolve("spool")), null, null);
+        final var good = prototype(paths, "example-email.alerts.inlined.html");
+        final var unspooled = EmailMessage.builder()
+                .sender("test@example.com", null)
+                .recipient("recipient@example.com")
+                .subject("subject")
+                .htmlBodyEngine(AlertsEmailsSpooler.templateEngine("/email/", null))
+                .htmlBodyTemplate("example-email.alerts.inlined.html")
+                .prototype();
+
+        final var spooled = new AlertsEmailsSpooler(upstream -> "upstream-unspooled".equals(upstream) ? unspooled : good)
+                .spool(List.of(alert("upstream-unspooled"), alert("upstream-ok")));
+
+        Assertions.assertEquals(1, spooled.size(), "a prototype the constructor is given without spooling cannot be marshalled to the spool, and only its group is dropped");
+    }
+
+    @Test
+    public void aNullPrototypeLosesOnlyItsAlert() throws Exception {
+        final var paths = EmailPaths.provide(Files.createDirectories(tmp.resolve("spool")), null, null);
+        final var good = prototype(paths, "example-email.alerts.inlined.html");
+
+        final var spooled = new AlertsEmailsSpooler(upstream -> "upstream-ok".equals(upstream) ? good : null)
+                .spool(List.of(alert("upstream-unknown"), alert("upstream-ok")));
+
+        Assertions.assertEquals(1, spooled.size(), "an upstream without prototype drops its own alert only");
+    }
+
+    @Test
+    public void anEmptyBatchSpoolsNothing() throws Exception {
+        final var paths = EmailPaths.provide(Files.createDirectories(tmp.resolve("spool")), null, null);
+        final var prototype = prototype(paths, "example-email.alerts.inlined.html");
+
+        Assertions.assertEquals(List.of(), new AlertsEmailsSpooler(upstream -> prototype).spool(List.of()), "no alerts, no email");
+    }
+
+    @Test
+    public void alertsKeepTheirEncounterOrderWithinAnEmail() throws Exception {
+        final var paths = EmailPaths.provide(Files.createDirectories(tmp.resolve("spool")), null, null);
+        final var prototype = prototype(paths, "example-email.alerts.inlined.html");
+
+        final var spooled = new AlertsEmailsSpooler(upstream -> prototype).spool(List.of(alert("upstream-zeta"), alert("upstream-alpha")));
+
+        final var html = htmlBodyOf(spooled.get(0));
+        Assertions.assertTrue(html.contains("upstream-zeta") && html.contains("upstream-alpha"), "both alerts are rendered in the same email");
+        Assertions.assertTrue(html.indexOf("upstream-zeta") < html.indexOf("upstream-alpha"), "alerts are rendered in the order they were encountered");
+    }
+
+    @Test
+    public void nullSelectorIsRejected() {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> new AlertsEmailsSpooler(null), "a spooler needs a selector");
+    }
+
+    private static String htmlBodyOf(Path eml) throws Exception {
+        try (var is = Files.newInputStream(eml)) {
+            final var message = new MimeMessage(Session.getInstance(new Properties()), is);
+            final var alternatives = (Multipart) ((Multipart) message.getContent()).getBodyPart(0).getContent();
+            final var related = (Multipart) alternatives.getBodyPart(0).getContent();
+            return (String) related.getBodyPart(0).getContent();
+        }
     }
 
     private static EmailMessage.Prototype prototype(EmailPaths paths, String template) {

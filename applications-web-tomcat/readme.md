@@ -30,7 +30,8 @@ public class MyWebApp {
 
 This annotation automatically configures:
 - Embedded Tomcat on the specified port.
-- `@EnableCustomWebMvc` (direct field access).
+- `@EnableCustomWebMvc` (direct field access: records cannot be bound from request parameters,
+  see the [context-web readme](../context-web/readme.md)).
 - `ApplicationPropertiesConfig` (standard property sources).
 - Multipart support with configurable limits.
 - Classpath scanning for `@Controller` and `@ControllerAdvice`.

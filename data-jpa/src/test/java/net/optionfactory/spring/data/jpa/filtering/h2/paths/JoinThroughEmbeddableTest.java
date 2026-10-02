@@ -90,7 +90,7 @@ public class JoinThroughEmbeddableTest {
                 .build();
 
         final var page = repo.findAll(fr, Pageable.unpaged());
-        Assertions.assertEquals(1, page.getTotalElements());
+        Assertions.assertEquals(1, page.getTotalElements(), "only the entity whose leaf has value 1 is kept");
     }
 
     @Test
@@ -101,7 +101,7 @@ public class JoinThroughEmbeddableTest {
 
         final var page = repo.findAll(fr, Pageable.unpaged());
 
-        Assertions.assertEquals(3, page.getTotalElements());
+        Assertions.assertEquals(3, page.getTotalElements(), "NEQ keeps the entity with a null leaf value and the one with no leaf at all");
     }
 
 }

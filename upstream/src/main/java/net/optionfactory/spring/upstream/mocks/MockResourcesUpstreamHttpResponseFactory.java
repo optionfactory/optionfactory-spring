@@ -30,6 +30,39 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.RestClientException;
 
+/// Answers mocked exchanges with classpath resources named by the endpoints' [Upstream.Mock]
+/// annotations.
+///
+/// It is the response factory `UpstreamBuilder.requestFactoryMock` uses when the [MocksCustomizer]
+/// configures neither a fixed response nor a response factory of its own.
+///
+/// For each invocation the `@Upstream.Mock` annotations of the endpoint are tried in declaration
+/// order, and the first one whose resource exists answers:
+///
+/// - the annotation `value` is evaluated (a template by default) with `#upstream`, `#endpoint`,
+///   `#invocation`, `#args` and the method parameters by name, and resolved as a classpath resource
+///   relative to the class declaring the method (a leading `/` makes it absolute);
+/// - the response status is the annotation `status`, with its standard reason phrase;
+/// - the response headers are, in this order, the [Upstream.Mock.DefaultContentType] of the class
+///   declaring the method (or of its super interfaces), the lines of the `<resource>.headers`
+///   resource when present (see [#headersFromResource(String, InvocationContext)]) and the
+///   annotation `headers`. Values are added, never replaced: a `Content-Type` coming from the
+///   last two sources follows the default one, which stays the value `getContentType()` returns;
+/// - the body is the resource rendered by the first [MocksRenderer] accepting it, or the resource
+///   as it is when none does.
+///
+/// ```java
+/// @Upstream.Mock.DefaultContentType("application/json")
+/// public interface Client {
+///     @GetExchange("/users/{id}")
+///     @Upstream.Mock("users-#{#id}.json")
+///     @Upstream.Mock("users-default.json")
+///     User user(@PathVariable String id);
+/// }
+/// ```
+///
+/// The annotations are read once, by [#preprocess(Class, Expressions, Map)]; afterwards the
+/// factory can serve concurrent invocations.
 public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpResponseFactory {
 
     private final Map<Method, List<MockConfiguration>> methodToMockConfigurations = new ConcurrentHashMap<>();
@@ -40,6 +73,7 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
 
     }
 
+    /// @param renderers the renderers to try, in order, on each resolved resource
     public MockResourcesUpstreamHttpResponseFactory(List<MocksRenderer> renderers) {
         this.renderers = renderers;
         this.fallbackRenderer = new StaticRenderer();
@@ -47,6 +81,12 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
 
     private final Logger logger = LoggerFactory.getLogger(MockResourcesUpstreamHttpResponseFactory.class);
 
+    /// Compiles the [Upstream.Mock] annotations of every endpoint. An endpoint without one cannot
+    /// be invoked through this factory.
+    ///
+    /// @param klass the client interface
+    /// @param expressions the parser of the annotations' expressions
+    /// @param endpoints the endpoints of the client, by method
     @Override
     public void preprocess(Class<?> klass, Expressions expressions, Map<Method, EndpointDescriptor> endpoints) {
         for (final var endpoint : endpoints.values()) {
@@ -79,6 +119,13 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
 
     }
 
+    /// @param invocation the invocation being mocked
+    /// @param uri the request uri, unused
+    /// @param method the request method, unused
+    /// @param headers the request headers, unused
+    /// @return the response built from the first existing mock resource
+    /// @throws RestClientException when no annotation names an existing resource, or when a header
+    /// line is missing its `:`
     @Override
     public ClientHttpResponse create(InvocationContext invocation, URI uri, HttpMethod method, HttpHeaders headers) {
         final var mcs = methodToMockConfigurations.get(invocation.endpoint().method());
@@ -118,6 +165,16 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
         };
     }
 
+    /// Reads the headers of a mock from the `<path>.headers` resource next to it.
+    ///
+    /// The resource is read as UTF-8, one `Name: value` header per line; name and value are trimmed,
+    /// and a name repeated on more lines gets all of its values. Every line, blank ones included,
+    /// must contain a `:`.
+    ///
+    /// @param path the mock resource path, relative to the class declaring the invoked method
+    /// @param invocation the invocation, giving the class the path is relative to
+    /// @return the headers, empty when the resource does not exist
+    /// @throws RestClientException when a line is missing its `:` or the resource cannot be read
     public static HttpHeaders headersFromResource(String path, InvocationContext invocation) {
         final String hp = String.format("%s.headers", path);
         final var resource = new ClassPathResource(hp, invocation.endpoint().method().getDeclaringClass());

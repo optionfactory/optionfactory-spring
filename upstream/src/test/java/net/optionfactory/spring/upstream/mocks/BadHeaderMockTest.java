@@ -16,6 +16,6 @@ public class BadHeaderMockTest {
                 .json(JsonMapper.builder().build())
                 .baseUri("http://example.com")
                 .build();
-        Assertions.assertThrows(RestClientException.class, client::call);
+        Assertions.assertThrows(RestClientException.class, client::call, "an annotation header without ':' must fail the call with a RestClientException");
     }
 }

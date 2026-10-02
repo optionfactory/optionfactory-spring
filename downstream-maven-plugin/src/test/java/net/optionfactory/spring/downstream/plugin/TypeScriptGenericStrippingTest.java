@@ -36,11 +36,11 @@ public class TypeScriptGenericStrippingTest {
         emitter.emit(registry);
 
         final var file = new File(tempDir, "spec.d.ts");
-        Assertions.assertTrue(file.exists(), "TypeScript definition file was not generated");
+        Assertions.assertTrue(file.exists(), "the TypeScript spec file is generated");
 
         final var content = Files.readString(file.toPath());
 
-        Assertions.assertTrue(content.contains("metadata: string;"), "TS Emitter failed to map the translation down to a standard primitive string");
-        Assertions.assertFalse(content.contains("string<"), "TS Emitter left invalid generic bracket arguments appended to the field");
+        Assertions.assertTrue(content.contains("metadata: string;"), "a generic class translated to String becomes a plain string");
+        Assertions.assertFalse(content.contains("string<"), "a generic class translated to a primitive drops its type arguments");
     }
 }

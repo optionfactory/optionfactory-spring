@@ -26,13 +26,13 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
-/// Renders batches of intercepted {@link UpstreamAlertEvent}s into email files and
-/// writes them to the spool directory of an {@link EmailPaths}: *spooling* here
+/// Renders batches of intercepted [UpstreamAlertEvent]s into email files and
+/// writes them to the spool directory of an [EmailPaths]: *spooling* here
 /// means exactly that hand-off to disk. Nothing is delivered by this class: an
 /// email sender polls the spool independently, sends what it finds and moves each
 /// file on to the `sent` or `dead` directory.
 ///
-/// A batch is grouped by the {@link EmailMessage.Prototype} its alerts resolve to,
+/// A batch is grouped by the [EmailMessage.Prototype] its alerts resolve to,
 /// and each group becomes one email. The prototype is what makes two emails
 /// different, its recipients, subject and template, so it is the only thing worth
 /// grouping by: alerts sharing a prototype belong in one email, and alerts with
@@ -50,7 +50,7 @@ import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 ///
 /// ### The selector must be stable and total
 ///
-/// Prototypes are grouped by identity, because {@link EmailMessage.Prototype} does
+/// Prototypes are grouped by identity, because [EmailMessage.Prototype] does
 /// not define equality. A selector must therefore return *the same instance* every
 /// time it is asked about a given upstream. Resolve the prototypes once and look
 /// them up, rather than building one per call, or every alert lands in a group of
@@ -64,8 +64,8 @@ import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 ///
 /// ## Failures are isolated, and best-effort
 ///
-/// {@link BufferedScheduledSpooler} drains its buffer *before* calling
-/// {@link #spool}, and there is no retry or re-queue, so anything that escapes
+/// [BufferedScheduledSpooler] drains its buffer *before* calling
+/// [#spool], and there is no retry or re-queue, so anything that escapes
 /// `spool` discards that whole batch of alerts permanently. Nothing is allowed to
 /// escape: an alert whose prototype cannot be resolved is dropped on its own, and a
 /// group that fails to marshal is dropped without affecting the other groups. Both
@@ -81,21 +81,48 @@ import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 /// Alerts keep their encounter order within each email, so a single email reads
 /// chronologically. Groups are spooled in the order their prototype is first
 /// resolved in the batch.
+///
+/// ## Configuration
+///
+/// The template receives the group's alerts as the `alerts` variable, and usually
+/// delegates their rendering to the [#LAYOUT] this module ships:
+///
+/// ```java
+/// @Bean
+/// public BufferedScheduledSpooler<UpstreamAlertEvent> alertsSpooler(EmailPaths paths, ConfigurableApplicationContext ac, TaskScheduler ts) {
+///     final var prototype = EmailMessage.builder()
+///             .sender("noreply@example.com", "Alerts")
+///             .recipient("integrations@example.com")
+///             .subject("Integration alerts")
+///             .htmlBodyEngine(AlertsEmailsSpooler.templateEngine("/emails/", ac))
+///             .htmlBodyTemplate("alerts.html")
+///             .htmlBodyPostprocessor(new CssInliner())
+///             .prototype();
+///     return AlertsEmailsSpooler.builder(paths, ac, ts).bufferedScheduled(prototype);
+/// }
+/// ```
 public class AlertsEmailsSpooler implements Spooler<List<UpstreamAlertEvent>> {
 
     private final Logger logger = LoggerFactory.getLogger(AlertsEmailsSpooler.class);
     private final Function<String, EmailMessage.Prototype> prototypes;
 
-    /// Prefer {@link #builder}, which applies the spool configuration for you.
+    /// Prefer [#builder], which applies the spool configuration for you.
     /// Prototypes given here must already carry `spooling(...)`, since
-    /// {@link #spool} marshals straight to the spool directory.
+    /// [#spool] marshals straight to the spool directory: the group of a prototype
+    /// without it fails to marshal, and is dropped.
     ///
     /// @param prototypeByUpstream stable, total selector, see the class documentation
+    /// @throws IllegalArgumentException when the selector is `null`
     public AlertsEmailsSpooler(Function<String, EmailMessage.Prototype> prototypeByUpstream) {
         Assert.notNull(prototypeByUpstream, "prototypeByUpstream must be non null");
         this.prototypes = prototypeByUpstream;
     }
 
+    /// Spools one email per prototype the alerts resolve to. Never throws: alerts and groups that
+    /// cannot be spooled are dropped and logged, as described in the class documentation.
+    ///
+    /// @param alerts the drained batch, in encounter order
+    /// @return the spooled files, one per group that was spooled successfully
     @Override
     public List<Path> spool(List<UpstreamAlertEvent> alerts) {
         final var spooled = new ArrayList<Path>();
@@ -153,14 +180,14 @@ public class AlertsEmailsSpooler implements Spooler<List<UpstreamAlertEvent>> {
     ///
     /// A Thymeleaf fragment reference is resolved against the engine's resolvers, so
     /// an engine holding a single resolver rooted at the application's own prefix
-    /// cannot find {@link #LAYOUT}, which this module ships under `/email/`. That
+    /// cannot find [#LAYOUT], which this module ships under `/email/`. That
     /// forces the including template to live under `/email/` too. The engine returned
     /// here resolves the layout from this module and everything else from `prefix`,
     /// so an application is free to keep its alert template wherever its other
     /// templates live.
     ///
     /// Resolution is decided by resolvable patterns rather than by trying and failing,
-    /// so no existence checks are involved: only {@link #LAYOUT} reaches the module's
+    /// so no existence checks are involved: only [#LAYOUT] reaches the module's
     /// resolver, and every other name reaches the application's.
     ///
     /// The `bodies` expression object the layout needs is registered for you.
@@ -192,19 +219,20 @@ public class AlertsEmailsSpooler implements Spooler<List<UpstreamAlertEvent>> {
         return resolver;
     }
 
-    /// Starts configuring a spooler and the {@link BufferedScheduledSpooler} that
+    /// Starts configuring a spooler and the [BufferedScheduledSpooler] that
     /// feeds it.
     ///
     /// @param paths where emails are spooled to
     /// @param applicationContext publishes spooling events and backs template expressions
     /// @param scheduler runs the periodic drain
     /// @return a builder whose only remaining options are the three durations
+    /// @throws IllegalArgumentException when an argument is `null`
     public static Builder builder(EmailPaths paths, ConfigurableApplicationContext applicationContext, TaskScheduler scheduler) {
         return new Builder(paths, applicationContext, scheduler);
     }
 
-    /// Configures the {@link BufferedScheduledSpooler} that feeds the spooler.
-    /// Everything mandatory is a parameter of {@link #builder} or of
+    /// Configures the [BufferedScheduledSpooler] that feeds the spooler.
+    /// Everything mandatory is a parameter of [#builder] or of
     /// `bufferedScheduled`, so a misconfigured builder does not compile; the three
     /// durations are the only options, defaulting to the values every optionfactory
     /// application uses.
@@ -246,17 +274,17 @@ public class AlertsEmailsSpooler implements Spooler<List<UpstreamAlertEvent>> {
 
         /// Throttles drains, so a burst of failures becomes one email rather than many.
         ///
-        /// @param gracePeriod the minimum interval between two drains, default 5 seconds
+        /// @param gracePeriod the minimum interval between two spooled batches, default 5 seconds
         /// @return this builder
         public Builder gracePeriod(Duration gracePeriod) {
             this.gracePeriod = gracePeriod;
             return this;
         }
 
-        /// Every alert in a batch becomes one email.
+        /// All the alerts of a batch go into a single email.
         ///
         /// @param prototype the email all alerts are spooled as
-        /// @return the buffered spooler, already listening for {@link UpstreamAlertEvent}s
+        /// @return the buffered spooler, already listening for [UpstreamAlertEvent]s
         public BufferedScheduledSpooler<UpstreamAlertEvent> bufferedScheduled(EmailMessage.Prototype prototype) {
             Assert.notNull(prototype, "prototype must be non null");
             return bufferedScheduled(upstream -> prototype);
@@ -264,12 +292,17 @@ public class AlertsEmailsSpooler implements Spooler<List<UpstreamAlertEvent>> {
 
         /// One email per distinct prototype the selector returns.
         ///
+        /// The selector's prototypes need no spooling configuration: each is given one, writing to
+        /// the builder's paths with the `alerts.` file prefix and publishing
+        /// [net.optionfactory.spring.email.EmailSpooled] to the application context, so that a
+        /// [net.optionfactory.spring.email.ScheduledEmailSender] sends the email right away. The
+        /// configured prototype is memoized per selector-returned instance, which preserves the
+        /// identity grouping relies on.
+        ///
         /// @param prototypeByUpstream stable, total selector, see the class documentation
-        /// @return the buffered spooler, already listening for {@link UpstreamAlertEvent}s
+        /// @return the buffered spooler, already listening for [UpstreamAlertEvent]s
         public BufferedScheduledSpooler<UpstreamAlertEvent> bufferedScheduled(Function<String, EmailMessage.Prototype> prototypeByUpstream) {
             Assert.notNull(prototypeByUpstream, "prototypeByUpstream must be non null");
-            // memoized: grouping keys on prototype identity, so the spooling wrapper
-            // must return the same instance for a given prototype every time
             final var spoolable = new ConcurrentHashMap<EmailMessage.Prototype, EmailMessage.Prototype>();
             final Function<String, EmailMessage.Prototype> spooling = upstream -> {
                 final var prototype = prototypeByUpstream.apply(upstream);

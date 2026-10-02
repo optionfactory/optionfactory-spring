@@ -9,37 +9,34 @@ import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterConfiguration;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterRequest;
 
-/**
- * Parametric filter.
- *
- * A filter implementation should enforce preconditions on the
- * {@link EntityType}s it can be applied on (such as a single entity type, or
- * entities with a specific set of properties), throwing an
- * {@link InvalidFilterConfiguration} exception on precondition violation or by
- * using utility methods defined in {@link Filters}.
- *
- * The
- * {@link Filter#toPredicate(javax.persistence.criteria.Root, javax.persistence.criteria.CriteriaQuery, javax.persistence.criteria.CriteriaBuilder, java.lang.String[]) Filter.toPredicate}
- * method should also check preconditions on the given arguments, throwing an
- * {@link InvalidFilterRequest} exception on precondition violation or by using
- * utility methods defined in {@link Filters}.
- */
+/// A whitelisted, named filter: translates the string values of a [FilterRequest] entry into a
+/// query predicate on the root entity.
+///
+/// Filters are instantiated once per repository, when it is created, from the filter annotations
+/// on the entity (see [net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter]).
+/// A constructor should therefore check its preconditions on the [EntityType] — a single entity type, the
+/// presence and type of the properties it reads — throwing an [InvalidFilterConfiguration], directly
+/// or through the [Filters] utilities, so that a misconfigured filter fails at startup.
+///
+/// [#toPredicate] is then called once per query using the filter, with the values the client sent.
+/// They are untrusted: an implementation must check them, throwing an [InvalidFilterRequest],
+/// directly or through [Filters#ensure], so that a malformed request is reported as the client's
+/// mistake rather than as a server error. An implementation must be thread-safe, as one instance
+/// serves every concurrent query of its repository.
+///
+/// A filter reaching through a collection should rather implement [TraversalFilter], whose
+/// conditions are folded into `EXISTS` subqueries for it.
 public interface Filter {
 
-    /**
-     * The filter name, which is referenced by {@link FilterRequest}s.
-     * @return the name
-     */
+    /// @return the name the filter is whitelisted under, which is the key a [FilterRequest] uses
+    /// to request it
     String name();
 
-    /**
-     * Translates filter arguments to a query predicate.
-     *
-     * @param root
-     * @param query
-     * @param builder
-     * @param values filter arguments
-     * @return the predicate
-     */
+    /// @param root the root of the query
+    /// @param query the query, to build subqueries from
+    /// @param builder the criteria builder
+    /// @param values the values requested by the client, possibly containing `null`s
+    /// @return the predicate restricting the query
+    /// @throws InvalidFilterRequest when the values are not acceptable
     Predicate toPredicate(Root<?> root, CriteriaQuery<?> query, CriteriaBuilder builder, String[] values);
 }

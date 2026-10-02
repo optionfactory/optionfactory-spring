@@ -20,17 +20,17 @@ public class TransactionalPhasesTestExecutionListenerTest {
 
     @Test
     public void everyPhaseCommitsWhenNothingFails() {
-        Assertions.assertEquals(List.of("COMMIT @BeforeEach", "COMMIT @Test", "COMMIT @AfterEach"), run(Passing.class));
+        Assertions.assertEquals(List.of("COMMIT @BeforeEach", "COMMIT @Test", "COMMIT @AfterEach"), run(Passing.class), "every phase commits when nothing fails");
     }
 
     @Test
     public void failingTestRollsBackOnlyTheTestPhase() {
-        Assertions.assertEquals(List.of("COMMIT @BeforeEach", "ROLLBACK @Test", "COMMIT @AfterEach"), run(FailingTest.class));
+        Assertions.assertEquals(List.of("COMMIT @BeforeEach", "ROLLBACK @Test", "COMMIT @AfterEach"), run(FailingTest.class), "a failing @Test rolls back its own phase only");
     }
 
     @Test
     public void failingTestAndAfterEachRollBackBothPhases() {
-        Assertions.assertEquals(List.of("COMMIT @BeforeEach", "ROLLBACK @Test", "ROLLBACK @AfterEach"), run(FailingTestAndAfterEach.class));
+        Assertions.assertEquals(List.of("COMMIT @BeforeEach", "ROLLBACK @Test", "ROLLBACK @AfterEach"), run(FailingTestAndAfterEach.class), "a failing @AfterEach rolls back its own phase too");
     }
 
     private static List<String> run(Class<?> fixture) {
@@ -39,7 +39,6 @@ public class TransactionalPhasesTestExecutionListenerTest {
         return List.copyOf(RecordingTransactionManager.EVENTS);
     }
 
-    /* fixtures */
     @SpringJUnitConfig(Config.class)
     @TransactionalPhases
     public static class Passing {

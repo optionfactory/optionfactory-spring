@@ -59,122 +59,122 @@ public class InstantCompareTest {
     @Test
     public void canFilterInstantsFromIsoInstant() {
         final Page<Root> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.GTE, "1970-01-01T00:00:01Z"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(3L, 4L, 5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(3L, 4L, 5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "GTE on an ISO-8601 instant keeps the instants from one second on");
     }
 
     @Test
     public void canFilterInstantsFromUnixSecond() {
         final Page<Root> page = repo.findAll(null, filter("instantUnixS", InstantCompare.Operator.GTE, "1000"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(4L, 5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(4L, 5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "GTE on unix seconds keeps the instants from 1000 seconds on");
     }
 
     @Test
     public void canFilterInstantsFromUnixMillisecond() {
         final Page<Root> page = repo.findAll(null, filter("instantUnixMS", InstantCompare.Operator.GTE, "1000"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(3L, 4L, 5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(3L, 4L, 5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "GTE on unix milliseconds keeps the instants from one second on");
     }
 
     @Test
     public void canFilterInstantsFromUnixNanosecond() {
         final Page<Root> page = repo.findAll(null, filter("instantUnixNS", InstantCompare.Operator.GTE, "1000"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(2L, 3L, 4L, 5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(2L, 3L, 4L, 5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "GTE on unix nanoseconds keeps the instants from one microsecond on");
     }
 
     @Test
     public void canFilterInstantsBeforeIsoInstant() {
         final Page<Root> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.LT, "1970-01-01T00:00:01Z"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(1L, 2L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(1L, 2L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "LT on an ISO-8601 instant keeps the instants before one second");
     }
 
     @Test
     public void canFilterInstantsBeforeUnixSecond() {
         final Page<Root> page = repo.findAll(null, filter("instantUnixS", InstantCompare.Operator.LT, "1000"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(1L, 2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(1L, 2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "LT on unix seconds keeps the instants before 1000 seconds");
     }
 
     @Test
     public void canFilterInstantsBeforeUnixMillisecond() {
         final Page<Root> page = repo.findAll(null, filter("instantUnixMS", InstantCompare.Operator.LT, "1000"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(1L, 2L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(1L, 2L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "LT on unix milliseconds keeps the instants before one second");
     }
 
     @Test
     public void canFilterInstantsBeforeUnixNanosecond() {
         final Page<Root> page = repo.findAll(null, filter("instantUnixNS", InstantCompare.Operator.LT, "1000"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(1L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(1L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "LT on unix nanoseconds keeps the instants before one microsecond");
     }
 
     @Test
     public void canFilterInstantsBetweenIsoInstant() {
         final Page<Root> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.BETWEEN, "1970-01-01T00:00:00Z", "1970-01-01T00:00:01Z"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(1L, 2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(1L, 2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "BETWEEN on ISO-8601 instants includes both bounds");
     }
 
     @Test
     public void canFilterInstantsBetweenUnixSecond() {
         final Page<Root> page = repo.findAll(null, filter("instantUnixS", InstantCompare.Operator.BETWEEN, "0", "1000"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(1L, 2L, 3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(1L, 2L, 3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "BETWEEN on unix seconds includes both bounds");
     }
 
     @Test
     public void canFilterInstantsBetweenUnixMillisecond() {
         final Page<Root> page = repo.findAll(null, filter("instantUnixMS", InstantCompare.Operator.BETWEEN, "0", "1000"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(1L, 2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(1L, 2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "BETWEEN on unix milliseconds includes both bounds");
     }
 
     @Test
     public void canFilterInstantsBetweenUnixNanosecond() {
         final Page<Root> page = repo.findAll(null, filter("instantUnixNS", InstantCompare.Operator.BETWEEN, "0", "1000"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(1L, 2L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(1L, 2L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "BETWEEN on unix nanoseconds includes both bounds");
     }
 
     @Test
     public void filterFromIsInclusiveOnInputWithLessPrecision() {
         final Page<Root> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.GTE, "1970-01-01T12:00:00.123Z"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "GTE on a millisecond bound keeps the instant equal to it and the later one with more precision");
     }
 
     @Test
     public void filterBeforeIsExclusiveOnInputWithLessPrecision() {
         final Page<Root> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.LT, "1970-01-01T12:00:00.123Z"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(1L, 2L, 3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(1L, 2L, 3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "LT on a millisecond bound excludes the instant equal to it and the later one with more precision");
     }
 
     @Test
     public void filterBetweenIsLeftInclusiveOnInputWithLessPrecision() {
         final Page<Root> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.BETWEEN, "1970-01-01T12:00:00.123Z", "1970-01-01T12:00:00.124Z"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(5L, 6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "BETWEEN keeps the instants within the millisecond bounds, sub-millisecond ones included");
     }
 
     @Test
     public void filterBetweenIsRightInclusiveOnInputWithLessPrecision() {
         final Page<Root> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.BETWEEN, "1970-01-01T12:00:00.122Z", "1970-01-01T12:00:00.123Z"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(5L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(5L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "BETWEEN includes an instant equal to its upper millisecond bound and excludes a later sub-millisecond one");
     }
 
     @Test
     public void filterFromIsInclusiveOnInputWithMorePrecision() {
         final Page<Root> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.GTE, "1970-01-01T12:00:00.123456Z"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "GTE on a microsecond bound keeps the instant equal to it only");
     }
 
     @Test
     public void filterBeforeIsExclusiveOnInputWithMorePrecision() {
         final Page<Root> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.LT, "1970-01-01T12:00:00.123456Z"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(1L, 2L, 3L, 4L, 5L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(1L, 2L, 3L, 4L, 5L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "LT on a microsecond bound excludes the instant equal to it");
     }
 
     @Test
     public void filterBetweenIsRightInclusiveOnInputWithMorePrecision() {
         final Page<Root> page = repo.findAll(null, filter("instantIso", InstantCompare.Operator.BETWEEN, "1970-01-01T12:00:00.123455Z", "1970-01-01T12:00:00.123456Z"), Pageable.unpaged());
-        Assertions.assertEquals(Set.of(6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(6L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "BETWEEN includes an instant equal to its upper microsecond bound");
     }
 
     @Test
     public void filteringWithNeqIncludesNullValues() {
         final Page<Root> all = repo.findAll(Pageable.unpaged());
         final Page<Root> page = repo.findAll(null, filter("instantIso", Operator.NEQ, "2222-02-02T02:02:02.222Z"), Pageable.unpaged());
-        Assertions.assertEquals(all.getTotalElements(), page.getTotalElements());
+        Assertions.assertEquals(all.getTotalElements(), page.getTotalElements(), "NEQ keeps every row, the null one included");
     }
 
     private static FilterRequest filter(String filterName, InstantCompare.Operator operator, String... values) {

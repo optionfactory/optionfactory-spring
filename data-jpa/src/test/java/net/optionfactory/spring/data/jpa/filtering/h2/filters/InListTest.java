@@ -58,7 +58,7 @@ public class InListTest {
                 .build();
         final Pageable pr = Pageable.unpaged();
         final Page<Root> page = repo.findAll(null, fr, pr);
-        Assertions.assertEquals(Set.of(2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(2L, 3L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "the rows whose name is one of the listed values are kept, unmatched values are harmless");
     }
 
     @Test
@@ -69,7 +69,7 @@ public class InListTest {
 
         final Pageable pr = Pageable.unpaged();
         final Page<Root> page = repo.findAll(null, fr, pr);
-        Assertions.assertEquals(0L, page.getTotalElements());
+        Assertions.assertEquals(0L, page.getTotalElements(), "an empty list matches nothing");
     }
 
     @Test
@@ -80,7 +80,7 @@ public class InListTest {
 
         final Pageable pr = Pageable.unpaged();
         final Page<Root> page = repo.findAll(null, fr, pr);
-        Assertions.assertEquals(Set.of(1L, 2L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(1L, 2L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "the listed values are converted to the boxed property type");
     }
 
     @Test
@@ -91,7 +91,7 @@ public class InListTest {
 
         final Pageable pr = Pageable.unpaged();
         final Page<Root> page = repo.findAll(null, fr, pr);
-        Assertions.assertEquals(Set.of(3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "a null value in the list matches the null rows");
     }
 
     @Test
@@ -102,7 +102,7 @@ public class InListTest {
 
         final Pageable pr = Pageable.unpaged();
         final Page<Root> page = repo.findAll(null, fr, pr);
-        Assertions.assertEquals(Set.of(3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()));
+        Assertions.assertEquals(Set.of(3L, 4L), page.getContent().stream().map(a -> a.id).collect(Collectors.toSet()), "the listed values are converted to the primitive property type");
     }
 
     private static Root entity(long id, String name, double rating, Integer maxPersons) {

@@ -21,11 +21,11 @@ public class EndToEndTypescriptTest {
         final var content = pipeline.typescript(tempDir, Nesting.FLATTEN, Map.of(), Map.of());
 
         Assertions.assertAll(
-                () -> Assertions.assertTrue(content.contains("export interface Page<T>"), "missing generic wrapper"),
-                () -> Assertions.assertTrue(content.contains("data: T[];"), "missing generic array field"),
-                () -> Assertions.assertTrue(content.contains("export interface User"), "missing record mapped to interface"),
-                () -> Assertions.assertTrue(content.contains("email?: string;"), "missing optional field mapping"),
-                () -> Assertions.assertTrue(content.contains("export type Role = \"ADMIN\""), "missing enum definition")
+                () -> Assertions.assertTrue(content.contains("export interface Page<T>"), "a generic payload becomes a generic interface"),
+                () -> Assertions.assertTrue(content.contains("data: T[];"), "a generic array field becomes an array of the type variable"),
+                () -> Assertions.assertTrue(content.contains("export interface User"), "a record becomes an interface"),
+                () -> Assertions.assertTrue(content.contains("email?: string;"), "a @Nullable component becomes an optional property"),
+                () -> Assertions.assertTrue(content.contains("export type Role = \"ADMIN\""), "an enum becomes a union of string literals")
         );
     }
 }

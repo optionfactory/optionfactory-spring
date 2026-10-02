@@ -52,24 +52,24 @@ public class SliceTest {
     public void firstSliceHasNoPrevious() {
         Pageable p = PageRequest.of(0, 2, Sort.by("id"));
         Slice<Root> findByName = repo.findByName("TEST", p);
-        Assertions.assertFalse(findByName.hasPrevious());
-        Assertions.assertTrue(findByName.hasContent());
+        Assertions.assertFalse(findByName.hasPrevious(), "the first slice has no previous one");
+        Assertions.assertTrue(findByName.hasContent(), "the first slice has content");
     }
 
     @Test
     public void firstSliceHasNext() {
         Pageable p = PageRequest.of(0, 2, Sort.by("id"));
         Slice<Root> findByName = repo.findByName("TEST", p);
-        Assertions.assertTrue(findByName.hasNext());
-        Assertions.assertTrue(findByName.hasContent());
+        Assertions.assertTrue(findByName.hasNext(), "the first slice has a next one");
+        Assertions.assertTrue(findByName.hasContent(), "the first slice has content");
     }
 
     @Test
     public void secondSliceHasPrevious() {
         Pageable p = PageRequest.of(1, 2, Sort.by("id"));
         Slice<Root> findByName = repo.findByName("TEST", p);
-        Assertions.assertTrue(findByName.hasPrevious());
-        Assertions.assertTrue(findByName.hasContent());
+        Assertions.assertTrue(findByName.hasPrevious(), "the second slice has a previous one");
+        Assertions.assertTrue(findByName.hasContent(), "the second slice has content");
     }
 
     private Root entity(long id, String name) {

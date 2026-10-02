@@ -97,10 +97,10 @@ public class ReductionTest {
     @Test
     public void canPerformReductionWithoutFiltering() {
         final ReductionRepository.Reduction reduced = repo.reduce(FilterRequest.builder().build());
-        Assertions.assertEquals(4, reduced.count());
-        Assertions.assertEquals(3, reduced.min());
-        Assertions.assertEquals(15, reduced.max());
-        Assertions.assertEquals(8.25, reduced.average(), 0.0);
+        Assertions.assertEquals(4, reduced.count(), "an unfiltered reduction counts every row");
+        Assertions.assertEquals(3, reduced.min(), "an unfiltered reduction finds the minimum of every row");
+        Assertions.assertEquals(15, reduced.max(), "an unfiltered reduction finds the maximum of every row");
+        Assertions.assertEquals(8.25, reduced.average(), 0.0, "an unfiltered reduction averages every row");
     }
 
     @Test
@@ -108,10 +108,10 @@ public class ReductionTest {
         final ReductionRepository.Reduction reduced = repo.reduce(FilterRequest.builder()
                 .number("number", filter -> filter.gt(8))
                 .build());
-        Assertions.assertEquals(2, reduced.count());
-        Assertions.assertEquals(10, reduced.min());
-        Assertions.assertEquals(15, reduced.max());
-        Assertions.assertEquals(12.5, reduced.average(), 0.0);
+        Assertions.assertEquals(2, reduced.count(), "a filtered reduction counts only the rows accepted by the filter");
+        Assertions.assertEquals(10, reduced.min(), "a filtered reduction finds the minimum of the accepted rows only");
+        Assertions.assertEquals(15, reduced.max(), "a filtered reduction finds the maximum of the accepted rows only");
+        Assertions.assertEquals(12.5, reduced.average(), 0.0, "a filtered reduction averages the accepted rows only");
     }
 
     private NumberEntity entity(int id, int number) {

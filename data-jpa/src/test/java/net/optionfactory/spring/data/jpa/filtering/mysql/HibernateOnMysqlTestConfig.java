@@ -29,12 +29,12 @@ import tools.jackson.databind.json.JsonMapper;
 @EnableJpaWhitelistFilteringRepositories(basePackageClasses = HibernateOnMysqlTestConfig.class)
 public class HibernateOnMysqlTestConfig {
 
-    /**
-     * Mysql shared by every test declaring {@code @SharedContainer(Mysql.class)}: started before the first
-     * one, stopped after the last one. The image boots with an insecure root that exists only on localhost,
-     * so the tcp-reachable user has to be created before anything connects; the port only opens after
-     * initialization completes, the initialize-phase server being skip-networking.
-     */
+    /// Mysql shared by every test declaring `@SharedContainer(Mysql.class)`: started before the first
+    /// one, stopped after the last one. The image boots with an insecure root that exists only on localhost,
+    /// so the tcp-reachable user has to be created before anything connects; the port only opens after
+    /// initialization completes, the initialize-phase server being skip-networking.
+    ///
+    /// The datadir is a tmpfs for speed: mysqld runs as a non-root user, so it must be world-writable.
     public static class Mysql implements ContainerDefinition<GenericContainer> {
 
         private static final String USERNAME = "test";
@@ -46,7 +46,6 @@ public class HibernateOnMysqlTestConfig {
             final var image = DockerImageName.parse("optionfactory/debian13-mysql8:240");
             final var container = new GenericContainer<>(image)
                     .withExposedPorts(3306)
-                    // the datadir is a tmpfs for speed: mysqld runs as a non-root user, so it must be world-writable
                     .withTmpFs(Map.of("/var/lib/mysql", "rw,mode=1777"))
                     .waitingFor(Wait.forListeningPort());
             container.start();

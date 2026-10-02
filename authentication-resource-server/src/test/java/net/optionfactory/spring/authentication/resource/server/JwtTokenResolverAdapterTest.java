@@ -57,7 +57,7 @@ public class JwtTokenResolverAdapterTest {
     public void matchingBearerJwtIsResolved() {
         final var request = new MockHttpServletRequest();
         request.addHeader("Authorization", String.format("Bearer %s", signedHs256Jws()));
-        Assertions.assertNotNull(hs256Only().resolve(request));
+        Assertions.assertNotNull(hs256Only().resolve(request), "a bearer jwt the predicate accepts is resolved for the resource server");
     }
 
     @Test
@@ -65,41 +65,41 @@ public class JwtTokenResolverAdapterTest {
         final var token = signedHs256Jws();
         final var request = new MockHttpServletRequest();
         request.addHeader("Authorization", String.format("bearer %s", token));
-        Assertions.assertEquals(token, hs256Only().resolve(request));
+        Assertions.assertEquals(token, hs256Only().resolve(request), "the bearer scheme is matched case-insensitively and the token returned as is");
     }
 
     @Test
     public void jwtWithUnexpectedHeaderIsNotResolved() {
         final var request = new MockHttpServletRequest();
         request.addHeader("Authorization", String.format("Bearer %s", signedRs256Jws()));
-        Assertions.assertNull(hs256Only().resolve(request));
+        Assertions.assertNull(hs256Only().resolve(request), "a jwt the predicate declines is left to another mechanism");
     }
 
     @Test
     public void nonJwtBearerTokenIsNotResolved() {
         final var request = new MockHttpServletRequest();
         request.addHeader("Authorization", "Bearer not-a-jwt");
-        Assertions.assertNull(hs256Only().resolve(request));
+        Assertions.assertNull(hs256Only().resolve(request), "a bearer token that is not a jwt is left to another mechanism");
     }
 
     @Test
     public void missingOrNonBearerAuthorizationIsNotResolved() {
         final var missing = new MockHttpServletRequest();
-        Assertions.assertNull(hs256Only().resolve(missing));
+        Assertions.assertNull(hs256Only().resolve(missing), "a request without Authorization carries no token");
 
         final var basic = new MockHttpServletRequest();
         basic.addHeader("Authorization", String.format("Basic %s", signedHs256Jws()));
-        Assertions.assertNull(hs256Only().resolve(basic));
+        Assertions.assertNull(hs256Only().resolve(basic), "a basic credential is not a bearer token");
 
         final var otherHeader = new MockHttpServletRequest();
         otherHeader.addHeader("X-Service-Token", signedHs256Jws());
-        Assertions.assertNull(hs256Only().resolve(otherHeader));
+        Assertions.assertNull(hs256Only().resolve(otherHeader), "only the Authorization header is read");
     }
 
     @Test
     public void bearerSchemeWithoutTokenIsNotResolved() {
         final var request = new MockHttpServletRequest();
         request.addHeader("Authorization", "Bearer ");
-        Assertions.assertNull(hs256Only().resolve(request));
+        Assertions.assertNull(hs256Only().resolve(request), "an empty bearer token is not resolved");
     }
 }

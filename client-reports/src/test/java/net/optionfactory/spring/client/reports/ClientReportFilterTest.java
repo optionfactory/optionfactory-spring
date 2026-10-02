@@ -42,12 +42,12 @@ public class ClientReportFilterTest {
 
         filter.doFilter(request, response, chain);
 
-        Assertions.assertEquals(202, response.getStatus());
+        Assertions.assertEquals(202, response.getStatus(), "a report is acknowledged with 202 Accepted");
         Assertions.assertNull(chain.getRequest(), "the filter chain must not continue for reports");
-        Assertions.assertEquals(1, events.size());
+        Assertions.assertEquals(1, events.size(), "one event per report");
         final var event = (ClientError) events.get(0);
-        Assertions.assertEquals("the-user", event.principal());
-        Assertions.assertEquals("boom", event.content().get("message").asString());
+        Assertions.assertEquals("the-user", event.principal(), "the event carries the authenticated principal");
+        Assertions.assertEquals("boom", event.content().get("message").asString(), "the event carries the parsed report");
     }
 
     @Test
@@ -60,10 +60,10 @@ public class ClientReportFilterTest {
 
         filter.doFilter(request, response, new MockFilterChain());
 
-        Assertions.assertEquals(202, response.getStatus());
+        Assertions.assertEquals(202, response.getStatus(), "anonymous reports are accepted");
         final var event = (ClientError) events.get(0);
-        Assertions.assertNull(event.principal());
-        Assertions.assertTrue(event.content().isObject());
+        Assertions.assertNull(event.principal(), "an anonymous report carries a null principal");
+        Assertions.assertTrue(event.content().isObject(), "the report is parsed as json");
     }
 
     @Test
@@ -76,9 +76,9 @@ public class ClientReportFilterTest {
 
         filter.doFilter(request, response, new MockFilterChain());
 
-        Assertions.assertEquals(202, response.getStatus());
+        Assertions.assertEquals(202, response.getStatus(), "an unparseable report is still accepted");
         final var event = (ClientError) events.get(0);
-        Assertions.assertEquals("unparseable report", event.content().asString());
+        Assertions.assertEquals("unparseable report", event.content().asString(), "an unparseable body is replaced by a text node");
     }
 
     @Test
@@ -91,9 +91,9 @@ public class ClientReportFilterTest {
 
         filter.doFilter(request, response, new MockFilterChain());
 
-        Assertions.assertEquals(202, response.getStatus());
+        Assertions.assertEquals(202, response.getStatus(), "an oversized report is still accepted");
         final var event = (ClientError) events.get(0);
-        Assertions.assertEquals("unparseable report", event.content().asString());
+        Assertions.assertEquals("unparseable report", event.content().asString(), "a body truncated at maxBodySize no longer parses");
     }
 
     @Test
@@ -106,7 +106,7 @@ public class ClientReportFilterTest {
 
         filter.doFilter(request, response, new MockFilterChain());
 
-        Assertions.assertEquals(202, response.getStatus());
+        Assertions.assertEquals(202, response.getStatus(), "a report at the limit is accepted");
         final var event = (ClientError) events.get(0);
         Assertions.assertTrue(event.content().isObject(), "a body of exactly maxBodySize bytes must be accepted");
     }
@@ -123,7 +123,7 @@ public class ClientReportFilterTest {
 
         filter.doFilter(request, response, new MockFilterChain());
 
-        Assertions.assertEquals(202, response.getStatus());
+        Assertions.assertEquals(202, response.getStatus(), "a report under a context path is accepted");
         Assertions.assertEquals(1, events.size(), "a report posted under a context path must be received, not silently dropped");
     }
 
@@ -135,15 +135,15 @@ public class ClientReportFilterTest {
         final var response = new MockHttpServletResponse();
         final var chain = new MockFilterChain();
         filter.doFilter(request, response, chain);
-        Assertions.assertSame(request, chain.getRequest());
-        Assertions.assertTrue(events.isEmpty());
+        Assertions.assertSame(request, chain.getRequest(), "a GET on the report uri proceeds down the chain");
+        Assertions.assertTrue(events.isEmpty(), "a GET on the report uri publishes nothing");
 
         final var other = new MockHttpServletRequest("POST", "/api/other");
         other.setContent("{}".getBytes(StandardCharsets.UTF_8));
         final var chain2 = new MockFilterChain();
         filter.doFilter(other, new MockHttpServletResponse(), chain2);
-        Assertions.assertSame(other, chain2.getRequest());
-        Assertions.assertTrue(events.isEmpty());
+        Assertions.assertSame(other, chain2.getRequest(), "a POST elsewhere proceeds down the chain");
+        Assertions.assertTrue(events.isEmpty(), "a POST elsewhere publishes nothing");
     }
 
     @Test
@@ -156,7 +156,55 @@ public class ClientReportFilterTest {
 
         filter.doFilter(request, response, new MockFilterChain());
 
-        Assertions.assertEquals(202, response.getStatus());
-        Assertions.assertEquals(1, events.size());
+        Assertions.assertEquals(202, response.getStatus(), "logging does not change the response");
+        Assertions.assertEquals(1, events.size(), "logging does not change the publishing");
+    }
+
+    @Test
+    public void theUriMustMatchExactly() throws Exception {
+        final var filter = filter("/client-errors/", 65_536, false);
+
+        final var request = new MockHttpServletRequest("POST", "/client-errors");
+        request.setContent("{}".getBytes(StandardCharsets.UTF_8));
+        final var chain = new MockFilterChain();
+        filter.doFilter(request, new MockHttpServletResponse(), chain);
+
+        Assertions.assertSame(request, chain.getRequest(), "a uri differing by the trailing slash is not a report");
+        Assertions.assertTrue(events.isEmpty(), "a uri differing by the trailing slash publishes nothing");
+    }
+
+    @Test
+    public void thePrincipalRendererIsOnlyUsedForLogging() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("the-user", "credentials", "ROLE_USER"));
+        final var rendered = new ArrayList<Object>();
+        final var silent = new ClientReportFilter<>("client-error", "/client-errors/", events::add, 65_536, false, ClientError::new, p -> {
+            rendered.add(p);
+            return "";
+        });
+        final var logging = new ClientReportFilter<>("client-error", "/client-errors/", events::add, 65_536, true, ClientError::new, p -> {
+            rendered.add(p);
+            return "";
+        });
+
+        silent.doFilter(report("{}"), new MockHttpServletResponse(), new MockFilterChain());
+        Assertions.assertTrue(rendered.isEmpty(), "the principal is not rendered when logging is disabled");
+        logging.doFilter(report("{}"), new MockHttpServletResponse(), new MockFilterChain());
+        Assertions.assertEquals(List.of("the-user"), rendered, "the principal is rendered for the log line when logging is enabled");
+    }
+
+    @Test
+    public void anEmptyBodyIsReportedAsUnparseable() throws Exception {
+        final var filter = filter("/client-errors/", 65_536, false);
+
+        filter.doFilter(new MockHttpServletRequest("POST", "/client-errors/"), new MockHttpServletResponse(), new MockFilterChain());
+
+        final var event = (ClientError) events.get(0);
+        Assertions.assertEquals("unparseable report", event.content().asString(), "a report without body is replaced by a text node");
+    }
+
+    private static MockHttpServletRequest report(String json) {
+        final var request = new MockHttpServletRequest("POST", "/client-errors/");
+        request.setContent(json.getBytes(StandardCharsets.UTF_8));
+        return request;
     }
 }

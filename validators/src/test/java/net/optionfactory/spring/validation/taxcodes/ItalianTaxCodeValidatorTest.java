@@ -13,7 +13,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 public class ItalianTaxCodeValidatorTest {
 
-    private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+    private static final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
     public static Stream<Arguments> any() {
         return Stream.of(

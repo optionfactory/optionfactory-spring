@@ -27,7 +27,7 @@ public class MessagesEncodingTest {
 
         final var bean = new BeanWithEmail("");
         final var violations = validator.validate(bean);
-        Assertions.assertEquals(List.of("Spécifiez une adresse e-mail valide"), violations.stream().map(cv -> cv.getMessage()).toList());        
+        Assertions.assertEquals(List.of("Spécifiez une adresse e-mail valide"), violations.stream().map(cv -> cv.getMessage()).toList(), "the french message must be decoded as UTF-8");        
     }
     
     @Test
@@ -39,7 +39,7 @@ public class MessagesEncodingTest {
 
         final var bean = new BeanWithEmail("");
         final var violations = validator.validate(bean);
-        Assertions.assertEquals(List.of("Especifique una dirección de correo electrónico válida"), violations.stream().map(cv -> cv.getMessage()).toList());        
+        Assertions.assertEquals(List.of("Especifique una dirección de correo electrónico válida"), violations.stream().map(cv -> cv.getMessage()).toList(), "the spanish message must be decoded as UTF-8");        
     }
     
     public record BeanWithMultipartFile(@MultipartFilenameMaxLength(1) MultipartFile file){
@@ -55,6 +55,6 @@ public class MessagesEncodingTest {
 
         final var bean = new BeanWithMultipartFile(ByteArrayMultipartFile.empty("aaaa", "image/svg"));
         final var violations = validator.validate(bean);
-        Assertions.assertEquals(List.of("Il nome del file è troppo lungo"), violations.stream().map(cv -> cv.getMessage()).toList());        
+        Assertions.assertEquals(List.of("Il nome del file è troppo lungo"), violations.stream().map(cv -> cv.getMessage()).toList(), "the italian message must be decoded as UTF-8");        
     }
 }

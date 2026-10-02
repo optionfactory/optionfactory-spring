@@ -24,4 +24,13 @@ public class Marshalling {
         final var r = (B) unmarshaller.unmarshal(new StringReader(source));
         return r;
     }
+
+    public static <B> B unmarshalStrictly(String source, Class<B> beanType) throws JAXBException {
+        final JAXBContext ctx = JAXBContext.newInstance(beanType);
+        final Unmarshaller unmarshaller = ctx.createUnmarshaller();
+        unmarshaller.setEventHandler(event -> false);
+        @SuppressWarnings("unchecked")
+        final var r = (B) unmarshaller.unmarshal(new StringReader(source));
+        return r;
+    }
 }

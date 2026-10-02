@@ -9,9 +9,22 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import net.optionfactory.spring.pem.der.DerCursor.Tag;
 
+/// Builds DER encoded ASN.1 values bottom-up: each method returns the complete encoding of one
+/// value, and constructed values take the encodings of their children.
+///
+/// Lengths are written in the minimal DER form. A `null` child is skipped, so an optional element
+/// can be passed as it is. The values are not checked against ASN.1 rules: the caller is
+/// responsible, for instance, for sorting the elements of a `SET OF`. The `IOException` the methods
+/// declare comes from the in-memory stream they write to, and is not raised in practice.
+///
+/// ```java
+/// final byte[] algorithm = DerWriter.seq(DerWriter.oid("1.2.840.113549.1.1.1"), DerWriter.nul());
+/// ```
 public class DerWriter {
 
+    /// The form bit of a constructed value.
     public static final int CONSTRUCTED = 0x20;
+    /// The class bits of a context specific tag.
     public static final int CONTEXT_SPECIFIC = 0x80;
 
     private static final DateTimeFormatter UTC_TIME_FORMATTER = DateTimeFormatter
@@ -20,56 +33,113 @@ public class DerWriter {
 
     private static final byte[] NULL_BYTES = new byte[]{Tag.NULL, 0x00};
 
+    /// @param part the encoded content, `null` for an empty sequence
+    /// @return the `SEQUENCE`
+    /// @throws IOException never in practice
     public static byte[] seq(byte[] part) throws IOException {
         return encodeTag(Tag.SEQUENCE | CONSTRUCTED, part);
     }
 
+    /// @param parts the encoded elements, in order; `null` ones are skipped
+    /// @return the `SEQUENCE`
+    /// @throws IOException never in practice
     public static byte[] seq(byte[]... parts) throws IOException {
         return encodeTag(Tag.SEQUENCE | CONSTRUCTED, parts);
     }
 
+    /// @param part the encoded content, `null` for an empty set
+    /// @return the `SET`
+    /// @throws IOException never in practice
     public static byte[] set(byte[] part) throws IOException {
         return encodeTag(Tag.SET | CONSTRUCTED, part);
     }
 
+    /// @param parts the encoded elements, written in the given order (DER wants a `SET OF` sorted
+    /// by encoding); `null` ones are skipped
+    /// @return the `SET`
+    /// @throws IOException never in practice
     public static byte[] set(byte[]... parts) throws IOException {
         return encodeTag(Tag.SET | CONSTRUCTED, parts);
     }
 
+    /// Encodes a constructed `[tagNumber] IMPLICIT` value: the context specific tag replaces the
+    /// tag of the value, so `part` is its content rather than a complete encoding. The constructed
+    /// bit is always set, which suits implicitly tagged `SEQUENCE` and `SET` types only.
+    ///
+    /// @param tagNumber the context specific tag number, below 31
+    /// @param part the content
+    /// @return the tagged value
+    /// @throws IOException never in practice
     public static byte[] implicit(int tagNumber, byte[] part) throws IOException {
         return encodeTag(CONTEXT_SPECIFIC | CONSTRUCTED | tagNumber, part);
     }
 
+    /// Encodes a constructed `[tagNumber] IMPLICIT` value whose content is the concatenation of
+    /// `parts`, as for an implicitly tagged `SEQUENCE` or `SET OF`.
+    ///
+    /// @param tagNumber the context specific tag number, below 31
+    /// @param parts the encoded elements; `null` ones are skipped
+    /// @return the tagged value
+    /// @throws IOException never in practice
     public static byte[] implicit(int tagNumber, byte[]... parts) throws IOException {
         return encodeTag(CONTEXT_SPECIFIC | CONSTRUCTED | tagNumber, parts);
     }
 
+    /// Encodes a `[tagNumber] EXPLICIT` value: the context specific tag wraps the complete encoding
+    /// of the value.
+    ///
+    /// @param tagNumber the context specific tag number, below 31
+    /// @param data the encoded value
+    /// @return the tagged value
+    /// @throws IOException never in practice
     public static byte[] explicit(int tagNumber, byte[] data) throws IOException {
         return encodeTag(CONTEXT_SPECIFIC | CONSTRUCTED | tagNumber, data);
     }
 
+    /// @param value the value
+    /// @return the `INTEGER`, in minimal two's complement
+    /// @throws IOException never in practice
     public static byte[] integer(int value) throws IOException {
         return integer(BigInteger.valueOf(value));
     }
 
+    /// @param value the value
+    /// @return the `INTEGER`, in minimal two's complement
+    /// @throws IOException never in practice
     public static byte[] integer(BigInteger value) throws IOException {
         return encodeTag(Tag.INTEGER, value.toByteArray());
     }
 
+    /// @param data the octets
+    /// @return the `OCTET STRING`
+    /// @throws IOException never in practice
     public static byte[] octetString(byte[] data) throws IOException {
         return encodeTag(Tag.OCTETSTRING, data);
     }
 
+    /// Encodes `instant` as `YYMMDDhhmmssZ` in UTC, truncated to the second. The two-digit year
+    /// cannot represent instants outside 1950 to 2049, for which X.509 asks for a
+    /// `GeneralizedTime`: they are written with the wrong century.
+    ///
+    /// @param instant the instant
+    /// @return the `UTCTime`
+    /// @throws IOException never in practice
     public static byte[] utcTime(Instant instant) throws IOException {
         String timeString = UTC_TIME_FORMATTER.format(instant);
         byte[] content = timeString.getBytes(StandardCharsets.US_ASCII);
         return encodeTag(Tag.UTCTIME, content);
     }
 
+    /// @return the `NULL`, as a shared array the caller must not modify
     public static byte[] nul() {
         return NULL_BYTES;
     }
 
+    /// @param oid the dotted form, with at least two arcs, such as `1.2.840.113549.1.1.1`
+    /// @return the `OBJECT IDENTIFIER`
+    /// @throws IOException never in practice
+    /// @throws IndexOutOfBoundsException when `oid` has a single arc
+    /// @throws NumberFormatException when an arc is not a number
     public static byte[] oid(String oid) throws IOException {
         final var buffer = new ByteArrayOutputStream();
         
@@ -121,7 +191,7 @@ public class DerWriter {
             }
         }
 
-        final var out = new ByteArrayOutputStream(totalLength + 5); // +5 for header estimate
+        final var out = new ByteArrayOutputStream(totalLength + 5);
         out.write(tag);
         writeLength(out, totalLength);
 
@@ -164,7 +234,6 @@ public class DerWriter {
             out.write((int) val);
             return;
         }
-        // A 64-bit long fits inside 10 base-128 bytes max        
         final byte[] buf = new byte[10];
         int idx = buf.length;
         buf[--idx] = (byte) (val & 0x7F);

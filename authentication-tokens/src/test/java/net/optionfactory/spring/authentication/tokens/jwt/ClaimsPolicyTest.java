@@ -50,49 +50,49 @@ public class ClaimsPolicyTest {
 
     @Test
     public void aStandardPolicyAcceptsAMatchingUnexpiredToken() throws Exception {
-        Assertions.assertTrue(accepts(ClaimsPolicy.issuer("my-issuer").audience("example.com"), claims().build()));
+        Assertions.assertTrue(accepts(ClaimsPolicy.issuer("my-issuer").audience("example.com"), claims().build()), "a token naming the issuer and the audience, and not expired, is accepted");
     }
 
     @Test
     public void aStandardPolicyRequiresAnExpiration() throws Exception {
-        Assertions.assertFalse(accepts(ClaimsPolicy.issuer("my-issuer"), claims().expirationTime(null).build()));
+        Assertions.assertFalse(accepts(ClaimsPolicy.issuer("my-issuer"), claims().expirationTime(null).build()), "a standard policy rejects a token without exp");
     }
 
     @Test
     public void aStandardPolicyRejectsAnotherIssuer() throws Exception {
-        Assertions.assertFalse(accepts(ClaimsPolicy.issuer("my-issuer"), claims().issuer("someone-else").build()));
+        Assertions.assertFalse(accepts(ClaimsPolicy.issuer("my-issuer"), claims().issuer("someone-else").build()), "a token from another issuer is rejected");
     }
 
     @Test
     public void aStandardPolicyRejectsATokenForAnotherAudience() throws Exception {
-        Assertions.assertFalse(accepts(ClaimsPolicy.audience("example.com"), claims().audience("another-service").build()));
+        Assertions.assertFalse(accepts(ClaimsPolicy.audience("example.com"), claims().audience("another-service").build()), "a token issued for another service is rejected");
     }
 
     @Test
     public void aStandardPolicyAcceptsAnyOfItsAudiences() throws Exception {
-        Assertions.assertTrue(accepts(ClaimsPolicy.audience("example.com", "example.org"), claims().audience("example.org").build()));
+        Assertions.assertTrue(accepts(ClaimsPolicy.audience("example.com", "example.org"), claims().audience("example.org").build()), "naming any one of the configured audiences is enough");
     }
 
     @Test
     public void aStandardPolicyCannotBeMadeWithoutAnIssuerOrAnAudience() {
-        Assertions.assertThrows(IllegalArgumentException.class, () -> new ClaimsPolicy.Standard(null, Set.of(), Map.of(), Set.of(), Set.of(), Duration.ZERO));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> new ClaimsPolicy.Standard(null, Set.of(), Map.of(), Set.of(), Set.of(), Duration.ZERO), "a standard policy must pin an issuer or an audience");
     }
 
     @Test
     public void aPermissivePolicyAcceptsATokenWithoutExpirationIssuerOrAudience() throws Exception {
-        Assertions.assertTrue(accepts(ClaimsPolicy.permissive(), new JWTClaimsSet.Builder().subject("third-party").build()));
+        Assertions.assertTrue(accepts(ClaimsPolicy.permissive(), new JWTClaimsSet.Builder().subject("third-party").build()), "the explicit opt-out accepts third-party tokens lacking exp, iss and aud");
     }
 
     @Test
     public void aPermissivePolicyStillRejectsAnExpiredToken() throws Exception {
-        Assertions.assertFalse(accepts(ClaimsPolicy.permissive(), new JWTClaimsSet.Builder().expirationTime(Date.from(Instant.now().minusSeconds(3600))).build()));
+        Assertions.assertFalse(accepts(ClaimsPolicy.permissive(), new JWTClaimsSet.Builder().expirationTime(Date.from(Instant.now().minusSeconds(3600))).build()), "an exp, when present, is still enforced");
     }
 
     @Test
     public void aPermissivePolicyCanPinAClaimTheThirdPartySends() throws Exception {
         final var policy = ClaimsPolicy.permissive().exact("client_id", "acme");
-        Assertions.assertTrue(accepts(policy, new JWTClaimsSet.Builder().claim("client_id", "acme").build()));
-        Assertions.assertFalse(accepts(policy, new JWTClaimsSet.Builder().claim("client_id", "evil").build()));
+        Assertions.assertTrue(accepts(policy, new JWTClaimsSet.Builder().claim("client_id", "acme").build()), "the pinned value is accepted");
+        Assertions.assertFalse(accepts(policy, new JWTClaimsSet.Builder().claim("client_id", "evil").build()), "any other value is rejected");
     }
 
     @Test
@@ -100,15 +100,15 @@ public class ClaimsPolicyTest {
         final var base = ClaimsPolicy.issuer("my-issuer");
         final var refined = base.audience("example.com");
         final var noAudience = claims().audience((String) null).build();
-        Assertions.assertTrue(accepts(base, noAudience));
-        Assertions.assertFalse(accepts(refined, noAudience));
+        Assertions.assertTrue(accepts(base, noAudience), "the original policy is unaffected by the refinement");
+        Assertions.assertFalse(accepts(refined, noAudience), "the refined policy requires the audience");
     }
 
     @Test
     public void theClockSkewIsTolerated() throws Exception {
         final var justExpired = claims().expirationTime(Date.from(Instant.now().minusSeconds(30))).build();
-        Assertions.assertTrue(accepts(ClaimsPolicy.issuer("my-issuer"), justExpired));
-        Assertions.assertFalse(accepts(ClaimsPolicy.issuer("my-issuer").clockSkew(Duration.ZERO), justExpired));
+        Assertions.assertTrue(accepts(ClaimsPolicy.issuer("my-issuer"), justExpired), "a token expired 30s ago is within the default 60s skew");
+        Assertions.assertFalse(accepts(ClaimsPolicy.issuer("my-issuer").clockSkew(Duration.ZERO), justExpired), "without skew the expired token is rejected");
     }
 
     @Test
@@ -116,6 +116,52 @@ public class ClaimsPolicyTest {
         final ClaimsPolicy rejectEverything = ClaimsPolicy.custom((claims, context) -> {
             throw new BadJWTException("no");
         });
-        Assertions.assertFalse(accepts(rejectEverything, claims().build()));
+        Assertions.assertFalse(accepts(rejectEverything, claims().build()), "a custom policy rejects what its verifier rejects");
+    }
+
+    @Test
+    public void aTokenNotYetValidIsRejected() throws Exception {
+        final var notBefore = Date.from(Instant.now().plusSeconds(3600));
+        Assertions.assertFalse(accepts(ClaimsPolicy.issuer("my-issuer"), claims().notBeforeTime(notBefore).build()), "a standard policy rejects a token whose nbf is in the future");
+        Assertions.assertFalse(accepts(ClaimsPolicy.permissive(), new JWTClaimsSet.Builder().notBeforeTime(notBefore).build()), "a permissive policy enforces an nbf when present");
+    }
+
+    @Test
+    public void aStandardPolicyRejectsATokenWithoutAnAudienceWhenItRequiresOne() throws Exception {
+        Assertions.assertFalse(accepts(ClaimsPolicy.audience("example.com"), claims().audience((String) null).build()), "a token naming no audience does not name the configured one");
+    }
+
+    @Test
+    public void requiredClaimsMustBePresent() throws Exception {
+        Assertions.assertFalse(accepts(ClaimsPolicy.issuer("my-issuer").require("jti"), claims().build()), "a standard policy rejects a token lacking a required claim");
+        Assertions.assertTrue(accepts(ClaimsPolicy.issuer("my-issuer").require("jti"), claims().jwtID("an-id").build()), "the required claim is accepted with any value");
+        Assertions.assertFalse(accepts(ClaimsPolicy.permissive().require("sub"), new JWTClaimsSet.Builder().build()), "a permissive policy rejects a token lacking a required claim");
+    }
+
+    @Test
+    public void prohibitedClaimsMustBeAbsent() throws Exception {
+        Assertions.assertFalse(accepts(ClaimsPolicy.issuer("my-issuer").prohibit("act"), claims().claim("act", "someone").build()), "a standard policy rejects a token carrying a prohibited claim");
+        Assertions.assertFalse(accepts(ClaimsPolicy.permissive().prohibit("act"), new JWTClaimsSet.Builder().claim("act", "someone").build()), "a permissive policy rejects a token carrying a prohibited claim");
+        Assertions.assertTrue(accepts(ClaimsPolicy.permissive().prohibit("act"), new JWTClaimsSet.Builder().build()), "a token without the prohibited claim is accepted");
+    }
+
+    @Test
+    public void anIntegerClaimIsPinnedWithALong() throws Exception {
+        final var token = new JWTClaimsSet.Builder().claim("level", 1).build();
+        Assertions.assertTrue(accepts(ClaimsPolicy.permissive().exact("level", 1L), token), "json integers are parsed as longs, so a long matches");
+    }
+
+    @Test
+    public void aRefinedIssuerReplacesThePreviousOne() throws Exception {
+        final var policy = ClaimsPolicy.issuer("old-issuer").issuer("my-issuer");
+        Assertions.assertTrue(accepts(policy, claims().build()), "the last configured issuer is the one required");
+        Assertions.assertFalse(accepts(policy, claims().issuer("old-issuer").build()), "the replaced issuer is no longer accepted");
+    }
+
+    @Test
+    public void blankIssuersAndAudiencesAreRefused() {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> ClaimsPolicy.issuer(" "), "a blank issuer would pin nothing");
+        Assertions.assertThrows(IllegalArgumentException.class, () -> ClaimsPolicy.audience(""), "an empty audience would pin nothing");
+        Assertions.assertThrows(IllegalArgumentException.class, () -> ClaimsPolicy.audience("example.com", ""), "an empty additional audience would pin nothing");
     }
 }

@@ -8,9 +8,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 
 /// Built in: spring security's `AccessDeniedException`, answered `403` unless its class declares
-/// another status with `@ResponseStatus`.
+/// another status with `@ResponseStatus`, with a `FORBIDDEN` problem whose details are the
+/// exception's message.
+///
+/// Answering it means the exception thrown by a `@ResponseBody` handler, by method security for
+/// instance, does not reach spring security's `ExceptionTranslationFilter`: an anonymous caller is
+/// answered `403` too, rather than asked to authenticate.
 public class SpringSecurityProblemsModule implements ProblemsModule {
 
+    /// @return the module's single classifier
     @Override
     public List<ExceptionClassifier> classifiers() {
         return List.of(SpringSecurityProblemsModule::classify);

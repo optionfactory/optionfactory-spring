@@ -56,8 +56,8 @@ public class SoapMarshallingTest {
                 return new HttpHeaders();
             }
         });
-        Assertions.assertEquals(123, read.intA);
-        Assertions.assertEquals(345, read.intB);
+        Assertions.assertEquals(123, read.intA, "intA must survive the round trip");
+        Assertions.assertEquals(345, read.intB, "intB must survive the round trip");
     }
 
 }
