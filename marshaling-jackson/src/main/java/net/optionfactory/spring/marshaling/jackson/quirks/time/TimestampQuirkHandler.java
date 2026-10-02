@@ -14,8 +14,7 @@ import tools.jackson.databind.ValueSerializer;
 import tools.jackson.databind.deser.SettableBeanProperty;
 import tools.jackson.databind.ser.BeanPropertyWriter;
 
-/// Handles [Quirks.Timestamp]: see the annotation for the representation, and for the lack of a
-/// check on the property type.
+/// Handles [Quirks.Timestamp]: see the annotation for the representation.
 public class TimestampQuirkHandler implements QuirkHandler<Quirks.Timestamp> {
 
     /// @return [Quirks.Timestamp]
@@ -27,8 +26,10 @@ public class TimestampQuirkHandler implements QuirkHandler<Quirks.Timestamp> {
     /// @param ann the annotation, with the unit
     /// @param bpw the writer of the property
     /// @return the same writer, with a [Serializer] assigned
+    /// @throws IllegalStateException when the property cannot hold an `Instant`
     @Override
     public BeanPropertyWriter serialization(Quirks.Timestamp ann, BeanPropertyWriter bpw) {
+        ensureInstantPlacement(bpw.getName(), bpw.getType().getRawClass());
         bpw.assignSerializer(new Serializer(ann.millis()));
         return bpw;
     }
@@ -36,9 +37,20 @@ public class TimestampQuirkHandler implements QuirkHandler<Quirks.Timestamp> {
     /// @param ann the annotation, with the unit
     /// @param sbp the property
     /// @return a copy of the property with a [Deserializer]
+    /// @throws IllegalStateException when the property cannot hold an `Instant`
     @Override
     public SettableBeanProperty deserialization(Quirks.Timestamp ann, SettableBeanProperty sbp) {
+        ensureInstantPlacement(sbp.getName(), sbp.getType().getRawClass());
         return sbp.withValueDeserializer(new Deserializer(ann.millis()));
+    }
+
+    private static void ensureInstantPlacement(String name, Class<?> raw) {
+        if (!raw.isAssignableFrom(Instant.class)) {
+            throw new IllegalStateException(String.format(
+                    "Invalid @Quirks.Timestamp placement on property '%s'. Can only be applied to Instant properties, but found type: %s",
+                    name, raw.getName()
+            ));
+        }
     }
 
     /// Reads an `Instant` from an integer, or a string holding one, counting milliseconds or
@@ -101,7 +113,8 @@ public class TimestampQuirkHandler implements QuirkHandler<Quirks.Timestamp> {
         }
 
         /// Writes nothing at all for a value that is not an `Instant`, leaving the property without
-        /// a value and the json invalid.
+        /// a value and the json invalid: [TimestampQuirkHandler] only assigns this serializer to
+        /// properties that can hold an `Instant`.
         ///
         /// @param value the instant
         /// @param gen the generator

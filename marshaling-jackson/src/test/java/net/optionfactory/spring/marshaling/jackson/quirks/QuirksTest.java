@@ -92,4 +92,15 @@ public class QuirksTest {
                 """.trim(), json, "@Rename is registered after @Scream by defaults(), so its name wins");
         Assertions.assertEquals(new ScreamedAndRenamed("a"), om.readValue(json, ScreamedAndRenamed.class), "the same order applies when deserializing");
     }
+
+    @Test
+    public void handlersAddedAfterBuildingDoNotReachTheBuiltModule() {
+        final var builder = Quirks.empty();
+        final var module = builder.build();
+        builder.add(new TrimQuirkHandler());
+        final var om = JsonMapper.builder().addModule(module).build();
+        Assertions.assertEquals("""
+                {"text":" a ","flag":true}
+                """.trim(), om.writeValueAsString(new Bean(" a ", true)), "the module keeps the handlers the builder had when it was built");
+    }
 }

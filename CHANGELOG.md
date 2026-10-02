@@ -221,6 +221,28 @@
     `AlertsEmailsSpooler.bufferedScheduled(paths, ...)` factory; it now shows
     `AlertsEmailsSpooler.builder(paths, ac, ts)...bufferedScheduled(prototype)`.
 
+## `marshaling-jackson`
+
+*   [FIX] **`@Quirks.Timestamp` on a property that cannot hold an `Instant` is rejected when the
+    (de)serializer is built.** It used to be accepted silently: serializing wrote the property
+    without a value (invalid json) and deserializing failed with a cast error. It now throws an
+    `IllegalStateException` from `writerFor`/`readerFor`, like the other quirks' placement checks;
+    `Instant` and its supertypes (e.g. `Object`) are still accepted.
+*   [FIX] **`@Quirks.TemporalFormat` configuration errors fail when the (de)serializer is built.**
+    Serialization did not check the property type, so a `String` property failed with a
+    `ClassCastException` at every write; it now throws an `IllegalStateException` unless the type
+    can hold a `TemporalAccessor`. An invalid pattern surfaced only on first use, as an
+    `InvalidDefinitionException`, because jackson's `writerFor`/`readerFor` swallow it; it is now
+    an `IllegalStateException` thrown by `writerFor`/`readerFor`.
+*   [FIX] **`Quirks.Builder.build()` gives the module a copy of the handlers.** The module shared
+    the builder's live list, so a handler added to the builder after `build()` also reached the
+    modules already built; it no longer does.
+
+## `marshaling-jaxb`
+
+*   [DOC] **The readme lists the adapters that exist.** It listed an `XsdTimeToLocalTime` adapter
+    that does not exist, and omitted `money.XsdDecimalToLongCents`.
+
 # version 28.2
 
 ## Dependencies

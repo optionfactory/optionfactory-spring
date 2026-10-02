@@ -153,10 +153,11 @@ public interface Quirks {
     /// `OffsetDateTime`, `OffsetTime`, `ZonedDateTime`, `Year`, `YearMonth`, `MonthDay` and
     /// `ZoneOffset`, and throws an `IllegalStateException` on any other type when the
     /// deserializer is built; it accepts a string and `null`, and fails any other token, a blank
-    /// or an unparseable string with a `MismatchedInputException`. Serialization does not check the
-    /// type: a value that is not a `TemporalAccessor`, or lacks a field of the pattern, fails when
-    /// written. An invalid pattern fails every (de)serialization of the type with an
-    /// `InvalidDefinitionException`.
+    /// or an unparseable string with a `MismatchedInputException`. Serialization supports any
+    /// `TemporalAccessor` (and `Object`) property, throwing an `IllegalStateException` on any other
+    /// type when the serializer is built; a value lacking a field of the pattern fails when
+    /// written. An invalid pattern throws an `IllegalStateException` when the (de)serializer is
+    /// built.
     @Retention(RetentionPolicy.RUNTIME)
     public @interface TemporalFormat {
 
@@ -172,8 +173,8 @@ public interface Quirks {
     /// with a `MismatchedInputException`. Serialization drops the precision the unit cannot carry
     /// (`1.999` seconds are written as `1`).
     ///
-    /// The type is not checked: the annotation belongs on `Instant` properties only, a property of
-    /// another type is written without a value, producing invalid json, and cannot be read.
+    /// Throws an `IllegalStateException` on a property that cannot hold an `Instant` (any type but
+    /// `Instant` and its supertypes, such as `Object`) when the (de)serializer is built.
     @Retention(RetentionPolicy.RUNTIME)
     public @interface Timestamp {
 
@@ -258,16 +259,17 @@ public interface Quirks {
 
         /// Builds the module applying the handlers.
         ///
-        /// The module shares the builder's list of handlers rather than copying it, so add every
-        /// handler before building. Every module built here is named `QuirksModule`, and jackson
+        /// The module gets a copy of the builder's handlers: a handler added to the builder
+        /// afterwards does not reach the modules already built. Every module built here is named `QuirksModule`, and jackson
         /// keeps only one module per name on a mapper (the last one registered): register a single
         /// quirks module per mapper, with all the handlers it needs.
         ///
         /// @return the module, to be registered on a mapper builder
         public SimpleModule build() {
             final var module = new SimpleModule("QuirksModule", Version.unknownVersion());
-            module.setDeserializerModifier(new AnnotatedDeserializerModifier(handlers));
-            module.setSerializerModifier(new AnnotatedSerializerModifier(handlers));
+            final var copy = List.copyOf(handlers);
+            module.setDeserializerModifier(new AnnotatedDeserializerModifier(copy));
+            module.setSerializerModifier(new AnnotatedSerializerModifier(copy));
             return module;
         }
     }

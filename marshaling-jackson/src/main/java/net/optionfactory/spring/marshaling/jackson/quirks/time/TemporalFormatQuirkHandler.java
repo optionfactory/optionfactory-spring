@@ -59,10 +59,18 @@ public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalF
     /// @param ann the annotation, with the pattern
     /// @param bpw the writer of the property
     /// @return the same writer, with a [Serializer] assigned
-    /// @throws IllegalArgumentException when the pattern is invalid
+    /// @throws IllegalStateException when the pattern is invalid, or the property cannot hold a
+    /// `TemporalAccessor`
     @Override
     public BeanPropertyWriter serialization(TemporalFormat ann, BeanPropertyWriter bpw) {
-        final var dtf = DateTimeFormatter.ofPattern(ann.value());
+        final var dtf = formatter(ann, bpw.getName());
+        final var raw = bpw.getType().getRawClass();
+        if (!TemporalAccessor.class.isAssignableFrom(raw) && !raw.isAssignableFrom(TemporalAccessor.class)) {
+            throw new IllegalStateException(String.format(
+                    "Invalid @Quirks.TemporalFormat placement on property '%s'. Can only be applied to java.time properties, but found type: %s",
+                    bpw.getName(), raw.getName()
+            ));
+        }
         final var serializer = new Serializer(dtf);
         bpw.assignSerializer(serializer);
         return bpw;
@@ -71,11 +79,11 @@ public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalF
     /// @param ann the annotation, with the pattern
     /// @param sbp the property
     /// @return a copy of the property with a [Deserializer] for its type
-    /// @throws IllegalArgumentException when the pattern is invalid
-    /// @throws IllegalStateException when the property type is not a supported `java.time` type
+    /// @throws IllegalStateException when the pattern is invalid, or the property type is not a
+    /// supported `java.time` type
     @Override
     public SettableBeanProperty deserialization(TemporalFormat ann, SettableBeanProperty sbp) {
-        final var dtf = DateTimeFormatter.ofPattern(ann.value());
+        final var dtf = formatter(ann, sbp.getName());
         final var raw = sbp.getType().getRawClass();
         final var query = TEMPORAL_TYPE_TO_QUERY.get(raw);
         if (query == null) {
@@ -83,6 +91,21 @@ public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalF
         }
         final var deserializer = new Deserializer(dtf, query, raw);
         return sbp.withValueDeserializer(deserializer);
+    }
+
+    /// Jackson turns an `IllegalArgumentException` raised while building a (de)serializer into an
+    /// `InvalidDefinitionException`, which `ObjectMapper.writerFor` and `readerFor` swallow: an
+    /// invalid pattern is reported as an `IllegalStateException` so that it fails there instead of
+    /// at the first use of the type.
+    private static DateTimeFormatter formatter(TemporalFormat ann, String property) {
+        try {
+            return DateTimeFormatter.ofPattern(ann.value());
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalStateException(String.format(
+                    "Invalid @Quirks.TemporalFormat pattern '%s' on property '%s': %s",
+                    ann.value(), property, ex.getMessage()
+            ), ex);
+        }
     }
 
     /// Writes a temporal value as a string through a formatter.

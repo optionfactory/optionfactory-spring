@@ -30,6 +30,6 @@ Available adapters in `net.optionfactory.spring.marshaling.jaxb.time`:
 - `XsdDateTimeToInstant`
 - `XsdDateTimeToLocalDateTime`
 - `XsdDateTimeToOffsetDateTime`
-- `XsdTimeToLocalTime`
 
-
+Available adapters in `net.optionfactory.spring.marshaling.jaxb.money`:
+- `XsdDecimalToLongCents`
