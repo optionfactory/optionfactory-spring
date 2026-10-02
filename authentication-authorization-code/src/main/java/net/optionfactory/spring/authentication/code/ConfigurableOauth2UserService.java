@@ -16,6 +16,7 @@ import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.client.RestTemplate;
 
@@ -28,6 +29,8 @@ import org.springframework.web.client.RestTemplate;
 /// `_`: `sales-team` grants `ROLE_GROUP_SALES_TEAM`, so that `hasRole("GROUP_SALES_TEAM")` checks it.
 /// They are added to the authorities spring grants (`OIDC_USER` and the access token's `SCOPE_`
 /// ones), and the result is handed to the user factory, which builds the application's own user.
+/// A `groups` attribute that is not a list of strings fails the login as an authentication failure,
+/// handled by the login's failure handler like any other.
 ///
 /// ```java
 /// http.oauth2Login(login -> login.userInfoEndpoint(u -> u.oidcUserService(
@@ -36,6 +39,8 @@ import org.springframework.web.client.RestTemplate;
 ///
 /// @param <U> the application's user type
 public class ConfigurableOauth2UserService<U extends OidcUser> implements OAuth2UserService<OidcUserRequest, OidcUser> {
+
+    private static final String INVALID_USER_INFO_RESPONSE_ERROR_CODE = "invalid_user_info_response";
 
     private final OidcUserService delegate;
     private final BiFunction<Set<GrantedAuthority>, OidcUser, U> userFactory;
@@ -57,16 +62,20 @@ public class ConfigurableOauth2UserService<U extends OidcUser> implements OAuth2
     /// @param userRequest the tokens received at login, and the registration they are for
     /// @return the user built by the user factory
     /// @throws OAuth2AuthenticationException when the user cannot be loaded, e.g. when the
-    /// userinfo endpoint fails or answers for another subject
-    /// @throws ClassCastException when `groups` is not a list of strings
+    /// userinfo endpoint fails or answers for another subject, and with the
+    /// `invalid_user_info_response` error code when `groups` is not a list of strings
     @Override
     public OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
         final var oidcUser = delegate.loadUser(userRequest);
         final var augmentedAuthorities = new HashSet<GrantedAuthority>();
         augmentedAuthorities.addAll(oidcUser.getAuthorities());
-        final List<String> groups = oidcUser.getAttribute("groups");
+        final Object groups = oidcUser.getAttribute("groups");
         if (groups != null) {
-            final var additionalAuthorities = groups.stream()
+            if (!(groups instanceof List<?> list) || !list.stream().allMatch(String.class::isInstance)) {
+                throw new OAuth2AuthenticationException(new OAuth2Error(INVALID_USER_INFO_RESPONSE_ERROR_CODE, "the groups attribute is not a list of strings", null));
+            }
+            final var additionalAuthorities = list.stream()
+                    .map(String.class::cast)
                     .map(g -> String.format("ROLE_GROUP_%s", g.toUpperCase(Locale.ROOT).replace("-", "_")))
                     .map(SimpleGrantedAuthority::new)
                     .collect(Collectors.toSet());

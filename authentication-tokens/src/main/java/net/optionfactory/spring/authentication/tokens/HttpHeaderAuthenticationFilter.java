@@ -15,6 +15,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextHolderStrategy;
+import org.springframework.util.Assert;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /// Looks for a token on the configured headers and schemes and authenticates it with the
@@ -26,9 +28,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
 ///
 /// The outcome never ends the request here, the request always proceeds down the chain:
 ///
-/// - an accepted token sets the resulting authentication on the `SecurityContextHolder`, replacing
-///   whatever was there, for this request only: nothing is saved to a `SecurityContextRepository`,
-///   so the token has to be presented on every request;
+/// - an accepted token sets the resulting authentication on the context of the configured
+///   `SecurityContextHolderStrategy`, see
+///   [#setSecurityContextHolderStrategy(SecurityContextHolderStrategy)], replacing whatever was
+///   there, for this request only: nothing is saved to a `SecurityContextRepository`, so the token
+///   has to be presented on every request;
 /// - a rejected token contributes no authentication but invalidates nothing: authentication
 ///   mechanisms earlier in the chain keep whatever they established. The failure handler is
 ///   deliberately not triggered, as other authentication filters (notably
@@ -43,12 +47,23 @@ public class HttpHeaderAuthenticationFilter extends OncePerRequestFilter {
 
     private final AuthenticationManager am;
     private final List<HeaderAndScheme> hss;
+    private SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder.getContextHolderStrategy();
 
     /// @param am authenticates the [UnauthenticatedToken] found
     /// @param hss the headers and schemes to search
     public HttpHeaderAuthenticationFilter(AuthenticationManager am, LinkedHashSet<HeaderAndScheme> hss) {
         this.am = am;
         this.hss = hss.stream().toList();
+    }
+
+    /// Sets the strategy the token's authentication is set on, as spring security's own filters
+    /// do. [HttpHeaderAuthentication.Configurer] sets the application's strategy, see there.
+    ///
+    /// @param securityContextHolderStrategy the strategy to use, defaulting to
+    /// `SecurityContextHolder`'s
+    public void setSecurityContextHolderStrategy(SecurityContextHolderStrategy securityContextHolderStrategy) {
+        Assert.notNull(securityContextHolderStrategy, "securityContextHolderStrategy cannot be null");
+        this.securityContextHolderStrategy = securityContextHolderStrategy;
     }
 
     @Override
@@ -60,7 +75,7 @@ public class HttpHeaderAuthenticationFilter extends OncePerRequestFilter {
         } else if (tokens.size() == 1) {
             try {
                 final Authentication authentication = am.authenticate(tokens.get(0));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                securityContextHolderStrategy.getContext().setAuthentication(authentication);
             } catch (AuthenticationException exception) {
                 logger.debug("token authentication rejected: {}", exception.getClass().getSimpleName());
             }

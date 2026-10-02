@@ -78,6 +78,31 @@ public sealed interface ClaimsPolicy permits ClaimsPolicy.Standard, ClaimsPolicy
         return v;
     }
 
+    private static Map<String, Object> jsonNumbers(Map<String, Object> exact) {
+        final var copy = new HashMap<String, Object>();
+        exact.forEach((claim, value) -> copy.put(claim, jsonNumber(value)));
+        return Map.copyOf(copy);
+    }
+
+    /// Converts an exact value to the type json parsing gives the same number, so that it is
+    /// compared by value: `Byte`, `Short` and `Integer` become a `Long`, as json integers are
+    /// parsed; a `Float` becomes the `Double` it is written as (`0.1f` becomes `0.1`, not its
+    /// binary approximation), as json decimals are parsed. Integers and decimals are never equal to
+    /// each other, so an integral value does not match a decimal with a fractional part. Any other
+    /// value is compared as it is.
+    ///
+    /// @param value the configured value
+    /// @return the value as json parsing would yield it
+    private static Object jsonNumber(Object value) {
+        return switch (value) {
+            case Byte b -> b.longValue();
+            case Short s -> s.longValue();
+            case Integer i -> i.longValue();
+            case Float f -> Double.valueOf(f.toString());
+            default -> value;
+        };
+    }
+
     private static <T> Set<T> with(Set<T> set, T value) {
         final var copy = new HashSet<>(set);
         copy.add(value);
@@ -109,7 +134,7 @@ public sealed interface ClaimsPolicy permits ClaimsPolicy.Standard, ClaimsPolicy
         public Standard {
             Assert.isTrue(issuer != null || !audiences.isEmpty(), "a standard claims policy requires an issuer or an audience");
             audiences = Set.copyOf(audiences);
-            exact = Map.copyOf(exact);
+            exact = jsonNumbers(exact);
             required = Set.copyOf(required);
             prohibited = Set.copyOf(prohibited);
             Assert.notNull(clockSkew, "clockSkew cannot be null");
@@ -132,7 +157,10 @@ public sealed interface ClaimsPolicy permits ClaimsPolicy.Standard, ClaimsPolicy
         }
 
         /// The value is compared with `equals` against the claim as parsed from json, where every
-        /// integer is a `Long`: `exact("level", 1)` never matches, `exact("level", 1L)` does.
+        /// integer is a `Long` and every decimal a `Double`. Numbers are compared by value: a `Byte`,
+        /// `Short` or `Integer` is taken as the `Long` it equals, and a `Float` as the `Double` it is
+        /// written as, so `exact("level", 1)` and `exact("level", 1L)` both match `"level": 1`. An
+        /// integer never matches a decimal: `exact("level", 1)` does not match `"level": 1.5`.
         ///
         /// @param claim a claim the token must carry; the issuer, when configured, takes precedence
         /// over an exact `iss`
@@ -180,14 +208,17 @@ public sealed interface ClaimsPolicy permits ClaimsPolicy.Standard, ClaimsPolicy
         ///
         /// @throws IllegalArgumentException when the clock skew is `null`
         public Permissive {
-            exact = Map.copyOf(exact);
+            exact = jsonNumbers(exact);
             required = Set.copyOf(required);
             prohibited = Set.copyOf(prohibited);
             Assert.notNull(clockSkew, "clockSkew cannot be null");
         }
 
         /// The value is compared with `equals` against the claim as parsed from json, where every
-        /// integer is a `Long`: `exact("level", 1)` never matches, `exact("level", 1L)` does.
+        /// integer is a `Long` and every decimal a `Double`. Numbers are compared by value: a `Byte`,
+        /// `Short` or `Integer` is taken as the `Long` it equals, and a `Float` as the `Double` it is
+        /// written as, so `exact("level", 1)` and `exact("level", 1L)` both match `"level": 1`. An
+        /// integer never matches a decimal: `exact("level", 1)` does not match `"level": 1.5`.
         ///
         /// @param claim a claim the token must carry
         /// @param value the value it must hold

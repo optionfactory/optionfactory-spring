@@ -11,6 +11,7 @@ import net.optionfactory.spring.authentication.tokens.jwt.JwsAuthenticationConfi
 import net.optionfactory.spring.authentication.tokens.jwt.JwtTokenProcessor;
 import net.optionfactory.spring.authentication.tokens.jwt.JwtTokenProcessor.JweProcessor;
 import net.optionfactory.spring.authentication.tokens.jwt.JwtTokenProcessor.JwsProcessor;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,6 +21,8 @@ import org.springframework.security.config.annotation.SecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
@@ -271,13 +274,31 @@ public class HttpHeaderAuthentication {
         /// Adds the [HttpHeaderAuthenticationFilter], searching every configured header and scheme,
         /// before `UsernamePasswordAuthenticationFilter`.
         ///
+        /// The filter sets the authentication on the same `SecurityContextHolderStrategy` spring
+        /// security's own filters use: the chain's shared one if any, else the application
+        /// context's `SecurityContextHolderStrategy` bean if there is exactly one, else
+        /// `SecurityContextHolder`'s.
+        ///
         /// @param http the security being built
         @Override
         public void configure(HttpSecurity http) {
             final var authenticationManager = http.getSharedObject(AuthenticationManager.class);
             final var filter = new HttpHeaderAuthenticationFilter(authenticationManager, headerAndSchemes);
+            filter.setSecurityContextHolderStrategy(securityContextHolderStrategy(http));
             postProcess(filter);
             http.addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class);
+        }
+
+        private static SecurityContextHolderStrategy securityContextHolderStrategy(HttpSecurity http) {
+            final var shared = http.getSharedObject(SecurityContextHolderStrategy.class);
+            if (shared != null) {
+                return shared;
+            }
+            final var context = http.getSharedObject(ApplicationContext.class);
+            if (context == null) {
+                return SecurityContextHolder.getContextHolderStrategy();
+            }
+            return context.getBeanProvider(SecurityContextHolderStrategy.class).getIfUnique(SecurityContextHolder::getContextHolderStrategy);
         }
 
     }

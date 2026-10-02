@@ -63,6 +63,42 @@
 *   [FIX] **Variables set on an `UpstreamBuilder` after `build()` no longer change the clients already
     built.** `Expressions` kept a reference to the builder's variable map instead of copying it.
 
+## `authentication-tokens`
+
+*   [FIX] **`ClaimsPolicy.exact(...)` compares numeric claims by value.** JSON integers are parsed as
+    `Long` and decimals as `Double`, and values were compared with `equals`, so
+    `exact("level", 1)` (an `Integer`) never matched, and neither did a `Short`, `Byte` or `Float`.
+    These are now converted to the `Long` or `Double` they equal; integers still never match
+    decimals, so `1` does not match `1.5`.
+*   [FIX] **`HttpHeaderAuthenticationFilter` sets the token's authentication on the application's
+    `SecurityContextHolderStrategy`.** It wrote to the static `SecurityContextHolder`, so an
+    application declaring its own strategy bean never saw the token's authentication in its
+    authorization rules, and every token request was rejected. The configurer now gives the filter
+    the chain's shared strategy, else the application context's unique `SecurityContextHolderStrategy`
+    bean, else `SecurityContextHolder`'s, and the filter has a `setSecurityContextHolderStrategy(...)`.
+    Applications without a custom strategy are unaffected.
+
+## `authentication`
+
+*   [FIX] **`PrincipalsConfigurer.principal(...)` returns a `PrincipalsConfigurer<R>`, so mappings
+    chain with their types.** The three overloads returned the raw `PrincipalsConfigurer`, so every
+    mapping chained after the first was raw: its lambda parameters were `Object` and the replacement
+    was not type-checked. Existing code keeps compiling.
+*   [FIX] **`Principals.coalescing(...)` coalesces the principal on the application's
+    `SecurityContextHolderStrategy`.** The configurer only looked for a strategy shared on the
+    chain, which `HttpSecurity` never registers, so it always used `SecurityContextHolder`'s: an
+    application declaring its own strategy bean never saw the coalesced principal. The filter now
+    uses the chain's shared strategy, else the application context's unique
+    `SecurityContextHolderStrategy` bean, else `SecurityContextHolder`'s. Applications without a
+    custom strategy are unaffected.
+
+## `authentication-authorization-code`
+
+*   [FIX] **`ConfigurableOauth2UserService` fails the login with an `OAuth2AuthenticationException`
+    when `groups` is not a list of strings.** A `groups` attribute holding a string, or a list with
+    anything but strings, threw a `ClassCastException`, which bypassed the login's failure handler.
+    It is now an authentication failure with the `invalid_user_info_response` error code.
+
 # version 28.2
 
 ## Dependencies

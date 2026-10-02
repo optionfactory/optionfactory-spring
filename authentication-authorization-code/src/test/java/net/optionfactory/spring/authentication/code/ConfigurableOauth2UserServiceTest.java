@@ -13,6 +13,7 @@ import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
@@ -97,5 +98,18 @@ public class ConfigurableOauth2UserServiceTest {
         Assertions.assertEquals(1, idp.requests.size(), "the userinfo endpoint is called through the configured request factory");
         Assertions.assertEquals("https://idp.example.com/userinfo", idp.requests.get(0).getURI().toString(), "the userinfo endpoint is the registration's");
         Assertions.assertTrue(names(user).contains("ROLE_GROUP_FROM_USERINFO"), "groups returned by the userinfo endpoint grant authorities too");
+    }
+
+    @Test
+    public void groupsThatAreNotAListFailTheLogin() {
+        final var service = service(new StubClientHttpRequestFactory(HttpStatus.OK, "{}"));
+        final var e = Assertions.assertThrows(OAuth2AuthenticationException.class, () -> service.loadUser(request(Map.of("sub", "alice", "groups", "admin"))), "a groups claim that is not a list fails the login as an authentication failure");
+        Assertions.assertEquals("invalid_user_info_response", e.getError().getErrorCode(), "the failure names the malformed user info");
+    }
+
+    @Test
+    public void groupsThatAreNotStringsFailTheLogin() {
+        final var service = service(new StubClientHttpRequestFactory(HttpStatus.OK, "{}"));
+        Assertions.assertThrows(OAuth2AuthenticationException.class, () -> service.loadUser(request(Map.of("sub", "alice", "groups", List.of("admin", 42)))), "a groups claim holding something other than strings fails the login as an authentication failure");
     }
 }

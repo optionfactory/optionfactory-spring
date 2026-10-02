@@ -152,6 +152,26 @@ public class ClaimsPolicyTest {
     }
 
     @Test
+    public void anIntegralClaimIsPinnedByValueWhateverItsJavaType() throws Exception {
+        final var token = new JWTClaimsSet.Builder().claim("level", 1).build();
+        Assertions.assertTrue(accepts(ClaimsPolicy.permissive().exact("level", 1), token), "an int pins the json integer it equals");
+        Assertions.assertTrue(accepts(ClaimsPolicy.permissive().exact("level", (short) 1), token), "a short pins the json integer it equals");
+        Assertions.assertTrue(accepts(ClaimsPolicy.permissive().exact("level", (byte) 1), token), "a byte pins the json integer it equals");
+        Assertions.assertTrue(accepts(ClaimsPolicy.issuer("my-issuer").exact("level", 1), claims().claim("level", 1).build()), "a standard policy pins an int by value too");
+        Assertions.assertFalse(accepts(ClaimsPolicy.permissive().exact("level", 2), token), "an int still rejects a different integer");
+    }
+
+    @Test
+    public void aDecimalClaimIsPinnedByValueWhateverItsJavaType() throws Exception {
+        final var token = new JWTClaimsSet.Builder().claim("ratio", 1.5).build();
+        Assertions.assertTrue(accepts(ClaimsPolicy.permissive().exact("ratio", 1.5), token), "a double pins the json decimal it equals");
+        Assertions.assertTrue(accepts(ClaimsPolicy.permissive().exact("ratio", 1.5f), token), "a float pins the json decimal it equals");
+        Assertions.assertTrue(accepts(ClaimsPolicy.permissive().exact("ratio", 0.1f), new JWTClaimsSet.Builder().claim("ratio", 0.1).build()), "a float pins the decimal it is written as, not its binary approximation");
+        Assertions.assertFalse(accepts(ClaimsPolicy.permissive().exact("ratio", 1), token), "an integer does not match a decimal with a fractional part");
+        Assertions.assertFalse(accepts(ClaimsPolicy.permissive().exact("level", 1.5), new JWTClaimsSet.Builder().claim("level", 1).build()), "a decimal with a fractional part does not match an integer");
+    }
+
+    @Test
     public void aRefinedIssuerReplacesThePreviousOne() throws Exception {
         final var policy = ClaimsPolicy.issuer("old-issuer").issuer("my-issuer");
         Assertions.assertTrue(accepts(policy, claims().build()), "the last configured issuer is the one required");

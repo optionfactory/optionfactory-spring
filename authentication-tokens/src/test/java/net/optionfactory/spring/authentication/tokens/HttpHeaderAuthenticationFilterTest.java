@@ -17,7 +17,10 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextHolderStrategy;
+import org.springframework.security.core.context.SecurityContextImpl;
 
 public class HttpHeaderAuthenticationFilterTest {
 
@@ -252,6 +255,61 @@ public class HttpHeaderAuthenticationFilterTest {
 
         Assertions.assertFalse(attempted.get(), "a basic credential is not a bearer token and is not authenticated here");
         Assertions.assertTrue(proceeded.get(), "the request proceeds for other mechanisms to handle");
+    }
+
+    @Test
+    public void anAcceptedTokenAuthenticatesTheConfiguredSecurityContextHolderStrategy() throws Exception {
+        final var filter = new HttpHeaderAuthenticationFilter(
+                (Authentication authentication) -> new AuthenticatedToken(
+                        authentication.getCredentials().toString(),
+                        "principal",
+                        authentication.getDetails(),
+                        AuthorityUtils.NO_AUTHORITIES
+                ),
+                new LinkedHashSet<>(List.of(new HeaderAndScheme("Authorization", "Bearer")))
+        );
+        final var strategy = new SingleContextStrategy();
+        filter.setSecurityContextHolderStrategy(strategy);
+        final MockHttpServletRequest req = new MockHttpServletRequest();
+        req.addHeader("Authorization", "Bearer the-token");
+        final var seen = new AtomicReference<Authentication>();
+        final var seenOnTheStaticHolder = new AtomicReference<Authentication>();
+        final FilterChain chain = (request, response) -> {
+            seen.set(strategy.getContext().getAuthentication());
+            seenOnTheStaticHolder.set(SecurityContextHolder.getContext().getAuthentication());
+        };
+
+        filter.doFilter(req, new MockHttpServletResponse(), chain);
+
+        Assertions.assertNotNull(seen.get(), "the token's authentication is set on the configured strategy");
+        Assertions.assertEquals("principal", seen.get().getPrincipal(), "the configured strategy holds the authentication the manager returned");
+        Assertions.assertNull(seenOnTheStaticHolder.get(), "the static SecurityContextHolder is left alone when another strategy is configured");
+    }
+
+    /// A strategy holding one context, distinct from the static `SecurityContextHolder`'s.
+    public static class SingleContextStrategy implements SecurityContextHolderStrategy {
+
+        private SecurityContext context = new SecurityContextImpl();
+
+        @Override
+        public void clearContext() {
+            context = new SecurityContextImpl();
+        }
+
+        @Override
+        public SecurityContext getContext() {
+            return context;
+        }
+
+        @Override
+        public void setContext(SecurityContext context) {
+            this.context = context;
+        }
+
+        @Override
+        public SecurityContext createEmptyContext() {
+            return new SecurityContextImpl();
+        }
     }
 
 }
