@@ -34,6 +34,8 @@ public class Problem {
     public static final String TYPE_UPSTREAM_ERROR = "UPSTREAM_ERROR";
     /// The caller is not allowed to do what it asked for.
     public static final String TYPE_FORBIDDEN = "FORBIDDEN";
+    /// The caller is not authenticated, and must authenticate to do what it asked for.
+    public static final String TYPE_UNAUTHORIZED = "UNAUTHORIZED";
 
     /// `null`, named for readability at call sites: the problem is not about a specific field.
     public static final String NO_CONTEXT = null;
@@ -188,6 +190,13 @@ public class Problem {
     /// @return an [#TYPE_UPSTREAM_ERROR] problem without context and details
     public static Problem upstream(@Nullable String reason) {
         return of(Problem.TYPE_UPSTREAM_ERROR, Problem.NO_CONTEXT, reason, Problem.NO_DETAILS);
+    }
+
+    /// @param reason why the caller must authenticate
+    /// @param details anything else, or `null`
+    /// @return an [#TYPE_UNAUTHORIZED] problem without context
+    public static Problem unauthorized(@Nullable String reason, @Nullable Object details) {
+        return of(Problem.TYPE_UNAUTHORIZED, Problem.NO_CONTEXT, reason, details);
     }
 
     /// @param reason why the caller is not allowed

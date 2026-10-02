@@ -119,12 +119,22 @@
 
 ## `problems`
 
+*   [NEW] **`Problem.TYPE_UNAUTHORIZED` and `Problem.unauthorized(...)`** for a caller that must
+    authenticate, next to `TYPE_FORBIDDEN` for one that is not allowed.
 *   [FIX] **A `Failure` built by `Failure.Builder` no longer changes when the builder does.** The
     failure shared the builder's list, so problems added after `build()`/`enforce()` appeared in the
     failures already built; each failure now gets its own copy.
 
 ## `problems-web`
 
+*   [FIX] **An `AccessDeniedException` thrown at an anonymous caller is answered `401`.** The
+    built-in classifier answered every `AccessDeniedException` from a `@ResponseBody` handler
+    (method security, typically) with a `403`, so anonymous api callers were told they were
+    forbidden rather than that they must authenticate. Anonymous callers (no request principal, or
+    an anonymous authentication on `SecurityContextHolder`) now get a `401` with an `UNAUTHORIZED`
+    problem, in the problems format and never as a login redirect, whatever authentication entry
+    point the application configured; authenticated callers keep the `403` with a `FORBIDDEN`
+    problem.
 *   [FIX] **`RestExceptionResolver` recognizes spring's internal errors again.** It looked for the
     `javax.servlet.error.exception` request attribute, which Spring 7 no longer sets; it now checks
     `RequestDispatcher.ERROR_EXCEPTION` and logs such errors (e.g. `HttpMessageNotWritableException`)

@@ -28,6 +28,10 @@ import org.springframework.mock.http.MockHttpInputMessage;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MissingPathVariableException;
@@ -136,11 +140,25 @@ public class BuiltInCasesTest {
     }
 
     @SuppressWarnings("unchecked")
-    private static Resolved resolve(Exception ex, HandlerMethod handler) {
+    private static Resolved resolve(Exception ex, HandlerMethod handler, MockHttpServletRequest request) {
         final var er = RestExceptionResolver.builder().withDetails(Details.INCLUDE).build(new JsonMapper());
         final var res = new MockHttpServletResponse();
-        final var got = er.resolveException(new MockHttpServletRequest(), res, handler, ex);
+        final var got = er.resolveException(request, res, handler, ex);
         return new Resolved(res.getStatus(), (List<Problem>) got.getModel().get("errors"));
+    }
+
+    private static Resolved resolve(Exception ex, HandlerMethod handler) {
+        return resolve(ex, handler, new MockHttpServletRequest());
+    }
+
+    private static HandlerMethod fakeHandler() throws NoSuchMethodException {
+        return new HandlerMethod(new BuiltInCasesTest(), BuiltInCasesTest.class.getMethod("fakeControllerMethod"));
+    }
+
+    private static MockHttpServletRequest authenticated() {
+        final var request = new MockHttpServletRequest();
+        request.setUserPrincipal(() -> "alice");
+        return request;
     }
 
     private static Resolved resolve(Exception ex) throws NoSuchMethodException {
@@ -260,15 +278,44 @@ public class BuiltInCasesTest {
 
     @Test
     public void anAccessDeniedIsForbidden() throws Exception {
-        final var got = resolve(new AccessDeniedException("nope"));
-        Assertions.assertEquals(403, got.status(), "an access denied is forbidden");
+        final var got = resolve(new AccessDeniedException("nope"), fakeHandler(), authenticated());
+        Assertions.assertEquals(403, got.status(), "an access denied to an authenticated caller is forbidden");
         Assertions.assertEquals(Problem.TYPE_FORBIDDEN, got.problem().type, "an access denied is a FORBIDDEN problem");
         Assertions.assertEquals("nope", got.problem().details, "the exception's message must go in the details");
     }
 
     @Test
     public void anAccessDeniedAnnotatedWithAStatusIsAnsweredWithIt() throws Exception {
-        Assertions.assertEquals(418, resolve(new AnnotatedAccessDenied()).status(), "the @ResponseStatus of the exception's class must win over 403");
+        Assertions.assertEquals(418, resolve(new AnnotatedAccessDenied(), fakeHandler(), authenticated()).status(), "the @ResponseStatus of the exception's class must win over 403");
+    }
+
+    @Test
+    public void anAccessDeniedAtAnAnonymousCallerIsUnauthorized() throws Exception {
+        final var got = resolve(new AccessDeniedException("nope"), fakeHandler(), new MockHttpServletRequest());
+        Assertions.assertEquals(401, got.status(), "an access denied at an anonymous caller asks it to authenticate, answering 401 rather than redirecting");
+        Assertions.assertEquals(Problem.TYPE_UNAUTHORIZED, got.problem().type, "an access denied at an anonymous caller is an UNAUTHORIZED problem");
+    }
+
+    @Test
+    public void anAuthenticationOnTheContextHolderIsNotAnonymous() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated("alice", null, List.of()));
+        try {
+            final var got = resolve(new AccessDeniedException("nope"), fakeHandler(), new MockHttpServletRequest());
+            Assertions.assertEquals(403, got.status(), "a caller authenticated on the context holder is forbidden even without a request principal");
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    @Test
+    public void anAnonymousAuthenticationOnTheContextHolderIsAnonymous() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(new AnonymousAuthenticationToken("key", "anonymousUser", List.of(new SimpleGrantedAuthority("ROLE_ANONYMOUS"))));
+        try {
+            final var got = resolve(new AccessDeniedException("nope"), fakeHandler(), new MockHttpServletRequest());
+            Assertions.assertEquals(401, got.status(), "spring security's anonymous authentication is an anonymous caller");
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
     }
 
     @Test

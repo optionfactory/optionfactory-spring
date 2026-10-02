@@ -59,7 +59,7 @@ the same reason must decline every exception it does not own:
 | `SpringWebProblemsModule` | an unreadable body, a failed binding or method validation, a missing or mistyped parameter or part, a `ResponseStatusException`, a failed `RestClient` call |
 | `BeanValidationProblemsModule` | a jakarta `ConstraintViolationException` |
 | `FailureProblemsModule` | the `Failure`s your application throws |
-| `SpringSecurityProblemsModule` | an `AccessDeniedException` |
+| `SpringSecurityProblemsModule` | an `AccessDeniedException`: `401 UNAUTHORIZED` for anonymous callers, `403 FORBIDDEN` for authenticated ones |
 | `ErrorResponseProblemsModule` | spring's other standard errors, those implementing `ErrorResponse`: an unsupported body type, an unacceptable response type, a missing header, with their own status and headers |
 
 `BeanValidationProblemsModule` and `SpringSecurityProblemsModule` are registered when their library
