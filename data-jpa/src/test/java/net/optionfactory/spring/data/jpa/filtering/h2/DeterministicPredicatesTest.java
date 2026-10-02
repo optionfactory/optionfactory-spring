@@ -20,6 +20,7 @@ import net.optionfactory.spring.data.jpa.filtering.filters.TextCompare;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Filters;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.Repositories;
 import net.optionfactory.spring.data.jpa.test.TransactionalPhases;
+import org.hibernate.query.sqm.tree.select.SqmSelectStatement;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -44,10 +45,14 @@ public class DeterministicPredicatesTest {
     @FilterTraversal(path = "leaves", joinType = JoinType.INNER, reuse = false)
     @TextCompare(name = "byLeafA", path = "leaves.a", match = Match.ANY)
     @TextCompare(name = "byLeafB", path = "leaves.b", match = Match.ANY)
+    @TextCompare(name = "byRootA", path = "a")
+    @TextCompare(name = "byRootB", path = "b")
     public static class Root {
 
         @Id
         public long id;
+        public String a;
+        public String b;
         @OneToMany(cascade = CascadeType.ALL)
         @JoinColumn(name = "rootId")
         public List<Leaf> leaves;
@@ -94,11 +99,26 @@ public class DeterministicPredicatesTest {
 
     @Test
     public void predicatesAreEmittedInFilterNameOrderWhateverTheRequestOrder() {
-        Assertions.assertEquals(rendered(orderedRequest("byLeafB", "byLeafA")), rendered(orderedRequest("byLeafA", "byLeafB")), "the same filters render the same query whatever the request order");
+        final var requestedBFirst = rendered(orderedRequest("byRootB", "byRootA", "byLeafB", "byLeafA"));
+        final var requestedAFirst = rendered(orderedRequest("byLeafA", "byLeafB", "byRootA", "byRootB"));
+        Assertions.assertEquals(requestedAFirst, requestedBFirst, "the same filters render the same query whatever the request order");
+        assertRenderedBefore(requestedBFirst, "byRootA", "byRootB");
+        assertRenderedBefore(requestedBFirst, "byLeafA", "byLeafB");
     }
 
-    /// `reuse = false` puts each filter in its own EXISTS, so both are rendered and
-    /// their order is observable in the generated query.
+    private static void assertRenderedBefore(String rendered, String first, String second) {
+        final var f = rendered.indexOf("'" + first + "'");
+        final var s = rendered.indexOf("'" + second + "'");
+        Assertions.assertTrue(f != -1 && s != -1, String.format("both %s and %s are rendered in the query: %s", first, second, rendered));
+        Assertions.assertTrue(f < s, String.format("%s is rendered before %s, in filter name order: %s", first, second, rendered));
+    }
+
+    /// The filters on the root's own properties are conjoined directly, while `reuse = false` puts
+    /// each filter on the leaves in its own EXISTS: the order of both kinds is observable in the
+    /// generated query.
+    ///
+    /// The query is rendered from the criteria tree as HQL: `Query.getQueryString()` is the
+    /// constant `<criteria>` for a criteria query, and would compare equal whatever the order.
     private String rendered(FilterRequest fr) {
         try (final var em = emf.createEntityManager()) {
             final var ei = JpaEntityInformationSupport.getEntityInformation(Root.class, em);
@@ -106,14 +126,15 @@ public class DeterministicPredicatesTest {
             final var query = builder.createQuery(Root.class);
             final var root = query.from(Root.class);
             query.where(new WhitelistFilteringSpecificationAdapter<Root>(fr, Repositories.allowedFilters(ei, em)).toPredicate(root, query, builder));
-            return em.createQuery(query.select(root)).unwrap(org.hibernate.query.Query.class).getQueryString();
+            return ((SqmSelectStatement<Root>) query.select(root)).toHqlString();
         }
     }
 
-    private static FilterRequest orderedRequest(String first, String second) {
+    private static FilterRequest orderedRequest(String... names) {
         final Map<String, String[]> filters = new LinkedHashMap<>();
-        filters.put(first, TextCompare.Filter.INSTANCE.eq(first));
-        filters.put(second, TextCompare.Filter.INSTANCE.eq(second));
+        for (final var name : names) {
+            filters.put(name, TextCompare.Filter.INSTANCE.eq(name));
+        }
         return new FilterRequest(filters);
     }
 

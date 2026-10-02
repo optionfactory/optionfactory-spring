@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Properties;
 import javax.sql.DataSource;
 import net.optionfactory.spring.data.jpa.filtering.EnableJpaWhitelistFilteringRepositories;
+import net.optionfactory.spring.data.jpa.filtering.psql.CapturingStatementInspector;
 import net.optionfactory.spring.data.jpa.test.containers.ContainerDefinition;
 import org.hibernate.boot.model.naming.ImplicitNamingStrategyComponentPathImpl;
 import org.hibernate.boot.model.naming.PhysicalNamingStrategySnakeCaseImpl;
@@ -91,6 +92,7 @@ public class HibernateOnMysqlTestConfig {
         properties.put(AvailableSettings.JSON_FORMAT_MAPPER, new Jackson3JsonFormatMapper(hibernateMapper));
         properties.put(AvailableSettings.PHYSICAL_NAMING_STRATEGY, new PhysicalNamingStrategySnakeCaseImpl());
         properties.put(AvailableSettings.IMPLICIT_NAMING_STRATEGY, new ImplicitNamingStrategyComponentPathImpl());
+        properties.put(AvailableSettings.STATEMENT_INSPECTOR, CapturingStatementInspector.class);
 
         final var factory = new LocalContainerEntityManagerFactoryBean();
         factory.setJpaVendorAdapter(new HibernateJpaVendorAdapter());

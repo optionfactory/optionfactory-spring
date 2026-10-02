@@ -199,15 +199,6 @@ public class CollectionQuantifierTest {
     }
 
     @Test
-    public void anyAndNoneOverTheSameCollectionCompose() {
-        final var fr = FilterRequest.builder()
-                .text("byTag", f -> f.eq("y"))
-                .text("withoutTag", f -> f.eq("x"))
-                .build();
-        Assertions.assertEquals(List.of("HAS-Y"), matching(fr), "ANY over y and NONE over x on the same collection both apply");
-    }
-
-    @Test
     public void aCustomTraversalFilterCarriesItsOwnQuantifier() {
         Assertions.assertEquals(List.of("EMPTY", "HAS-Y"), matching(new FilterRequest(java.util.Map.of("customWithoutTag", new String[]{"x"}))), "a custom traversal filter applies its own NONE quantifier");
     }

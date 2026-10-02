@@ -75,4 +75,13 @@ public class FilterRequestTest {
         Assertions.assertEquals(Set.of("b", "c"), request.filters().keySet(), "the copied filters, plus the added one, minus the removed one");
         Assertions.assertEquals(Set.of("a", "b"), base.filters().keySet(), "the copied request is not changed by the builder");
     }
+
+    @Test
+    public void builtRequestIsNotChangedByLaterBuilderCalls() {
+        final var builder = FilterRequest.builder().with("a", "1");
+        final var first = builder.build();
+        builder.with("b", "2").without("a");
+        Assertions.assertEquals(Set.of("a"), first.filters().keySet(), "a built request keeps the filters it was built with");
+        Assertions.assertEquals(Set.of("b"), builder.build().filters().keySet(), "the builder keeps building after a build");
+    }
 }

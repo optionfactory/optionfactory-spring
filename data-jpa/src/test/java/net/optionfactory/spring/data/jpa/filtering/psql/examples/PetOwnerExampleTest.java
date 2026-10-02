@@ -158,6 +158,7 @@ public class PetOwnerExampleTest {
         final var foundNames = owners.findAll(fr)
                 .stream()
                 .map(po -> po.firstName)
+                .sorted()
                 .toList();
 
         Assertions.assertEquals(List.of("Dorothy", "Tintin"), foundNames, "only the owners of dogs born after the bound, named with an o, are found");
@@ -175,6 +176,7 @@ public class PetOwnerExampleTest {
         final var foundNames = owners.findAll(new FilterRequest(filters))
                 .stream()
                 .map(po -> po.firstName)
+                .sorted()
                 .toList();
 
         Assertions.assertEquals(List.of("Dorothy", "Tintin"), foundNames, "a FilterRequest built from a raw map applies every filter");
@@ -195,6 +197,7 @@ public class PetOwnerExampleTest {
         final var foundNames = owners.findAll(new FilterRequest(filters))
                 .stream()
                 .map(po -> po.firstName)
+                .sorted()
                 .toList();
 
         Assertions.assertEquals(List.of("Dorothy", "Tintin"), foundNames, "a FilterRequest deserialized from json applies every filter");

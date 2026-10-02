@@ -27,9 +27,10 @@ import net.optionfactory.spring.data.jpa.filtering.filters.spi.WhitelistedFilter
 /// [Operator#BETWEEN].
 ///
 /// The property is a numeric primitive or a concrete [Number] (boxed primitives, [BigInteger],
-/// [BigDecimal], ...). The first filter value is a whitelisted [Operator], followed by the operands,
-/// which are converted to the property type: a value that cannot be converted, or does not fit the
-/// type, is rejected. Only `EQ` and `NEQ` accept a `null` value, to compare with `NULL`.
+/// [BigDecimal], ...); a `char` is not numeric, and is rejected when the repository is built. The
+/// first filter value is a whitelisted [Operator], followed by the operands, which are converted to
+/// the property type: a value that cannot be converted, or does not fit the type, is rejected.
+/// Only `EQ` and `NEQ` accept a `null` value, to compare with `NULL`.
 ///
 /// ```java
 /// @Entity
@@ -67,7 +68,8 @@ public @interface NumberCompare {
     /// @return the name the filter is whitelisted under, and requested by
     String name();
 
-    /// @return the operators a client may request; must not be empty
+    /// @return the operators a client may request; an empty array is rejected when the repository
+    /// is built
     Operator[] operators() default {
         Operator.EQ, Operator.NEQ, Operator.LT, Operator.GT, Operator.LTE, Operator.GTE, Operator.BETWEEN
     };
@@ -107,12 +109,14 @@ public @interface NumberCompare {
         /// @param annotation the whitelisting annotation
         /// @param entity the entity the annotation is on
         /// @throws net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterConfiguration
-        /// when the path does not lead to a numeric property, or misuses [Match]
+        /// when the path does not lead to a numeric property (a `char` is not one), misuses [Match], or
+        /// whitelists no operator
         @SuppressWarnings("unchecked")
         public NumberCompareFilter(NumberCompare annotation, EntityType<?> entity) {
             this.name = annotation.name();
             this.traversal = Filters.traversal(entity, annotation.name(), annotation.path(), annotation.match());
-            this.propertyClass = (Class<? extends Number>) Filters.ensurePropertyOfAnyType(entity, annotation.name(), traversal, Number.class, byte.class, short.class, int.class, long.class, float.class, double.class, char.class);
+            this.propertyClass = (Class<? extends Number>) Filters.ensurePropertyOfAnyType(entity, annotation.name(), traversal, Number.class, byte.class, short.class, int.class, long.class, float.class, double.class);
+            Filters.ensureConfiguration(annotation.operators().length > 0, annotation.name(), entity, "operators must not be empty");
             this.operators = EnumSet.of(annotation.operators()[0], annotation.operators());
         }
 

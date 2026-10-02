@@ -79,12 +79,13 @@ public class TextSearchOnPsqlTest {
         articles.save(a);
     }
 
+    /// @return the ids of the matching articles, sorted: the query itself has no order
     private List<Long> search(String filter, String query) {
         final var fr = FilterRequest.builder()
                 .textSearch(filter, query)
                 .build();
         final Page<Article> page = articles.findAll(null, fr, Pageable.unpaged());
-        return page.getContent().stream().map(a -> a.id).toList();
+        return page.getContent().stream().map(a -> a.id).sorted().toList();
     }
 
     @Test

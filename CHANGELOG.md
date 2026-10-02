@@ -135,6 +135,32 @@
     10/15 characters, and `controlCodeCodiceFiscale` a `NullPointerException` for `null`, despite
     returning an `Optional`.
 
+## `data-jpa`
+
+*   [FIX] **`@NumberCompare` on a `char` property is rejected when the repository is built.**
+    The configuration was accepted, but the value was converted to a `Character` and cast to
+    `Number`, so every request carrying a value failed with a `ClassCastException`; it now fails at
+    startup with an `InvalidFilterConfiguration`.
+*   [FIX] **An empty `operators` (or `TextCompare` `caseSensitivity`) array is reported as an
+    `InvalidFilterConfiguration`.** `@NumberCompare`, `@TextCompare`, `@BooleanCompare`,
+    `@LocalDateCompare` and `@InstantCompare` failed at startup with an
+    `ArrayIndexOutOfBoundsException` that did not name the filter; they now fail with a message
+    naming the filter and the empty attribute.
+*   [FIX] **`FilterRequest.Builder.build()` returns a request independent of the builder.** The
+    request shared the builder's map, so filters added or removed after `build()` showed up in
+    requests already built; `build()` now copies the filters.
+*   [TEST] **The determinism, folding, text-compare and full-text index tests check what they
+    claim.** `DeterministicPredicatesTest` compared `"<criteria>"` with itself and now compares the
+    rendered HQL; `AutoTraversalTest` now has a row that only folding excludes; `TextCompareTest`
+    has rows each operator must exclude; postgres and example tests no longer rely on unordered
+    results; the mysql index tests EXPLAIN the rendered SQL instead of a hand-written predicate; a
+    duplicate `CollectionQuantifierTest` case was removed.
+
+## `data-jpa-test`
+
+*   [DOC] **The remaining implementation notes are javadoc.** The inline comments in
+    `SharedContainersExtension` and `TransactionalPhasesTestExecutionListener` moved to `///`.
+
 # version 28.2
 
 ## Dependencies

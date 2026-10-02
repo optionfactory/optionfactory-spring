@@ -199,9 +199,10 @@ public record FilterRequest(Map<String, String[]> filters) {
             return this;
         }
 
-        /// @return the request holding the filters added so far
+        /// @return a request holding a copy of the filters added so far, left unchanged by later calls
+        /// to this builder
         public FilterRequest build() {
-            return new FilterRequest(filters);
+            return new FilterRequest(new HashMap<>(filters));
         }
     }
 }

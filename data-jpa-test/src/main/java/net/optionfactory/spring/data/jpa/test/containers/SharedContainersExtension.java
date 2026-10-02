@@ -18,12 +18,12 @@ public final class SharedContainersExtension implements BeforeAllCallback {
     private static final Namespace NAMESPACE = Namespace.create(SharedContainersExtension.class);
 
     /// Starts the containers declared on the test class and its enclosing classes, registering each in the root
-    /// store on first use so that it is stopped when the engine is done.
+    /// store on first use so that it is stopped when the engine is done: its holder is `AutoCloseable`, and the
+    /// root store closes it.
     @Override
     public void beforeAll(ExtensionContext context) {
         final var store = context.getRoot().getStore(NAMESPACE);
         for (final var definition : definitions(context)) {
-            // the Holder is AutoCloseable: the root store closes it when the engine is done
             store.computeIfAbsent(definition, SharedContainerRegistry::holder, SharedContainerRegistry.Holder.class).container();
         }
     }

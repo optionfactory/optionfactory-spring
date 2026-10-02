@@ -67,7 +67,8 @@ public @interface LocalDateCompare {
     /// @return the name the filter is whitelisted under, and requested by
     String name();
 
-    /// @return the operators a client may request; must not be empty
+    /// @return the operators a client may request; an empty array is rejected when the repository
+    /// is built
     Operator[] operators() default {
         Operator.EQ, Operator.NEQ, Operator.LT, Operator.GT, Operator.LTE, Operator.GTE, Operator.BETWEEN
     };
@@ -110,12 +111,13 @@ public @interface LocalDateCompare {
         /// @param annotation the whitelisting annotation
         /// @param entity the entity the annotation is on
         /// @throws net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterConfiguration
-        /// when the path does not lead to a `LocalDate` property, or misuses [Match]
+        /// when the path does not lead to a `LocalDate` property, misuses [Match], or whitelists no operator
         /// @throws IllegalArgumentException when the date pattern is invalid
         public LocalDateCompareFilter(LocalDateCompare annotation, EntityType<?> entity) {
             this.name = annotation.name();
             this.traversal = Filters.traversal(entity, annotation.name(), annotation.path(), annotation.match());
             Filters.ensurePropertyOfAnyType(entity, annotation.name(), traversal, LocalDate.class);
+            Filters.ensureConfiguration(annotation.operators().length > 0, annotation.name(), entity, "operators must not be empty");
             this.operators = EnumSet.of(annotation.operators()[0], annotation.operators());
             this.formatter = DateTimeFormatter.ofPattern(annotation.datePattern());
         }

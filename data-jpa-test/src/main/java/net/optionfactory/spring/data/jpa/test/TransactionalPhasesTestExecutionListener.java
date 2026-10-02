@@ -152,9 +152,10 @@ public class TransactionalPhasesTestExecutionListener extends AbstractTestExecut
         return cache.computeIfAbsent(testClass, clazz -> hasLifecycleMethod(clazz, annotationType));
     }
 
+    /// JUnit runs the enclosing instance's `@BeforeEach`/`@AfterEach` for a `@Nested` class too, so
+    /// the non-static enclosing classes are searched as well: otherwise the phase transaction of a
+    /// nested test whose lifecycle methods are declared on its enclosing class is never opened.
     private boolean hasLifecycleMethod(Class<?> clazz, Class<? extends Annotation> annotationType) {
-        // JUnit executes the enclosing instance's @BeforeEach/@AfterEach for @Nested classes too:
-        // walk up non-static enclosing classes, or the phase transaction is never opened
         for (Class<?> current = clazz; current != null; current = enclosingClass(current)) {
             for (Method method : ReflectionUtils.getAllDeclaredMethods(current)) {
                 if (AnnotatedElementUtils.isAnnotated(method, annotationType)) {

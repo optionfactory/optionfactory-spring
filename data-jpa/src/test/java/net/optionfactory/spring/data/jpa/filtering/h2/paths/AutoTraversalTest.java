@@ -71,18 +71,23 @@ public class AutoTraversalTest {
     @Inject
     private RootEntityWithAutoTraversalRepository roots;
 
+    private long oneLeafWithBothFlags;
+
     @BeforeEach
     public void setup() {
-        roots.save(Root.of(Leaf.of(true, true),
+        oneLeafWithBothFlags = roots.save(Root.of(Leaf.of(true, true),
                 Leaf.of(true, false),
                 Leaf.of(false, true),
                 Leaf.of(false, false)
+        )).id;
+        roots.save(Root.of(Leaf.of(true, false),
+                Leaf.of(false, true)
         ));
-
     }
 
     /// Both filters cross `leaves` with the default `reuse = true`, so they fold into one subquery
-    /// describing a single leaf with both flags set.
+    /// describing a single leaf with both flags set. The second root has each flag set on a
+    /// different leaf: it would match two isolated subqueries, and is excluded only by the folding.
     @Test
     public void joinPathsAreReused() {
 
@@ -91,6 +96,7 @@ public class AutoTraversalTest {
                 .bool("flag2", f -> f.eq(Boolean.TRUE))
                 .build();
 
-        Assertions.assertEquals(1, roots.findAll(null, fr).size(), "the root is returned once, through its only leaf having both flags set");
+        final var found = roots.findAll(null, fr).stream().map(r -> r.id).toList();
+        Assertions.assertEquals(List.of(oneLeafWithBothFlags), found, "only the root with a single leaf having both flags set is returned, once");
     }
 }

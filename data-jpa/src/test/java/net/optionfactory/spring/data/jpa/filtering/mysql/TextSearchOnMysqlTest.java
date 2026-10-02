@@ -8,11 +8,13 @@ import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.PersistenceContext;
 import java.lang.reflect.Proxy;
 import java.util.List;
+import java.util.Locale;
 import net.optionfactory.spring.data.jpa.filtering.FilterRequest;
 import net.optionfactory.spring.data.jpa.filtering.WhitelistFilteringRepository;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextSearch;
 import net.optionfactory.spring.data.jpa.filtering.filters.TextSearch.Syntax;
 import net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterConfiguration;
+import net.optionfactory.spring.data.jpa.filtering.psql.CapturingStatementInspector;
 import net.optionfactory.spring.data.jpa.test.TransactionalPhases;
 import net.optionfactory.spring.data.jpa.test.containers.SharedContainer;
 import org.junit.jupiter.api.Assertions;
@@ -172,18 +174,27 @@ public class TextSearchOnMysqlTest {
 
     @Test
     public void contentPredicateUsesTheFulltextIndex() {
-        final var planText = explain("MATCH(title, body) AGAINST('cats running' IN BOOLEAN MODE)");
-        Assertions.assertTrue(planText.contains("article_by_content_fts_idx"), planText);
+        final var planText = explainRenderedPredicate("byContent", "cats running");
+        Assertions.assertTrue(planText.contains("article_by_content_fts_idx"), "the rendered byContent predicate is served by the (title, body) FULLTEXT index: " + planText);
     }
 
     @Test
     public void titlePredicateUsesTheFulltextIndex() {
-        final var planText = explain("MATCH(title) AGAINST('\"cani randagi\"' IN BOOLEAN MODE)");
-        Assertions.assertTrue(planText.contains("article_by_title_fts_idx"), planText);
+        final var planText = explainRenderedPredicate("byTitle", "cani randagi");
+        Assertions.assertTrue(planText.contains("article_by_title_fts_idx"), "the rendered byTitle predicate is served by the (title) FULLTEXT index: " + planText);
     }
 
-    private String explain(String predicate) {
-        final List<?> rows = em.createNativeQuery("EXPLAIN SELECT id FROM text_search_on_mysql_test$article WHERE %s".formatted(predicate)).getResultList();
+    /// EXPLAINs the SQL the criteria predicate actually renders, not a hand-written lookalike: if
+    /// the registered `MATCH ... AGAINST` pattern stops naming the indexed columns in the indexed
+    /// order, this is where it shows.
+    private String explainRenderedPredicate(String filter, String query) {
+        final var sqls = CapturingStatementInspector.capture(() -> search(filter, query));
+        final var select = sqls.stream()
+                .filter(sql -> sql.toLowerCase(Locale.ROOT).startsWith("select"))
+                .filter(sql -> sql.toLowerCase(Locale.ROOT).contains("against"))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("no rendered text-search select in " + sqls));
+        final List<?> rows = em.createNativeQuery("EXPLAIN " + select).getResultList();
         return rows.stream().map(row -> java.util.Arrays.toString((Object[]) row)).collect(java.util.stream.Collectors.joining("\n"));
     }
 }

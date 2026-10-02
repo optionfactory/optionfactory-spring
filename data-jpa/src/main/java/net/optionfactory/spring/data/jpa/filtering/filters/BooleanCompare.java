@@ -53,7 +53,8 @@ public @interface BooleanCompare {
     /// @return the name the filter is whitelisted under, and requested by
     String name();
 
-    /// @return the operators a client may request; must not be empty
+    /// @return the operators a client may request; an empty array is rejected when the repository
+    /// is built
     Operator[] operators() default {
         Operator.EQ, Operator.NEQ
     };
@@ -99,13 +100,14 @@ public @interface BooleanCompare {
         /// @param annotation the whitelisting annotation
         /// @param entity the entity the annotation is on
         /// @throws net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidFilterConfiguration
-        /// when the path does not lead to a boolean property, or misuses [Match]
+        /// when the path does not lead to a boolean property, misuses [Match], or whitelists no operator
         public BooleanCompareFilter(BooleanCompare annotation, EntityType<?> entity) {
             this.name = annotation.name();
             this.trueValue = annotation.trueValue();
             this.validValues = Set.of(annotation.trueValue(), annotation.falseValue());
             this.traversal = Filters.traversal(entity, annotation.name(), annotation.path(), annotation.match());
             Filters.ensurePropertyOfAnyType(entity, annotation.name(), this.traversal, Boolean.class, boolean.class);
+            Filters.ensureConfiguration(annotation.operators().length > 0, annotation.name(), entity, "operators must not be empty");
             this.operators = EnumSet.of(annotation.operators()[0], annotation.operators());
         }
 
