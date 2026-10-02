@@ -3,17 +3,27 @@ package net.optionfactory.spring.problems.web;
 import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 public class PagesExceptionResolverTest {
 
     public static class NotFound extends RuntimeException {
+
+    }
+
+    @ResponseStatus(HttpStatus.GONE)
+    public static class AnnotatedGone extends RuntimeException {
 
     }
 
@@ -113,5 +123,32 @@ public class PagesExceptionResolverTest {
         final var got = resolver.resolveException(new MockHttpServletRequest(), res, null, new NotFound());
         Assertions.assertEquals("error", got.getViewName(), "a resolver must keep the mappings it was built with");
         Assertions.assertEquals(500, res.getStatus(), "a mapping registered on the builder after building must not reach the resolver");
+    }
+
+    private static int statusOf(Exception ex) {
+        final var res = new MockHttpServletResponse();
+        final var got = DEFAULTS.resolveException(new MockHttpServletRequest(), res, null, ex);
+        Assertions.assertEquals("error", got.getViewName(), "an unmapped exception is rendered on the default view");
+        return res.getStatus();
+    }
+
+    @Test
+    public void anUnknownUrlIsANotFoundPage() {
+        Assertions.assertEquals(404, statusOf(new NoResourceFoundException(HttpMethod.GET, "/wp-login.php", "wp-login.php")), "spring's NoResourceFoundException keeps its 404 rather than becoming a 500");
+    }
+
+    @Test
+    public void anUnsupportedMethodKeepsItsStatus() {
+        Assertions.assertEquals(405, statusOf(new HttpRequestMethodNotSupportedException("DELETE")), "spring's HttpRequestMethodNotSupportedException keeps its 405 rather than becoming a 500");
+    }
+
+    @Test
+    public void aMissingParameterKeepsItsStatus() {
+        Assertions.assertEquals(400, statusOf(new MissingServletRequestParameterException("id", "long")), "spring's MissingServletRequestParameterException keeps its 400 rather than becoming a 500");
+    }
+
+    @Test
+    public void anExceptionAnnotatedWithAStatusIsAnsweredWithIt() {
+        Assertions.assertEquals(410, statusOf(new AnnotatedGone()), "the @ResponseStatus of an unmapped exception's class is the page's status");
     }
 }

@@ -137,6 +137,13 @@
 
 ## `problems-web`
 
+*   [FIX] **Page errors keep the status of spring's client errors.** `PagesExceptionResolver`
+    answered every unmapped exception but `ResponseStatusException` and `RestClientException` with
+    `500` and a `WARN` stack trace, so an unknown url (`NoResourceFoundException`), an unsupported
+    method or a missing parameter rendered the error page as a server error. Unmapped spring
+    `ErrorResponse`s now keep their status, an exception class annotated with `@ResponseStatus` gets
+    that status, and `4xx` are logged at `DEBUG`. Mappings without a status still leave the status
+    as it is, for redirects.
 *   [FIX] **An unclassified exception answered with a `4xx` is a client error.** An exception no
     classifier claims, but that spring answers with a `4xx` (a `TypeMismatchException`) or whose
     class is annotated `@ResponseStatus` with a `4xx` (an application's `NotFound`), got the right

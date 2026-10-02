@@ -9,8 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -19,10 +19,17 @@ import org.springframework.web.servlet.ModelAndView;
 /// An exception is matched against the mappings registered with the [Builder], in registration
 /// order, the first mapping whose class the exception is an instance of answering it with its view,
 /// and with its status when it has one: a mapping without status leaves the response status as it
-/// is. An unmapped exception is answered with the default view, `error` unless configured
-/// otherwise, and the status of a `ResponseStatusException`, `502` for a `RestClientException`,
-/// logged at `WARN`, or `500`, logged at `WARN` with its stack trace, for anything else, spring's
-/// own exceptions for a missing parameter or an unsupported method included.
+/// is, which is what a mapping to a redirect (`"redirect:/"`) wants. An unmapped exception is
+/// answered with the default view, `error` unless configured otherwise, and:
+///
+/// - `502` for a `RestClientException`, logged at `WARN`;
+/// - the status of a spring `ErrorResponse` (a `ResponseStatusException`, a missing parameter's
+///   `400`, an unsupported method's `405`, the `404` of a `NoResourceFoundException` for an unknown
+///   url);
+/// - the status of an exception class annotated with `@ResponseStatus`;
+/// - `500` for anything else, logged at `WARN` with its stack trace.
+///
+/// A `4xx` is logged at `DEBUG`, as a client error.
 ///
 /// An `AccessDeniedException` is always declined, before any mapping is consulted, so that it
 /// reaches spring security's `ExceptionTranslationFilter`, which starts the authentication of an
@@ -81,18 +88,28 @@ public class PagesExceptionResolver implements HandlerExceptionResolver {
             }
         }
         return switch (ex) {
-            case ResponseStatusException rse -> {
-                response.setStatus(rse.getStatusCode().value());
-                yield copyOf(defaultMav);
-            }
             case RestClientException rce -> {
                 response.setStatus(HttpStatus.BAD_GATEWAY.value());
                 logger.warn(String.format("upstream exception in %s: %s", handler, ex.getMessage()));
                 yield copyOf(defaultMav);
             }
+            case ErrorResponse er -> {
+                response.setStatus(er.getStatusCode().value());
+                if (er.getStatusCode().is4xxClientError()) {
+                    logger.debug(String.format("client error in %s: %s", handler, ex));
+                } else {
+                    logger.warn(String.format("error response in %s: %s", handler, ex));
+                }
+                yield copyOf(defaultMav);
+            }
             default -> {
-                response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
-                logger.warn(String.format("unhandled exception in %s", handler), ex);
+                final var status = ExceptionClassifier.annotatedStatusOr(ex, HttpStatus.INTERNAL_SERVER_ERROR);
+                response.setStatus(status.value());
+                if (status.is4xxClientError()) {
+                    logger.debug(String.format("client error in %s: %s", handler, ex));
+                } else {
+                    logger.warn(String.format("unhandled exception in %s", handler), ex);
+                }
                 yield copyOf(defaultMav);
             }
         };
@@ -149,7 +166,9 @@ public class PagesExceptionResolver implements HandlerExceptionResolver {
             return this;
         }
 
-        /// Maps exceptions to a view, leaving the response status as it is.
+        /// Maps exceptions to a view, leaving the response status as it is: meant for redirects,
+        /// which set their own status, e.g. `with(ServletRequestBindingException.class,
+        /// "redirect:/")`. Any other view is rendered with the current status, usually `200`.
         ///
         /// @param clazz the exceptions to answer, subclasses included
         /// @param view the name of the view answering them
@@ -168,7 +187,9 @@ public class PagesExceptionResolver implements HandlerExceptionResolver {
             return this;
         }
 
-        /// Maps exceptions to a view, leaving the response status as it is.
+        /// Maps exceptions to a view, leaving the response status as it is: meant for redirects,
+        /// which set their own status, e.g. `with(ServletRequestBindingException.class,
+        /// "redirect:/")`. Any other view is rendered with the current status, usually `200`.
         ///
         /// @param clazz the exceptions to answer, subclasses included
         /// @param mav the answer to them
