@@ -46,16 +46,14 @@ import org.w3c.dom.css.CSSStyleRule;
 /// The result is a whole html document (`<html>`, `<head>` and `<body>` are added when missing),
 /// pretty-printed.
 ///
-/// An instance is not thread-safe, since the underlying css parser is not: do not share one between
-/// threads rendering emails concurrently.
+/// An instance is thread-safe: each postprocessing uses its own css parser, so one inliner can be
+/// shared, e.g. by a [net.optionfactory.spring.email.EmailMessage.Prototype], between threads
+/// rendering emails concurrently.
 public class CssInliner implements HtmlBodyPostprocessor {
-
-    private final CSSOMParser cssParser = new CSSOMParser(new SACParserCSS3());
 
     /// @param html the html to inline, never `null`
     /// @return the html document with the inlined styles
-    /// @throws NullPointerException when `html` is `null`, which is what a message without an html
-    /// body passes
+    /// @throws NullPointerException when `html` is `null`
     @Override
     public String postprocess(String html) {
         try {
@@ -120,7 +118,7 @@ public class CssInliner implements HtmlBodyPostprocessor {
                 .collect(Collectors.joining("\r\n"));
         styleEls.remove();
         try (final var r = new StringReader(stylesTexts)) {
-            return new StyleTagsAndRules(styleEls, cssParser.parseStyleSheet(new InputSource(r), null, null).getCssRules());
+            return new StyleTagsAndRules(styleEls, new CSSOMParser(new SACParserCSS3()).parseStyleSheet(new InputSource(r), null, null).getCssRules());
         }
 
     }

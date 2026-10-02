@@ -28,11 +28,23 @@ sender.processSpool();
 
 ### CSS Inliner
 
-The `CssInliner` can be used to inline CSS into HTML email bodies for better client compatibility.
+The `CssInliner` moves the rules of `<style data-inlined>` elements into `style` attributes, for better client compatibility.
+It is an `HtmlBodyPostprocessor`, usually configured on a message builder or prototype:
 
 ```java
-CssInliner inliner = new CssInliner();
-String inlinedHtml = inliner.inline(htmlBody);
+EmailMessage.Prototype prototype = EmailMessage.builder()
+        .sender("noreply@example.com", "Example")
+        .subject("Welcome")
+        .htmlBodyEngine(f -> f.html("/emails/", ac))
+        .htmlBodyTemplate("welcome.html")
+        .htmlBodyPostprocessor(new CssInliner())
+        .prototype();
+```
+
+It can also be used on its own:
+
+```java
+String inlinedHtml = new CssInliner().postprocess(htmlBody);
 ```
 
 

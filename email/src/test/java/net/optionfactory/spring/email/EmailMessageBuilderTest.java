@@ -7,11 +7,17 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import net.optionfactory.spring.email.inliner.CssInliner;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.core.io.ByteArrayResource;
+import org.thymeleaf.context.IExpressionContext;
+import org.thymeleaf.dialect.AbstractDialect;
+import org.thymeleaf.dialect.IExpressionObjectDialect;
 import org.thymeleaf.exceptions.TemplateEngineException;
+import org.thymeleaf.expression.IExpressionObjectFactory;
 import org.thymeleaf.templatemode.TemplateMode;
 
 public class EmailMessageBuilderTest {
@@ -124,6 +130,51 @@ public class EmailMessageBuilderTest {
     }
 
     @Test
+    public void stringEnginesRegisterTheGivenDialects() {
+        final var m = minimal()
+                .htmlBodyEngine(f -> f.string(TemplateMode.HTML, null, new ShoutingDialect()))
+                .htmlBodyTemplate("<b>[[${#shouter.shout(name)}]]</b>")
+                .variable("name", "Jane")
+                .build();
+
+        Assertions.assertEquals("<b>JANE</b>", m.htmlBody(), "the dialects given to string() are registered, as they are by text() and html()");
+    }
+
+    public static class Shouter {
+
+        public String shout(String s) {
+            return s.toUpperCase();
+        }
+    }
+
+    private static class ShoutingDialect extends AbstractDialect implements IExpressionObjectDialect {
+
+        public ShoutingDialect() {
+            super("shouting");
+        }
+
+        @Override
+        public IExpressionObjectFactory getExpressionObjectFactory() {
+            return new IExpressionObjectFactory() {
+                @Override
+                public Set<String> getAllExpressionObjectNames() {
+                    return Set.of("shouter");
+                }
+
+                @Override
+                public Object buildObject(IExpressionContext context, String expressionObjectName) {
+                    return new Shouter();
+                }
+
+                @Override
+                public boolean isCacheable(String expressionObjectName) {
+                    return true;
+                }
+            };
+        }
+    }
+
+    @Test
     public void theHtmlEngineOnlyResolvesHtmlTemplates() {
         final var builder = minimal()
                 .htmlBodyEngine(f -> f.html(TEMPLATES, null))
@@ -142,6 +193,31 @@ public class EmailMessageBuilderTest {
 
         Assertions.assertEquals("<P>BODY</P>", m.htmlBody(), "the html body is the postprocessed one");
         Assertions.assertEquals("text", m.textBody(), "the text body is not postprocessed");
+    }
+
+    @Test
+    public void thePostprocessorIsNotCalledWithoutAnHtmlBody() {
+        final var calls = new ArrayList<String>();
+        final var m = minimal()
+                .htmlBodyPostprocessor(html -> {
+                    calls.add(html);
+                    return html;
+                })
+                .build();
+
+        Assertions.assertEquals(List.of(), calls, "the postprocessor is not invoked for a message without an html body");
+        Assertions.assertNull(m.htmlBody(), "a text-only message has no html body");
+    }
+
+    @Test
+    public void aPrototypeWithACssInlinerCanBuildTextOnlyMessages() {
+        final var prototype = minimal()
+                .htmlBodyPostprocessor(new CssInliner())
+                .prototype();
+
+        final var m = Assertions.assertDoesNotThrow(() -> prototype.builder().build(), "a text-only message builds even when the prototype inlines css");
+        Assertions.assertEquals("text", m.textBody(), "the text body is kept");
+        Assertions.assertNull(m.htmlBody(), "no html body is made up for a text-only message");
     }
 
     @Test

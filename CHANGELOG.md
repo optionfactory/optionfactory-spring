@@ -200,6 +200,27 @@
     password)` constructor and a `sign(InputStream, ...)` method that do not exist; it now shows
     `PdfSigner(key, chain)` and `sign(Resource, SignatureInfo)`.
 
+## `email`
+
+*   [FIX] **`EmailMessage.TemplateEngineFactory.string(mode, ms, dialects...)` registers the given
+    dialects.** The dialects were silently ignored, unlike `text()` and `html()`, so custom
+    expression objects were unavailable to string templates; they are now added to the engine.
+*   [FIX] **A message without an html body builds even when an `HtmlBodyPostprocessor` is
+    configured.** The postprocessor was invoked with `null` for text-only messages, so a prototype
+    with a `CssInliner` failed every text-only build with a `NullPointerException`; the
+    postprocessor is now invoked only when there is an html body.
+*   [FIX] **`CssInliner` is thread-safe.** It shared one css parser across calls, resetting its
+    document handler each time, so an inliner held by a `Prototype` and used by concurrent threads
+    could mix up or lose the inlined rules; each call now uses its own parser.
+*   [DOC] **The readme shows the real `CssInliner` API.** It referenced a non-existent `inline(...)`
+    method; it now shows `postprocess(...)` and its use as an html body postprocessor.
+
+## `upstream-alerts-email`
+
+*   [DOC] **The readme shows the real `AlertsEmailsSpooler` configuration API.** It showed a removed
+    `AlertsEmailsSpooler.bufferedScheduled(paths, ...)` factory; it now shows
+    `AlertsEmailsSpooler.builder(paths, ac, ts)...bufferedScheduled(prototype)`.
+
 # version 28.2
 
 ## Dependencies

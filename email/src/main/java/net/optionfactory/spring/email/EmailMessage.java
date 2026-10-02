@@ -119,7 +119,7 @@ public record EmailMessage(
     /// Each call to [#builder()] returns an independent copy, so the email-specific settings never
     /// leak into the prototype or into other emails, and a prototype that nothing mutates can be
     /// shared between threads. What the copies share must then be thread-safe too: the template
-    /// engines are, the [net.optionfactory.spring.email.inliner.CssInliner] is not.
+    /// engines and the [net.optionfactory.spring.email.inliner.CssInliner] are.
     public interface Prototype {
 
         /// The copy is shallow: lists of attachments, cids and the variables are copied, while the
@@ -144,12 +144,9 @@ public record EmailMessage(
         /// "template name" passed to [Builder#htmlBodyTemplate] or [Builder#textBodyTemplate] is
         /// the template content.
         ///
-        /// Unlike [#text] and [#html], this method does not register the given `dialects`: they are
-        /// ignored.
-        ///
         /// @param mode the template mode, e.g. `TemplateMode.HTML`
         /// @param ms the source of `#{...}` messages, may be `null`
-        /// @param dialects ignored
+        /// @param dialects further dialects to register, e.g. for custom expression objects
         /// @return the template engine
         public SpringTemplateEngine string(TemplateMode mode, @Nullable MessageSource ms, IDialect... dialects) {
             final var resolver = new StringTemplateResolver();
@@ -159,6 +156,9 @@ public record EmailMessage(
             final var engine = new SpringTemplateEngine();
             engine.addTemplateResolver(resolver);
             engine.setTemplateEngineMessageSource(ms);
+            for (IDialect dialect : dialects) {
+                engine.addDialect(dialect);
+            }
             return engine;
         }
 
@@ -405,8 +405,7 @@ public record EmailMessage(
         }
 
         /// The postprocessor is applied to the html body, literal or rendered, at each build. It is
-        /// also invoked, with `null`, for a message without an html body: see
-        /// [HtmlBodyPostprocessor].
+        /// not invoked for a message without an html body.
         ///
         /// @param htmlBodyPostprocessor transforms the html body, e.g. a
         /// [net.optionfactory.spring.email.inliner.CssInliner]
@@ -556,7 +555,7 @@ public record EmailMessage(
 
             final var context = templated ? makeContext(applicationContext, locale, variables) : null;
             final var htmlBody = htmlBodyTemplateConfigured ? htmlBodyEngine.process(htmlBodyTemplate, context) : htmlBodyLiteral;
-            final var postprocessedHtmlBody = htmlBodyPostprocessor != null ? htmlBodyPostprocessor.postprocess(htmlBody) : htmlBody;
+            final var postprocessedHtmlBody = htmlBodyPostprocessor != null && htmlBody != null ? htmlBodyPostprocessor.postprocess(htmlBody) : htmlBody;
             final var textBody = textBodyTemplateConfigured ? textBodyEngine.process(textBodyTemplate, context) : textBodyLiteral;
 
             return new EmailMessage(
