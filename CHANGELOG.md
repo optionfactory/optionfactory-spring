@@ -99,6 +99,26 @@
     anything but strings, threw a `ClassCastException`, which bypassed the login's failure handler.
     It is now an authentication failure with the `invalid_user_info_response` error code.
 
+## `problems`
+
+*   [FIX] **A `Failure` built by `Failure.Builder` no longer changes when the builder does.** The
+    failure shared the builder's list, so problems added after `build()`/`enforce()` appeared in the
+    failures already built; each failure now gets its own copy.
+
+## `problems-web`
+
+*   [FIX] **`RestExceptionResolver` recognizes spring's internal errors again.** It looked for the
+    `javax.servlet.error.exception` request attribute, which Spring 7 no longer sets; it now checks
+    `RequestDispatcher.ERROR_EXCEPTION` and logs such errors (e.g. `HttpMessageNotWritableException`)
+    once, as internal errors of spring, at `WARN`.
+*   [FIX] **`@BinaryResponseErrorStatus` on a controller class is honoured.** The annotation targets
+    types, but only the method's was read; a class-level annotation now marks every handler of the
+    class as a download with its status, and a method annotation still wins.
+*   [FIX] **`PagesExceptionResolver` answers each request with its own `ModelAndView`.** Every request
+    received the same configured instances, so a change made while rendering one request leaked into
+    concurrent and later ones; each resolution now gets a copy. The resolver also copies the
+    builder's mappings, so mappings registered after `build()` no longer reach it.
+
 # version 28.2
 
 ## Dependencies

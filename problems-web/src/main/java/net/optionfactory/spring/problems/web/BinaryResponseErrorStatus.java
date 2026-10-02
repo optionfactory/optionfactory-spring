@@ -9,8 +9,8 @@ import org.springframework.http.HttpStatus;
 /// Marks a handler method as a download for [BinaryResponseExceptionResolver], and sets the status
 /// its failures are answered with, whatever the exception.
 ///
-/// Only the annotation on the method is read: although the annotation can be placed on a type,
-/// the resolver does not look for it there.
+/// On a controller class it marks every handler method of the class, and of its subclasses, as a
+/// download; an annotation on the method wins over the one on its class.
 ///
 /// ```java
 /// @GetMapping("/reports/{id}.csv")

@@ -31,13 +31,13 @@ import org.springframework.web.server.ResponseStatusException;
 /// may already have been told its name with a `Content-Disposition` header. So when such a handler
 /// fails before the response is committed, this resolver resets the response, discarding the
 /// headers and anything buffered, and sets the status alone: the one of [BinaryResponseErrorStatus]
-/// when the handler declares one, else the status of a `ResponseStatusException`, `502` for a
+/// when the handler or its class declares one, the method's winning, else the status of a `ResponseStatusException`, `502` for a
 /// `RestClientException`, and `500` for anything else. When the response is already committed it
 /// is left as it is. Either way the exception is logged at `WARN` and the resolver answers it.
 ///
 /// A handler method is taken for a download, judging once per method, when it:
 ///
-/// 1. is annotated with [BinaryResponseErrorStatus];
+/// 1. is annotated with [BinaryResponseErrorStatus], or belongs to a class that is;
 /// 2. returns a `Resource`, a `StreamingResponseBody` or a `byte[]`;
 /// 3. returns an `HttpEntity` or a `ResponseEntity` of a `Resource` or a `byte[]`;
 /// 4. returns `void` and takes the `HttpServletResponse` or an `OutputStream` to write to;
@@ -102,7 +102,8 @@ public class BinaryResponseExceptionResolver implements HandlerExceptionResolver
     }
 
     private EndpointConfig inspectEndpoint(HandlerMethod hm) {
-        final var annotation = AnnotatedElementUtils.findMergedAnnotation(hm.getMethod(), BinaryResponseErrorStatus.class);
+        final var methodAnnotation = AnnotatedElementUtils.findMergedAnnotation(hm.getMethod(), BinaryResponseErrorStatus.class);
+        final var annotation = methodAnnotation != null ? methodAnnotation : AnnotatedElementUtils.findMergedAnnotation(hm.getBeanType(), BinaryResponseErrorStatus.class);
         if (annotation != null) {
             return new EndpointConfig(true, annotation.value().value());
         }

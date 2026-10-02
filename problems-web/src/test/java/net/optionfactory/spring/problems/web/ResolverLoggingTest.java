@@ -13,6 +13,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -67,6 +68,17 @@ public class ResolverLoggingTest {
                 .filter(e -> RestExceptionResolver.class.getName().equals(e.getLoggerName()))
                 .map(LogEvent::getLevel)
                 .toList();
+    }
+
+    @Test
+    public void anInternalErrorOfSpringIsLoggedAsSuch() throws NoSuchMethodException {
+        resolverLevelsWhenResolving(new HttpMessageNotWritableException("cannot write"));
+        final var messages = capture.events.stream()
+                .filter(e -> RestExceptionResolver.class.getName().equals(e.getLoggerName()))
+                .map(e -> e.getLevel() + " " + e.getMessage().getFormattedMessage())
+                .toList();
+        Assertions.assertEquals(1, messages.size(), "an internal error of spring must be logged exactly once, got " + messages);
+        Assertions.assertTrue(messages.get(0).startsWith("WARN got an internal error from spring"), "an exception spring marks as an internal error must be logged as such at WARN, got " + messages);
     }
 
     @Test

@@ -60,6 +60,17 @@ public class FailureTest {
     }
 
     @Test
+    public void problemsAddedAfterBuildingDoNotShowUpInTheBuiltFailure() {
+        final var builder = Failure.builder().field("name", "required");
+        final var failure = builder.build();
+        builder.field("surname", "required");
+        Assertions.assertEquals(1, failure.problems.size(), "a built failure must keep only the problems collected before it was built");
+        final var thrown = Assertions.assertThrows(Failure.class, builder::enforce, "enforcing with problems must throw");
+        builder.field("email", "required");
+        Assertions.assertEquals(2, thrown.problems.size(), "a thrown failure must keep only the problems collected before it was thrown");
+    }
+
+    @Test
     public void enforcingAnEmptyBuilderDoesNotThrow() {
         Assertions.assertDoesNotThrow(() -> Failure.builder().add(false, () -> Problem.field("name", "required")).enforce(), "enforcing without problems must not throw");
     }

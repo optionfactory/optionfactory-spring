@@ -1,5 +1,6 @@
 package net.optionfactory.spring.problems.web;
 
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
@@ -49,7 +50,9 @@ import tools.jackson.databind.json.JsonMapper;
 ///
 /// An exception no classifier claims is unexpected, and answered with a single `SERVER_ERROR`
 /// problem: with the status spring's `DefaultHandlerExceptionResolver` picks for it, logged at
-/// `WARN`, when spring knows the exception, and with a `500`, logged at `ERROR`, otherwise. In both
+/// `WARN`, when spring knows the exception, as an internal error of spring's when spring marks it so
+/// (by setting `RequestDispatcher.ERROR_EXCEPTION`, as for an `HttpMessageNotWritableException`),
+/// and with a `500`, logged at `ERROR`, otherwise. In both
 /// cases an exception class annotated with `@ResponseStatus` is answered with that status instead,
 /// but still logged as unexpected.
 ///
@@ -278,11 +281,12 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             return classified;
         }
         if (null != super.doResolveException(request, new SendErrorToSetStatusHttpServletResponse(response), hm, ex)) {
-            if (request.getAttribute("javax.servlet.error.exception") != null) {
+            if (request.getAttribute(RequestDispatcher.ERROR_EXCEPTION) != null) {
                 logger.warn(String.format("got an internal error from spring at %s", requestUri), ex);
+            } else {
+                logger.warn(String.format("got an unexpected error while processing request at %s", requestUri), ex);
             }
             final HttpStatus currentStatus = HttpStatus.valueOf(response.getStatus());
-            logger.warn(String.format("got an unexpected error while processing request at %s", requestUri), ex);
             return new HttpStatusAndProblems(ExceptionClassifier.annotatedStatusOr(ex, currentStatus), List.of(Problem.of(Problem.TYPE_SERVER_ERROR, null, null, ex.getMessage())));
         }
         logger.error(String.format("got an unexpected error while processing request at %s", requestUri), ex);

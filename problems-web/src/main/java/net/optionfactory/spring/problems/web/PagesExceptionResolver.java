@@ -29,9 +29,10 @@ import org.springframework.web.servlet.ModelAndView;
 /// anonymous user and hands anyone else to its access denied handler.
 ///
 /// The resolver answers any handler: it relies on its place in the chain, behind the rest and
-/// binary resolvers, to see only page handlers, see [ExceptionResolvers#configure()]. Every request
-/// is answered with the same `ModelAndView` instances, those given to the builder: they must not be
-/// modified.
+/// binary resolvers, to see only page handlers, see [ExceptionResolvers#configure()]. The
+/// `ModelAndView`s configured are templates: each resolution answers with a fresh copy of one, with
+/// the same view, status and model entries, so a request can modify the one it gets without
+/// affecting the others.
 ///
 /// ```java
 /// ExceptionResolvers.configurer(resolvers)
@@ -46,8 +47,10 @@ public class PagesExceptionResolver implements HandlerExceptionResolver {
     private final ModelAndView defaultMav;
     private final Map<Class<? extends Exception>, ModelViewStatus> exceptionToView;
 
-    /// @param defaultMav the answer to an exception no mapping matches
-    /// @param exceptionToView the mappings, consulted in the map's iteration order
+    /// @param defaultMav the template of the answer to an exception no mapping matches, copied for
+    ///        each resolution
+    /// @param exceptionToView the mappings, consulted in the map's iteration order, their
+    ///        `ModelAndView`s copied for each resolution
     public PagesExceptionResolver(ModelAndView defaultMav, Map<Class<? extends Exception>, ModelViewStatus> exceptionToView) {
         this.defaultMav = defaultMav;
         this.exceptionToView = exceptionToView;
@@ -74,25 +77,37 @@ public class PagesExceptionResolver implements HandlerExceptionResolver {
                 if (status != null) {
                     response.setStatus(status);
                 }
-                return entry.getValue().mav();
+                return copyOf(entry.getValue().mav());
             }
         }
         return switch (ex) {
             case ResponseStatusException rse -> {
                 response.setStatus(rse.getStatusCode().value());
-                yield defaultMav;
+                yield copyOf(defaultMav);
             }
             case RestClientException rce -> {
                 response.setStatus(HttpStatus.BAD_GATEWAY.value());
                 logger.warn(String.format("upstream exception in %s: %s", handler, ex.getMessage()));
-                yield defaultMav;
+                yield copyOf(defaultMav);
             }
             default -> {
                 response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
                 logger.warn(String.format("unhandled exception in %s", handler), ex);
-                yield defaultMav;
+                yield copyOf(defaultMav);
             }
         };
+    }
+
+    private static ModelAndView copyOf(ModelAndView template) {
+        final var mav = new ModelAndView();
+        if (template.isReference()) {
+            mav.setViewName(template.getViewName());
+        } else {
+            mav.setView(template.getView());
+        }
+        mav.setStatus(template.getStatus());
+        mav.addAllObjects(template.getModel());
+        return mav;
     }
 
     /// How a mapped exception is answered.
@@ -104,7 +119,8 @@ public class PagesExceptionResolver implements HandlerExceptionResolver {
     }
 
     /// Configures a [PagesExceptionResolver]. Registering a mapping for a class already mapped
-    /// replaces its view and status, but keeps its place in the order.
+    /// replaces its view and status, but keeps its place in the order. Mappings registered after
+    /// [#build()] do not affect the resolvers already built.
     public static class Builder {
 
         private ModelAndView errorAction = new ModelAndView("error");
@@ -164,7 +180,7 @@ public class PagesExceptionResolver implements HandlerExceptionResolver {
 
         /// @return the configured resolver
         public PagesExceptionResolver build() {
-            return new PagesExceptionResolver(errorAction, exceptionToView);
+            return new PagesExceptionResolver(errorAction, new LinkedHashMap<>(exceptionToView));
         }
 
     }

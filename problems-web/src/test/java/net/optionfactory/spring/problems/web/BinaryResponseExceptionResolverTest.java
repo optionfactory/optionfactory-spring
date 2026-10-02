@@ -58,6 +58,19 @@ public class BinaryResponseExceptionResolverTest {
         }
     }
 
+    @BinaryResponseErrorStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public static class AnnotatedHandlers {
+
+        public String page() {
+            return "page";
+        }
+
+        @BinaryResponseErrorStatus(HttpStatus.GATEWAY_TIMEOUT)
+        public String annotated() {
+            return null;
+        }
+    }
+
     private final BinaryResponseExceptionResolver resolver = new BinaryResponseExceptionResolver();
 
     private static HandlerMethod handler(String name, Class<?>... parameterTypes) throws NoSuchMethodException {
@@ -142,5 +155,20 @@ public class BinaryResponseExceptionResolverTest {
         Assertions.assertTrue(got.isEmpty(), "a failure on a committed download must still be answered, with nothing");
         Assertions.assertEquals(200, res.getStatus(), "the status of a committed response cannot change");
         Assertions.assertEquals("half a file", res.getContentAsString(), "what was sent must stay as it was");
+    }
+
+    @Test
+    public void anAnnotatedClassMakesEachOfItsHandlersADownloadWithItsStatus() throws NoSuchMethodException {
+        final var res = new MockHttpServletResponse();
+        final var got = resolve(new HandlerMethod(new AnnotatedHandlers(), AnnotatedHandlers.class.getMethod("page")), res, new ResponseStatusException(HttpStatus.NOT_FOUND));
+        Assertions.assertNotNull(got, "a handler of a class annotated with @BinaryResponseErrorStatus must be answered as a download");
+        Assertions.assertEquals(503, res.getStatus(), "the status declared on the class must win over the exception's");
+    }
+
+    @Test
+    public void theMethodAnnotationWinsOverTheClassOne() throws NoSuchMethodException {
+        final var res = new MockHttpServletResponse();
+        resolve(new HandlerMethod(new AnnotatedHandlers(), AnnotatedHandlers.class.getMethod("annotated")), res, new IllegalStateException());
+        Assertions.assertEquals(504, res.getStatus(), "the status declared on the method must win over the one declared on its class");
     }
 }

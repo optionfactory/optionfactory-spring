@@ -1,5 +1,6 @@
 package net.optionfactory.spring.problems.web;
 
+import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -8,6 +9,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.ModelAndView;
 
 public class PagesExceptionResolverTest {
 
@@ -83,5 +85,33 @@ public class PagesExceptionResolverTest {
         res.setStatus(409);
         resolver.resolveException(new MockHttpServletRequest(), res, null, new NotFound());
         Assertions.assertEquals(409, res.getStatus(), "a mapping without status must not change the response status");
+    }
+
+    @Test
+    public void eachResolutionGetsItsOwnModelAndView() {
+        final var template = new ModelAndView("errors/not-found");
+        template.addObject("title", "not found");
+        final var resolver = PagesExceptionResolver.builder().with(template).with(NotFound.class, template, 404).build();
+        final var first = resolver.resolveException(new MockHttpServletRequest(), new MockHttpServletResponse(), null, new NotFound());
+        first.addObject("user", "alice");
+        first.setViewName("tampered");
+        final var second = resolver.resolveException(new MockHttpServletRequest(), new MockHttpServletResponse(), null, new NotFound());
+        Assertions.assertNotSame(first, second, "two resolutions must not share a ModelAndView");
+        Assertions.assertEquals("errors/not-found", second.getViewName(), "changing the view of one request's ModelAndView must not affect the next");
+        Assertions.assertEquals(Map.of("title", "not found"), second.getModel(), "the model must carry the configured entries, not those added by another request");
+        final var unmapped = resolver.resolveException(new MockHttpServletRequest(), new MockHttpServletResponse(), null, new IllegalStateException());
+        Assertions.assertNotSame(template, unmapped, "the default ModelAndView must be copied too");
+        Assertions.assertEquals(Map.of("title", "not found"), template.getModel(), "the configured ModelAndView must never be modified");
+    }
+
+    @Test
+    public void aMappingRegisteredAfterBuildingDoesNotAffectTheBuiltResolver() {
+        final var builder = PagesExceptionResolver.builder();
+        final var resolver = builder.build();
+        builder.with(NotFound.class, "errors/not-found", 404);
+        final var res = new MockHttpServletResponse();
+        final var got = resolver.resolveException(new MockHttpServletRequest(), res, null, new NotFound());
+        Assertions.assertEquals("error", got.getViewName(), "a resolver must keep the mappings it was built with");
+        Assertions.assertEquals(500, res.getStatus(), "a mapping registered on the builder after building must not reach the resolver");
     }
 }

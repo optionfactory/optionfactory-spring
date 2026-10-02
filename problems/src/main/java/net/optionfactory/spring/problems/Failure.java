@@ -28,9 +28,9 @@ import org.jspecify.annotations.Nullable;
 /// without a message, so that logs show what failed.
 public class Failure extends RuntimeException {
 
-    /// The problems, in the order they were given. The list is the one passed to the constructor
-    /// or held by the builder, not a copy: it is mutable whenever that list is, and `problems-web`
-    /// rewrites the problems' reasons in place when it localizes them.
+    /// The problems, in the order they were given. The list is the one passed to the constructor,
+    /// not a copy, while a [Builder] passes a copy of its own: it is mutable whenever that list is,
+    /// and `problems-web` rewrites the problems' reasons in place when it localizes them.
     public final List<Problem> problems;
 
     /// @param problems the problems, kept as given
@@ -206,9 +206,9 @@ public class Failure extends RuntimeException {
 
     /// Collects problems, then builds or throws a [Failure] with them.
     ///
-    /// Problems are kept in the order they are added. A builder is not thread-safe, and the failure
-    /// it builds shares its list of problems: problems added after [#build()] show up in the
-    /// failures already built, so use a builder once.
+    /// Problems are kept in the order they are added. A builder is not thread-safe. Each failure it
+    /// builds or throws gets a mutable copy of the problems collected so far: problems added
+    /// afterwards do not show up in the failures already built.
     public static class Builder {
 
         private Throwable cause;
@@ -431,14 +431,14 @@ public class Failure extends RuntimeException {
         ///
         /// @return a failure with the problems, cause and message collected
         public Failure build() {
-            return new Failure(problems, cause, message);
+            return new Failure(new ArrayList<>(problems), cause, message);
         }
 
         /// Throws the failure when any problem was collected, does nothing otherwise.
         ///
         /// @throws Failure with the problems, cause and message collected, when there are problems
         public void enforce() {
-            Failure.enforce(problems, cause, message);
+            Failure.enforce(new ArrayList<>(problems), cause, message);
         }
 
     }
