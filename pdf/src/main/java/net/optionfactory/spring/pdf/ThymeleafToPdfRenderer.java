@@ -42,7 +42,12 @@ public class ThymeleafToPdfRenderer {
     }
 
     public Resource render(String template, Context context) {
-        final var xhtml = templateEngine.process(template, context);
+        return renderXhtml(templateEngine.process(template, context));
+    }
+
+    /// Renders an XHTML document produced elsewhere, e.g. by an XSL transformation, without going through Thymeleaf:
+    /// its text is never evaluated as template expressions.
+    public Resource renderXhtml(String xhtml) {
         try(final var doc = new PDDocument()){
             final var nonSigned = new FastByteArrayOutputStream(64 * 1024);
             final var builder = new PdfRendererBuilder()

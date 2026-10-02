@@ -55,6 +55,21 @@ public class ThymeleafToPdfRendererTest {
         }
     }
 
+    @Test
+    public void canRenderXhtmlWithoutEvaluatingIt() throws Exception {
+        final var xhtml = """
+                <html xmlns="http://www.w3.org/1999/xhtml">
+                    <head><style>body { font-family: OpenSans; }</style></head>
+                    <body>[[${1 + 1}]] <span th:text="'replaced'" xmlns:th="http://www.thymeleaf.org">kept</span></body>
+                </html>
+                """;
+        dump(renderer.renderXhtml(xhtml), "target/example.xhtml.pdf");
+        try (final var doc = Loader.loadPDF(new File("target/example.xhtml.pdf"))) {
+            final var got = new PDFTextStripper().getText(doc);
+            Assertions.assertEquals("[[${1 + 1}]] kept", got.trim(), "the xhtml is rendered as it is, its text not evaluated");
+        }
+    }
+
     public void dump(Resource in, String out) {
         try (var fos = new FileOutputStream(out); var is = in.getInputStream()) {
             StreamUtils.copy(is, fos);
