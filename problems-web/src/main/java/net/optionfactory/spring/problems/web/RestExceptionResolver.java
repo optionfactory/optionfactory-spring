@@ -48,13 +48,18 @@ import tools.jackson.databind.json.JsonMapper;
 /// `upstream`'s and `data-jpa`'s. The resolver logs a classified exception at `DEBUG`, as a client
 /// error; modules log the server-side failures they classify themselves.
 ///
-/// An exception no classifier claims is unexpected, and answered with a single `SERVER_ERROR`
-/// problem: with the status spring's `DefaultHandlerExceptionResolver` picks for it, logged at
-/// `WARN`, when spring knows the exception, as an internal error of spring's when spring marks it so
-/// (by setting `RequestDispatcher.ERROR_EXCEPTION`, as for an `HttpMessageNotWritableException`),
-/// and with a `500`, logged at `ERROR`, otherwise. In both
-/// cases an exception class annotated with `@ResponseStatus` is answered with that status instead,
-/// but still logged as unexpected.
+/// An exception no classifier claims is answered with a single problem, and the status spring's
+/// `DefaultHandlerExceptionResolver` picks for it when spring knows the exception, `500`
+/// otherwise; an exception class annotated with `@ResponseStatus` is answered with that status
+/// instead. The status decides what the problem is:
+///
+/// - a `4xx` is a client error: a `REQUEST_ERROR` problem, logged at `DEBUG` like the classified
+///   client errors (e.g. spring's `TypeMismatchException`, an application exception annotated
+///   `@ResponseStatus(NOT_FOUND)`);
+/// - anything else is unexpected: a `SERVER_ERROR` problem, logged at `WARN` when spring knows the
+///   exception, as an internal error of spring's when spring marks it so (by setting
+///   `RequestDispatcher.ERROR_EXCEPTION`, as for an `HttpMessageNotWritableException`), and at
+///   `ERROR` otherwise.
 ///
 /// The [FailureTransformer]s then run, built-in ones first, and finally, unless details are
 /// included, the problems' `details` are cleared: they carry exception messages and other internal
@@ -281,16 +286,28 @@ public class RestExceptionResolver extends DefaultHandlerExceptionResolver {
             return classified;
         }
         if (null != super.doResolveException(request, new SendErrorToSetStatusHttpServletResponse(response), hm, ex)) {
+            final HttpStatus status = ExceptionClassifier.annotatedStatusOr(ex, HttpStatus.valueOf(response.getStatus()));
+            if (status.is4xxClientError()) {
+                return clientError(requestUri, status, ex);
+            }
             if (request.getAttribute(RequestDispatcher.ERROR_EXCEPTION) != null) {
                 logger.warn(String.format("got an internal error from spring at %s", requestUri), ex);
             } else {
                 logger.warn(String.format("got an unexpected error while processing request at %s", requestUri), ex);
             }
-            final HttpStatus currentStatus = HttpStatus.valueOf(response.getStatus());
-            return new HttpStatusAndProblems(ExceptionClassifier.annotatedStatusOr(ex, currentStatus), List.of(Problem.of(Problem.TYPE_SERVER_ERROR, null, null, ex.getMessage())));
+            return new HttpStatusAndProblems(status, List.of(Problem.of(Problem.TYPE_SERVER_ERROR, null, null, ex.getMessage())));
+        }
+        final HttpStatus status = ExceptionClassifier.annotatedStatusOr(ex, HttpStatus.INTERNAL_SERVER_ERROR);
+        if (status.is4xxClientError()) {
+            return clientError(requestUri, status, ex);
         }
         logger.error(String.format("got an unexpected error while processing request at %s", requestUri), ex);
-        return new HttpStatusAndProblems(ExceptionClassifier.annotatedStatusOr(ex, HttpStatus.INTERNAL_SERVER_ERROR), List.of(Problem.of(Problem.TYPE_SERVER_ERROR, null, null, ex.getMessage())));
+        return new HttpStatusAndProblems(status, List.of(Problem.of(Problem.TYPE_SERVER_ERROR, null, null, ex.getMessage())));
+    }
+
+    private HttpStatusAndProblems clientError(String requestUri, HttpStatus status, Exception ex) {
+        logger.debug(String.format("Unclassified client error at %s: %s", requestUri, ex));
+        return new HttpStatusAndProblems(status, List.of(Problem.of(Problem.TYPE_REQUEST_ERROR, null, null, ex.getMessage())));
     }
 
     private @Nullable HttpStatusAndProblems classified(ExceptionClassifier.Context context, Exception ex) {

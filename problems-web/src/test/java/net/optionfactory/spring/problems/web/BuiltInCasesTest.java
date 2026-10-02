@@ -86,6 +86,11 @@ public class BuiltInCasesTest {
         }
     }
 
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public static class AnnotatedNotFound extends RuntimeException {
+
+    }
+
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
     public static class AnnotatedBug extends RuntimeException {
 
@@ -355,6 +360,14 @@ public class BuiltInCasesTest {
     public void anExceptionSpringKnowsKeepsSpringsStatus() throws Exception {
         final var got = resolve(new TypeMismatchException("abc", Integer.class));
         Assertions.assertEquals(400, got.status(), "spring's DefaultHandlerExceptionResolver must pick the status of an exception it knows");
+        Assertions.assertEquals(Problem.TYPE_REQUEST_ERROR, got.problem().type, "an exception spring answers with a 4xx is a client error, not a SERVER_ERROR");
+    }
+
+    @Test
+    public void anUnknownExceptionAnnotatedWithAClientStatusIsARequestError() throws Exception {
+        final var got = resolve(new AnnotatedNotFound());
+        Assertions.assertEquals(404, got.status(), "the @ResponseStatus of an unclassified exception must win over 500");
+        Assertions.assertEquals(Problem.TYPE_REQUEST_ERROR, got.problem().type, "an unclassified exception annotated with a 4xx status is a client error, not a SERVER_ERROR");
     }
 
     @Test

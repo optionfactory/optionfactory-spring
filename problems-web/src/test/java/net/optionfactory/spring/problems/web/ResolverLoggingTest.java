@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.converter.HttpMessageNotWritableException;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -85,6 +86,24 @@ public class ResolverLoggingTest {
     public void aClientErrorIsNotLoggedAsAWarning() throws NoSuchMethodException {
         final var levels = resolverLevelsWhenResolving(Failure.field("name", "required"));
         Assertions.assertTrue(levels.stream().noneMatch(level -> level.isMoreSpecificThan(Level.WARN)), "a client error must be logged below WARN, got " + levels);
+    }
+
+    @Test
+    public void anUnclassifiedClientErrorIsNotLoggedAsAWarning() throws NoSuchMethodException {
+        final var levels = resolverLevelsWhenResolving(new BuiltInCasesTest.AnnotatedNotFound());
+        Assertions.assertTrue(levels.stream().noneMatch(level -> level.isMoreSpecificThan(Level.WARN)), "an unclassified exception annotated with a 4xx status must be logged below WARN, got " + levels);
+    }
+
+    @Test
+    public void aClientErrorSpringKnowsIsNotLoggedAsAWarning() throws NoSuchMethodException {
+        final var levels = resolverLevelsWhenResolving(new TypeMismatchException("abc", Integer.class));
+        Assertions.assertTrue(levels.stream().noneMatch(level -> level.isMoreSpecificThan(Level.WARN)), "an exception spring answers with a 4xx must be logged below WARN, got " + levels);
+    }
+
+    @Test
+    public void anUnclassifiedServerErrorAnnotatedWithAStatusIsStillLoggedAsAnError() throws NoSuchMethodException {
+        final var levels = resolverLevelsWhenResolving(new BuiltInCasesTest.AnnotatedBug());
+        Assertions.assertTrue(levels.contains(Level.ERROR), "an unclassified exception annotated with a 5xx status must be logged at ERROR, got " + levels);
     }
 
     @Test

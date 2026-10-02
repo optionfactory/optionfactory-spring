@@ -137,6 +137,12 @@
 
 ## `problems-web`
 
+*   [FIX] **An unclassified exception answered with a `4xx` is a client error.** An exception no
+    classifier claims, but that spring answers with a `4xx` (a `TypeMismatchException`) or whose
+    class is annotated `@ResponseStatus` with a `4xx` (an application's `NotFound`), got the right
+    status but a `SERVER_ERROR` problem, and was logged as an unexpected error, at `ERROR` with a
+    stack trace for the annotated ones. It is now a `REQUEST_ERROR` problem logged at `DEBUG`;
+    `5xx` statuses are reported and logged as before.
 *   [FIX] **An `AccessDeniedException` thrown at an anonymous caller is answered `401`.** The
     built-in classifier answered every `AccessDeniedException` from a `@ResponseBody` handler
     (method security, typically) with a `403`, so anonymous api callers were told they were
