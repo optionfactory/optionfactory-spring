@@ -193,12 +193,22 @@ public class Failure extends RuntimeException {
         return new Failure(List.of(Problem.upstream(reason)), null, null);
     }
 
+    /// A failure saying the caller may not do what it asked for, typically in the current state
+    /// of what it asked about.
+    ///
+    /// Like every `Failure`, it is answered `400` by `problems-web`, whatever the type of its
+    /// problems: the `FORBIDDEN` type tells clients what went wrong, not the http status. A `403`
+    /// takes a `Failure` subclass annotated with `@ResponseStatus(HttpStatus.FORBIDDEN)`, or spring
+    /// security's `AccessDeniedException` when the caller lacks a permission.
+    ///
     /// @param reason why the caller is not allowed
     /// @return a failure with a `FORBIDDEN` problem without context and details
     public static Failure forbidden(@Nullable String reason) {
         return new Failure(List.of(Problem.forbidden(reason)), null, null);
     }
 
+    /// As [#forbidden(String)], without a reason: answered `400` too.
+    ///
     /// @return a failure with a `FORBIDDEN` problem without context, reason and details
     public static Failure forbidden() {
         return new Failure(List.of(Problem.forbidden()), null, null);

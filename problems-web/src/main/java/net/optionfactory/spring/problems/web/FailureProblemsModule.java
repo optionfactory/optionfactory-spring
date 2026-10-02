@@ -10,6 +10,10 @@ import org.springframework.http.HttpStatus;
 /// Built in: the `Failure`s an application throws, answered with their own problems and `400`
 /// unless the failure's class declares another status with `@ResponseStatus`.
 ///
+/// The status does not depend on the problems' types: a `Failure.forbidden(...)`, whose problem is
+/// `FORBIDDEN`, is a `400` too. Applications use it for operations the current state does not
+/// allow, and clients tell the cases apart by problem type; a `403` takes an annotated subclass.
+///
 /// Each problem's reason is taken as a message code and localized when the resolver's message
 /// source knows it, kept as is otherwise, so a failure can be thrown with
 /// `jakarta.validation.constraints.NotNull.message` as its reason. The reasons are rewritten in the

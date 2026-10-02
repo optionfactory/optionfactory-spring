@@ -125,6 +125,10 @@
 
 ## `problems`
 
+*   [DOC] **`Failure.forbidden(...)` is answered `400`, by design.** The javadoc of `Failure`,
+    `Problem.TYPE_FORBIDDEN` and `FailureProblemsModule` says that a failure's status does not
+    depend on its problem types, and that a `403` takes a `@ResponseStatus(FORBIDDEN)` subclass or
+    an `AccessDeniedException`.
 *   [NEW] **`Problem.TYPE_UNAUTHORIZED` and `Problem.unauthorized(...)`** for a caller that must
     authenticate, next to `TYPE_FORBIDDEN` for one that is not allowed.
 *   [FIX] **A `Failure` built by `Failure.Builder` no longer changes when the builder does.** The

@@ -32,7 +32,9 @@ public class Problem {
     public static final String TYPE_SERVER_ERROR = "SERVER_ERROR";
     /// A failure of a service the server depends on.
     public static final String TYPE_UPSTREAM_ERROR = "UPSTREAM_ERROR";
-    /// The caller is not allowed to do what it asked for.
+    /// The caller is not allowed to do what it asked for. The type does not set the http status:
+    /// a `Failure` carrying it is answered `400` by `problems-web`, an `AccessDeniedException`
+    /// `403`.
     public static final String TYPE_FORBIDDEN = "FORBIDDEN";
     /// The caller is not authenticated, and must authenticate to do what it asked for.
     public static final String TYPE_UNAUTHORIZED = "UNAUTHORIZED";
