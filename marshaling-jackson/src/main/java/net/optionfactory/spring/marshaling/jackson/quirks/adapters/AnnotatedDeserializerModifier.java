@@ -25,8 +25,8 @@ import tools.jackson.databind.deser.std.StdValueInstantiator;
 /// reflection on `tools.jackson.databind` is not allowed, e.g. when it is a named module that does
 /// not open the package.
 ///
-/// A property renamed by a handler is added under its new name, while a field or setter property
-/// also stays reachable under its original one.
+/// A property renamed by a handler replaces the original: it is reachable under its new name
+/// only, whether it is bound through a field, a setter or a creator.
 public class AnnotatedDeserializerModifier extends ValueDeserializerModifier {
 
     private final List<QuirkHandler<?>> transformers;
@@ -70,6 +70,9 @@ public class AnnotatedDeserializerModifier extends ValueDeserializerModifier {
                 currentProp = transform(handler, currentProp);
             }
             if (currentProp != prop) {
+                if (!currentProp.getFullName().equals(prop.getFullName())) {
+                    builder.removeProperty(prop.getFullName());
+                }
                 builder.addOrReplaceProperty(currentProp, true);
             }
         });

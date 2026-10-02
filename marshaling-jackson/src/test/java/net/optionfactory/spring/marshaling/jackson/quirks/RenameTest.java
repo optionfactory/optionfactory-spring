@@ -10,6 +10,12 @@ public class RenameTest {
 
     }
 
+    public static class FieldBean {
+
+        @Quirks.Rename("renamed")
+        public String originalName;
+    }
+
     @Test
     public void canSerializeWithoutQuirksModule() {
         final var om = new JsonMapper();
@@ -58,5 +64,23 @@ public class RenameTest {
         {"originalName":"a"}
         """, Bean.class);
         Assertions.assertEquals(new Bean(null), got, "a record component is bound to the fixed name only");
+    }
+
+    @Test
+    public void aFieldPropertyIsReadFromTheFixedName() {
+        final var om = JsonMapper.builder().addModule(Quirks.defaults().build()).build();
+        final var got = om.readValue("""
+        {"renamed":"a"}
+        """, FieldBean.class);
+        Assertions.assertEquals("a", got.originalName, "a field property is read from the fixed name");
+    }
+
+    @Test
+    public void theOriginalNameOfAFieldPropertyIsNotRead() {
+        final var om = JsonMapper.builder().addModule(Quirks.defaults().build()).build();
+        final var got = om.readValue("""
+        {"originalName":"a"}
+        """, FieldBean.class);
+        Assertions.assertNull(got.originalName, "a field property is bound to the fixed name only, as a record component is");
     }
 }

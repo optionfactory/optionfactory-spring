@@ -185,9 +185,9 @@ public interface Quirks {
     /// Gives a property a fixed json name, both ways, e.g. a name that is not a valid java
     /// identifier, without a mapper-wide naming strategy.
     ///
-    /// Applied after [Scream] by [Quirks#defaults()], so it wins when both are present. For a
-    /// property deserialized through a field or setter (not a creator parameter or record
-    /// component) the original name keeps being accepted as well.
+    /// Applied after [Scream] by [Quirks#defaults()], so it wins when both are present. When
+    /// reading, the property is bound to the fixed name only: the java name is unknown, like any
+    /// other name the bean does not declare.
     @Retention(RetentionPolicy.RUNTIME)
     public @interface Rename {
 

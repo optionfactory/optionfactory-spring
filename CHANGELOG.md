@@ -274,6 +274,11 @@
 
 ## `marshaling-jackson`
 
+*   [FIX] **`@Quirks.Rename` binds a field or setter property to the fixed name only.** The
+    renamed property was added next to the original one, so a field or setter property was read
+    from both the fixed name and the java name, while a record component or creator property was
+    read from the fixed name only. The java name is now an unknown property for all of them:
+    ignored, or rejected with `FAIL_ON_UNKNOWN_PROPERTIES`.
 *   [FIX] **`@Quirks.Timestamp` on a property that cannot hold an `Instant` is rejected when the
     (de)serializer is built.** It used to be accepted silently: serializing wrote the property
     without a value (invalid json) and deserializing failed with a cast error. It now throws an
