@@ -30,12 +30,24 @@ public class UriRedactorTest {
     @Test
     public void allValuesOfARepeatedParamCollapseIntoOneKeepingTheOthers() {
         final var result = new UriRedactor(Map.of("param", "R")).redact(URI.create("https://example.com/path?param=a&other=b&param=c"));
-        Assertions.assertEquals(URI.create("https://example.com/path?other=b&param=R"), result, "a repeated param must be rendered once, redacted and last, and the other params kept");
+        Assertions.assertEquals(URI.create("https://example.com/path?param=R&other=b"), result, "a repeated param must be rendered once, redacted where it first appears, and the other params kept");
     }
 
     @Test
     public void paramNamesAreCaseSensitive() {
         final var source = URI.create("https://example.com/path?PARAM=a");
         Assertions.assertSame(source, new UriRedactor(Map.of("param", "R")).redact(source), "a param differing in case must not be redacted");
+    }
+
+    @Test
+    public void percentEscapesAreKeptAsTheyAre() {
+        final var result = new UriRedactor(Map.of("param", "R")).redact(URI.create("https://example.com/a%20b?q=a%20b&param=x%20y#frag%20ment"));
+        Assertions.assertEquals(URI.create("https://example.com/a%20b?q=a%20b&param=R#frag%20ment"), result, "escapes already in the uri must not be encoded again");
+    }
+
+    @Test
+    public void theReplacementIsEncoded() {
+        final var result = new UriRedactor(Map.of("param", "a b&c")).redact(URI.create("https://example.com/?param=x"));
+        Assertions.assertEquals(URI.create("https://example.com/?param=a%20b%26c"), result, "the replacement must be encoded as a query param value");
     }
 }

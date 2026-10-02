@@ -46,4 +46,14 @@ public class HttpHeadersRedactorTest {
         Assertions.assertNull(new HttpHeadersRedactor(Map.of("X-Secret", "R")).redact(null), "null headers must be returned as null");
     }
 
+    @Test
+    public void redactingDoesNotChangeTheSourceHeaders() {
+        final var redactor = new HttpHeadersRedactor(Map.of("Authorization", "R"));
+        final var headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer MY_TOKEN");
+        final var result = redactor.redact(headers);
+        Assertions.assertEquals("R", result.getFirst("Authorization"), "the returned headers must be redacted");
+        Assertions.assertEquals("Bearer MY_TOKEN", headers.getFirst("Authorization"), "the source headers must keep the real value");
+    }
+
 }

@@ -2,16 +2,14 @@ package net.optionfactory.spring.upstream.rendering;
 
 import java.net.URI;
 import java.util.Map;
-import org.springframework.web.util.UriComponentsBuilder;
-
 
 /// Redacts the query parameters of a request uri before it is logged.
 ///
 /// Each configured parameter present in the query, matched by its exact name, has all of its
-/// values replaced by a single redacted value, moved to the end of the query. A uri that needs no
-/// redaction is returned as it is;
-/// a redacted one is re-encoded, and the re-encoding also applies to what was already encoded: a
-/// `%20` in the original query is rendered as `%2520`.
+/// values replaced by a single redacted value, where the parameter first appears; names are
+/// matched still encoded. A uri that needs no redaction is returned as it is; in a redacted one
+/// everything but the redacted values is kept as it is, escapes included, and the replacement is
+/// encoded as a query parameter value.
 public class UriRedactor {
 
     private final Map<String, String> paramsRedactions;
@@ -27,19 +25,16 @@ public class UriRedactor {
         if (source == null || paramsRedactions == null || paramsRedactions.isEmpty()) {
             return source;
         }
-        final var currentQueryParams = UriComponentsBuilder.fromUri(source).build().getQueryParams();
-        if (currentQueryParams.isEmpty()) {
+        final var rawQuery = source.getRawQuery();
+        if (rawQuery == null || rawQuery.isEmpty()) {
             return source;
         }
-        final var builder = UriComponentsBuilder.fromUri(source);
-        boolean mutated = false;
-
-        for (final var entry : paramsRedactions.entrySet()) {
-            if (currentQueryParams.containsKey(entry.getKey())) {
-                builder.replaceQueryParam(entry.getKey(), entry.getValue());
-                mutated = true;
-            }
+        final var redactedQuery = FormUrlencodedRedactor.redactQuery(rawQuery, paramsRedactions);
+        if (redactedQuery.equals(rawQuery)) {
+            return source;
         }
-        return mutated ? builder.build().toUri() : source;
+        final var uri = source.toString();
+        final var fragment = source.getRawFragment();
+        return URI.create(uri.substring(0, uri.indexOf('?') + 1) + redactedQuery + (fragment == null ? "" : "#" + fragment));
     }
 }

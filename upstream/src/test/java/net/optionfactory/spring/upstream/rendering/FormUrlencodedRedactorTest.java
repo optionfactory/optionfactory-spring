@@ -34,4 +34,11 @@ public class FormUrlencodedRedactorTest {
         final var redactor = new FormUrlencodedRedactor(Map.of("param", "R"));
         Assertions.assertEquals("", redactor.redact(new ByteArrayResource(" \n".getBytes(StandardCharsets.UTF_8))), "a blank body must render as an empty string");
     }
+
+    @Test
+    public void percentEscapesAreKeptAsTheyAre() {
+        final var redactor = new FormUrlencodedRedactor(Map.of("param", "R"));
+        final var result = redactor.redact(new ByteArrayResource("q=a%20b+c&param=x%20y".getBytes(StandardCharsets.UTF_8)));
+        Assertions.assertEquals("q=a%20b+c&param=R", result, "escapes already in the body must not be encoded again");
+    }
 }

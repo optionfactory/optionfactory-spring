@@ -176,7 +176,7 @@ public class PayloadsRenderingTest {
         headers.setContentType(MediaType.TEXT_PLAIN);
         final var request = new RequestContext(Instant.EPOCH, HttpMethod.POST, URI.create("https://example.com/a?token=secret&page=1"), headers, Map.of(), "body".getBytes(StandardCharsets.UTF_8));
         final var got = redacting.render(request, MultipartStrategy.RENDER_PARTS, HeadersStrategy.SKIP, BodiesStrategy.ABBREVIATED_REDACTED, "~", 1000);
-        Assertions.assertEquals(URI.create("https://example.com/a?page=1&token=@redacted@"), got.uri(), "the configured query param must be redacted, and moved last");
+        Assertions.assertEquals(URI.create("https://example.com/a?token=@redacted@&page=1"), got.uri(), "the configured query param must be redacted in place");
         Assertions.assertEquals("@redacted@", got.main().headers().getFirst("Authorization"), "request headers must be redacted whatever the headers strategy");
         Assertions.assertEquals("body", got.main().body(), "the request body must be rendered");
         Assertions.assertTrue(got.parts().isEmpty(), "a request that is not multipart must have no parts");
@@ -224,5 +224,34 @@ public class PayloadsRenderingTest {
         final var response = new ResponseContext(Instant.EPOCH, HttpStatus.OK, "OK", new HttpHeaders(), BodySource.of(streamed, Buffering.UNBUFFERED), false);
         final var got = br.render(response, MultipartStrategy.RENDER_PARTS, HeadersStrategy.SKIP, BodiesStrategy.ABBREVIATED_REDACTED, "~", 1000);
         Assertions.assertEquals("<unavailable>", got.main().body(), "a streamed body must be rendered as unavailable");
+    }
+
+    @Test
+    public void multipartPartsAreRedactedByTheirOwnContentType() {
+        final var redacting = PayloadsRendering.builder().jsonPtr("/password").build();
+        final var headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("multipart/mixed; boundary=b"));
+        final var body = "--b\r\nContent-Type: application/json\r\n\r\n{\"password\": \"s3cret\"}\r\n--b--";
+        final var got = redacting.render(response(headers, body), MultipartStrategy.RENDER_PARTS, HeadersStrategy.SKIP, BodiesStrategy.ABBREVIATED_REDACTED, "~", 1000);
+        Assertions.assertEquals("{\"password\":\"@redacted@\"}", got.parts().get(0).body(), "a json part must be redacted as json, by its own Content-Type");
+    }
+
+    @Test
+    public void formBodiesWithACharsetAreRedacted() {
+        final var redacting = PayloadsRendering.builder().param("password", "R").build();
+        final var type = MediaType.parseMediaType("application/x-www-form-urlencoded;charset=UTF-8");
+        Assertions.assertEquals("user=u&password=R", render(redacting, BodiesStrategy.ABBREVIATED_REDACTED, -1, type, "user=u&password=s", 1000), "form params must be redacted whatever the media type parameters");
+    }
+
+    @Test
+    public void recapRendersThePartsWithTheirHeadersAndSizeOnly() {
+        final var headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("multipart/mixed; boundary=b"));
+        final var body = "--b\r\nContent-Type: text/plain\r\n\r\nfirst\r\n--b\r\nContent-Type: text/plain\r\n\r\nsecond\r\n--b--";
+        final var got = br.render(response(headers, body), MultipartStrategy.RENDER_RECAP, HeadersStrategy.SKIP, BodiesStrategy.ABBREVIATED_REDACTED, "~", 1000);
+        Assertions.assertEquals(2, got.parts().size(), "every part must be recapped");
+        Assertions.assertEquals(MediaType.TEXT_PLAIN, got.parts().get(0).headers().getContentType(), "a recapped part must keep its headers");
+        Assertions.assertEquals("size: 5B", got.parts().get(0).body(), "a recapped part body must be rendered as its size");
+        Assertions.assertEquals("size: 6B", got.parts().get(1).body(), "a recapped part body must be rendered as its size");
     }
 }

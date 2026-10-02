@@ -39,8 +39,8 @@ import tools.jackson.databind.json.JsonMapper;
 ///
 /// - `json` and `+json` subtypes with the configured json pointers, see [JsonRedactor];
 /// - `xml` and `+xml` subtypes with the configured tag and attribute patterns, see [XsltRedactor];
-/// - `application/x-www-form-urlencoded`, without parameters (a `charset` excludes it), with the
-///   configured params, see [FormUrlencodedRedactor];
+/// - `application/x-www-form-urlencoded`, whatever its parameters (a `charset` included), with
+///   the configured params, see [FormUrlencodedRedactor];
 /// - anything else is rendered as UTF-8 text, as it is, line breaks removed.
 ///
 /// Redaction fails open by choice: a body that cannot be redacted, typically one that does not
@@ -51,11 +51,9 @@ public class PayloadsRendering {
     private static final Logger logger = LoggerFactory.getLogger(PayloadsRendering.class);
 
     /// How a multipart payload is rendered.
-    ///
-    /// The rendering does not honour it yet: the parts of a multipart payload are always rendered
-    /// one by one, as with [#RENDER_PARTS].
     public enum MultipartStrategy {
-        /// Meant to render a summary of the parts.
+        /// Renders a summary of each part: its headers, and its body as its size, as `size: 123B`,
+        /// whatever the bodies strategy (but [BodiesStrategy#SKIP], which renders nothing).
         RENDER_RECAP,
         /// Renders each part, with its headers and body.
         RENDER_PARTS;
@@ -135,11 +133,11 @@ public class PayloadsRendering {
     /// Renders a request. Its headers are redacted whatever the headers strategy, which only tells
     /// the caller whether to log them.
     ///
-    /// Each part of a multipart request is rendered with the multipart media type rather than its
-    /// own `Content-Type`, so part bodies are not redacted by type, and are rendered as text.
+    /// Each part of a multipart request is rendered, and redacted, according to its own
+    /// `Content-Type`.
     ///
     /// @param request the request
-    /// @param mps the multipart strategy, currently ignored
+    /// @param mps the multipart strategy
     /// @param hs the headers strategy, unused
     /// @param bs the bodies strategy
     /// @param infix the abbreviation infix
@@ -152,7 +150,7 @@ public class PayloadsRendering {
         final var redactedUri = uriRedactor.redact(request.uri());
         final var redactedHeaders = headersRedactor.redact(request.headers());
         if (MultipartParser.isMultipart(ct)) {
-            final var parts = renderParts(bodySource, ct, bs, infix, maxSize);
+            final var parts = renderParts(bodySource, ct, mps, bs, infix, maxSize);
             final var main = new RenderedPart(redactedHeaders, parts.isEmpty() ? "<malformed-multipart>" : "");
             return new RenderedRequest(redactedUri, main, parts);
         }
@@ -164,11 +162,11 @@ public class PayloadsRendering {
     /// Renders a response. A body that is not buffered (a streamed one) is rendered as
     /// `<unavailable>` instead of being consumed.
     ///
-    /// Each part of a multipart response is rendered with the multipart media type rather than its
-    /// own `Content-Type`, so part bodies are not redacted by type, and are rendered as text.
+    /// Each part of a multipart response is rendered, and redacted, according to its own
+    /// `Content-Type`.
     ///
     /// @param response the response
-    /// @param mps the multipart strategy, currently ignored
+    /// @param mps the multipart strategy
     /// @param hs the headers strategy: the headers are redacted unless it is
     /// [HeadersStrategy#SKIP]
     /// @param bs the bodies strategy
@@ -181,7 +179,7 @@ public class PayloadsRendering {
         final var ct = response.headers().getContentType();
         final var redactedHeaders = hs == HeadersStrategy.SKIP ? response.headers() : headersRedactor.redact(response.headers());
         if (MultipartParser.isMultipart(ct)) {
-            final var parts = renderParts(bodySource, ct, bs, infix, maxSize);
+            final var parts = renderParts(bodySource, ct, mps, bs, infix, maxSize);
             final var main = new RenderedPart(redactedHeaders, parts.isEmpty() ? "<malformed-multipart>" : "");
             return new RenderedResponse(main, parts);
         }
@@ -190,10 +188,13 @@ public class PayloadsRendering {
 
     }
 
-    private List<RenderedPart> renderParts(BodySource bodySource, @Nullable MediaType mediaType, BodiesStrategy bs, String infix, int maxSize) {
+    private List<RenderedPart> renderParts(BodySource bodySource, @Nullable MediaType mediaType, MultipartStrategy mps, BodiesStrategy bs, String infix, int maxSize) {
+        final var recap = mps == MultipartStrategy.RENDER_RECAP && bs != BodiesStrategy.SKIP;
         try {
             return MultipartParser.parse(bodySource, mediaType).stream()
-                    .map(p -> new RenderedPart(p.headers(), renderBody(bs, p.headers().getContentLength(), mediaType, BodySource.of(p.body()), infix, maxSize)))
+                    .map(p -> new RenderedPart(p.headers(), recap
+                    ? renderBody(BodiesStrategy.SIZE, p.body().length, p.headers().getContentType(), BodySource.of(p.body()), infix, maxSize)
+                    : renderBody(bs, p.headers().getContentLength(), p.headers().getContentType(), BodySource.of(p.body()), infix, maxSize)))
                     .toList();
         } catch (RuntimeException ex) {
             return List.of();
@@ -244,7 +245,7 @@ public class PayloadsRendering {
                 if ("xml".equals(subtype) || subtype.endsWith("+xml")) {
                     return xsltRedactor.redact(source);
                 }
-                if (type.equals(MediaType.APPLICATION_FORM_URLENCODED)) {
+                if (MediaType.APPLICATION_FORM_URLENCODED.equalsTypeAndSubtype(type)) {
                     return formUrlencodedRedactor.redact(source);
                 }
             }

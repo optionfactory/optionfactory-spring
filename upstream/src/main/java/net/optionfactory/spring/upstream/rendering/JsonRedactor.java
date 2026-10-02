@@ -15,8 +15,8 @@ import tools.jackson.databind.node.ObjectNode;
 /// Each addressed value, whatever its type (an object or array included), is replaced by the
 /// configured string; a pointer that addresses nothing is ignored. The result is compact json.
 ///
-/// A pointer segment holding an escaped `~0` or `~1` is used still escaped: `/a~1b` does not
-/// redact the field `a/b`, and adds a field named `a~1b` instead.
+/// Pointer segments are unescaped as RFC 6901 says: `/a~1b` redacts the field `a/b`, `/a~0b` the
+/// field `a~b`. The root pointer (an empty string) replaces the whole document.
 public class JsonRedactor {
 
     private final JsonMapper om;
@@ -35,11 +35,15 @@ public class JsonRedactor {
     /// @throws tools.jackson.core.JacksonException when the body is not json
     public String redact(InputStreamSource source) {
         try (final var is = source.getInputStream()) {
-            final var root = om.readValue(is, JsonNode.class);
+            var root = om.readValue(is, JsonNode.class);
             for (var ptrAndValue : jsonPointers.entrySet()) {
                 final var ptr = ptrAndValue.getKey();
                 final var match = root.at(ptr);
                 if (match.isMissingNode()) {
+                    continue;
+                }
+                if (ptr.matches()) {
+                    root = om.getNodeFactory().stringNode(ptrAndValue.getValue());
                     continue;
                 }
                 final var parent = root.at(ptr.head());
@@ -47,12 +51,10 @@ public class JsonRedactor {
                     continue;
                 }
                 if (parent.isObject()) {
-                    final var fieldName = ptr.last().toString().substring(1);
-                    ((ObjectNode) parent).put(fieldName, ptrAndValue.getValue());
+                    ((ObjectNode) parent).put(ptr.last().getMatchingProperty(), ptrAndValue.getValue());
                 }
                 if (parent.isArray()) {
-                    final var index = Integer.parseInt(ptr.last().toString().substring(1));
-                    ((ArrayNode) parent).set(index, ptrAndValue.getValue());
+                    ((ArrayNode) parent).set(ptr.last().getMatchingIndex(), ptrAndValue.getValue());
                 }
             }
             return root.toString();

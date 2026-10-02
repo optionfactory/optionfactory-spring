@@ -53,4 +53,16 @@ public class JsonRedactorTest {
         final var got = redact(Map.of(JsonPointer.compile("/missing/secret"), "R"), "{ \"a\" : 1 }");
         Assertions.assertEquals("{\"a\":1}", got, "a pointer addressing nothing must leave the document unchanged, if compacted");
     }
+
+    @Test
+    public void escapedPointerSegmentsAddressTheUnescapedField() {
+        final var got = redact(Map.of(JsonPointer.compile("/a~1b"), "R", JsonPointer.compile("/c~0d"), "R"), "{\"a/b\": \"s\", \"c~d\": \"s\"}");
+        Assertions.assertEquals("{\"a/b\":\"R\",\"c~d\":\"R\"}", got, "~1 and ~0 must address the fields holding / and ~");
+    }
+
+    @Test
+    public void theRootPointerRedactsTheWholeDocument() {
+        final var got = redact(Map.of(JsonPointer.compile(""), "R"), "{\"a\": \"s\"}");
+        Assertions.assertEquals("\"R\"", got, "the root pointer must replace the whole document");
+    }
 }

@@ -1,3 +1,26 @@
+# version 28.3
+
+## `upstream`
+
+*   [FIX] **Redacting a header for logging no longer changes the request sent upstream.** The
+    headers redactor wrote the replacements into the request's own headers, so with
+    `.redact(r -> r.header("Authorization"))` and logging on, the upstream received
+    `Authorization: @redacted@` (whatever the headers strategy). The redacted headers are now a copy.
+*   [FIX] **Multipart parts are redacted according to their own `Content-Type`.** Every part was
+    rendered with the multipart media type, so json, xml and form parts were logged unredacted.
+*   [FIX] **Form bodies with media type parameters are redacted.** A body typed
+    `application/x-www-form-urlencoded;charset=UTF-8` was logged raw; the match now ignores
+    parameters.
+*   [FIX] **Json pointer redactions unescape `~0`/`~1` and support the root pointer.** `/a~1b` added
+    a field `a~1b` and left `a/b` in clear; `""` threw and the body was logged raw. Now `/a~1b`
+    redacts `a/b`, and `""` replaces the whole document.
+*   [FIX] **Uri and form redactions keep the original encoding and parameter order.** Redacting
+    re-encoded existing escapes (`%20` became `%2520`) and moved the redacted query param to the end
+    of the uri; the rest of the query/body is now kept as it is, the redacted param stays in place,
+    and the replacement is encoded.
+*   [FIX] **`MultipartStrategy.RENDER_RECAP` is honoured.** Parts were always rendered in full; with
+    `RENDER_RECAP` each part is now rendered with its headers and its body size (`size: 123B`).
+
 # version 28.2
 
 ## Dependencies
