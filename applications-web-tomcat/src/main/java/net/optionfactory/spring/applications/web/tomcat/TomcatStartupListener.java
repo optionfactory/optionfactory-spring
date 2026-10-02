@@ -1,6 +1,5 @@
 package net.optionfactory.spring.applications.web.tomcat;
 
-import net.optionfactory.spring.applications.web.tomcat.EmbeddedTomcatWebMvcApplication.TomcatDefaultsCustomizer;
 import org.apache.catalina.Lifecycle;
 import org.apache.catalina.LifecycleEvent;
 import org.apache.catalina.LifecycleListener;
@@ -13,11 +12,10 @@ import org.springframework.boot.web.server.Cookie.SameSite;
 /// `catalina.home` directories and the service settings when the server is about to initialize, so
 /// that every startup records what it ran on.
 ///
-/// Registered on the server by [EmbeddedTomcatWebMvcApplication.TomcatDefaultsCustomizer]. It logs
-/// through the logger of `TomcatDefaultsCustomizer`, not its own.
+/// Registered on the server by [EmbeddedTomcatWebMvcApplication.TomcatDefaultsCustomizer].
 public class TomcatStartupListener implements LifecycleListener {
 
-    private static final Logger logger = LoggerFactory.getLogger(TomcatDefaultsCustomizer.class);
+    private static final Logger logger = LoggerFactory.getLogger(TomcatStartupListener.class);
     private final boolean useRemoteIpValve;
     private final boolean registerDefaultServlet;
     private final int port;

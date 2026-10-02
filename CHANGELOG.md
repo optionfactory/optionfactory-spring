@@ -1,5 +1,16 @@
 # version 28.3
 
+## All modules
+
+*   [DOC] **Every public type and member has `///` javadoc.** The remaining `/** */` comments were
+    converted, inline comments moved into the javadoc or removed, and the docs state contracts,
+    failure modes and limitations as the code actually behaves.
+*   [DOC] **Architecture decision records.** `docs/decisions` records the choices that constrain the
+    whole library: explicit configuration, compile-time breaks for behaviour changes, versioning,
+    platform, error format, whitelisted filters and the others.
+*   [TEST] **Tests cover the public behaviour of every module**, and every assertion states the
+    expected behaviour in its message.
+
 ## `upstream`
 
 *   [FIX] **Redacting a header for logging no longer changes the request sent upstream.** The
@@ -266,6 +277,12 @@
     package and its subpackages only.
 *   [DOC] **The readme marks `targetClientName` as required for `generate-ts`**, as the mojo
     always did, and documents `typeAliases`.
+
+## `applications-web-tomcat`
+
+*   [FIX] **`TomcatStartupListener` logs through its own logger.** It logged under the
+    `TomcatDefaultsCustomizer` category, so the startup report could not be configured
+    separately; it now logs under `TomcatStartupListener`.
 
 # version 28.2
 
