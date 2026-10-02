@@ -21,9 +21,8 @@ import net.optionfactory.spring.validation.files.MultipartFilenameMaxLength.Mult
 
 /// Limits the length of an uploaded file's client-supplied original filename.
 ///
-/// The limit is exclusive: a filename is valid only when it is strictly shorter than [#value()]
-/// characters, so the default `256` admits filenames of up to 255 characters. The length is counted
-/// in UTF-16 code units, as `String.length()` does.
+/// The limit is inclusive: a filename is valid when it is at most [#value()] characters long, 255
+/// by default. The length is counted in UTF-16 code units, as `String.length()` does.
 ///
 /// A `null` file is valid, combine with `@NotNull` to require one. A file without an original
 /// filename is invalid.
@@ -38,8 +37,8 @@ import net.optionfactory.spring.validation.files.MultipartFilenameMaxLength.Mult
 @Constraint(validatedBy = MultipartMaxFilenameLengthValidator.class)
 public @interface MultipartFilenameMaxLength {
 
-    /// @return the length a filename must stay below
-    long value() default 256;
+    /// @return the longest filename accepted
+    long value() default 255;
 
     /// @return the message template
     String message() default "{jakarta.validation.constraints.MultipartFilenameMaxLength.message}";
@@ -74,7 +73,7 @@ public @interface MultipartFilenameMaxLength {
             if (filename == null) {
                 return false;
             }
-            return !(filename.length() >= annotation.value());
+            return filename.length() <= annotation.value();
         }
     }
 }

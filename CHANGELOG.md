@@ -172,6 +172,10 @@
 
 ## `validators`
 
+*   [FIX] **`@MultipartFilenameMaxLength` is inclusive.** A filename had to be strictly shorter
+    than `value`, so `@MultipartFilenameMaxLength(100)` admitted 99 characters. `value` is now the
+    longest filename accepted, and its default goes from `256` to `255`, so the default limit is
+    unchanged; an explicit `value` admits one more character than before.
 *   [FIX] **`@StrictEmail(message = ...)` now reports the given message.** The violation is raised by
     the composing `@Email`, whose message was fixed, so a custom message was silently ignored; the
     attribute is now propagated with `@OverridesAttribute`. The default message is unchanged.
