@@ -40,7 +40,9 @@ public @interface PhoneNumber {
     /// numbers cannot be told apart (`FIXED_LINE_OR_MOBILE`), but not numbers libphonenumber knows
     /// to be fixed lines, toll free or premium rate: an Italian landline is rejected.
     ///
-    /// An empty array fails the validator's initialization.
+    /// An empty array is a configuration error, as no number could ever be valid: the validator's
+    /// initialization fails with an `IllegalArgumentException`, which the bean validation provider
+    /// raises as a `ValidationException` the first time the constraint is validated.
     ///
     /// @return the accepted number types
     PhoneNumberType[] types() default {

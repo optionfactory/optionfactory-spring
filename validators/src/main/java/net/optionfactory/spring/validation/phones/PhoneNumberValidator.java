@@ -15,9 +15,13 @@ public class PhoneNumberValidator implements ConstraintValidator<PhoneNumber, St
     private String defaultRegion;
 
     /// @param annotation the constraint
-    /// @throws IllegalArgumentException when the constraint accepts no type at all
+    /// @throws IllegalArgumentException when the constraint accepts no type at all: no number could
+    ///         ever be valid, so an empty [PhoneNumber#types()] is a configuration error
     @Override
     public void initialize(PhoneNumber annotation) {
+        if (annotation.types().length == 0) {
+            throw new IllegalArgumentException("@PhoneNumber must accept at least one type: types is empty");
+        }
         this.types = EnumSet.copyOf(List.of(annotation.types()));
         this.defaultRegion = annotation.defaultRegion();
     }

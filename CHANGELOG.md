@@ -119,6 +119,22 @@
     concurrent and later ones; each resolution now gets a copy. The resolver also copies the
     builder's mappings, so mappings registered after `build()` no longer reach it.
 
+## `validators`
+
+*   [FIX] **`@StrictEmail(message = ...)` now reports the given message.** The violation is raised by
+    the composing `@Email`, whose message was fixed, so a custom message was silently ignored; the
+    attribute is now propagated with `@OverridesAttribute`. The default message is unchanged.
+*   [FIX] **`@MultipartFileContentType` reports an unparseable content type as a violation.** A
+    client-sent content type spring could not parse made the validator throw, surfacing as a
+    `ValidationException` (HV000028) instead of a constraint violation; it is now invalid.
+*   [FIX] **`@PhoneNumber(types = {})` fails with a message naming the problem.** An empty `types`
+    can never accept a number; initialization failed with `EnumSet.copyOf`'s "Collection is empty",
+    it now fails with "@PhoneNumber must accept at least one type".
+*   [FIX] **`ItalianTaxCodes.controlCodePartitaIva` and `controlCodeCodiceFiscale` return empty on
+    short or `null` input.** They threw `StringIndexOutOfBoundsException` for values shorter than
+    10/15 characters, and `controlCodeCodiceFiscale` a `NullPointerException` for `null`, despite
+    returning an `Optional`.
+
 # version 28.2
 
 ## Dependencies

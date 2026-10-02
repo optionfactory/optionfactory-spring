@@ -10,6 +10,7 @@ import java.util.stream.Stream;
 import net.optionfactory.spring.validation.emails.StrictEmail;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -94,7 +95,17 @@ public class StrictEmailTest {
         Assertions.assertEquals(List.of("Specificare un indirizzo email valido"), violations.stream().map(cv -> cv.getMessage()).toList(), "'%s' must be rejected with exactly one violation: %s".formatted(email, reason));
     }
 
+    @Test
+    public void aCustomMessageReachesTheViolation() {
+        final var violations = validator.validate(new BeanWithCustomMessage("not an email"));
+        Assertions.assertEquals(List.of("custom message"), violations.stream().map(cv -> cv.getMessage()).toList(), "the message given on @StrictEmail must be the violation's message");
+    }
+
     public static record BeanWithEmail(@StrictEmail String email) {
+
+    }
+
+    public static record BeanWithCustomMessage(@StrictEmail(message = "custom message") String email) {
 
     }
 }

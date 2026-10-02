@@ -1,6 +1,7 @@
 package net.optionfactory.spring.validation.emails;
 
 import jakarta.validation.Constraint;
+import jakarta.validation.OverridesAttribute;
 import jakarta.validation.Payload;
 import jakarta.validation.constraints.Email;
 import java.lang.annotation.Documented;
@@ -35,10 +36,10 @@ import java.lang.annotation.Target;
 /// `null` is valid, as for every constraint: combine with `@NotNull` to require a value. An empty
 /// string is invalid.
 ///
-/// The violation is the one reported by the composing `@Email`, whose message is fixed to
-/// `{jakarta.validation.constraints.StrictEmail.message}`, localized in english, italian, french and
-/// spanish by the `ContributorValidationMessages` bundle this module ships. Because no attribute is
-/// overridden, a `message` given on `@StrictEmail` does not reach the violation.
+/// The violation is the one reported by the composing `@Email`, whose message is overridden by
+/// [#message()]: by default `{jakarta.validation.constraints.StrictEmail.message}`, localized in
+/// english, italian, french and spanish by the `ContributorValidationMessages` bundle this module
+/// ships.
 ///
 /// ```java
 /// public record Signup(@NotNull @StrictEmail String email) {
@@ -63,9 +64,8 @@ public @interface StrictEmail {
     /// nor ends with `-`.
     public static final String DOMAIN_PART = "[a-zA-Z]?([a-zA-Z0-9-]+[.])+[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]";
 
-    /// Ignored: the violation is reported by the composing `@Email` with its own fixed message.
-    ///
-    /// @return the message template
+    /// @return the message template, propagated to the composing `@Email` that reports the violation
+    @OverridesAttribute(constraint = Email.class, name = "message")
     String message() default "{jakarta.validation.constraints.StrictEmail.message}";
 
     /// @return the validation groups the constraint belongs to, propagated to the composing `@Email`

@@ -1,7 +1,6 @@
 package net.optionfactory.spring.validation.files;
 
 import jakarta.validation.Validation;
-import jakarta.validation.ValidationException;
 import jakarta.validation.Validator;
 import java.util.List;
 import java.util.Locale;
@@ -53,7 +52,7 @@ public class MultipartFileContentTypeTest {
     }
 
     @Test
-    public void anUnparseableContentTypeFailsValidationWithAnException() {
-        Assertions.assertThrows(ValidationException.class, () -> violations("garbage"), "a content type spring cannot parse must make validation throw rather than report a violation");
+    public void anUnparseableContentTypeIsReportedAsAViolation() {
+        Assertions.assertEquals(List.of("Unsupported file type, supported: [image/*, text/plain]"), violations("garbage"), "a content type spring cannot parse must be reported as a violation, not thrown");
     }
 }

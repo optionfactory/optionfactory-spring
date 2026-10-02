@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.optionfactory.spring.validation.files.MultipartFileContentType.MultipartFileContentTypeValidator;
+import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,8 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 /// are: this is a usability check, not a security one.
 ///
 /// A `null` file is valid, combine with `@NotNull` to require one. A file without a content type is
-/// invalid. A content type spring cannot parse makes the validator throw, which the bean validation
-/// provider reports as a `ValidationException` rather than as a violation.
+/// invalid, and so is a content type spring cannot parse.
 ///
 /// The default message lists the accepted [#types()].
 ///
@@ -74,9 +74,8 @@ public @interface MultipartFileContentType {
         /// @param value the file to validate
         /// @param context the validation context
         /// @return true when the file is `null` or its content type is included in one of the
-        ///         accepted types, false when it has no content type or matches none of them
-        /// @throws org.springframework.http.InvalidMediaTypeException when the content type cannot be
-        ///         parsed
+        ///         accepted types, false when it has no content type, has one that cannot be parsed
+        ///         or matches none of them
         @Override
         public boolean isValid(MultipartFile value, ConstraintValidatorContext context) {
             if (value == null) {
@@ -86,7 +85,12 @@ public @interface MultipartFileContentType {
             if (contentType == null) {
                 return false;
             }
-            final MediaType mediaType = MediaType.parseMediaType(contentType);
+            final MediaType mediaType;
+            try {
+                mediaType = MediaType.parseMediaType(contentType);
+            } catch (InvalidMediaTypeException ex) {
+                return false;
+            }
             return types.stream().anyMatch(t -> t.includes(mediaType));
         }
 

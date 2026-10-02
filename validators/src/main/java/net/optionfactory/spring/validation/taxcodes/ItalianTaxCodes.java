@@ -141,11 +141,10 @@ public class ItalianTaxCodes {
     ///
     /// @param piva the partita IVA, at least its first ten digits; characters past the tenth are
     ///        ignored
-    /// @return the expected eleventh digit, or empty when `piva` is `null` or contains anything but
-    ///         digits
-    /// @throws StringIndexOutOfBoundsException when `piva` is made of fewer than ten digits
+    /// @return the expected eleventh digit, or empty when `piva` is `null`, is shorter than ten
+    ///         characters or contains anything but digits
     public static Optional<Character> controlCodePartitaIva(String piva) {
-        if (piva == null || !piva.chars().allMatch(Character::isDigit)) {
+        if (piva == null || piva.length() < PARTITA_IVA_LENGTH - 1 || !piva.chars().allMatch(Character::isDigit)) {
             return Optional.empty();
         }
         var x = IntStream.of(0, 2, 4, 6, 8)
@@ -176,11 +175,13 @@ public class ItalianTaxCodes {
     ///
     /// @param fiscalCode the codice fiscale, at least its first fifteen characters; characters past
     ///        the fifteenth are ignored
-    /// @return the expected sixteenth character, an uppercase letter, or empty when one of the
-    ///         first fifteen characters is neither an ASCII uppercase letter nor a digit
-    /// @throws NullPointerException when `fiscalCode` is `null`
-    /// @throws StringIndexOutOfBoundsException when `fiscalCode` is shorter than fifteen characters
+    /// @return the expected sixteenth character, an uppercase letter, or empty when `fiscalCode` is
+    ///         `null`, is shorter than fifteen characters or one of its first fifteen characters is
+    ///         neither an ASCII uppercase letter nor a digit
     public static Optional<Character> controlCodeCodiceFiscale(String fiscalCode) {
+        if (fiscalCode == null || fiscalCode.length() < CODICE_FISCALE_LENGTH - 1) {
+            return Optional.empty();
+        }
         if (!oddChars(fiscalCode).allMatch(ODD_CODES::containsKey)) {
             return Optional.empty();
         }

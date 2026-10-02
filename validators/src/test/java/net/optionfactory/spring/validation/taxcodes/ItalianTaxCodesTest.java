@@ -93,6 +93,14 @@ public class ItalianTaxCodesTest {
     }
 
     @Test
+    public void noCheckCharacterIsComputedFromAValueTooShortOrNull() {
+        Assertions.assertEquals(Optional.empty(), ItalianTaxCodes.controlCodePartitaIva("123456789"), "no check digit can be computed from fewer than ten digits");
+        Assertions.assertEquals(Optional.empty(), ItalianTaxCodes.controlCodePartitaIva(""), "no check digit can be computed from an empty string");
+        Assertions.assertEquals(Optional.empty(), ItalianTaxCodes.controlCodeCodiceFiscale("LHBNVF51D21D26"), "no check character can be computed from fewer than fifteen characters");
+        Assertions.assertEquals(Optional.empty(), ItalianTaxCodes.controlCodeCodiceFiscale(null), "no check character can be computed for null");
+    }
+
+    @Test
     public void noBirthDateIsGuessedFromAValueOfTheWrongLength() {
         Assertions.assertNull(ItalianTaxCodes.guessBirthDate(PARTITA_IVA, LocalDate.parse("2026-07-06"), 0), "a partita IVA encodes no birth date");
         Assertions.assertNull(ItalianTaxCodes.guessBirthDate(null, LocalDate.parse("2026-07-06"), 0), "null encodes no birth date");

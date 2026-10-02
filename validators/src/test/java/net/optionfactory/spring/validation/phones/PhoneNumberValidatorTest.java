@@ -3,7 +3,9 @@ package net.optionfactory.spring.validation.phones;
 import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberType;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
+import jakarta.validation.ValidationException;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -24,6 +26,17 @@ public class PhoneNumberValidatorTest {
 
     public record TollFreePhoneBean(@PhoneNumber(types = PhoneNumberType.TOLL_FREE) String phone) {
 
+    }
+
+    public record NoTypesPhoneBean(@PhoneNumber(types = {}) String phone) {
+
+    }
+
+    @Test
+    public void acceptingNoTypeIsAConfigurationErrorNamingTheProblem() {
+        final var ex = Assertions.assertThrows(ValidationException.class, () -> validator.validate(new NoTypesPhoneBean("3331234567")), "a constraint accepting no number type can never pass and must fail its initialization");
+        final var messages = Stream.iterate((Throwable) ex, t -> t != null, Throwable::getCause).map(Throwable::getMessage).toList();
+        Assertions.assertTrue(messages.stream().anyMatch(m -> m != null && m.contains("@PhoneNumber must accept at least one type")), "the failure must say that @PhoneNumber needs at least one type, got: %s".formatted(messages));
     }
 
     public static Stream<Arguments> phoneData() {
