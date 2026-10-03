@@ -4,7 +4,10 @@ bump:
 	mvn versions:set -DgenerateBackupPoms=false	
 
 publish-central: gpg-unlock
+	$(eval VERSION = $(shell mvn -q -N help:evaluate -Dexpression=project.version -DforceStdout))
 	mvn clean deploy -Pcentral
+	@# tags only once published: a failed deploy leaves no tag behind
+	git tag -a v$(VERSION) -m "release: $(VERSION)"
 
 gpg-unlock:
 ifndef MAVEN_GPG_PASSPHRASE
