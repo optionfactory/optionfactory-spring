@@ -7,6 +7,7 @@ import java.time.InstantSource;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BooleanSupplier;
 import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestExecution;
@@ -18,6 +19,8 @@ import net.optionfactory.spring.upstream.contexts.RequestContext;
 import net.optionfactory.spring.upstream.contexts.ResponseContext;
 import net.optionfactory.spring.upstream.expressions.BooleanExpression;
 import net.optionfactory.spring.upstream.expressions.Expressions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 
 /// Raises the alerts declared by `@Upstream.AlertOnResponse` and `@Upstream.AlertOnRemotingError`:
@@ -29,9 +32,13 @@ import org.springframework.context.ApplicationEventPublisher;
 /// returned (flagged with [ResponseContext#withAlert()], so that it is not reported twice) and a
 /// failure is rethrown.
 ///
-/// Only the failures of the exchange are remoting errors: an exception thrown by the response
-/// condition or by the publisher reaches the caller as is, without raising a remoting alert.
+/// Alerting never changes the outcome of the call either: a condition that fails to evaluate, or a
+/// publisher that throws, is logged at `ERROR` with the upstream and endpoint, and no alert is
+/// raised, while the response is returned, or the remoting error rethrown, as if alerting had not
+/// been configured. Only the failures of the exchange are remoting errors.
 public class UpstreamAlertInterceptor implements UpstreamHttpInterceptor {
+
+    private final Logger logger = LoggerFactory.getLogger(UpstreamAlertInterceptor.class);
 
     private final Map<Method, BooleanExpression> remotingConfs = new ConcurrentHashMap<>();
     private final Map<Method, BooleanExpression> responseConfs = new ConcurrentHashMap<>();
@@ -87,13 +94,16 @@ public class UpstreamAlertInterceptor implements UpstreamHttpInterceptor {
             response = execution.execute(invocation, request);
         } catch (Exception exception) {
             final var expression = remotingConfs.get(invocation.endpoint().method());
-            if (expression == null) {
-                throw exception;
-            }
-            final var exceptionContext = new ExceptionContext(clock.instant(), exception.getMessage());
-            final var ectx = invocation.expressions().context(invocation, request, exceptionContext);
-            if (expression.evaluate(ectx)) {
-                publish(invocation, request, null, exceptionContext);
+            if (expression != null) {
+                final var exceptionContext = new ExceptionContext(clock.instant(), exception.getMessage());
+                raised(invocation, () -> {
+                    final var ectx = invocation.expressions().context(invocation, request, exceptionContext);
+                    if (!expression.evaluate(ectx)) {
+                        return false;
+                    }
+                    publish(invocation, request, null, exceptionContext);
+                    return true;
+                });
             }
             throw exception;
         }
@@ -101,12 +111,24 @@ public class UpstreamAlertInterceptor implements UpstreamHttpInterceptor {
         if (expression == null) {
             return response;
         }
-        final var ectx = invocation.expressions().context(invocation, request, response);
-        if (expression.evaluate(ectx)) {
+        final boolean alerted = raised(invocation, () -> {
+            final var ectx = invocation.expressions().context(invocation, request, response);
+            if (!expression.evaluate(ectx)) {
+                return false;
+            }
             publish(invocation, request, response, null);
-            return response.withAlert();
+            return true;
+        });
+        return alerted ? response.withAlert() : response;
+    }
+
+    private boolean raised(InvocationContext invocation, BooleanSupplier alerting) {
+        try {
+            return alerting.getAsBoolean();
+        } catch (RuntimeException ex) {
+            logger.error(String.format("alerting failed for %s.%s, no alert raised", invocation.endpoint().upstream(), invocation.endpoint().name()), ex);
+            return false;
         }
-        return response;
     }
 
     private void publish(InvocationContext invocation, RequestContext request, ResponseContext response, ExceptionContext ex) {

@@ -13,6 +13,11 @@
 
 ## `upstream`
 
+*   [FIX] **A failing alert never fails the upstream call.** An `@Upstream.AlertOnResponse` or
+    `@Upstream.AlertOnRemotingError` condition that failed to evaluate (e.g. `#json_path` over a
+    body that is not json), or an event publisher that threw, reached the caller in place of the
+    response or of the remoting error. They are now logged at `ERROR`, naming the upstream and
+    endpoint, no alert is raised, and the call completes as if alerting were not configured.
 *   [FIX] **Redacting a header for logging no longer changes the request sent upstream.** The
     headers redactor wrote the replacements into the request's own headers, so with
     `.redact(r -> r.header("Authorization"))` and logging on, the upstream received
@@ -60,11 +65,10 @@
 *   [FIX] **`@Upstream.ErrorOnResponse` can be repeated on an interface.** Its container targeted
     methods only, so repeating the annotation on a type did not compile, although a single one was
     accepted there.
-*   [FIX] **An exception thrown by an `@Upstream.AlertOnResponse` condition or by the event publisher
-    is no longer treated as a remoting error.** It used to go through the `@Upstream.AlertOnRemotingError`
-    handling, possibly raising a remoting alert (or publishing twice) before reaching the caller; it now
-    reaches the caller as is. Remoting errors are timestamped with the client clock
-    (`UpstreamBuilder#clock`) instead of the system clock.
+*   [FIX] **An exception thrown by an alert condition or publisher is not a remoting error.** It
+    went through the `@Upstream.AlertOnRemotingError` handling, possibly raising a remoting alert
+    (or publishing twice); see the entry above for what happens to it now. Remoting errors are
+    timestamped with the client clock (`UpstreamBuilder#clock`) instead of the system clock.
 *   [FIX] **The elapsed time logged for a failed exchange is measured with the client clock.** It was
     computed from the request timestamp (client clock) to `Instant.now()`, so it was wrong for clients
     built with a non-system `UpstreamBuilder#clock`.

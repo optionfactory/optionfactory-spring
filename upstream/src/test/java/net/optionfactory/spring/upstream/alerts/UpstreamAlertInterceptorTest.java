@@ -25,6 +25,7 @@ import net.optionfactory.spring.upstream.expressions.Expressions;
 import net.optionfactory.spring.upstream.rendering.PayloadsRendering;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -46,6 +47,12 @@ public class UpstreamAlertInterceptorTest {
     @Upstream.AlertOnResponse("1 / 0 == 1")
     @Upstream.AlertOnRemotingError
     public interface BrokenConditionClient {
+
+        String broken();
+    }
+
+    @Upstream.AlertOnRemotingError("1 / 0 == 1")
+    public interface BrokenRemotingConditionClient {
 
         String broken();
     }
@@ -178,28 +185,52 @@ public class UpstreamAlertInterceptorTest {
     }
 
     @Test
-    public void failingResponseConditionIsNotARemotingError() throws Exception {
+    public void failingResponseConditionDoesNotFailTheCall() throws Exception {
         final var interceptor = interceptor(BrokenConditionClient.class, ObservationRegistry.NOOP);
-        final var invocation = invocation(BrokenConditionClient.class, "broken");
-        final var request = request();
-        Assertions.assertThrows(RuntimeException.class, () -> interceptor.intercept(invocation, request, responding(HttpStatus.OK)), "the failure of the response condition must reach the caller");
-        Assertions.assertTrue(events.isEmpty(), "the failure of the response condition must not raise a remoting alert");
+        final var got = interceptor.intercept(invocation(BrokenConditionClient.class, "broken"), request(), responding(HttpStatus.OK));
+        Assertions.assertEquals(HttpStatus.OK, got.status(), "a failing response condition must not fail the call: the response is returned");
+        Assertions.assertFalse(got.alert(), "a failing response condition raises no alert");
+        Assertions.assertTrue(events.isEmpty(), "a failing response condition publishes nothing");
     }
 
     @Test
-    public void failingPublisherIsNotARemotingError() throws Exception {
+    public void failingPublisherDoesNotFailTheCall() throws Exception {
         final var attempts = new ArrayList<Object>();
-        final var endpoints = Stream.of(AlertingClient.class.getMethods())
-                .collect(Collectors.toMap(m -> m, m -> new EndpointDescriptor("up", m.getName(), m, null)));
-        final var interceptor = new UpstreamAlertInterceptor(event -> {
+        final var interceptor = publishingWith(event -> {
             attempts.add(event);
             throw new IllegalStateException("publisher down");
-        }, ObservationRegistry.NOOP, CLOCK);
-        interceptor.preprocess(AlertingClient.class, expressions, endpoints);
+        });
+        final var got = interceptor.intercept(invocation(AlertingClient.class, "typeLevel"), request(), responding(HttpStatus.BAD_GATEWAY));
+        Assertions.assertEquals(HttpStatus.BAD_GATEWAY, got.status(), "a failing publisher must not fail the call: the response is returned");
+        Assertions.assertEquals(1, attempts.size(), "the alert is published once");
+    }
+
+    @Test
+    public void failingRemotingConditionKeepsTheRemotingError() throws Exception {
+        final var interceptor = interceptor(BrokenRemotingConditionClient.class, ObservationRegistry.NOOP);
+        final var invocation = invocation(BrokenRemotingConditionClient.class, "broken");
+        final var request = request();
+        final var thrown = Assertions.assertThrows(IOException.class, () -> interceptor.intercept(invocation, request, failing("boom")), "a failing remoting condition must not replace the remoting error");
+        Assertions.assertEquals("boom", thrown.getMessage(), "the original remoting error reaches the caller");
+        Assertions.assertTrue(events.isEmpty(), "a failing remoting condition publishes nothing");
+    }
+
+    @Test
+    public void failingPublisherKeepsTheRemotingError() throws Exception {
+        final var interceptor = publishingWith(event -> {
+            throw new IllegalStateException("publisher down");
+        });
         final var invocation = invocation(AlertingClient.class, "typeLevel");
         final var request = request();
-        final var thrown = Assertions.assertThrows(IllegalStateException.class, () -> interceptor.intercept(invocation, request, responding(HttpStatus.BAD_GATEWAY)), "the failure of the publisher must reach the caller");
-        Assertions.assertEquals("publisher down", thrown.getMessage(), "the publisher failure must be rethrown as is");
-        Assertions.assertEquals(1, attempts.size(), "the failure of the publisher must not raise a remoting alert");
+        final var thrown = Assertions.assertThrows(IOException.class, () -> interceptor.intercept(invocation, request, failing("boom")), "a failing publisher must not replace the remoting error");
+        Assertions.assertEquals("boom", thrown.getMessage(), "the original remoting error reaches the caller");
+    }
+
+    private UpstreamAlertInterceptor publishingWith(ApplicationEventPublisher publisher) {
+        final var endpoints = Stream.of(AlertingClient.class.getMethods())
+                .collect(Collectors.toMap(m -> m, m -> new EndpointDescriptor("up", m.getName(), m, null)));
+        final var interceptor = new UpstreamAlertInterceptor(publisher, ObservationRegistry.NOOP, CLOCK);
+        interceptor.preprocess(AlertingClient.class, expressions, endpoints);
+        return interceptor;
     }
 }

@@ -473,7 +473,8 @@ public @interface Upstream {
     /// breadth first. A matching response is published as an
     /// [net.optionfactory.spring.upstream.alerts.UpstreamAlertEvent] to the publisher given to
     /// [UpstreamBuilder#publisher], the current observation is tagged `alert=response`, and the
-    /// call then proceeds as usual: the alert does not fail it.
+    /// call then proceeds as usual: the alert does not fail it, and neither does a condition that
+    /// fails to evaluate or a publisher that throws, which are logged at `ERROR` instead.
     ///
     /// The condition is evaluated with [InvocationContext] as `#invocation`, [RequestContext] as
     /// `#request`, [ResponseContext] as `#response`, the arguments, and the `#json_path(path)` and
@@ -496,7 +497,8 @@ public @interface Upstream {
     /// Looked up on the method first, then on the built interface and on its super-interfaces,
     /// breadth first. A matching failure is published as an
     /// [net.optionfactory.spring.upstream.alerts.UpstreamAlertEvent], the current observation is
-    /// tagged `alert=remoting`, and the exception is rethrown.
+    /// tagged `alert=remoting`, and the exception is rethrown; a condition that fails to evaluate,
+    /// or a publisher that throws, is logged at `ERROR` and does not replace it.
     ///
     /// The condition is evaluated with [InvocationContext] as `#invocation`, [RequestContext] as
     /// `#request`, [ExceptionContext] as `#exception`, and the arguments.
