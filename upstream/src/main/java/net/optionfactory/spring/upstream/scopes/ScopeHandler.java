@@ -21,7 +21,9 @@ import org.springframework.web.service.invoker.HttpExchangeAdapter;
 ///
 /// `UpstreamBuilder` installs [#interceptor(MessageConverters)] around the client proxy, which
 /// opens the invocation scope, and uses the `adapt` methods to turn each upstream component, which
-/// receives an [InvocationContext], into its spring counterpart, which does not.
+/// receives an
+/// [InvocationContext][net.optionfactory.spring.upstream.contexts.InvocationContext], into its
+/// spring counterpart, which does not.
 /// [ThreadLocalScopeHandler] is the implementation in use.
 public interface ScopeHandler {
 
