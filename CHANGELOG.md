@@ -288,6 +288,10 @@
 
 ## `marshaling-jackson`
 
+*   [FIX] **`@Quirks.TemporalFormat` writes `Instant`s, in a configurable zone.** The formatter had
+    no zone, so writing an `Instant` always failed with `Unsupported field: YearOfEra`. A new
+    `zone` attribute, `UTC` unless given, is the zone `Instant`s are written in; reading, and the
+    other types, are unaffected. An unknown zone fails when the serializer is built.
 *   [FIX] **`@Quirks.Rename` binds a field or setter property to the fixed name only.** The
     renamed property was added next to the original one, so a field or setter property was read
     from both the fixed name and the java name, while a record component or creator property was

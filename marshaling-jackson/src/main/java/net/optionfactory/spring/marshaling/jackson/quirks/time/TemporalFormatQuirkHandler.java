@@ -1,5 +1,6 @@
 package net.optionfactory.spring.marshaling.jackson.quirks.time;
 
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -9,6 +10,7 @@ import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.Year;
 import java.time.YearMonth;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -71,7 +73,7 @@ public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalF
                     bpw.getName(), raw.getName()
             ));
         }
-        final var serializer = new Serializer(dtf);
+        final var serializer = new Serializer(dtf, zone(ann, bpw.getName()));
         bpw.assignSerializer(serializer);
         return bpw;
     }
@@ -97,6 +99,17 @@ public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalF
     /// `InvalidDefinitionException`, which `ObjectMapper.writerFor` and `readerFor` swallow: an
     /// invalid pattern is reported as an `IllegalStateException` so that it fails there instead of
     /// at the first use of the type.
+    private static ZoneId zone(TemporalFormat ann, String property) {
+        try {
+            return ZoneId.of(ann.zone());
+        } catch (DateTimeException ex) {
+            throw new IllegalStateException(String.format(
+                    "Invalid @Quirks.TemporalFormat zone '%s' on property '%s': %s",
+                    ann.zone(), property, ex.getMessage()
+            ), ex);
+        }
+    }
+
     private static DateTimeFormatter formatter(TemporalFormat ann, String property) {
         try {
             return DateTimeFormatter.ofPattern(ann.value());
@@ -112,19 +125,29 @@ public class TemporalFormatQuirkHandler implements QuirkHandler<Quirks.TemporalF
     public static class Serializer extends ValueSerializer<Object> {
 
         private final DateTimeFormatter dtf;
+        private final DateTimeFormatter instants;
 
+        /// Writes `Instant`s in UTC.
+        ///
         /// @param dtf the formatter
         public Serializer(DateTimeFormatter dtf) {
+            this(dtf, ZoneOffset.UTC);
+        }
+
+        /// @param dtf the formatter
+        /// @param zone the zone `Instant`s are written in; other values are written as they are
+        public Serializer(DateTimeFormatter dtf, ZoneId zone) {
             this.dtf = dtf;
+            this.instants = dtf.withZone(zone);
         }
 
         /// @param value the value, which must be a `TemporalAccessor` carrying the fields the
-        /// formatter prints
+        /// formatter prints, or an `Instant`
         /// @param gen the generator
         /// @param ctxt the serialization context
         @Override
         public void serialize(Object value, JsonGenerator gen, SerializationContext ctxt) throws JacksonException {
-            gen.writeString(dtf.format((TemporalAccessor) value));
+            gen.writeString(value instanceof Instant instant ? instants.format(instant) : dtf.format((TemporalAccessor) value));
         }
     }
 

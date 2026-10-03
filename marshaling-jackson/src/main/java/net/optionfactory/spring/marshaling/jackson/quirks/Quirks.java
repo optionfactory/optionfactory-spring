@@ -146,8 +146,8 @@ public interface Quirks {
     /// [java.time.format.DateTimeFormatter] pattern, e.g. `"dd/MM/yyyy"`.
     ///
     /// The formatter uses the JVM default locale, which matters for the pattern letters producing
-    /// text, such as `MMM` or `EEE`, and has no zone, so an `Instant` can be deserialized, from a
-    /// pattern carrying an offset, but not serialized.
+    /// text, such as `MMM` or `EEE`. An `Instant` is written in [#zone()], `UTC` by default, and
+    /// read from a pattern carrying an offset; the zone does not affect the other types.
     ///
     /// Deserialization supports `LocalDate`, `LocalDateTime`, `LocalTime`, `Instant`,
     /// `OffsetDateTime`, `OffsetTime`, `ZonedDateTime`, `Year`, `YearMonth`, `MonthDay` and
@@ -163,6 +163,11 @@ public interface Quirks {
 
         /// @return the pattern, as `DateTimeFormatter.ofPattern`
         String value();
+
+        /// @return the zone an `Instant` is written in, as `ZoneId.of`: `UTC` unless given. It
+        /// only affects writing `Instant`s; an unknown zone throws an `IllegalStateException` when
+        /// the serializer is built
+        String zone() default "UTC";
     }
 
     /// Represents a [java.time.Instant] property as a number of milliseconds, or of seconds, since

@@ -40,6 +40,15 @@ public class TemporalFormatTest {
     public record InstantBean(@Quirks.TemporalFormat("yyyy-MM-dd HH:mm XXX") Instant value) {
     }
 
+    public record RomeInstantBean(@Quirks.TemporalFormat(value = "yyyy-MM-dd HH:mm XXX", zone = "Europe/Rome") Instant value) {
+    }
+
+    public record BadZoneBean(@Quirks.TemporalFormat(value = "yyyy-MM-dd HH:mm XXX", zone = "Mars/Olympus") Instant value) {
+    }
+
+    public record RomeLocalDateBean(@Quirks.TemporalFormat(value = "dd/MM/yyyy", zone = "Europe/Rome") LocalDate value) {
+    }
+
     @Test
     public void supportsOtherTemporalTypes() {
         final var json = om.writeValueAsString(new YearMonthBean(YearMonth.of(2026, 7)));
@@ -74,5 +83,29 @@ public class TemporalFormatTest {
         Assertions.assertThrows(MismatchedInputException.class, () -> om.readValue("""
                 {"value":"2026-07-17"}
                 """, Bean.class), "an ISO date does not match dd/MM/yyyy");
+    }
+
+    @Test
+    public void anInstantIsWrittenInUtcByDefault() {
+        final var json = om.writeValueAsString(new InstantBean(Instant.parse("2026-07-17T08:00:00Z")));
+        Assertions.assertEquals("{\"value\":\"2026-07-17 08:00 Z\"}", json, "an instant is written in UTC unless the annotation names a zone");
+        Assertions.assertEquals(new InstantBean(Instant.parse("2026-07-17T08:00:00Z")), om.readValue(json, InstantBean.class), "an instant written in UTC is read back to the same instant");
+    }
+
+    @Test
+    public void anInstantIsWrittenInTheAnnotationZone() {
+        final var json = om.writeValueAsString(new RomeInstantBean(Instant.parse("2026-07-17T08:00:00Z")));
+        Assertions.assertEquals("{\"value\":\"2026-07-17 10:00 +02:00\"}", json, "an instant is written in the zone the annotation names");
+    }
+
+    @Test
+    public void theZoneDoesNotAffectOtherTypes() {
+        final var json = om.writeValueAsString(new RomeLocalDateBean(LocalDate.of(2026, 7, 17)));
+        Assertions.assertEquals("{\"value\":\"17/07/2026\"}", json, "a local date is written as it is, whatever the zone");
+    }
+
+    @Test
+    public void anUnknownZoneFailsWhenTheSerializerIsBuilt() {
+        Assertions.assertThrows(IllegalStateException.class, () -> om.writerFor(BadZoneBean.class), "an unknown zone is a configuration error, reported when the serializer is built");
     }
 }
