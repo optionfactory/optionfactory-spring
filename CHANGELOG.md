@@ -292,6 +292,10 @@
 
 ## `email`
 
+*   [FIX] **`CssInliner` names the selector it cannot inline.** A `data-inlined` rule with a
+    selector jsoup cannot parse, such as `:hover`, failed the email with jsoup's
+    `SelectorParseException`; it is now an `IllegalArgumentException` naming the selector and
+    saying to move the rule to a style element without `data-inlined`.
 *   [FIX] **`EmailMessage.TemplateEngineFactory.string(mode, ms, dialects...)` registers the given
     dialects.** The dialects were silently ignored, unlike `text()` and `html()`, so custom
     expression objects were unavailable to string templates; they are now added to the engine.

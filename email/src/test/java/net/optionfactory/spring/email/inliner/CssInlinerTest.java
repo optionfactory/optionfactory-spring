@@ -105,4 +105,14 @@ public class CssInlinerTest {
             Assertions.assertEquals(0, wrong, "every concurrent postprocessing inlines its own rules");
         }
     }
+
+    @Test
+    public void aSelectorThatCannotBeInlinedFailsNamingIt() {
+        final var src = """
+                <html><head><style data-inlined>a:hover { color: red; }</style></head><body><a href="#">x</a></body></html>
+                """;
+        final var thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> new CssInliner().postprocess(src), "a selector jsoup cannot match makes the inlining fail");
+        Assertions.assertTrue(thrown.getMessage().contains("a:hover"), "the failure names the selector, got: " + thrown.getMessage());
+        Assertions.assertTrue(thrown.getMessage().contains("data-inlined"), "the failure says to move the rule out of the data-inlined style, got: " + thrown.getMessage());
+    }
 }

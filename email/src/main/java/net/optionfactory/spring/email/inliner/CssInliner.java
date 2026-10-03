@@ -14,6 +14,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.jsoup.select.Selector;
 import org.w3c.css.sac.InputSource;
 import org.w3c.dom.css.CSSRuleList;
 import org.w3c.dom.css.CSSStyleRule;
@@ -34,7 +35,8 @@ import org.w3c.dom.css.CSSStyleRule;
 /// in place. The inlining is deliberately simple:
 ///
 /// - selectors are matched with jsoup, so a selector jsoup cannot parse, such as a pseudo-class
-///   like `:hover`, fails the whole postprocessing with a jsoup `SelectorParseException`;
+///   like `:hover`, fails the whole postprocessing with an `IllegalArgumentException` naming it:
+///   such a rule has no inline equivalent, and belongs in a style element without `data-inlined`;
 /// - specificity is ignored: when several rules set the same property on an element, the last
 ///   one in the stylesheet wins;
 /// - `!important` is dropped;
@@ -54,6 +56,8 @@ public class CssInliner implements HtmlBodyPostprocessor {
     /// @param html the html to inline, never `null`
     /// @return the html document with the inlined styles
     /// @throws NullPointerException when `html` is `null`
+    /// @throws IllegalArgumentException when a `data-inlined` rule has a selector jsoup cannot
+    /// parse, such as `:hover`
     @Override
     public String postprocess(String html) {
         try {
@@ -81,12 +85,20 @@ public class CssInliner implements HtmlBodyPostprocessor {
         tagsAndRules.tags().remove();
     }
 
+    private static Elements select(Document document, String selector) {
+        try {
+            return document.select(selector);
+        } catch (Selector.SelectorParseException ex) {
+            throw new IllegalArgumentException(String.format("cannot inline the css selector '%s': move its rule to a style element without data-inlined", selector), ex);
+        }
+    }
+
     private Map<Element, Map<String, String>> calcStyles(CSSRuleList cssRules, Document document) {
         final var result = new HashMap<Element, Map<String, String>>();
         for (int ri = 0; ri != cssRules.getLength(); ri++) {
             final var rule = cssRules.item(ri);
             if (rule instanceof CSSStyleRule styleRule) {
-                for (final var el : document.select(styleRule.getSelectorText())) {
+                for (final var el : select(document, styleRule.getSelectorText())) {
                     final var elStyles = result.computeIfAbsent(el, k -> new LinkedHashMap<>());
                     final var style = styleRule.getStyle();
                     for (int pi = 0; pi != style.getLength(); pi++) {
