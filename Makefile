@@ -3,11 +3,15 @@ build:
 bump:
 	mvn versions:set -DgenerateBackupPoms=false	
 
-publish-central: gpg-unlock
+publish-central: committed gpg-unlock
 	$(eval VERSION = $(shell mvn -q -N help:evaluate -Dexpression=project.version -DforceStdout))
 	mvn clean deploy -Pcentral
 	@# tags only once published: a failed deploy leaves no tag behind
 	git tag -a v$(VERSION) -m "release: $(VERSION)"
+
+committed:
+	@# the release tag goes on HEAD: publishing uncommitted changes would tag sources that differ from the published ones
+	@git diff --quiet HEAD || { echo "uncommitted changes: commit the release version before publishing"; exit 1; }
 
 gpg-unlock:
 ifndef MAVEN_GPG_PASSPHRASE
