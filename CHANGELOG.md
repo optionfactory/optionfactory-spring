@@ -22,6 +22,11 @@
     replaces the inherited ones as a whole. Mock resources inherited this way are resolved next to
     the interface whose declaration carries the `@Upstream.Mock`. `Annotations.declaration`,
     `onMethod` and `onMethodRepeatable` expose the lookup.
+*   [FIX] **An endpoint with more than one `@Upstream.Principal` parameter fails the build.** Only
+    the first parameter annotated, or whose type is, became the principal; the others were silently
+    ignored as principals and, being claimed by the context argument resolver, never sent either:
+    such an endpoint could never work as written. `UpstreamBuilder.build()` now rejects it with an
+    `IllegalArgumentException` naming the endpoint.
 
 # version 28.3
 

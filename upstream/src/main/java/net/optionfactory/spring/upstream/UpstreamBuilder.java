@@ -734,7 +734,8 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
     /// methods of the interface are invoked as such, and can call the other methods.
     ///
     /// @return the client, safe to use from multiple threads
-    /// @throws IllegalArgumentException when no interface or no request factory is configured
+    /// @throws IllegalArgumentException when no interface or no request factory is configured, or when
+    /// an endpoint has more than one `@Upstream.Principal` parameter
     public T build() {
         Assert.notNull(klass, "type must be configured");
         final var upstreamId = name.or(() -> Annotations.closest(klass, Upstream.class)
@@ -747,12 +748,13 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
                 .filter(m -> AnnotationUtils.findAnnotation(m, HttpExchange.class) != null)
                 .map(m -> {
                     final var epa = AnnotationUtils.findAnnotation(m, Upstream.Endpoint.class);
-                    final var principalIndex = IntStream
+                    final var principalIndexes = IntStream
                             .range(0, m.getParameters().length)
                             .filter(i -> m.getParameters()[i].isAnnotationPresent(Upstream.Principal.class) || m.getParameters()[i].getType().isAnnotationPresent(Upstream.Principal.class))
-                            .mapToObj(i -> i)
-                            .findFirst();
-                    return new EndpointDescriptor(upstreamId, epa == null ? m.getName() : epa.value(), m, principalIndex.orElse(null));
+                            .boxed()
+                            .toList();
+                    Assert.isTrue(principalIndexes.size() <= 1, () -> String.format("%s.%s has %d @Upstream.Principal parameters, at most one is allowed", m.getDeclaringClass().getSimpleName(), m.getName(), principalIndexes.size()));
+                    return new EndpointDescriptor(upstreamId, epa == null ? m.getName() : epa.value(), m, principalIndexes.isEmpty() ? null : principalIndexes.get(0));
                 })
                 .collect(Collectors.toMap(EndpointDescriptor::method, ed -> ed));
 

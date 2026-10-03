@@ -43,6 +43,17 @@ public class UpstreamBuilderTest {
         Map<String, String> unnamed();
     }
 
+    @Upstream.Principal
+    public record User(String name) {
+
+    }
+
+    public interface TwoPrincipalsClient {
+
+        @GetExchange("/")
+        Map<String, String> call(@Upstream.Principal String principal, User user);
+    }
+
     @Upstream
     public interface BlankNameClient {
 
@@ -71,6 +82,13 @@ public class UpstreamBuilderTest {
     public void typeIsRequired() {
         final var builder = UpstreamBuilder.create().requestFactory(new MockClientHttpRequestFactory());
         Assertions.assertThrows(IllegalArgumentException.class, builder::build, "building without an interface must fail");
+    }
+
+    @Test
+    public void moreThanOnePrincipalParameterFailsTheBuild() {
+        final var builder = recording(TwoPrincipalsClient.class, new ArrayList<>(), HttpStatus.OK);
+        final var ex = Assertions.assertThrows(IllegalArgumentException.class, builder::build, "an endpoint with more than one principal parameter must fail the build");
+        Assertions.assertTrue(ex.getMessage().contains("TwoPrincipalsClient.call"), "the failure must name the endpoint");
     }
 
     @Test

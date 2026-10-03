@@ -126,7 +126,8 @@ public @interface Upstream {
     /// not blank. When the argument is `null`, or no parameter is marked, the principal comes from
     /// the supplier given to [UpstreamBuilder#principal], if any.
     ///
-    /// Applies to the first parameter that is annotated, or whose type is.
+    /// Applies to the parameter that is annotated, or whose type is; an endpoint with more than one
+    /// such parameter fails [UpstreamBuilder#build].
     @Retention(value = RetentionPolicy.RUNTIME)
     @Target({ElementType.PARAMETER, ElementType.TYPE})
     public @interface Principal {
