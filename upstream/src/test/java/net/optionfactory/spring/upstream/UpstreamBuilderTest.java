@@ -162,7 +162,7 @@ public class UpstreamBuilderTest {
     }
 
     @Test
-    public void customInterceptorsRunBeforeTheBuiltInOnes() {
+    public void customInterceptorsRunAfterTheAnnotatedValuesAreApplied() {
         final var seen = new ArrayList<Seen>();
         final var headersSeenByInterceptor = new ArrayList<HttpHeaders>();
         recording(NamedClient.class, seen, HttpStatus.OK)
@@ -175,7 +175,7 @@ public class UpstreamBuilderTest {
                 })
                 .build()
                 .call("1", null, null);
-        Assertions.assertNull(headersSeenByInterceptor.get(0).getFirst("X-Token"), "a custom interceptor must see the request before the annotated headers are added");
+        Assertions.assertEquals("secret", headersSeenByInterceptor.get(0).getFirst("X-Token"), "a custom interceptor must see the request with the annotated headers already added");
         Assertions.assertEquals("secret", seen.get(0).headers().getFirst("X-Token"), "the annotated headers must still be sent");
     }
 

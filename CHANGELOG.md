@@ -13,6 +13,14 @@
 
 ## `upstream`
 
+*   [BREAKING] **Interceptors see the annotated headers, cookies and query params, and
+    `DigestAuthenticator` is an interceptor.** `@Upstream.Header`, `Cookie` and `QueryParam` were
+    applied after the application's interceptors, and `DigestAuthenticator`, an initializer, ran
+    before any interceptor: digests never covered the annotated query params, so every such
+    endpoint was rejected, and no interceptor could sign the request as sent. The annotated values
+    are now applied first, then the application's interceptors run, then logging and alerts.
+    `DigestAuthenticator` implements `UpstreamHttpInterceptor`: register it with
+    `.interceptor(...)` instead of `.initializer(...)`, which no longer compiles.
 *   [FIX] **A failing alert never fails the upstream call.** An `@Upstream.AlertOnResponse` or
     `@Upstream.AlertOnRemotingError` condition that failed to evaluate (e.g. `#json_path` over a
     body that is not json), or an event publisher that threw, reached the caller in place of the

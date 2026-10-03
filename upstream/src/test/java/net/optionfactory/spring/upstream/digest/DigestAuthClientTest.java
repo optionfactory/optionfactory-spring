@@ -1,19 +1,21 @@
 package net.optionfactory.spring.upstream.digest;
 
-import java.io.OutputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.Instant;
 import java.util.HexFormat;
+import java.util.Map;
 import net.optionfactory.spring.upstream.UpstreamBuilder;
 import net.optionfactory.spring.upstream.auth.digest.DigestAuth;
 import net.optionfactory.spring.upstream.auth.digest.DigestAuthClient;
 import net.optionfactory.spring.upstream.auth.digest.DigestAuthenticator;
+import net.optionfactory.spring.upstream.contexts.RequestContext;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.client.ClientHttpRequest;
 
 public class DigestAuthClientTest {
 
@@ -47,7 +49,7 @@ public class DigestAuthClientTest {
     }
 
     @Test
-    public void authenticatorPassesTheRequestMethodAndUriToTheClient() {
+    public void authenticatorPassesTheRequestMethodAndUriToTheClient() throws IOException {
         final var seenMethod = new HttpMethod[1];
         final var seenUri = new URI[1];
         final DigestAuthClient stub = new DigestAuthClient() {
@@ -64,11 +66,16 @@ public class DigestAuthClientTest {
             }
         };
         final var authenticator = new DigestAuthenticator("id", "secret", stub);
-        final var request = new StubRequest(HttpMethod.GET, URI.create("http://example.com/dir/page?x=1"));
-        authenticator.initialize(null, request);
+        final var request = new RequestContext(Instant.EPOCH, HttpMethod.GET, URI.create("http://example.com/dir/page?x=1"), new HttpHeaders(), Map.of(), new byte[0]);
+        final var proceeded = new boolean[1];
+        authenticator.intercept(null, request, (invocation, r) -> {
+            proceeded[0] = true;
+            return null;
+        });
         Assertions.assertEquals(HttpMethod.GET, seenMethod[0], "the authenticated request method must be digested");
         Assertions.assertEquals(URI.create("http://example.com/dir/page?x=1"), seenUri[0], "the authenticated request uri must be digested");
-        Assertions.assertEquals("Digest test", request.getHeaders().getFirst("Authorization"), "the computed header must be set on the request");
+        Assertions.assertEquals("Digest test", request.headers().getFirst("Authorization"), "the computed header must be set on the request");
+        Assertions.assertTrue(proceeded[0], "the authenticated request must proceed down the chain");
     }
 
     @Test
@@ -78,48 +85,5 @@ public class DigestAuthClientTest {
         Assertions.assertTrue(got.contains("uri=\"/dir/page\""), "a uri without query must be digested without a trailing question mark");
         final var response = md5(String.format("%s:%s:%s:%s:%s:%s", md5("Mufasa:test:Circle Of Life"), NONCE, "00000001", "0a4f113b", "auth", md5("PUT:/dir/page")));
         Assertions.assertTrue(got.contains("response=\"%s\"".formatted(response)), "the digest must cover the PUT method");
-    }
-
-    private static class StubRequest implements ClientHttpRequest {
-
-        private final HttpMethod method;
-        private final URI uri;
-        private final HttpHeaders headers = new HttpHeaders();
-
-        public StubRequest(HttpMethod method, URI uri) {
-            this.method = method;
-            this.uri = uri;
-        }
-
-        @Override
-        public OutputStream getBody() {
-            return OutputStream.nullOutputStream();
-        }
-
-        @Override
-        public HttpHeaders getHeaders() {
-            return headers;
-        }
-
-        @Override
-        public HttpMethod getMethod() {
-            return method;
-        }
-
-        @Override
-        public URI getURI() {
-            return uri;
-        }
-
-        @Override
-        public org.springframework.http.client.ClientHttpResponse execute() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public java.util.Map<String, Object> getAttributes() {
-            return java.util.Map.of();
-        }
-
     }
 }

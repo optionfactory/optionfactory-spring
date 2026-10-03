@@ -1,16 +1,21 @@
 package net.optionfactory.spring.upstream.auth.digest;
 
-import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
+import java.io.IOException;
+import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
+import net.optionfactory.spring.upstream.UpstreamHttpRequestExecution;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
-import org.springframework.http.client.ClientHttpRequest;
+import net.optionfactory.spring.upstream.contexts.RequestContext;
+import net.optionfactory.spring.upstream.contexts.ResponseContext;
 
 /// Authenticates requests with HTTP digest authentication (`qop=auth`, `MD5`).
 ///
+/// An interceptor, registered with [net.optionfactory.spring.upstream.UpstreamBuilder#interceptor]:
+/// it runs after the `@Upstream.QueryParam`, `Header` and `Cookie` values are applied, so the uri
+/// digested is the one sent.
+///
 /// Nothing is cached: every request is preceded by a challenge request to the same uri through the
-/// [DigestAuthClient], so each authenticated call costs two exchanges. The uri digested is the one the
-/// request has when initializers run, before the interceptors adding the `@Upstream.QueryParam`
-/// values.
-public class DigestAuthenticator implements UpstreamHttpRequestInitializer {
+/// [DigestAuthClient], so each authenticated call costs two exchanges.
+public class DigestAuthenticator implements UpstreamHttpInterceptor {
 
     private final DigestAuth digestAuth;
     private final DigestAuthClient client;
@@ -23,12 +28,18 @@ public class DigestAuthenticator implements UpstreamHttpRequestInitializer {
         this.client = client;
     }
 
-    /// @param invocation the invocation, unused
+    /// Sets the `Authorization` header answering the digest challenge of the request's uri, then
+    /// proceeds.
+    ///
+    /// @param invocation the invocation
     /// @param request the request to authenticate
+    /// @param execution the rest of the chain
+    /// @return the response
+    /// @throws IOException when the exchange fails
     @Override
-    public void initialize(InvocationContext invocation, ClientHttpRequest request) {
-        final var header = client.authenticate(digestAuth, request.getMethod(), request.getURI());
-        request.getHeaders().set("Authorization", header);
+    public ResponseContext intercept(InvocationContext invocation, RequestContext request, UpstreamHttpRequestExecution execution) throws IOException {
+        final var header = client.authenticate(digestAuth, request.method(), request.uri());
+        request.headers().set("Authorization", header);
+        return execution.execute(invocation, request);
     }
-
 }

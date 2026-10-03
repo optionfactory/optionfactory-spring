@@ -98,9 +98,10 @@ import tools.jackson.dataformat.xml.XmlMapper;
 /// ```
 ///
 /// Each built client handles every exchange through, in order: the registered initializers, the
-/// registered interceptors, the built-in interceptors (annotated headers, cookies and query params,
-/// logging, alerts) and, once the response is back, the registered response error handlers followed
-/// by the built-in ones (`@Upstream.ErrorOnResponse`, error statuses).
+/// built-in interceptors applying the annotated headers, cookies and query params, the registered
+/// interceptors, which therefore see (and can sign) the request as it is sent, the built-in logging
+/// and alert interceptors and, once the response is back, the registered response error handlers
+/// followed by the built-in ones (`@Upstream.ErrorOnResponse`, error statuses).
 ///
 /// A builder is not thread-safe, while the clients it builds are. Being an [UpstreamPrototype], a
 /// partially configured builder can be shared and copied with [#builder].
@@ -546,8 +547,10 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
         return initializer(initializer);
     }
 
-    /// Adds a request initializer, run in registration order before the interceptors; it is
-    /// preprocessed when the client is built.
+    /// Adds a request initializer, run in registration order before the interceptors, and so
+    /// before the annotated headers, cookies and query params are applied: what needs the request
+    /// as it is sent, such as an authentication signing the uri, belongs in an [#interceptor]. It
+    /// is preprocessed when the client is built.
     ///
     /// @param initializer the initializer
     /// @return this builder
@@ -568,8 +571,9 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
         return interceptor(interceptor);
     }
 
-    /// Adds an interceptor, run in registration order around the built-in ones; it is preprocessed when
-    /// the client is built.
+    /// Adds an interceptor, run in registration order after the annotated headers, cookies and query
+    /// params are applied, and around the built-in logging and alert interceptors; it is
+    /// preprocessed when the client is built.
     ///
     /// @param interceptor the interceptor
     /// @return this builder
@@ -780,13 +784,15 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
                 .map(scopeHandler::adapt)
                 .forEach(rcb::requestInitializer);
 
-        final var initializedInterceptors = Stream.concat(interceptors.stream(),
-                Stream.of(new UpstreamAnnotatedHeadersInterceptor(),
+        final var initializedInterceptors = Stream.of(
+                Stream.<UpstreamHttpInterceptor>of(new UpstreamAnnotatedHeadersInterceptor(),
                         new UpstreamAnnotatedCookiesInterceptor(),
-                        new UpstreamAnnotatedQueryParamsInterceptor(),
-                        new UpstreamLoggingInterceptor(loggingOverride, loggingOverrides, clockOrDefault),
-                        new UpstreamAlertInterceptor(pub, obs, clockOrDefault)
-                ))
+                        new UpstreamAnnotatedQueryParamsInterceptor()),
+                interceptors.stream(),
+                Stream.<UpstreamHttpInterceptor>of(new UpstreamLoggingInterceptor(loggingOverride, loggingOverrides, clockOrDefault),
+                        new UpstreamAlertInterceptor(pub, obs, clockOrDefault))
+        )
+                .flatMap(s -> s)
                 .peek(i -> i.preprocess(klass, expressions, endpoints))
                 .toList();
 

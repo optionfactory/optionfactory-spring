@@ -318,7 +318,7 @@ public @interface Upstream {
     ///
     /// Read from the method only; repeatable. The values are evaluated with `#invocation`,
     /// `#request` and the arguments bound, and added to the headers already there (e.g. those set
-    /// by initializers) instead of replacing them.
+    /// by initializers) instead of replacing them, before the application's interceptors run.
     @Retention(value = RetentionPolicy.RUNTIME)
     @Target(value = ElementType.METHOD)
     @Repeatable(Header.List.class)
@@ -353,7 +353,8 @@ public @interface Upstream {
     /// Adds a request cookie computed per request.
     ///
     /// Read from the method only; repeatable. Each cookie is added as a `Cookie` header of its own,
-    /// evaluated with `#invocation`, `#request` and the arguments bound.
+    /// evaluated with `#invocation`, `#request` and the arguments bound, before the application's
+    /// interceptors run.
     @Retention(value = RetentionPolicy.RUNTIME)
     @Target(value = ElementType.METHOD)
     @Repeatable(Cookie.List.class)
@@ -383,7 +384,7 @@ public @interface Upstream {
     ///
     /// Read from the method only; repeatable. Key and value are evaluated with `#invocation`,
     /// `#request` and the arguments bound, encoded once, and appended to the query the uri already
-    /// has.
+    /// has, before the application's interceptors run.
     @Retention(value = RetentionPolicy.RUNTIME)
     @Target(value = ElementType.METHOD)
     @Repeatable(QueryParam.List.class)
