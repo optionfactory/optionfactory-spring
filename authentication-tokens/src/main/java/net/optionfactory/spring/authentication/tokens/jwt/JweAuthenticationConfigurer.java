@@ -61,12 +61,12 @@ public interface JweAuthenticationConfigurer extends JwtAuthenticationConfigurer
     /// @return this configurer
     JweAuthenticationConfigurer matchToken(JweMatcher matcher);
 
-    /// Treats every token found on the header the same way. The JWS counterpart is
-    /// `JwsAuthenticationConfigurer.matchToken(Match)`.
+    /// Treats every token found on the header the same way, as
+    /// `JwsAuthenticationConfigurer.matchToken(Match)` does for signed tokens.
     ///
     /// @param m how every token is treated
     /// @return this configurer
-    default JweAuthenticationConfigurer match(Match m) {
+    default JweAuthenticationConfigurer matchToken(Match m) {
         return matchToken((header, jwe) -> m);
     }
 

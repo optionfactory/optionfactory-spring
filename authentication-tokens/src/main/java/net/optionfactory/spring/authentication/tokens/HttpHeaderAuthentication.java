@@ -212,16 +212,19 @@ public class HttpHeaderAuthentication {
             return basic(username, password, principal, sgas);
         }
 
-        /// Adds a custom processor.
+        /// Adds a custom processor for the tokens found on a header and scheme, which is registered
+        /// with the filter like those of the other methods. The processor only sees the tokens found
+        /// there: tokens on any other header and scheme are passed on without consulting it.
         ///
-        /// Unlike every other method, this one registers no header with the filter: the processor
-        /// only sees tokens found on the headers and schemes some other configuration registered,
-        /// and it should therefore check the [HeaderAndScheme] it is given.
-        ///
+        /// @param headerName the header carrying the token
+        /// @param authScheme the scheme preceding the token, compared case-insensitively; blank
+        /// for a header carrying the token alone
         /// @param processor the processor to add, run after the processors configured before it
         /// @return this configurer
-        public Configurer processor(TokenProcessor processor) {
-            processors.add(processor);
+        public Configurer processor(String headerName, String authScheme, TokenProcessor processor) {
+            final var hs = new HeaderAndScheme(headerName, authScheme);
+            headerAndSchemes.add(hs);
+            processors.add(new TokenProcessor.Custom(hs, processor));
             return this;
         }
 
@@ -261,8 +264,8 @@ public class HttpHeaderAuthentication {
         /// rejection ends the search: a static token configured after it on the same header and
         /// scheme, and any `jws` or `jwe` configuration matching them, would never see a token.
         /// Such a configuration is rejected here, when the security chain is built, rather than
-        /// left to silently reject every one of those tokens. Custom processors are not checked:
-        /// their header and scheme are not known.
+        /// left to silently reject every one of those tokens. Custom processors are checked too, on
+        /// the header and scheme they are registered with.
         ///
         /// @return the processors, in the order they are consulted
         /// @throws IllegalStateException when a strict static token shadows another configuration
@@ -271,6 +274,7 @@ public class HttpHeaderAuthentication {
             for (final var processor : processors) {
                 final HeaderAndScheme hs = processor instanceof TokenProcessor.StaticLax lax ? lax.hs
                         : processor instanceof TokenProcessor.StaticStrict ss ? ss.hs
+                        : processor instanceof TokenProcessor.Custom custom ? custom.hs()
                         : null;
                 if (hs != null && strict.contains(hs)) {
                     throw new IllegalStateException(String.format("a static token on %s is configured after a strict one on the same header and scheme, which rejects it", describe(hs)));
@@ -465,6 +469,22 @@ public class HttpHeaderAuthentication {
         /// Accepts a static token on a given header and scheme, and rejects any other token found
         /// there: the header and scheme belong to this token alone. Tokens on other headers are left
         /// to the next processor. The token is compared in constant time.
+        /// A custom processor, consulted only for the tokens found on its own header and scheme.
+        ///
+        /// @param hs the header and scheme the processor was registered with
+        /// @param delegate the processor
+        public record Custom(HeaderAndScheme hs, TokenProcessor delegate) implements TokenProcessor {
+
+            /// @param hs the header and scheme the token was found on
+            /// @param token the token
+            /// @return what the delegate returns for a token on its own header and scheme, `null`
+            /// for any other token
+            @Override
+            public HttpHeaderAuthentication.PrincipalAndAuthorities process(HeaderAndScheme hs, String token) {
+                return this.hs.equals(hs) ? delegate.process(hs, token) : null;
+            }
+        }
+
         public static class StaticStrict implements TokenProcessor {
 
             private final HeaderAndScheme hs;

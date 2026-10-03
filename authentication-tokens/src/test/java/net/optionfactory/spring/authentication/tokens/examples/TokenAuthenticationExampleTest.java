@@ -113,7 +113,7 @@ public class TokenAuthenticationExampleTest {
                 });
                 c.jwe(ClaimsPolicy.issuer("example-issuer").audience("example.com"), jc -> {
                     jc.matchHeader(HttpHeaders.AUTHORIZATION, "Bearer");
-                    jc.match(Match.STRICT);
+                    jc.matchToken(Match.STRICT);
                     jc.decrypt(JWE_AES_KEY);
                     jc.principal("jwe-principal");
                     jc.authorities("ROLE_M2M");

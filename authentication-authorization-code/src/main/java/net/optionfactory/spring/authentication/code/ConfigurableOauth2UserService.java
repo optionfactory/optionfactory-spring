@@ -6,7 +6,6 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -34,7 +33,7 @@ import org.springframework.web.client.RestTemplate;
 ///
 /// ```java
 /// http.oauth2Login(login -> login.userInfoEndpoint(u -> u.oidcUserService(
-///         new ConfigurableOauth2UserService<>(requestFactory, events, (authorities, oidcUser) -> new AppUser(authorities, oidcUser)))));
+///         new ConfigurableOauth2UserService<>(requestFactory, (authorities, oidcUser) -> new AppUser(authorities, oidcUser)))));
 /// ```
 ///
 /// @param <U> the application's user type
@@ -46,10 +45,9 @@ public class ConfigurableOauth2UserService<U extends OidcUser> implements OAuth2
     private final BiFunction<Set<GrantedAuthority>, OidcUser, U> userFactory;
 
     /// @param httpRequestFactory the factory the userinfo endpoint is called with
-    /// @param events currently unused
     /// @param userFactory builds the application user from the augmented authorities and the user
     /// spring loaded
-    public ConfigurableOauth2UserService(ClientHttpRequestFactory httpRequestFactory, ApplicationEventPublisher events, BiFunction<Set<GrantedAuthority>, OidcUser, U> userFactory) {
+    public ConfigurableOauth2UserService(ClientHttpRequestFactory httpRequestFactory, BiFunction<Set<GrantedAuthority>, OidcUser, U> userFactory) {
         final var oauth2RestTemplate = new RestTemplate(httpRequestFactory);
         oauth2RestTemplate.setErrorHandler(new OAuth2ErrorResponseErrorHandler());
         final var defaultOAuth2UserService = new DefaultOAuth2UserService();

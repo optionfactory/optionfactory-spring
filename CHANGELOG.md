@@ -88,6 +88,13 @@
 
 ## `authentication-tokens`
 
+*   [BREAKING] **A custom token processor is registered on its own header and scheme.**
+    `processor(TokenProcessor)` registered no header with the filter, so a custom processor only saw
+    tokens on headers some other configuration registered, and never ran on its own. It is now
+    `processor(headerName, authScheme, processor)`: the header is searched, the processor sees the
+    tokens found there only, and one shadowed by a strict static token fails at startup.
+*   [BREAKING] **`JweAuthenticationConfigurer.match(Match)` is `matchToken(Match)`**, as on
+    `JwsAuthenticationConfigurer` and as the configurer's own `matchToken(JweMatcher)`.
 *   [FIX] **A strict static token that shadows other configurations fails the security chain
     build.** `bearerStrict`/`tokenStrict` reject every other token on their header and scheme, and
     the `jws`/`jwe` configurations always run after the static ones, so a JWT configuration, or a
@@ -130,6 +137,8 @@
 
 ## `authentication-authorization-code`
 
+*   [BREAKING] **`ConfigurableOauth2UserService` no longer takes an `ApplicationEventPublisher`.** The
+    parameter was never used; drop it from the constructor call.
 *   [FIX] **`ConfigurableOauth2UserService` fails the login with an `OAuth2AuthenticationException`
     when `groups` is not a list of strings.** A `groups` attribute holding a string, or a list with
     anything but strings, threw a `ClassCastException`, which bypassed the login's failure handler.

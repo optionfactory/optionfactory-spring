@@ -37,8 +37,7 @@ public class ConfigurableOauth2UserServiceTest {
     }
 
     private static ConfigurableOauth2UserService<OidcUser> service(StubClientHttpRequestFactory idp) {
-        return new ConfigurableOauth2UserService<>(idp, event -> {
-        }, (authorities, user) -> new DefaultOidcUser(authorities, user.getIdToken(), user.getUserInfo()));
+        return new ConfigurableOauth2UserService<>(idp, (authorities, user) -> new DefaultOidcUser(authorities, user.getIdToken(), user.getUserInfo()));
     }
 
     private static Set<String> names(OidcUser user) {
@@ -72,8 +71,7 @@ public class ConfigurableOauth2UserServiceTest {
 
     @Test
     public void theUserFactoryBuildsTheApplicationUser() {
-        final var service = new ConfigurableOauth2UserService<>(new StubClientHttpRequestFactory(HttpStatus.OK, "{}"), event -> {
-        }, (authorities, user) -> new DefaultOidcUser(Set.of(), user.getIdToken()));
+        final var service = new ConfigurableOauth2UserService<>(new StubClientHttpRequestFactory(HttpStatus.OK, "{}"), (authorities, user) -> new DefaultOidcUser(Set.of(), user.getIdToken()));
 
         final var user = service.loadUser(request(Map.of("sub", "alice", "groups", List.of("admin"))));
 

@@ -43,7 +43,7 @@ public class JwtTokenProcessorRejectionTest {
 
     private static JwtTokenProcessor jwe(Match match, byte[] aesKey) {
         final var b = JweAuthenticationConfigurer.builder(ClaimsPolicy.permissive());
-        b.match(match);
+        b.matchToken(match);
         b.decrypt(aesKey);
         b.principal((header, claims) -> claims.getSubject());
         return new JwtTokenProcessor(List.of(), List.of(b.build()));

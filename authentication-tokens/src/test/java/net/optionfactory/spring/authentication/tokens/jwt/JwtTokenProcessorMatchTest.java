@@ -126,7 +126,7 @@ public class JwtTokenProcessorMatchTest {
 
     private static JweProcessor jwe(ECKey recipient, ECKey issuer, String principal) throws Exception {
         final var b = JweAuthenticationConfigurer.builder(ClaimsPolicy.permissive());
-        b.match(Match.LAX);
+        b.matchToken(Match.LAX);
         b.decrypter(new ECDHDecrypter(recipient.toECPrivateKey()));
         b.verify(issuer.toECPublicKey());
         b.principal(principal);

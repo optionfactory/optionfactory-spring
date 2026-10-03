@@ -51,4 +51,12 @@ public class HttpHeaderAuthenticationShadowingTest {
                 });
         Assertions.assertEquals(3, configurer.tokenProcessors().size(), "a strict token only shadows its own header and scheme");
     }
+
+    @Test
+    public void aCustomProcessorAfterAStrictTokenOnTheSameHeaderIsRejected() {
+        final var configurer = HttpHeaderAuthentication.configurer()
+                .bearerStrict("STATIC", "static", "ROLE_STATIC")
+                .processor("Authorization", "Bearer", (hs, token) -> null);
+        Assertions.assertThrows(IllegalStateException.class, configurer::tokenProcessors, "a custom processor on the header and scheme of a strict token could never authenticate, and is rejected");
+    }
 }
