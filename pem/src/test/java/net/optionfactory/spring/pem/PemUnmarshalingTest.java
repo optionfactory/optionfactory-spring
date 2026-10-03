@@ -145,4 +145,39 @@ public class PemUnmarshalingTest {
         final var ex = Assertions.assertThrows(PemException.class, () -> Pem.privateKey(is(src), null), "an empty PKCS#1 sequence is a PemException");
         Assertions.assertInstanceOf(DerException.class, ex.getCause(), "the DER failure is kept as the cause");
     }
+
+    private static class CloseRecordingInputStream extends ByteArrayInputStream {
+
+        private boolean closed;
+
+        CloseRecordingInputStream(String src) {
+            super(src.getBytes(StandardCharsets.UTF_8));
+        }
+
+        @Override
+        public void close() {
+            closed = true;
+        }
+    }
+
+    @Test
+    public void aStreamReadToTheEndIsLeftOpen() {
+        final var stream = new CloseRecordingInputStream(TestData.CERTIFICATE_X509);
+        Pem.certificate(stream);
+        Assertions.assertFalse(stream.closed, "the stream belongs to the caller, who closes it, even when it is read to its end");
+    }
+
+    @Test
+    public void aStreamFailingToParseIsLeftOpen() {
+        final var stream = new CloseRecordingInputStream("-----BEGIN CERTIFICATE-----\nnot base64 !\n");
+        Assertions.assertThrows(PemException.class, () -> Pem.certificate(stream), "malformed PEM is rejected");
+        Assertions.assertFalse(stream.closed, "the stream belongs to the caller, who closes it, also on a parse failure");
+    }
+
+    @Test
+    public void aKeyStoreLoadLeavesTheStreamOpen() throws Exception {
+        final var stream = new CloseRecordingInputStream(TestData.CERTIFICATE_X509);
+        Pem.keyStore(stream);
+        Assertions.assertFalse(stream.closed, "loading a keystore leaves the stream to the caller, as KeyStore.load does");
+    }
 }

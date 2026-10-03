@@ -240,6 +240,10 @@
 
 ## `pem`
 
+*   [FIX] **The PEM readers never close the stream they are given.** The parser closed a stream
+    it read to the end and left open one it failed on, unlike `KeyStore.load` and every JDK reader
+    of a caller's stream. The stream now always belongs to the caller; `PemSources` opens and
+    closes its own, for when there is no stream to hold.
 *   [FIX] **A read failure of a PEM stream now fails the parsing with a `PemException`.** The JavaCC
     token manager took any `IOException` for the end of input, so a keystore could silently load only
     the entries read before the failure; the `IOException` is now the cause of the `PemException`.

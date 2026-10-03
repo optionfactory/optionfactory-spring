@@ -21,9 +21,9 @@ import net.optionfactory.spring.pem.spi.PemProvider;
 /// key or certificate, or an `IOException` raised while reading the stream, is reported as a
 /// [PemException], caused by the underlying exception when there is one.
 ///
-/// The streams are read as UTF-8. The JavaCC character stream of the parser closes a stream it reads
-/// to the end, but not one it stops reading on a parse failure, so callers should still close them:
-/// [PemSources] offers the same readers for spring resources, closing the streams it opens.
+/// The streams are read as UTF-8 and never closed: they belong to the caller, as the stream given to
+/// `KeyStore.load` does. With no stream to hold, such as a file or a classpath resource, use
+/// [PemSources], which opens and closes its own (a `Path` through `FileSystemResource`).
 ///
 /// ```java
 /// try (InputStream is = Files.newInputStream(path)) {

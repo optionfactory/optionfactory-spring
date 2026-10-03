@@ -28,8 +28,8 @@ import net.optionfactory.spring.pem.PemException;
 /// entries read until then.
 public class PemParser {
 
-    /// Parses a UTF-8 PEM stream, without decoding the entries. The stream is closed when read to
-    /// its end, and left open on a parse failure.
+    /// Parses a UTF-8 PEM stream, without decoding the entries. The stream is never closed: it
+    /// belongs to the caller.
     ///
     /// @param is the stream
     /// @return the entries, in file order, empty for an empty or blank stream
@@ -49,7 +49,9 @@ public class PemParser {
     }
 
     /// A [Reader] ending the input on the first `IOException` of the wrapped one, and keeping it.
-    /// Once the input has ended, the wrapped reader is no longer read.
+    /// Once the input has ended, the wrapped reader is no longer read. Closing it ends the input
+    /// without closing the wrapped reader, which the JavaCC character stream would otherwise close
+    /// when it reaches the end.
     private static class RecordingReader extends Reader {
 
         private final Reader inner;
@@ -77,9 +79,8 @@ public class PemParser {
         }
 
         @Override
-        public void close() throws IOException {
+        public void close() {
             ended = true;
-            inner.close();
         }
 
         private void ensureNoFailure() {
