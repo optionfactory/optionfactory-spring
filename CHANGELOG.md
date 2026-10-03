@@ -192,6 +192,16 @@
 
 ## `data-jpa`
 
+*   [FIX] **Repositories refuse to run outside a transaction, as `MANDATORY` intended.** Repositories
+    enabled by `@EnableJpaWhitelistFilteringRepositories` never open their own transactions, and the
+    `@Transactional(readOnly = true, propagation = MANDATORY)` on `JpaWhitelistFilteringRepositoryBase`
+    meant to require the caller's had no effect, since spring data ignores the base class'
+    annotations with default transactions off: reads outside a transaction silently ran on a
+    throwaway entity manager, and writes failed deep in the persistence layer. The new default
+    `repositoryFactoryBeanClass`, `WhitelistFilteringRepositoryFactoryBean`, makes every repository
+    method fail fast with an `IllegalTransactionStateException` naming the repository and method
+    when no transaction is active, and the dead annotation is gone. Call repositories from
+    transactional services; turning `enableDefaultTransactions` on lifts the check.
 *   [FIX] **`@NumberCompare` on a `char` property is rejected when the repository is built.**
     The configuration was accepted, but the value was converted to a `Character` and cast to
     `Number`, so every request carrying a value failed with a `ClassCastException`; it now fails at

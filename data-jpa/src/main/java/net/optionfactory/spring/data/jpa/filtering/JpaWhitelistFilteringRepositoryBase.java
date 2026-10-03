@@ -21,8 +21,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.support.JpaEntityInformation;
 import org.springframework.data.jpa.repository.support.SimpleJpaRepository;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 /// The repository base class installed by [EnableJpaWhitelistFilteringRepositories], implementing
 /// the [WhitelistFilteringRepository] methods for the repository interfaces that declare them.
@@ -35,13 +33,11 @@ import org.springframework.transaction.annotation.Transactional;
 /// [net.optionfactory.spring.data.jpa.filtering.filters.spi.InvalidSortRequest]. Count queries are
 /// not sorted, and not affected.
 ///
-/// The class-level `@Transactional(readOnly = true, propagation = MANDATORY)` only applies when
-/// [EnableJpaWhitelistFilteringRepositories#enableDefaultTransactions()] is turned on; by default
-/// spring data ignores the transactional annotations of the base class.
+/// It declares no transactional behaviour: repositories join the caller's transaction, and
+/// [WhitelistFilteringRepositoryFactoryBean] rejects calls made outside one.
 ///
 /// @param <T> the entity type
 /// @param <ID> the entity identifier type
-@Transactional(readOnly = true, propagation = Propagation.MANDATORY)
 public class JpaWhitelistFilteringRepositoryBase<T, ID extends Serializable> extends SimpleJpaRepository<T, ID> {
 
     private final Map<String, Filter> allowedFilters;

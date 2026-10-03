@@ -60,6 +60,11 @@ public class JpaConfig {
 }
 ```
 
+Repositories enabled this way never open a transaction of their own: they join the caller's, and
+fail with an `IllegalTransactionStateException` when called outside one. Demarcate transactions
+in the services (`@Transactional`, `TransactionTemplate`). Turning `enableDefaultTransactions` on
+restores spring data's self-demarcating repositories, and lifts the check.
+
 ### 2. Annotate the Entity
 
 Filters are declared as repeatable annotations on the entity. Each annotation binds a

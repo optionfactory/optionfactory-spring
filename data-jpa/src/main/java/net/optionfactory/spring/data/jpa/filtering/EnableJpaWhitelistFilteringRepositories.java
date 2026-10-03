@@ -10,7 +10,6 @@ import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.core.annotation.AliasFor;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.jpa.repository.query.QueryEnhancerSelector;
-import org.springframework.data.jpa.repository.support.JpaRepositoryFactoryBean;
 import org.springframework.data.repository.config.BootstrapMode;
 import org.springframework.data.repository.query.QueryLookupStrategy.Key;
 
@@ -18,11 +17,13 @@ import org.springframework.data.repository.query.QueryLookupStrategy.Key;
 /// [WhitelistFilteringRepository], by making [JpaWhitelistFilteringRepositoryBase] the base class
 /// of every repository it creates.
 ///
-/// It is `@EnableJpaRepositories` with that base class fixed and three defaults changed:
-/// [#considerNestedRepositories()] is `true`, [#enableDefaultTransactions()] is `false`, and
-/// [#transactionManagerRef()] names a bean that is not meant to exist. Repositories found by this
-/// annotation therefore open no transaction of their own: they are meant to run inside one
-/// demarcated by the caller, typically a service.
+/// It is `@EnableJpaRepositories` with that base class fixed and four defaults changed:
+/// [#considerNestedRepositories()] is `true`, [#enableDefaultTransactions()] is `false`,
+/// [#transactionManagerRef()] names a bean that is not meant to exist, and
+/// [#repositoryFactoryBeanClass()] is [WhitelistFilteringRepositoryFactoryBean]. Repositories found
+/// by this annotation therefore open no transaction of their own, and must run inside one
+/// demarcated by the caller, typically a service: called without one, they fail with an
+/// `IllegalTransactionStateException`.
 ///
 /// ```java
 /// @Configuration
@@ -82,9 +83,13 @@ public @interface EnableJpaWhitelistFilteringRepositories {
     @AliasFor(annotation = EnableJpaRepositories.class)
     Key queryLookupStrategy() default Key.CREATE_IF_NOT_FOUND;
 
+    /// Changed to [WhitelistFilteringRepositoryFactoryBean] from spring data's
+    /// `JpaRepositoryFactoryBean`, which it extends: its repositories refuse to run outside a
+    /// transaction. A replacement should extend it to keep that check.
+    ///
     /// @return the factory bean creating each repository
     @AliasFor(annotation = EnableJpaRepositories.class)
-    Class<?> repositoryFactoryBeanClass() default JpaRepositoryFactoryBean.class;
+    Class<?> repositoryFactoryBeanClass() default WhitelistFilteringRepositoryFactoryBean.class;
 
     /// @return the generator of the repository bean names; `BeanNameGenerator` itself for the
     /// context default
@@ -117,8 +122,10 @@ public @interface EnableJpaWhitelistFilteringRepositories {
 
     /// Changed to `false` from spring data's default: the `@Transactional` annotations of the
     /// repository implementation classes are ignored, so a repository method joins the caller's
-    /// transaction and runs without one when there is none. Only `@Transactional` annotations on
-    /// the repository interfaces apply, to the methods those interfaces declare.
+    /// transaction, and fails when there is none (see [WhitelistFilteringRepositoryFactoryBean]).
+    /// Only `@Transactional` annotations on the repository interfaces apply, to the methods those
+    /// interfaces declare. Turning it on lets the repositories open their own transactions, as
+    /// spring data's do, and lifts the check.
     ///
     /// @return whether the transactional defaults of the implementation classes apply
     @AliasFor(annotation = EnableJpaRepositories.class)
