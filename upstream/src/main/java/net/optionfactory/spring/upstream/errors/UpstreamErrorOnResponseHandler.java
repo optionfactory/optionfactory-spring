@@ -40,7 +40,9 @@ public class UpstreamErrorOnResponseHandler implements UpstreamResponseErrorHand
     private final Map<Method, List<AnnotatedValues>> conf = new ConcurrentHashMap<>();
 
     /// Reads the `@Upstream.ErrorOnResponse` annotations of every endpoint, from the method or else from
-    /// the interface hierarchy, and parses their conditions and reasons.
+    /// the interface hierarchy as described in
+    /// [net.optionfactory.spring.upstream.annotations.Annotations], and parses their conditions and
+    /// reasons.
     ///
     /// @param k the proxied interface
     /// @param expressions the expressions of the client

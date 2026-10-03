@@ -6,10 +6,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.UpstreamHttpInterceptor;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestExecution;
+import net.optionfactory.spring.upstream.annotations.Annotations;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.contexts.RequestContext;
@@ -55,7 +55,7 @@ public class UpstreamAnnotatedQueryParamsInterceptor implements UpstreamHttpInte
     @Override
     public void preprocess(Class<?> k, Expressions expressions, Map<Method, EndpointDescriptor> endpoints) {
         for (final var endpoint : endpoints.values()) {
-            final var anns = Stream.of(endpoint.method().getAnnotationsByType(Upstream.QueryParam.class))
+            final var anns = Annotations.onMethodRepeatable(endpoint.method(), Upstream.QueryParam.class).stream()
                     .map(annotation -> {
                         final var condition = expressions.bool(annotation.condition());
                         final var key = expressions.string(annotation.key(), annotation.keyType());

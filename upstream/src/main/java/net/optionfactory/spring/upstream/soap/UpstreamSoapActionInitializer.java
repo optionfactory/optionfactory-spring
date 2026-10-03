@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import net.optionfactory.spring.upstream.Upstream;
 import net.optionfactory.spring.upstream.UpstreamHttpRequestInitializer;
+import net.optionfactory.spring.upstream.annotations.Annotations;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
@@ -29,7 +30,8 @@ public class UpstreamSoapActionInitializer implements UpstreamHttpRequestInitial
         this.protocol = protocol;
     }
 
-    /// Compiles the [Upstream.SoapAction] of every endpoint, read from the method only.
+    /// Compiles the [Upstream.SoapAction] of every endpoint, read from the method or from the
+    /// declaration it overrides (see [Annotations#onMethod]).
     ///
     /// @param k the client interface
     /// @param expressions the parser of the action expressions
@@ -37,10 +39,8 @@ public class UpstreamSoapActionInitializer implements UpstreamHttpRequestInitial
     @Override
     public void preprocess(Class<?> k, Expressions expressions, Map<Method, EndpointDescriptor> endpoints) {
         for (final var endpoint : endpoints.values()) {
-            final Upstream.SoapAction ann = endpoint.method().getAnnotation(Upstream.SoapAction.class);
-            if (ann != null) {
-                soapActions.put(endpoint.method(), expressions.string(ann.value(), ann.valueType()));
-            }
+            Annotations.onMethod(endpoint.method(), Upstream.SoapAction.class)
+                    .ifPresent(ann -> soapActions.put(endpoint.method(), expressions.string(ann.value(), ann.valueType())));
         }
     }
 

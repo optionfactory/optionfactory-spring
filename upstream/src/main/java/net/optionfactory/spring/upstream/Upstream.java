@@ -162,9 +162,10 @@ public @interface Upstream {
     /// Logs the exchanges of an endpoint, or of every endpoint of the annotated interface.
     ///
     /// Looked up on the method first, then on the built interface and on its super-interfaces,
-    /// breadth first. Endpoints without it are not logged, unless a configuration is given to
-    /// [UpstreamBuilder#logging(Conf)] or [UpstreamBuilder#logging(java.lang.reflect.Method, Conf)],
-    /// which win over the annotation.
+    /// breadth first, skipping the ones unrelated to the interface declaring the method (see
+    /// [net.optionfactory.spring.upstream.annotations.Annotations]). Endpoints without it are not
+    /// logged, unless a configuration is given to [UpstreamBuilder#logging(Conf)] or
+    /// [UpstreamBuilder#logging(java.lang.reflect.Method, Conf)], which win over the annotation.
     ///
     /// Each exchange logs at `INFO`, as configured, the request headers, a request line (method,
     /// uri, content type and body), the response headers, a response line (status, elapsed time,
@@ -270,8 +271,8 @@ public @interface Upstream {
     public @interface Mock {
 
         /// @return the classpath path of the body resource, relative to the package of the
-        /// interface declaring the method unless it starts with `/`; evaluated per invocation,
-        /// with the arguments bound
+        /// interface whose declaration of the method carries the annotation unless it starts with
+        /// `/`; evaluated per invocation, with the arguments bound
         String value();
 
         /// @return how [#value] is evaluated
@@ -471,8 +472,9 @@ public @interface Upstream {
     /// alerts on failed exchanges.
     ///
     /// Looked up on the method first, then on the built interface and on its super-interfaces,
-    /// breadth first. A matching response is published as an
-    /// [net.optionfactory.spring.upstream.alerts.UpstreamAlertEvent] to the publisher given to
+    /// breadth first, skipping the ones unrelated to the interface declaring the method (see
+    /// [net.optionfactory.spring.upstream.annotations.Annotations]). A matching response is published
+    /// as an [net.optionfactory.spring.upstream.alerts.UpstreamAlertEvent] to the publisher given to
     /// [UpstreamBuilder#publisher], the current observation is tagged `alert=response`, and the
     /// call then proceeds as usual: the alert does not fail it, and neither does a condition that
     /// fails to evaluate or a publisher that throws, which are logged at `ERROR` instead.
@@ -496,8 +498,9 @@ public @interface Upstream {
     /// Raises an alert when an exchange fails, see [AlertOnResponse] for the alerts on responses.
     ///
     /// Looked up on the method first, then on the built interface and on its super-interfaces,
-    /// breadth first. A matching failure is published as an
-    /// [net.optionfactory.spring.upstream.alerts.UpstreamAlertEvent], the current observation is
+    /// breadth first, skipping the ones unrelated to the interface declaring the method (see
+    /// [net.optionfactory.spring.upstream.annotations.Annotations]). A matching failure is published
+    /// as an [net.optionfactory.spring.upstream.alerts.UpstreamAlertEvent], the current observation is
     /// tagged `alert=remoting`, and the exception is rethrown; a condition that fails to evaluate,
     /// or a publisher that throws, is logged at `ERROR` and does not replace it.
     ///
@@ -521,9 +524,10 @@ public @interface Upstream {
     /// upstreams that report failures in a successful response.
     ///
     /// The annotations on the method, or else the ones on the nearest of the built interface and its
-    /// super-interfaces (breadth first), are tried in declaration order: the first one whose
-    /// [#series] contains the response status and whose condition matches provides the reason. It
-    /// can be repeated, on methods and on interfaces.
+    /// super-interfaces (breadth first, skipping the ones unrelated to the interface declaring the
+    /// method), are tried in declaration order: the first one whose [#series] contains the response
+    /// status and whose condition matches provides the reason. It can be repeated, on methods and on
+    /// interfaces.
     ///
     /// Listing `CLIENT_ERROR` or `SERVER_ERROR` in [#series] lets a matching annotation provide the
     /// reason of a `4xx` or `5xx` response; the ones no annotation matches still fail with the status

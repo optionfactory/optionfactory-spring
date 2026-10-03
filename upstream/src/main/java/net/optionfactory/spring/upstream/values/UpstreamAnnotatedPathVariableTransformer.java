@@ -4,8 +4,8 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 import net.optionfactory.spring.upstream.Upstream;
+import net.optionfactory.spring.upstream.annotations.Annotations;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
@@ -47,7 +47,7 @@ public class UpstreamAnnotatedPathVariableTransformer implements HttpRequestValu
     @Override
     public void preprocess(Class<?> k, Expressions expressions, Map<Method, EndpointDescriptor> endpoints) {
         for (final var endpoint : endpoints.values()) {
-            final var anns = Stream.of(endpoint.method().getAnnotationsByType(Upstream.PathVariable.class))
+            final var anns = Annotations.onMethodRepeatable(endpoint.method(), Upstream.PathVariable.class).stream()
                     .map(annotation -> {
                         final var key = expressions.string(annotation.key(), annotation.keyType());
                         final var value = expressions.string(annotation.value(), annotation.valueType());

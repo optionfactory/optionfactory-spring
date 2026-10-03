@@ -1,3 +1,28 @@
+# version 28.4
+
+## `upstream`
+
+*   [FIX] **Endpoints take type-level annotations from their own interface hierarchy only.** Since
+    28.2 the type-level lookup of `@Upstream.Logging`, `@Upstream.AlertOnResponse`,
+    `@Upstream.AlertOnRemotingError` and `@Upstream.ErrorOnResponse` started from the proxied
+    interface and walked all of its super-interfaces: proxying `interface C extends A, B` gave the
+    endpoints declared in `B` the annotations of `A` whenever `C` had none, ahead of `B`'s own (e.g.
+    `A`'s larger logging limits, or `A`'s `ErrorOnResponse` failing `B`'s calls); likewise, proxying
+    `interface C extends A, B` where `B extends A` gave `B`'s endpoints `A`'s annotations instead of
+    `B`'s own. The lookup now runs in two passes, breadth first: the proxied interface and the ones
+    between it and the declaring interface, which override what they inherit, then the declaring
+    interface's own hierarchy. Interfaces unrelated to the declaring one are never searched.
+*   [FIX] **Redeclared methods keep the method-level annotations of the declaration they override.**
+    A subinterface redeclaring an endpoint (e.g. `@Override String get();` to narrow its return
+    type) kept it as an endpoint, with its `@HttpExchange` and `@Upstream.Endpoint`, but silently
+    lost every other method-level annotation of the overridden declaration: `@Upstream.Header`,
+    `Cookie`, `QueryParam`, `PathVariable`, `SoapAction`, `Mock`, `Logging`, `AlertOnResponse`,
+    `AlertOnRemotingError` and `ErrorOnResponse`. They now come from the most specific declaration
+    carrying them, generic overrides included; a redeclaration with its own annotations still
+    replaces the inherited ones as a whole. Mock resources inherited this way are resolved next to
+    the interface whose declaration carries the `@Upstream.Mock`. `Annotations.declaration`,
+    `onMethod` and `onMethodRepeatable` expose the lookup.
+
 # version 28.3
 
 ## All modules

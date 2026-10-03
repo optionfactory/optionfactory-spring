@@ -26,7 +26,8 @@ import org.springframework.http.MediaType;
 /// `INFO` on the `net.optionfactory.spring.upstream.log.UpstreamLoggingInterceptor` logger.
 ///
 /// The configuration of an endpoint is, in order of precedence: the one given for its method, the one
-/// given for every method, the closest `@Upstream.Logging` annotation. An endpoint with none is not
+/// given for every method, the closest `@Upstream.Logging` annotation (see
+/// [net.optionfactory.spring.upstream.annotations.Annotations]). An endpoint with none is not
 /// logged at all.
 ///
 /// Each line starts with `[boot:...][upstream:...][ep:...][req:...]`, followed by `[user:...]` when

@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import net.optionfactory.spring.upstream.Upstream;
+import net.optionfactory.spring.upstream.annotations.Annotations;
 import net.optionfactory.spring.upstream.contexts.EndpointDescriptor;
 import net.optionfactory.spring.upstream.contexts.InvocationContext;
 import net.optionfactory.spring.upstream.expressions.Expressions;
@@ -41,7 +42,8 @@ import org.springframework.web.client.RestClientException;
 ///
 /// - the annotation `value` is evaluated (a template by default) with `#upstream`, `#endpoint`,
 ///   `#invocation`, `#args` and the method parameters by name, and resolved as a classpath resource
-///   relative to the class declaring the method (a leading `/` makes it absolute);
+///   relative to the interface whose declaration of the method carries the annotations, which is
+///   the overridden one for a method redeclared without them (a leading `/` makes it absolute);
 /// - the response status is the annotation `status`, with its standard reason phrase;
 /// - the response headers are the lines of the `<resource>.headers` resource when present (see
 ///   [#headersFromResource(String, InvocationContext)]) followed by the annotation `headers`, values
@@ -68,7 +70,7 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
     private final List<MocksRenderer> renderers;
     private final StaticRenderer fallbackRenderer;
     
-    private record MockConfiguration(HttpStatus status, Optional<MediaType> defaultMediaType, StringExpression[] headers, StringExpression bodyPath) {
+    private record MockConfiguration(Class<?> anchor, HttpStatus status, Optional<MediaType> defaultMediaType, StringExpression[] headers, StringExpression bodyPath) {
 
     }
 
@@ -90,7 +92,8 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
     public void preprocess(Class<?> klass, Expressions expressions, Map<Method, EndpointDescriptor> endpoints) {
         for (final var endpoint : endpoints.values()) {
             final var m = endpoint.method();
-            final var conf = m.getAnnotationsByType(Upstream.Mock.class);
+            final Class<?> anchor = Annotations.declaration(m, Upstream.Mock.class).map(Method::getDeclaringClass).orElse(m.getDeclaringClass());
+            final var conf = Annotations.onMethodRepeatable(m, Upstream.Mock.class);
             final var defaultMediaType = Optional
                     .ofNullable(AnnotationUtils.findAnnotation(m.getDeclaringClass(), Upstream.Mock.DefaultContentType.class))
                     .map(ann -> ann.value())
@@ -104,7 +107,7 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
                         .map(header -> expressions.string(header, annotation.headersType()))
                         .toArray(i -> new StringExpression[i]);
                 final var bodyPath = expressions.string(annotation.value(), annotation.valueType());
-                mockConfigurations.add(new MockConfiguration(status, defaultMediaType, headers, bodyPath));
+                mockConfigurations.add(new MockConfiguration(anchor, status, defaultMediaType, headers, bodyPath));
             }
             if (mockConfigurations.isEmpty()) {
                 logger.warn("missing mock configuration in {}:{}", klass, m);
@@ -130,11 +133,11 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
         final var context = invocation.expressions().context(invocation);
         for (MockConfiguration mc : mcs) {
             final var path = mc.bodyPath().evaluate(context);
-            final var resource = new ClassPathResource(path, invocation.endpoint().method().getDeclaringClass());
+            final var resource = new ClassPathResource(path, mc.anchor());
             if (!resource.exists()) {
                 continue;
             }
-            final var responseHeaders = headersFromResource(path, invocation);
+            final var responseHeaders = headersFromResource(path, mc.anchor(), invocation);
             Stream.of(mc.headers())
                     .map(he -> he.evaluate(context))
                     .map(MockResourcesUpstreamHttpResponseFactory::headerFromLine)
@@ -175,8 +178,12 @@ public class MockResourcesUpstreamHttpResponseFactory implements UpstreamHttpRes
     /// @return the headers, empty when the resource does not exist
     /// @throws RestClientException when a line is missing its `:` or the resource cannot be read
     public static HttpHeaders headersFromResource(String path, InvocationContext invocation) {
+        return headersFromResource(path, invocation.endpoint().method().getDeclaringClass(), invocation);
+    }
+
+    private static HttpHeaders headersFromResource(String path, Class<?> anchor, InvocationContext invocation) {
         final String hp = String.format("%s.headers", path);
-        final var resource = new ClassPathResource(hp, invocation.endpoint().method().getDeclaringClass());
+        final var resource = new ClassPathResource(hp, anchor);
         final var headers = new HttpHeaders();
         if (!resource.exists()) {
             return headers;

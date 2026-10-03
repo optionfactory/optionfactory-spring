@@ -103,6 +103,14 @@ import tools.jackson.dataformat.xml.XmlMapper;
 /// and alert interceptors and, once the response is back, the registered response error handlers
 /// followed by the built-in ones (`@Upstream.ErrorOnResponse`, error statuses).
 ///
+/// The endpoints of a client are the public, non-default methods of its interface, inherited ones
+/// included, that carry `@HttpExchange` or an annotation composed with it (such as `@GetExchange`),
+/// on the method or on a method it overrides; `@Upstream.Endpoint` is found the same way. The
+/// other method-level [Upstream] annotations come from the most specific declaration carrying
+/// them, so a method redeclared without them keeps the ones of the declaration it overrides, and
+/// the type-level ones are found as described in
+/// [net.optionfactory.spring.upstream.annotations.Annotations].
+///
 /// A builder is not thread-safe, while the clients it builds are. Being an [UpstreamPrototype], a
 /// partially configured builder can be shared and copied with [#builder].
 ///

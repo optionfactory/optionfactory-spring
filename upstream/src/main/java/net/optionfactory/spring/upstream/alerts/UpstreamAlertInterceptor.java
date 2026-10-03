@@ -64,7 +64,8 @@ public class UpstreamAlertInterceptor implements UpstreamHttpInterceptor {
     }
 
     /// Reads the `@Upstream.AlertOnResponse` and `@Upstream.AlertOnRemotingError` of every endpoint,
-    /// looked up on the method first and then on the interface hierarchy, and parses their conditions.
+    /// looked up on the method first and then on the interface hierarchy as described in
+    /// [net.optionfactory.spring.upstream.annotations.Annotations], and parses their conditions.
     ///
     /// @param k the proxied interface
     /// @param expressions the expressions of the client
