@@ -1,7 +1,7 @@
 build:
 	mvn clean package
 bump:
-	mvn versions:set -DgenerateBackupPoms=false	
+	mvn versions:set -DgenerateBackupPoms=false -DprocessAllModules=true
 
 publish-central: committed gpg-unlock
 	$(eval VERSION = $(shell mvn -q -N help:evaluate -Dexpression=project.version -DforceStdout))
