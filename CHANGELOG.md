@@ -1,3 +1,22 @@
+# version 29.0
+
+## `problems`
+
+*   [BREAKING] **`Problem` is a record.** Its public mutable fields are gone: read them with the
+    accessors `type()`, `context()`, `reason()` and `details()`, and build changed copies with
+    `withContext`, `withReason` and `withDetails`. Two problems are now equal when their components
+    are, no longer only when they are the same instance. The factories are unchanged. Serialized,
+    a problem's properties now come in component order, `type`, `context`, `reason`, `details`,
+    instead of alphabetically.
+
+## `problems-web`
+
+*   [BREAKING] **Transformers no longer rewrite problems in place.** `OmitDetails`, the localization of
+    a `Failure`'s reasons and `UpstreamProblems.MapContext` answer with new problems, leaving those
+    they were given unchanged: a `Failure`'s own problems are no longer localized after it is
+    answered. A custom `FailureTransformer` that modified problems in place must return a new
+    `HttpStatusAndProblems` with copies instead.
+
 # version 28.5
 
 ## `downstream-maven-plugin`

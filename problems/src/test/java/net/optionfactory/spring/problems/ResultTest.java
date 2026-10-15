@@ -31,9 +31,9 @@ public class ResultTest {
 
         if (result instanceof Result.Err(var errors)) {
             Assertions.assertEquals(2, errors.size(), "an Err must hold every problem it was given");
-            Assertions.assertEquals("Invalid token", errors.get(0).reason, "problems must keep their order and reason");
-            Assertions.assertEquals("auth-context", errors.get(0).context, "problems must keep their context");
-            Assertions.assertEquals(Problem.TYPE_REQUEST_ERROR, errors.get(0).type, "problems must keep their type");
+            Assertions.assertEquals("Invalid token", errors.get(0).reason(), "problems must keep their order and reason");
+            Assertions.assertEquals("auth-context", errors.get(0).context(), "problems must keep their context");
+            Assertions.assertEquals(Problem.TYPE_REQUEST_ERROR, errors.get(0).type(), "problems must keep their type");
         } else {
             Assertions.fail("Expected Result.Err");
         }
@@ -75,7 +75,7 @@ public class ResultTest {
         Assertions.assertInstanceOf(Result.Err.class, errMapped, "mapping an Err must yield an Err");
         final var narrowed = (Result.Err<Integer>) errMapped;
         Assertions.assertEquals(1, narrowed.errors().size(), "mapping an Err must keep its problems");
-        Assertions.assertEquals(Problem.TYPE_REQUEST_ERROR, narrowed.errors().get(0).type, "mapping an Err must keep its problems unchanged");
+        Assertions.assertEquals(Problem.TYPE_REQUEST_ERROR, narrowed.errors().get(0).type(), "mapping an Err must keep its problems unchanged");
     }
 
     @Test
@@ -107,8 +107,8 @@ public class ResultTest {
 
         if (transformedErr instanceof Result.Err(var errors)) {
             Assertions.assertEquals(1, errors.size(), "the mapped Err must hold what the mapper returned");
-            Assertions.assertEquals("Connection timed out", errors.get(0).reason, "the mapped Err must hold the mapper's problems");
-            Assertions.assertEquals(Problem.TYPE_SERVER_ERROR, errors.get(0).type, "the mapped Err must hold the mapper's problems");
+            Assertions.assertEquals("Connection timed out", errors.get(0).reason(), "the mapped Err must hold the mapper's problems");
+            Assertions.assertEquals(Problem.TYPE_SERVER_ERROR, errors.get(0).type(), "the mapped Err must hold the mapper's problems");
         } else {
             Assertions.fail("Expected Result.Err");
         }
@@ -155,7 +155,7 @@ public class ResultTest {
             Result<String> outerErr = err.propagate();
             Assertions.assertInstanceOf(Result.Err.class, outerErr, "a propagated Err must still be an Err");
             Result.Err<String> rawErr = (Result.Err<String>) outerErr;
-            Assertions.assertEquals("Invalid token", rawErr.errors().get(0).reason, "a propagated Err must keep its problems");
+            Assertions.assertEquals("Invalid token", rawErr.errors().get(0).reason(), "a propagated Err must keep its problems");
         } else {
             Assertions.fail("Expected an Err instance to propagate");
         }
@@ -168,8 +168,8 @@ public class ResultTest {
         final var err2 = Result.<Double>err(p2);
         final var totalProblems = Result.collectProblems(ok, err1, err2);
         Assertions.assertEquals(2, totalProblems.size(), "the problems of every Err must be collected, none from an Ok");
-        Assertions.assertEquals("Invalid token", totalProblems.get(0).reason, "problems must be collected in argument order");
-        Assertions.assertEquals("Connection timed out", totalProblems.get(1).reason, "problems must be collected in argument order");
+        Assertions.assertEquals("Invalid token", totalProblems.get(0).reason(), "problems must be collected in argument order");
+        Assertions.assertEquals("Connection timed out", totalProblems.get(1).reason(), "problems must be collected in argument order");
     }
 
     @Test

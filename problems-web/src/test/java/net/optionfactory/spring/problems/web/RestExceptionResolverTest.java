@@ -92,7 +92,7 @@ public class RestExceptionResolverTest {
 
         final var contentType = MediaType.parseMediaType(res.getContentType());
         Assertions.assertEquals("application/failures+json", contentType.getType() + "/" + contentType.getSubtype(), "problems must be served as application/failures+json");
-        Assertions.assertEquals("[{\"context\":\"name\",\"details\":null,\"reason\":\"required\",\"type\":\"FIELD_ERROR\"}]", res.getContentAsString(), "the body must be the bare list of problems, not wrapped in the model");
+        Assertions.assertEquals("[{\"type\":\"FIELD_ERROR\",\"context\":\"name\",\"reason\":\"required\",\"details\":null}]", res.getContentAsString(), "the body must be the bare list of problems, not wrapped in the model");
     }
 
     @Test
@@ -102,7 +102,7 @@ public class RestExceptionResolverTest {
 
         final ModelAndView got = er.resolveException(new MockHttpServletRequest(), new MockHttpServletResponse(), restHandler(), exception);
 
-        Assertions.assertEquals(null, problems(got).get(0).details, "details must be omitted when configured so");
+        Assertions.assertEquals(null, problems(got).get(0).details(), "details must be omitted when configured so");
     }
 
     @Test
@@ -112,7 +112,7 @@ public class RestExceptionResolverTest {
 
         final ModelAndView got = er.resolveException(new MockHttpServletRequest(), new MockHttpServletResponse(), restHandler(), exception);
 
-        Assertions.assertEquals("details", problems(got).get(0).details, "details must be kept when configured so");
+        Assertions.assertEquals("details", problems(got).get(0).details(), "details must be kept when configured so");
     }
 
     @Test
@@ -125,7 +125,7 @@ public class RestExceptionResolverTest {
 
         Assertions.assertNotNull(got, "a status HttpStatus does not know, such as 599, must still be answered");
         Assertions.assertEquals(599, res.getStatus(), "the non-standard status must be kept");
-        Assertions.assertEquals("HTTP_599", problems(got).get(0).type, "a status without a name must be typed by its number");
+        Assertions.assertEquals("HTTP_599", problems(got).get(0).type(), "a status without a name must be typed by its number");
     }
 
     @Test
@@ -159,7 +159,7 @@ public class RestExceptionResolverTest {
         final var er = RestExceptionResolver.builder().withMessageSource(messages).build(new JsonMapper());
         final var failure = Failure.builder().field("a", "error.custom").field("b", "error.invalid_format").field("c", "error.missing_parameter").build();
 
-        final var reasons = problems(er.resolveException(new MockHttpServletRequest(), new MockHttpServletResponse(), restHandler(), failure)).stream().map(p -> p.reason).toList();
+        final var reasons = problems(er.resolveException(new MockHttpServletRequest(), new MockHttpServletResponse(), restHandler(), failure)).stream().map(p -> p.reason()).toList();
 
         Assertions.assertEquals(List.of("messaggio dell'applicazione", "formato sbagliato", "Parametro mancante"), reasons, "the application's messages must win, the built-in ones answering the codes it does not know");
     }

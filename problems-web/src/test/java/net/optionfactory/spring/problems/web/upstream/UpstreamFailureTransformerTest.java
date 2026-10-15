@@ -84,7 +84,7 @@ public class UpstreamFailureTransformerTest {
     }
 
     private static List<String> contexts(HttpStatusAndProblems saps) {
-        return saps.problems().stream().map(p -> p.context).toList();
+        return saps.problems().stream().map(p -> p.context()).toList();
     }
 
     @Test
@@ -97,7 +97,7 @@ public class UpstreamFailureTransformerTest {
     public void aHandlerWithoutDeclarationsIsLeftUnchanged() throws NoSuchMethodException {
         final var got = transform("plain", upstreamFailure("warehouse", HttpStatus.BAD_REQUEST, "items.0"));
         Assertions.assertEquals(HttpStatus.BAD_GATEWAY, got.status(), "without @Forward the upstream failure must stay a bad gateway");
-        Assertions.assertEquals(Problem.TYPE_UPSTREAM_ERROR, got.problems().get(0).type, "without @Forward the upstream problems must not be exposed");
+        Assertions.assertEquals(Problem.TYPE_UPSTREAM_ERROR, got.problems().get(0).type(), "without @Forward the upstream problems must not be exposed");
     }
 
     @Test
@@ -123,7 +123,7 @@ public class UpstreamFailureTransformerTest {
     public void aStatusOnlyForwardKeepsTheResolversProblems() throws NoSuchMethodException {
         final var got = transform("forwardingTheStatusOnly", upstreamFailure("warehouse", HttpStatus.BAD_REQUEST, "items.0"));
         Assertions.assertEquals(HttpStatus.UNPROCESSABLE_CONTENT, got.status(), "the target status must be used");
-        Assertions.assertEquals(Problem.TYPE_UPSTREAM_ERROR, got.problems().get(0).type, "with problems = false the upstream's problems must not be exposed");
+        Assertions.assertEquals(Problem.TYPE_UPSTREAM_ERROR, got.problems().get(0).type(), "with problems = false the upstream's problems must not be exposed");
     }
 
     @Test

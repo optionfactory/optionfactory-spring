@@ -70,8 +70,8 @@ public class ExceptionClassifierTest {
         final var got = er.resolveException(new MockHttpServletRequest(), res, handler(), new LibraryRejection());
 
         Assertions.assertEquals(400, res.getStatus(), "the classifier's status must be answered");
-        Assertions.assertEquals("byName", problems(got).get(0).context, "the classifier's problems must be answered");
-        Assertions.assertEquals("rejected", problems(got).get(0).reason, "the classifier's reason must be answered");
+        Assertions.assertEquals("byName", problems(got).get(0).context(), "the classifier's problems must be answered");
+        Assertions.assertEquals("rejected", problems(got).get(0).reason(), "the classifier's reason must be answered");
     }
 
     @Test
@@ -122,7 +122,7 @@ public class ExceptionClassifierTest {
         final var got = er.resolveException(new MockHttpServletRequest(), res, handler(), Failure.field("name", "required"));
 
         Assertions.assertEquals(400, res.getStatus(), "the built-in Failure case must answer what the classifier declines");
-        Assertions.assertEquals("name", problems(got).get(0).context, "the failure's own problems must be answered");
+        Assertions.assertEquals("name", problems(got).get(0).context(), "the failure's own problems must be answered");
     }
 
     @Test
@@ -143,7 +143,7 @@ public class ExceptionClassifierTest {
         final var got = er.resolveException(new MockHttpServletRequest(), res, handler(), new IllegalStateException("the real error"));
 
         Assertions.assertEquals(500, res.getStatus(), "the original exception must be answered as unexpected");
-        Assertions.assertEquals("the real error", problems(got).get(0).details, "the details must be the original exception's, not the classifier's");
+        Assertions.assertEquals("the real error", problems(got).get(0).details(), "the details must be the original exception's, not the classifier's");
     }
 
     @Test
@@ -165,7 +165,7 @@ public class ExceptionClassifierTest {
 
         final var got = er.resolveException(new MockHttpServletRequest(), new MockHttpServletResponse(), handler(), new LibraryRejection());
 
-        Assertions.assertEquals("localized rejection", problems(got).get(0).reason, "the context must localize with the configured message source");
+        Assertions.assertEquals("localized rejection", problems(got).get(0).reason(), "the context must localize with the configured message source");
     }
 
     @Test
@@ -187,7 +187,7 @@ public class ExceptionClassifierTest {
         final var got = er.resolveException(new MockHttpServletRequest(), res, handler(), new LibraryRejection());
 
         Assertions.assertEquals(422, res.getStatus(), "the module's transformer must run");
-        Assertions.assertEquals("byName", problems(got).get(0).context, "the module's classifier must run");
+        Assertions.assertEquals("byName", problems(got).get(0).context(), "the module's classifier must run");
     }
 
     @Test
@@ -200,17 +200,14 @@ public class ExceptionClassifierTest {
 
             @Override
             public List<FailureTransformer> transformers() {
-                return List.of((saps, request, response, handler, ex) -> {
-                    saps.problems().forEach(p -> p.details = "internal state");
-                    return saps;
-                });
+                return List.of((saps, request, response, handler, ex) -> new HttpStatusAndProblems(saps.status(), saps.problems().stream().map(p -> p.withDetails("internal state")).toList()));
             }
         };
         final var er = RestExceptionResolver.builder().withDetails(Details.OMIT).withModule(leaking).build(new JsonMapper());
 
         final var got = er.resolveException(new MockHttpServletRequest(), new MockHttpServletResponse(), handler(), new LibraryRejection());
 
-        Assertions.assertNull(problems(got).get(0).details, "details must be omitted after every transformer, a module's included");
+        Assertions.assertNull(problems(got).get(0).details(), "details must be omitted after every transformer, a module's included");
     }
 
     @Test
@@ -219,6 +216,6 @@ public class ExceptionClassifierTest {
 
         final var got = er.resolveException(new MockHttpServletRequest(), new MockHttpServletResponse(), handler(), new LibraryRejection());
 
-        Assertions.assertNull(problems(got).get(0).details, "the details of a classified exception must still be omitted");
+        Assertions.assertNull(problems(got).get(0).details(), "the details of a classified exception must still be omitted");
     }
 }

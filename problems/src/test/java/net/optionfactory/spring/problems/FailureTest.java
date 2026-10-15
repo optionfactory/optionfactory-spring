@@ -32,8 +32,8 @@ public class FailureTest {
                 .object("second")
                 .server("ctx", "third")
                 .build();
-        Assertions.assertEquals(List.of("first", "second", "third"), failure.problems.stream().map(p -> p.reason).toList(), "problems must be kept in insertion order");
-        Assertions.assertEquals(List.of(Problem.TYPE_FIELD_ERROR, Problem.TYPE_OBJECT_ERROR, Problem.TYPE_SERVER_ERROR), failure.problems.stream().map(p -> p.type).toList(), "each method must add a problem of its own type");
+        Assertions.assertEquals(List.of("first", "second", "third"), failure.problems.stream().map(p -> p.reason()).toList(), "problems must be kept in insertion order");
+        Assertions.assertEquals(List.of(Problem.TYPE_FIELD_ERROR, Problem.TYPE_OBJECT_ERROR, Problem.TYPE_SERVER_ERROR), failure.problems.stream().map(p -> p.type()).toList(), "each method must add a problem of its own type");
     }
 
     @Test
@@ -56,7 +56,7 @@ public class FailureTest {
     @Test
     public void aConditionalProblemIsAddedWhenTheCheckFails() {
         final var failure = Failure.builder().add(true, () -> Problem.field("name", "required")).build();
-        Assertions.assertEquals(List.of("name"), failure.problems.stream().map(p -> p.context).toList(), "the supplied problem must be added when the check failed");
+        Assertions.assertEquals(List.of("name"), failure.problems.stream().map(p -> p.context()).toList(), "the supplied problem must be added when the check failed");
     }
 
     @Test
@@ -78,7 +78,7 @@ public class FailureTest {
     @Test
     public void enforcingABuilderWithProblemsThrowsThem() {
         final var failure = Assertions.assertThrows(Failure.class, () -> Failure.builder().message("signup").field("name", "required").enforce(), "enforcing with problems must throw");
-        Assertions.assertEquals("name", failure.problems.get(0).context, "the thrown failure must carry the collected problems");
+        Assertions.assertEquals("name", failure.problems.get(0).context(), "the thrown failure must carry the collected problems");
         Assertions.assertTrue(failure.getMessage().startsWith("problems (signup)"), "the thrown failure must carry the builder's message");
     }
 
@@ -93,14 +93,14 @@ public class FailureTest {
     @Test
     public void singleProblemFactoriesFillTypeAndContext() {
         final var field = Failure.field("address.zip", "required").problems.get(0);
-        Assertions.assertEquals(Problem.TYPE_FIELD_ERROR, field.type, "field must build a FIELD_ERROR");
-        Assertions.assertEquals("address.zip", field.context, "field must use the path as context");
+        Assertions.assertEquals(Problem.TYPE_FIELD_ERROR, field.type(), "field must build a FIELD_ERROR");
+        Assertions.assertEquals("address.zip", field.context(), "field must use the path as context");
         final var upstream = Failure.upstream("down").problems.get(0);
-        Assertions.assertEquals(Problem.TYPE_UPSTREAM_ERROR, upstream.type, "upstream must build an UPSTREAM_ERROR");
-        Assertions.assertNull(upstream.context, "a factory without context must leave it null");
+        Assertions.assertEquals(Problem.TYPE_UPSTREAM_ERROR, upstream.type(), "upstream must build an UPSTREAM_ERROR");
+        Assertions.assertNull(upstream.context(), "a factory without context must leave it null");
         final var custom = Failure.of("CONFLICT", "already exists", (Object) "id=1").problems.get(0);
-        Assertions.assertEquals("already exists", custom.reason, "of(type, reason, details) must set the reason");
-        Assertions.assertEquals("id=1", custom.details, "of(type, reason, details) must set the details");
-        Assertions.assertNull(custom.context, "of(type, reason, details) must leave the context null");
+        Assertions.assertEquals("already exists", custom.reason(), "of(type, reason, details) must set the reason");
+        Assertions.assertEquals("id=1", custom.details(), "of(type, reason, details) must set the details");
+        Assertions.assertNull(custom.context(), "of(type, reason, details) must leave the context null");
     }
 }

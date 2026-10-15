@@ -29,8 +29,7 @@ import org.jspecify.annotations.Nullable;
 public class Failure extends RuntimeException {
 
     /// The problems, in the order they were given. The list is the one passed to the constructor,
-    /// not a copy, while a [Builder] passes a copy of its own: it is mutable whenever that list is,
-    /// and `problems-web` rewrites the problems' reasons in place when it localizes them.
+    /// not a copy, while a [Builder] passes a copy of its own: it is mutable whenever that list is.
     public final List<Problem> problems;
 
     /// @param problems the problems, kept as given

@@ -32,7 +32,7 @@ public class UpstreamTransformerOrderTest {
     public void anApplicationTransformerSeesTheForwardedProblems() throws Exception {
         final var seen = new ArrayList<String>();
         final FailureTransformer recording = (saps, request, response, handler, ex) -> {
-            saps.problems().forEach(p -> seen.add(p.type));
+            saps.problems().forEach(p -> seen.add(p.type()));
             return saps;
         };
         final var er = RestExceptionResolver.builder().withTransformer(recording).build(new JsonMapper());

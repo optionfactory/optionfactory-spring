@@ -21,7 +21,8 @@ import org.springframework.web.method.HandlerMethod;
 /// the request because of the client's own input, a handler can forward the upstream's problems
 /// instead, with [UpstreamProblems.Forward], and rewrite their contexts to name the client's input
 /// rather than the upstream's, with [UpstreamProblems.MapContext]. The forward is applied first,
-/// then every matching mapping, in declaration order, each on the result of the previous.
+/// then every matching mapping, in declaration order, each on the result of the previous. Mapping
+/// builds new problems, leaving the ones it was given unchanged.
 ///
 /// Any other exception, and an upstream failure on a handler declaring neither, is returned
 /// unchanged. Registered by default through [UpstreamProblemsModule].
@@ -76,6 +77,7 @@ public class UpstreamFailureTransformer implements FailureTransformer {
             return saps;
         }
         final var annotations = maybeAnnotation.get();
+        var problems = saps.problems();
         for (final var annotation : annotations) {
             if (!annotation.upstream().isEmpty() && !annotation.upstream().equals(uex.upstream)) {
                 continue;
@@ -83,29 +85,31 @@ public class UpstreamFailureTransformer implements FailureTransformer {
             if (!annotation.endpoint().isEmpty() && !annotation.endpoint().equals(uex.endpoint)) {
                 continue;
             }
-            for (Problem problem : saps.problems()) {
-                if (problem.context == null) {
-                    continue;
-                }
-                problem.context = switch (annotation.mode()) {
-                    case STRING_FIRST -> {
-                        int index = problem.context.indexOf(annotation.source());
-                        if (index < 0) {
-                            yield problem.context;
-                        }
-                        yield problem.context.substring(0, index) + annotation.target() + problem.context.substring(index + annotation.source().length());
-                    }
-                    case REGEX_FIRST ->
-                        problem.context.replaceFirst(annotation.source(), annotation.target());
-                    case REGEX_ALL ->
-                        problem.context.replaceAll(annotation.source(), annotation.target());
-                    case STRING_ALL ->
-                        problem.context.replace(annotation.source(), annotation.target());
-                };
-            }
-
+            problems = problems.stream().map(problem -> mapContext(annotation, problem)).toList();
         }
-        return saps;
+        return new HttpStatusAndProblems(saps.status(), problems);
+    }
+
+    private static Problem mapContext(UpstreamProblems.MapContext annotation, Problem problem) {
+        final String context = problem.context();
+        if (context == null) {
+            return problem;
+        }
+        return problem.withContext(switch (annotation.mode()) {
+            case STRING_FIRST -> {
+                int index = context.indexOf(annotation.source());
+                if (index < 0) {
+                    yield context;
+                }
+                yield context.substring(0, index) + annotation.target() + context.substring(index + annotation.source().length());
+            }
+            case REGEX_FIRST ->
+                context.replaceFirst(annotation.source(), annotation.target());
+            case REGEX_ALL ->
+                context.replaceAll(annotation.source(), annotation.target());
+            case STRING_ALL ->
+                context.replace(annotation.source(), annotation.target());
+        });
     }
 
 }

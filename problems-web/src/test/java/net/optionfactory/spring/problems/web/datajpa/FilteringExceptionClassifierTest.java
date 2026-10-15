@@ -251,6 +251,6 @@ public class FilteringExceptionClassifierTest {
     public void aRejectionNotWrappedIsMappedToo() {
         final var mapped = new FilteringExceptionClassifier().classify(null, new InvalidFilterRequest("byName", null, "operator LIKE not whitelisted"));
         Assertions.assertEquals(400, mapped.status().value(), "an unwrapped rejection is a bad request");
-        Assertions.assertEquals("byName", mapped.problems().get(0).context, "the problem must name the filter");
+        Assertions.assertEquals("byName", mapped.problems().get(0).context(), "the problem must name the filter");
     }
 }

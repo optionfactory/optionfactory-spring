@@ -16,11 +16,17 @@ import org.jspecify.annotations.Nullable;
 /// - `details` carries anything else, typically for debugging: `problems-web` omits it from
 ///   responses unless configured otherwise.
 ///
-/// A problem is a plain mutable carrier, its fields public so that serializers and the
-/// `problems-web` transformers can rewrite them in place (localizing a reason, omitting details). It
-/// does not override `equals` and `hashCode`: two problems are equal only when they are the same
-/// instance. Problems are usually thrown in a [Failure], or returned in a [Result].
-public class Problem {
+/// A problem is an immutable value: two problems are equal when their four components are. The
+/// `problems-web` transformers that rewrite a problem (localizing a reason, omitting details) build a
+/// new one with [#withContext(String)], [#withReason(String)] or [#withDetails(Object)]. Problems are
+/// usually thrown in a [Failure], or returned in a [Result].
+///
+/// @param type what kind of problem this is
+/// @param context where the problem is, or `null`
+/// @param reason what is wrong. `problems-web` treats it as a message code, localizing it when its
+/// message source knows it and keeping it as is otherwise
+/// @param details anything else, possibly structured, or `null`; not meant for production responses
+public record Problem(@NonNull String type, @Nullable String context, @Nullable String reason, @Nullable Object details) {
 
     /// A problem with one field of the input, `context` being its path, dot separated.
     public static final String TYPE_FIELD_ERROR = "FIELD_ERROR";
@@ -44,28 +50,13 @@ public class Problem {
     /// `null`, named for readability at call sites: the problem carries no details.
     public static final String NO_DETAILS = null;
 
-    /// What kind of problem this is.
-    public String type;
-    /// Where the problem is, or `null`.
-    public String context;
-    /// What is wrong. `problems-web` treats it as a message code, localizing it when its message
-    /// source knows it and keeping it as is otherwise.
-    public String reason;
-    /// Anything else, possibly structured, or `null`; not meant for production responses.
-    public Object details;
-
     /// @param type the problem type
     /// @param context where the problem is, or `null`
     /// @param reason what is wrong
     /// @param details anything else, or `null`
     /// @return a new problem
     public static Problem of(@NonNull String type, @Nullable String context, @Nullable String reason, @Nullable Object details) {
-        final Problem problem = new Problem();
-        problem.type = type;
-        problem.context = context;
-        problem.reason = reason;
-        problem.details = details;
-        return problem;
+        return new Problem(type, context, reason, details);
     }
 
     /// @param type the problem type
@@ -217,6 +208,24 @@ public class Problem {
     /// @return a [#TYPE_FORBIDDEN] problem without context, reason and details
     public static Problem forbidden() {
         return of(Problem.TYPE_FORBIDDEN, Problem.NO_CONTEXT, null, Problem.NO_DETAILS);
+    }
+
+    /// @param context where the problem is, or `null`
+    /// @return a copy of this problem with the given context
+    public Problem withContext(@Nullable String context) {
+        return new Problem(type, context, reason, details);
+    }
+
+    /// @param reason what is wrong
+    /// @return a copy of this problem with the given reason
+    public Problem withReason(@Nullable String reason) {
+        return new Problem(type, context, reason, details);
+    }
+
+    /// @param details anything else, or `null`
+    /// @return a copy of this problem with the given details
+    public Problem withDetails(@Nullable Object details) {
+        return new Problem(type, context, reason, details);
     }
 
     /// @return the problem as `type@context: reason (details)`, for logs and exception messages

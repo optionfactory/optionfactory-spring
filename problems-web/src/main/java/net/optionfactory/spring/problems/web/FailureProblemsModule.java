@@ -16,8 +16,8 @@ import org.springframework.http.HttpStatus;
 ///
 /// Each problem's reason is taken as a message code and localized when the resolver's message
 /// source knows it, kept as is otherwise, so a failure can be thrown with
-/// `jakarta.validation.constraints.NotNull.message` as its reason. The reasons are rewritten in the
-/// failure's own problems.
+/// `jakarta.validation.constraints.NotNull.message` as its reason. The failure's own problems are
+/// left unchanged: the answer carries localized copies.
 public class FailureProblemsModule implements ProblemsModule {
 
     /// @return the module's single classifier
@@ -30,9 +30,9 @@ public class FailureProblemsModule implements ProblemsModule {
         if (!(ex instanceof Failure failure)) {
             return null;
         }
-        for (Problem problem : failure.problems) {
-            problem.reason = context.localized(problem.reason, problem.reason);
-        }
-        return new HttpStatusAndProblems(ExceptionClassifier.annotatedStatusOr(failure, HttpStatus.BAD_REQUEST), failure.problems);
+        final List<Problem> localized = failure.problems.stream()
+                .map(problem -> problem.withReason(context.localized(problem.reason(), problem.reason())))
+                .toList();
+        return new HttpStatusAndProblems(ExceptionClassifier.annotatedStatusOr(failure, HttpStatus.BAD_REQUEST), localized);
     }
 }
