@@ -24,7 +24,8 @@ Opinionated Spring Framework extension libraries.
 | [`localized-enums`](localized-enums/readme.md)                                       | Declarative, resource-bundle based enum localization.              |
 | [`marshaling-jackson`](marshaling-jackson/readme.md)                                 | Jackson modules and adapters for common types and quirks.          |
 | [`marshaling-jaxb`](marshaling-jaxb/readme.md)                                       | JAXB `XmlAdapter`s for Temporals and Money.                        |
-| [`optionfactory-spring-bom`](optionfactory-spring-bom/readme.md)                     | Project Bill of Materials.                                         |
+| [`optionfactory-spring-bom`](optionfactory-spring-bom/readme.md)                     | Bill of Materials: the modules only.                               |
+| [`optionfactory-spring-dependencies`](optionfactory-spring-dependencies/readme.md)   | The modules and the third-party stack they are built with.         |
 | [`pdf`](pdf/readme.md)                                                               | PDF generation with Thymeleaf, openhtmltopdf, and PDFBox.          |
 | [`pem`](pem/readme.md)                                                               | PEM-based `KeyStore`s and security providers.                      |
 | [`problems`](problems/readme.md)                                                     | Problem data types and exceptions for RFC-7807 like reporting.     |

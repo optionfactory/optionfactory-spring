@@ -1,6 +1,6 @@
 # optionfactory-spring/optionfactory-spring-bom
 
-Bill of Materials (BOM) for optionfactory-spring modules.
+Bill of Materials (BOM) for the optionfactory-spring modules only.
 
 ## Maven
 
@@ -20,6 +20,12 @@ Bill of Materials (BOM) for optionfactory-spring modules.
 
 ## Usage
 
-Import the BOM in your `dependencyManagement` section to manage versions of all `optionfactory-spring` modules.
+Import the BOM in your `dependencyManagement` section to manage the versions of all the
+`optionfactory-spring` modules. Third-party dependencies are not managed: the modules bring them
+transitively, and the application states the version of any it declares itself.
 
+To have the third-party stack aligned by the same import, use
+[`optionfactory-spring-dependencies`](../optionfactory-spring-dependencies/readme.md) instead.
 
+The BOM declares no scopes and has no parent: importing it brings the module versions and nothing
+else.

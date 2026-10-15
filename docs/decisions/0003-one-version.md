@@ -12,7 +12,11 @@ and every cross-module change a coordinated release.
 
 Every module shares the reactor's version, in `MAJOR.MINOR` form (`28.2`).
 `optionfactory-spring-bom` lists every module, so an application imports one
-version and picks modules without stating it again. Releases go to maven
+version and picks modules without stating it again;
+`optionfactory-spring-dependencies` adds the third-party stack the modules are
+built and tested with (0004), for applications that want it aligned by the same
+import. Neither BOM declares scopes or the versions the library only builds
+with. Releases go to maven
 central, signed.
 
 The major is bumped when a release contains a breaking change that is silent

@@ -1,5 +1,39 @@
 # version 29.0
 
+## `optionfactory-spring-bom` and `optionfactory-spring-dependencies`
+
+*   [BREAKING] **`optionfactory-spring-bom` manages the optionfactory-spring modules only.** It no
+    longer inherits the reactor's parent, so importing it no longer brings the versions of the
+    third-party dependencies (Spring, Jackson, Hibernate, Tomcat, the JDBC drivers, JUnit and the
+    others): an application declaring one of them without a version fails to build with
+    `dependencies.dependency.version is missing`. To keep the whole stack aligned with one import,
+    import `optionfactory-spring-dependencies` instead; to manage the third-party versions on your
+    own, keep importing `optionfactory-spring-bom` and state them.
+*   [NEW] **`optionfactory-spring-dependencies`: the modules and the third-party dependencies they
+    are built and tested with.** It extends `optionfactory-spring-bom`, imports the Spring
+    Framework, Spring Security, Spring Data and Jackson BOMs and manages the rest of the platform
+    (0004): one import aligns the whole stack, as `optionfactory-spring-bom` did up to 28.x.
+
+    ```xml
+    <dependency>
+        <groupId>net.optionfactory.spring</groupId>
+        <artifactId>optionfactory-spring-dependencies</artifactId>
+        <version>29.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+    </dependency>
+    ```
+*   [BREAKING] **The BOMs no longer impose scopes, nor versions the library only builds with.** Up to
+    28.x importing the BOM forced the `test` scope on `junit-jupiter`, `junit-platform-launcher` and
+    `hamcrest`, transitive dependencies included, and the `provided` scope on
+    `jakarta.servlet-api`; it also managed `hamcrest`, `json-path`, `junit-platform-launcher` and
+    `jakarta.xml.soap-api`, which the library only uses to build itself. Neither BOM declares a
+    scope now, and the build-only versions stay in the reactor's parent (`jakarta.xml.soap-api`,
+    unused, is gone). The break is silent: a `jakarta.servlet-api` declared without a scope is now
+    a `compile` dependency and ends up in the war, and a test library declared without a scope ends
+    up on the runtime classpath. Declare the scopes explicitly: `provided` for the servlet api,
+    `test` for JUnit and the other test libraries.
+
 ## `problems`
 
 *   [BREAKING] **`Problem` is a record.** Its public mutable fields are gone: read them with the
