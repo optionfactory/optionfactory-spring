@@ -14,8 +14,8 @@ import java.util.stream.Collectors;
 /// Runs one generation: scans the classpath for the endpoints, collects their payloads, names them
 /// and hands them to an emitter.
 ///
-/// The classpath scanned is the one of the class loader that loaded the plugin, which is where
-/// the server classes are when the server is a dependency of the plugin.
+/// The classpath scanned is the one of the class loader given to [#execute]: the plugin's own when
+/// the server is a jar dependency of the plugin, or the one of [ServerClasses] when it is a war.
 public class GenerationPipeline {
 
     private final Log log;
@@ -38,14 +38,15 @@ public class GenerationPipeline {
         this.exclusions = exclusions;
     }
 
+    /// @param classLoader the class loader holding the server, as classes, jars or wars
     /// @param targetPackage the package of the generated types, ignored by emitters without
     /// packages
     /// @param nesting how nested payload types are named
-    /// @throws IllegalStateException when two payload types end up with the same name
+    /// @throws IllegalStateException when no endpoint is found, or when two payload types end up
+    /// with the same name
     /// @throws Exception when the emitter fails
-    public void execute(String targetPackage, Nesting nesting) throws Exception {
+    public void execute(ClassLoader classLoader, String targetPackage, Nesting nesting) throws Exception {
 
-        final var classLoader = this.getClass().getClassLoader();
         try (final var scanResult = new ClassGraph()
                 .enableClassLoaders(classLoader)
                 .enableClassInfo()
@@ -55,6 +56,9 @@ public class GenerationPipeline {
 
             final var methods = endpoints.discover(scanResult, classLoader);
             log.info("Discovered %s methods annotated with @Downstream.Method".formatted(methods.size()));
+            if (methods.isEmpty()) {
+                throw new IllegalStateException("no method annotated with @Downstream.Method was found for this client: add the server (classes, jar or war) as a dependency of the plugin");
+            }
 
             final var candidates = payloads.discover(methods).stream()
                     .filter(c -> !exclusions.contains(c.getName()))

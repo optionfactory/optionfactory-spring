@@ -40,20 +40,24 @@ public class TestPipeline {
                 .collect(Collectors.toSet());
 
         final var pipeline = new GenerationPipeline(new SystemStreamLog(), endpoints, payloads, emitter, exclusions);
-        pipeline.execute(targetPackage, nesting);
+        pipeline.execute(getClass().getClassLoader(), targetPackage, nesting);
 
         final File file = new File(tempDir, "spec.d.ts");
         return Files.readString(file.toPath());
     }
 
     public Map<String, String> java(File tempDir, Nesting nesting, DtoStyle style, Map<String, String> translations) throws Exception {
+        return java(tempDir, nesting, style, translations, getClass().getClassLoader());
+    }
+
+    public Map<String, String> java(File tempDir, Nesting nesting, DtoStyle style, Map<String, String> translations, ClassLoader classLoader) throws Exception {
         final var endpoints = new Endpoints(targetClient);
         final var payloads = new Payloads(sourcePackage);
         final var emitter = new JavaEmitter(tempDir, tempDir, translations, style, Set.of());
         
         final var exclusions = translations.keySet();        
         final var pipeline = new GenerationPipeline(new SystemStreamLog(), endpoints, payloads, emitter, exclusions);
-        pipeline.execute(targetPackage, nesting);
+        pipeline.execute(classLoader, targetPackage, nesting);
         final var contents = new HashMap<String, String>();
 
         try (var paths = Files.walk(tempDir.toPath())) {

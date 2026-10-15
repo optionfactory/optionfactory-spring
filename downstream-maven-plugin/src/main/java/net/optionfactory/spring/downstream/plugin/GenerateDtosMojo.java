@@ -3,10 +3,17 @@ package net.optionfactory.spring.downstream.plugin;
 import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import net.optionfactory.spring.downstream.plugin.core.GenerationPipeline;
+import net.optionfactory.spring.downstream.plugin.core.ServerClasses;
+import org.apache.maven.plugin.descriptor.PluginDescriptor;
+import org.apache.maven.plugins.annotations.Component;
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.repository.RemoteRepository;
 import net.optionfactory.spring.downstream.plugin.discovery.Endpoints;
 import net.optionfactory.spring.downstream.plugin.discovery.Payloads;
 import net.optionfactory.spring.downstream.plugin.emit.java.JavaEmitter;
@@ -24,7 +31,9 @@ import org.apache.maven.project.MavenProject;
 ///
 /// Runs in the client project, in the `generate-sources` phase by default. The server classes are
 /// scanned from the plugin's own classpath, so the server artifact must be a dependency of the
-/// plugin, not of the project. The sources are written to
+/// plugin, not of the project. A war is read from its `WEB-INF/classes`, alongside the
+/// dependencies its pom declares (`provided` ones included), which are resolved for it since Maven
+/// resolves none for a war. The sources are written to
 /// `target/generated-sources/downstream-{target}` (`target` falling back to `targetClientName`;
 /// with neither, the directory is just `downstream`), which is then added as a compile source root.
 ///
@@ -81,6 +90,18 @@ public class GenerateDtosMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     private MavenProject project;
 
+    @Parameter(defaultValue = "${plugin}", readonly = true)
+    private PluginDescriptor plugin;
+
+    @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
+    private RepositorySystemSession repositorySession;
+
+    @Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true)
+    private List<RemoteRepository> remoteRepositories;
+
+    @Component
+    private RepositorySystem repositorySystem;
+
     @Parameter(required = true)
     private String sourceBasePackage;
 
@@ -124,7 +145,10 @@ public class GenerateDtosMojo extends AbstractMojo {
             final var exclusions = translations.keySet();
 
             final var pipeline = new GenerationPipeline(getLog(), endpoints, payloads, emitter, exclusions);
-            pipeline.execute(targetPackage, nesting);
+            final var servers = WarServers.resolve(plugin == null ? null : plugin.getArtifacts(), repositorySystem, repositorySession, remoteRepositories);
+            try (final var server = ServerClasses.of(getClass().getClassLoader(), servers)) {
+                pipeline.execute(server.classLoader(), targetPackage, nesting);
+            }
 
             project.addCompileSourceRoot(outputDir.getAbsolutePath());
             getLog().info("Generated code added to the compile source root: " + outputDir.getAbsolutePath());

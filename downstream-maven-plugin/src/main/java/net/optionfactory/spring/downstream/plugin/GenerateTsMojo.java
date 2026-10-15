@@ -2,11 +2,18 @@ package net.optionfactory.spring.downstream.plugin;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.optionfactory.spring.downstream.plugin.core.GenerationPipeline;
+import net.optionfactory.spring.downstream.plugin.core.ServerClasses;
+import org.apache.maven.plugin.descriptor.PluginDescriptor;
+import org.apache.maven.plugins.annotations.Component;
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.repository.RemoteRepository;
 import net.optionfactory.spring.downstream.plugin.discovery.Endpoints;
 import net.optionfactory.spring.downstream.plugin.discovery.Payloads;
 import net.optionfactory.spring.downstream.plugin.emit.ts.TypeScriptEmitter;
@@ -23,7 +30,9 @@ import org.apache.maven.project.MavenProject;
 ///
 /// Runs in the client project, in the `generate-sources` phase by default. The server classes are
 /// scanned from the plugin's own classpath, so the server artifact must be a dependency of the
-/// plugin. DTOs become interfaces (an `Optional` or `@Nullable` property becoming optional),
+/// plugin. A war is read from its `WEB-INF/classes`, alongside the dependencies its pom declares
+/// (`provided` ones included), which are resolved for it since Maven resolves none for a war. DTOs
+/// become interfaces (an `Optional` or `@Nullable` property becoming optional),
 /// enums become unions of string literals, collections become arrays and maps become `Record`s.
 /// Nested types are always declared top-level, under their `flatName`.
 ///
@@ -72,6 +81,18 @@ public class GenerateTsMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     private MavenProject project;
 
+    @Parameter(defaultValue = "${plugin}", readonly = true)
+    private PluginDescriptor plugin;
+
+    @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
+    private RepositorySystemSession repositorySession;
+
+    @Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true)
+    private List<RemoteRepository> remoteRepositories;
+
+    @Component
+    private RepositorySystem repositorySystem;
+
     @Parameter(required = false)
     private File targetDirectory;
 
@@ -115,7 +136,10 @@ public class GenerateTsMojo extends AbstractMojo {
                     .collect(Collectors.toSet());
             
             final var pipeline = new GenerationPipeline(getLog(), endpoints, payloads, emitter, exclusions);
-            pipeline.execute("", nesting);
+            final var servers = WarServers.resolve(plugin == null ? null : plugin.getArtifacts(), repositorySystem, repositorySession, remoteRepositories);
+            try (final var server = ServerClasses.of(getClass().getClassLoader(), servers)) {
+                pipeline.execute(server.classLoader(), "", nesting);
+            }
 
             getLog().info("Generated TypeScript definitions written to: " + outputDir.getAbsolutePath());
 

@@ -1,3 +1,25 @@
+# version 29.1
+
+## `downstream-maven-plugin`
+
+*   [FIX] **A server war as plugin dependency generates again.** Since 28.5 (ClassGraph 6) a war on
+    the plugin's classpath contributed no class: ClassGraph 6 no longer reads `WEB-INF/classes` as
+    a package root, and the plugin's class loader never did, so the setup the readme shows
+    discovered no endpoint and generated nothing, the build failing only later, when the client
+    code did not compile. A war is now read in place from its `WEB-INF/classes`, alongside the
+    dependencies its pom declares, `provided` ones included, which the plugin resolves through the
+    build's repository session (offline mode, mirrors and reactor included) since Maven resolves
+    none for a war. The generated sources are the same 28.4 produced.
+*   [FIX] **A server not packaged yet is generated with its dependencies.** In a reactor build
+    stopping before `package` (e.g. `mvn test-compile`), the war dependency is its directory of
+    classes, which Maven puts on the plugin's class loader without any of its dependencies: a
+    server class using a dependency's type in a signature (e.g. a `MultipartFile` parameter) failed
+    the generation with a missing class, in 28.4 as well. The server classes are now loaded with
+    their dependencies, ahead of the plugin's class loader.
+*   [BREAKING] **The generation fails when no endpoint is found.** Finding no `@Downstream.Method`
+    for the client, typically because the server is not a dependency of the plugin, generated
+    nothing and let the build go on; it now fails with a message saying where the server goes.
+
 # version 29.0
 
 ## `optionfactory-spring-bom` and `optionfactory-spring-dependencies`
