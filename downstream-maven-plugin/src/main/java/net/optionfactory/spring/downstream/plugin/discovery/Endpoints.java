@@ -20,14 +20,21 @@ public class Endpoints {
 
     /// Loads the classes declaring an annotated method and returns their selected methods.
     /// Only methods declared by the scanned classes are considered, inherited ones being found on
-    /// the class that declares them.
+    /// the class that declares them. The classes are loaded without being initialized.
     ///
-    /// @param scanResult a scan with method and annotation info enabled
+    /// @param scanResult a scan with class, method and annotation info enabled
+    /// @param classLoader the class loader the scan read the classes from, which loads them
     /// @return the selected methods, empty when there is none
-    public List<Method> discover(ScanResult scanResult) {
+    /// @throws IllegalStateException when a scanned class cannot be loaded
+    public List<Method> discover(ScanResult scanResult, ClassLoader classLoader) {
         final var methods = new ArrayList<Method>();
         for (final var classInfo : scanResult.getClassesWithMethodAnnotation(Downstream.Method.class.getName())) {
-            final var clazz = classInfo.loadClass();
+            final Class<?> clazz;
+            try {
+                clazz = Class.forName(classInfo.getName(), false, classLoader);
+            } catch (ClassNotFoundException ex) {
+                throw new IllegalStateException("scanned class %s cannot be loaded".formatted(classInfo.getName()), ex);
+            }
             for (final var method : clazz.getDeclaredMethods()) {
                 final var annotation = method.getAnnotation(Downstream.Method.class);
                 if (annotation == null) {

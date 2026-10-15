@@ -45,13 +45,15 @@ public class GenerationPipeline {
     /// @throws Exception when the emitter fails
     public void execute(String targetPackage, Nesting nesting) throws Exception {
 
+        final var classLoader = this.getClass().getClassLoader();
         try (final var scanResult = new ClassGraph()
-                .overrideClassLoaders(this.getClass().getClassLoader())
+                .enableClassLoaders(classLoader)
+                .enableClassInfo()
                 .enableMethodInfo()
                 .enableAnnotationInfo()
                 .scan()) {
 
-            final var methods = endpoints.discover(scanResult);
+            final var methods = endpoints.discover(scanResult, classLoader);
             log.info("Discovered %s methods annotated with @Downstream.Method".formatted(methods.size()));
 
             final var candidates = payloads.discover(methods).stream()

@@ -1,3 +1,21 @@
+# version 28.5
+
+## `downstream-maven-plugin`
+
+*   [DEP] **Ported to ClassGraph 6: the plugin now needs JDK 25 to run.** ClassGraph 6 is compiled
+    for Java 25, so a Maven running on an older JDK fails to load the plugin with an
+    `UnsupportedClassVersionError`, consistently with the platform policy (JDK 25 first, JDK 21 best
+    effort). The scan reads the same classes as before: the plugin's class loader and its parents,
+    with class, method and annotation info enabled explicitly since ClassGraph 6 no longer enables
+    them implicitly. ClassGraph no longer loads classes, so `Endpoints.discover(ScanResult,
+    ClassLoader)` now takes the class loader the scan read, and loads the classes with it without
+    initializing them.
+
+## Dependencies
+*   [DEP] **Bumped dependencies:** tomcat 11.0.27, httpclient5 5.6.5, libphonenumber 9.0.41,
+    postgresql 42.7.14, openhtmltopdf 1.1.97, javapoet 0.21.0 and classgraph 6.0.0
+    (downstream-maven-plugin), central-publishing-maven-plugin 0.12.0.
+
 # version 28.4
 
 ## `upstream`

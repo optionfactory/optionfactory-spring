@@ -31,11 +31,13 @@ public class EndpointsTest {
 
     private static Set<String> discover(String targetClientName) {
         try (final var scan = new ClassGraph()
+                .enableClasspath()
+                .enableClassInfo()
                 .enableMethodInfo()
                 .enableAnnotationInfo()
                 .acceptClasses(Controller.class.getName())
                 .scan()) {
-            final List<Method> methods = new Endpoints(targetClientName).discover(scan);
+            final List<Method> methods = new Endpoints(targetClientName).discover(scan, EndpointsTest.class.getClassLoader());
             return methods.stream().map(Method::getName).collect(Collectors.toSet());
         }
     }

@@ -40,12 +40,12 @@
         <dependency>
             <groupId>com.palantir.javapoet</groupId> 
             <artifactId>javapoet</artifactId>
-            <version>0.20.0</version> 
+            <version>0.21.0</version>
         </dependency>
         <dependency>
             <groupId>io.github.classgraph</groupId>
             <artifactId>classgraph</artifactId>
-            <version>4.8.196</version>
+            <version>6.0.0</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

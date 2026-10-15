@@ -177,17 +177,17 @@
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-core</artifactId>
-                <version>11.0.26</version>
+                <version>11.0.27</version>
             </dependency>        
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-el</artifactId>
-                <version>11.0.26</version>
+                <version>11.0.27</version>
             </dependency>        
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-websocket</artifactId>
-                <version>11.0.26</version>
+                <version>11.0.27</version>
             </dependency>        
             
             <dependency>
@@ -214,7 +214,7 @@
             <dependency>
                 <groupId>org.apache.httpcomponents.client5</groupId>
                 <artifactId>httpclient5</artifactId>
-                <version>5.6.4</version>
+                <version>5.6.5</version>
             </dependency>
             <dependency>
                 <groupId>jakarta.mail</groupId>
@@ -234,7 +234,7 @@
             <dependency>
                 <groupId>com.googlecode.libphonenumber</groupId>
                 <artifactId>libphonenumber</artifactId>
-                <version>9.0.40</version>
+                <version>9.0.41</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -265,17 +265,17 @@
             <dependency>
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
-                <version>42.7.13</version>
+                <version>42.7.14</version>
             </dependency>                
             <dependency>
                 <groupId>io.github.openhtmltopdf</groupId>
                 <artifactId>openhtmltopdf-core</artifactId>
-                <version>1.1.87</version>
+                <version>1.1.97</version>
             </dependency>            
             <dependency>
                 <groupId>io.github.openhtmltopdf</groupId>
                 <artifactId>openhtmltopdf-pdfbox</artifactId>
-                <version>1.1.87</version>
+                <version>1.1.97</version>
                 <exclusions>
                     <exclusion>
                         <artifactId>commons-logging</artifactId>
@@ -410,7 +410,7 @@
                 <plugin>
                     <groupId>org.sonatype.central</groupId>
                     <artifactId>central-publishing-maven-plugin</artifactId>
-                    <version>0.11.0</version>
+                    <version>0.12.0</version>
                 </plugin>
             </plugins>
         </pluginManagement>
