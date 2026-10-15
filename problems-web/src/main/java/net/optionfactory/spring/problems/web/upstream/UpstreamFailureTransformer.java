@@ -6,10 +6,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import net.optionfactory.spring.problems.Problem;
 import net.optionfactory.spring.problems.web.FailureTransformer;
 import net.optionfactory.spring.problems.web.RestExceptionResolver.HttpStatusAndProblems;
 import net.optionfactory.spring.upstream.errors.RestClientUpstreamException;
+import org.jspecify.annotations.Nullable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.web.method.HandlerMethod;
 
@@ -30,7 +33,7 @@ public class UpstreamFailureTransformer implements FailureTransformer {
 
     private static final ParameterizedTypeReference<List<Problem>> PROBLEMS_LIST = new ParameterizedTypeReference<>() {
     };
-    private final Map<HandlerMethod, Optional<UpstreamProblems.MapContext[]>> drops = new ConcurrentHashMap<>();
+    private final Map<HandlerMethod, List<ContextMapping>> mappings = new ConcurrentHashMap<>();
     private final Map<HandlerMethod, Optional<UpstreamProblems.Forward>> statuses = new ConcurrentHashMap<>();
 
     /// @param saps the status and problems answered so far
@@ -72,44 +75,61 @@ public class UpstreamFailureTransformer implements FailureTransformer {
     }
 
     private HttpStatusAndProblems applyMappings(HttpStatusAndProblems saps, HandlerMethod handler, RestClientUpstreamException uex) {
-        final var maybeAnnotation = drops.computeIfAbsent(handler, (hm) -> Optional.ofNullable(hm.getMethod().getAnnotationsByType(UpstreamProblems.MapContext.class)));
-        if (maybeAnnotation.isEmpty()) {
+        final var handlerMappings = mappings.computeIfAbsent(handler, (hm) -> Stream.of(hm.getMethod().getAnnotationsByType(UpstreamProblems.MapContext.class)).map(ContextMapping::of).toList());
+        if (handlerMappings.isEmpty()) {
             return saps;
         }
-        final var annotations = maybeAnnotation.get();
         var problems = saps.problems();
-        for (final var annotation : annotations) {
-            if (!annotation.upstream().isEmpty() && !annotation.upstream().equals(uex.upstream)) {
+        for (final var mapping : handlerMappings) {
+            if (!mapping.appliesTo(uex)) {
                 continue;
             }
-            if (!annotation.endpoint().isEmpty() && !annotation.endpoint().equals(uex.endpoint)) {
-                continue;
-            }
-            problems = problems.stream().map(problem -> mapContext(annotation, problem)).toList();
+            problems = problems.stream().map(mapping::apply).toList();
         }
         return new HttpStatusAndProblems(saps.status(), problems);
     }
 
-    private static Problem mapContext(UpstreamProblems.MapContext annotation, Problem problem) {
-        final String context = problem.context();
-        if (context == null) {
-            return problem;
+    /// A [UpstreamProblems.MapContext] declaration, its regular expression compiled once when the
+    /// mode is `REGEX_FIRST` or `REGEX_ALL`, `null` otherwise.
+    private record ContextMapping(UpstreamProblems.MapContext annotation, @Nullable Pattern pattern) {
+
+        static ContextMapping of(UpstreamProblems.MapContext annotation) {
+            return new ContextMapping(annotation, switch (annotation.mode()) {
+                case REGEX_FIRST, REGEX_ALL ->
+                    Pattern.compile(annotation.source());
+                case STRING_FIRST, STRING_ALL ->
+                    null;
+            });
         }
-        return problem.withContext(switch (annotation.mode()) {
-            case STRING_FIRST -> {
-                int index = context.indexOf(annotation.source());
-                if (index < 0) {
-                    yield context;
-                }
-                yield context.substring(0, index) + annotation.target() + context.substring(index + annotation.source().length());
+
+        boolean appliesTo(RestClientUpstreamException uex) {
+            if (!annotation.upstream().isEmpty() && !annotation.upstream().equals(uex.upstream)) {
+                return false;
             }
-            case REGEX_FIRST ->
-                context.replaceFirst(annotation.source(), annotation.target());
-            case REGEX_ALL ->
-                context.replaceAll(annotation.source(), annotation.target());
-            case STRING_ALL ->
-                context.replace(annotation.source(), annotation.target());
-        });
+            return annotation.endpoint().isEmpty() || annotation.endpoint().equals(uex.endpoint);
+        }
+
+        Problem apply(Problem problem) {
+            final String context = problem.context();
+            if (context == null) {
+                return problem;
+            }
+            return problem.withContext(switch (annotation.mode()) {
+                case STRING_FIRST -> {
+                    int index = context.indexOf(annotation.source());
+                    if (index < 0) {
+                        yield context;
+                    }
+                    yield context.substring(0, index) + annotation.target() + context.substring(index + annotation.source().length());
+                }
+                case REGEX_FIRST ->
+                    pattern.matcher(context).replaceFirst(annotation.target());
+                case REGEX_ALL ->
+                    pattern.matcher(context).replaceAll(annotation.target());
+                case STRING_ALL ->
+                    context.replace(annotation.source(), annotation.target());
+            });
+        }
     }
 
 }
