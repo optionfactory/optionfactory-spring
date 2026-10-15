@@ -4,7 +4,7 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring</artifactId>
-        <version>29.0</version>
+        <version>29.1-SNAPSHOT</version>
     </parent>
     <artifactId>upstream-interceptor-jws</artifactId>
     <description>optionfactory-spring jws upstream interceptor</description>
