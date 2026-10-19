@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>net.optionfactory.spring</groupId>
     <artifactId>optionfactory-spring-bom</artifactId>
-    <version>29.2-SNAPSHOT</version>
+    <version>29.2</version>
     <packaging>pom</packaging>
     <description>Bill of materials pom optionfactory-spring: optionfactory-spring modules only</description>
     <name>${project.groupId}:${project.artifactId}</name>
@@ -31,7 +31,7 @@
     <properties>
         <opfa-spring.version>${project.version}</opfa-spring.version>
         <!-- added to make build reproducible https://maven.apache.org/guides/mini/guide-reproducible-builds.html -->
-        <project.build.outputTimestamp>2026-10-19T16:55:46Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2026-10-19T16:56:59Z</project.build.outputTimestamp>
     </properties>
 
     <dependencyManagement>
