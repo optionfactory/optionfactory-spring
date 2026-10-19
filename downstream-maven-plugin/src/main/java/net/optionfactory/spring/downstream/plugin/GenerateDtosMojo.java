@@ -84,7 +84,7 @@ import org.apache.maven.project.MavenProject;
 ///     </dependencies>
 /// </plugin>
 /// ```
-@Mojo(name = "generate-dtos", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
+@Mojo(name = "generate-dtos", defaultPhase = LifecyclePhase.GENERATE_SOURCES, threadSafe = true)
 public class GenerateDtosMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${project}", readonly = true, required = true)

@@ -75,7 +75,7 @@ import org.apache.maven.project.MavenProject;
 ///     </configuration>
 /// </execution>
 /// ```
-@Mojo(name = "generate-ts", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
+@Mojo(name = "generate-ts", defaultPhase = LifecyclePhase.GENERATE_SOURCES, threadSafe = true)
 public class GenerateTsMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${project}", readonly = true, required = true)

@@ -6,9 +6,11 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /// The class loader the server classes are read and loaded from.
@@ -16,9 +18,14 @@ import java.util.List;
 /// A server packaged as a war keeps its classes under `WEB-INF/classes`, a layout that neither the
 /// scan nor a plain class loader reads, and Maven resolves none of a war's dependencies: put on
 /// the plugin's classpath as is, a war contributes no class at all, and the types its signatures
-/// use are missing. Each [Server] is read in place instead, its classes from the war's
-/// `WEB-INF/classes` (or from the directory of a server not packaged yet), alongside its
-/// dependencies, by a class loader that is a child of the given one.
+/// use are missing. Each [Server] is read instead, its classes from the war's `WEB-INF/classes`
+/// (or from the directory of a server not packaged yet), alongside its dependencies, by a class
+/// loader that is a child of the given one.
+///
+/// The war's `WEB-INF/classes` is copied to a directory of its own, removed on [#close()]: read
+/// through a `jar:` URL, the war would be opened by a `JarFile` the JDK caches and shares across
+/// the whole JVM, and closing a class loader closes it, under any other execution reading the same
+/// war in a parallel build.
 ///
 /// The child loads what it holds before asking its parent: a server not packaged yet is on the
 /// parent as well, and loaded there its classes would not see the dependencies the child holds.
@@ -40,10 +47,12 @@ public final class ServerClasses implements AutoCloseable {
 
     private final ClassLoader classLoader;
     private final URLClassLoader owned;
+    private final List<Path> copies;
 
-    private ServerClasses(ClassLoader classLoader, URLClassLoader owned) {
+    private ServerClasses(ClassLoader classLoader, URLClassLoader owned, List<Path> copies) {
         this.classLoader = classLoader;
         this.owned = owned;
+        this.copies = copies;
     }
 
     /// @param parent the class loader the plugin runs in
@@ -51,17 +60,23 @@ public final class ServerClasses implements AutoCloseable {
     /// @return the server classes, over `parent` when there are servers to read
     public static ServerClasses of(ClassLoader parent, List<Server> servers) {
         if (servers.isEmpty()) {
-            return new ServerClasses(parent, null);
+            return new ServerClasses(parent, null, List.of());
         }
-        final var urls = new ArrayList<URL>();
-        for (final var server : servers) {
-            urls.add(classes(server.location()));
-            for (final var dependency : server.dependencies()) {
-                urls.add(url(dependency.toUri()));
+        final var copies = new ArrayList<Path>();
+        try {
+            final var urls = new ArrayList<URL>();
+            for (final var server : servers) {
+                urls.add(url(classes(server.location(), copies).toUri()));
+                for (final var dependency : server.dependencies()) {
+                    urls.add(url(dependency.toUri()));
+                }
             }
+            final var loader = new ServerFirstClassLoader(urls.toArray(URL[]::new), parent);
+            return new ServerClasses(loader, loader, copies);
+        } catch (RuntimeException ex) {
+            copies.forEach(ServerClasses::delete);
+            throw ex;
         }
-        final var loader = new ServerFirstClassLoader(urls.toArray(URL[]::new), parent);
-        return new ServerClasses(loader, loader);
     }
 
     /// @return the class loader to scan and to load the server classes with
@@ -69,9 +84,10 @@ public final class ServerClasses implements AutoCloseable {
         return classLoader;
     }
 
-    /// Closes the class loader built over the servers, if any.
+    /// Closes the class loader built over the servers, if any, and removes the copies of the
+    /// wars' classes.
     ///
-    /// @throws UncheckedIOException when the class loader cannot be closed
+    /// @throws UncheckedIOException when the class loader cannot be closed or a copy removed
     @Override
     public void close() {
         if (owned == null) {
@@ -81,6 +97,8 @@ public final class ServerClasses implements AutoCloseable {
             owned.close();
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
+        } finally {
+            copies.forEach(ServerClasses::delete);
         }
     }
 
@@ -126,11 +144,41 @@ public final class ServerClasses implements AutoCloseable {
         }
     }
 
-    private static URL classes(Path location) {
+    private static Path classes(Path location, List<Path> copies) {
         if (Files.isDirectory(location)) {
-            return url(location.toUri());
+            return location;
         }
-        return url(URI.create("jar:" + location.toUri() + "!/WEB-INF/classes/"));
+        try (final var war = FileSystems.newFileSystem(location)) {
+            final var copy = Files.createTempDirectory("downstream-server-classes");
+            copies.add(copy);
+            final var classes = war.getPath("/WEB-INF/classes");
+            if (!Files.isDirectory(classes)) {
+                return copy;
+            }
+            try (final var paths = Files.walk(classes)) {
+                for (final var path : paths.toList()) {
+                    final var target = copy.resolve(classes.relativize(path).toString());
+                    if (Files.isDirectory(path)) {
+                        Files.createDirectories(target);
+                    } else {
+                        Files.copy(path, target);
+                    }
+                }
+            }
+            return copy;
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
+    }
+
+    private static void delete(Path copy) {
+        try (final var paths = Files.walk(copy)) {
+            for (final var path : paths.sorted(Comparator.reverseOrder()).toList()) {
+                Files.delete(path);
+            }
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
     }
 
     private static URL url(URI uri) {

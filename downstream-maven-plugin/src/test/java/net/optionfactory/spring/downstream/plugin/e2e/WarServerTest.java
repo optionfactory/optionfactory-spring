@@ -78,6 +78,21 @@ public class WarServerTest {
         }
     }
 
+    /// A `jar:` URL would read the war through a `JarFile` the JDK shares across the JVM, closed
+    /// under any other execution reading the same war in a parallel build.
+    @Test
+    public void readsTheWarFromACopyOfItsOwnRemovedOnClose(@TempDir Path dir) throws Exception {
+        final var server = server(dir);
+        final Path copy;
+        try (final var classes = ServerClasses.of(getClass().getClassLoader(), List.of(new Server(server.war(), List.of(server.libraryJar()))))) {
+            final var url = ((URLClassLoader) classes.classLoader()).getURLs()[0];
+            Assertions.assertEquals("file", url.getProtocol(), "the war's classes are not read through a shared jar file");
+            copy = Path.of(url.toURI());
+            Assertions.assertTrue(Files.isRegularFile(copy.resolve("warsrv/Api.class")), "the war's WEB-INF/classes is copied");
+        }
+        Assertions.assertFalse(Files.exists(copy), "the copy is removed on close");
+    }
+
     @Test
     public void usesTheClassLoaderAsIsWithoutServers() {
         final var classLoader = getClass().getClassLoader();
