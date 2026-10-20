@@ -6,11 +6,11 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring-dependencies</artifactId>
-        <version>29.2</version>
+        <version>29.3-SNAPSHOT</version>
         <relativePath>optionfactory-spring-dependencies/pom.xml</relativePath>
     </parent>
     <artifactId>optionfactory-spring</artifactId>
-    <version>29.2</version>
+    <version>29.3-SNAPSHOT</version>
     <packaging>pom</packaging>
     <description>optionfactory-spring parent pom</description>
     <name>${project.groupId}:${project.artifactId}</name>
