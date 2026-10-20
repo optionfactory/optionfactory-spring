@@ -1,5 +1,6 @@
 package net.optionfactory.spring.upstream.auth;
 
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Map;
@@ -61,8 +62,9 @@ public interface OauthClient {
     @Upstream.Mock("oauth-token-response.json")
     JsonNode authenticate(@RequestParam MultiValueMap<String, ?> params);
 
-    /// Executes the client-credentials grant, authenticating the client with `Basic` authentication
-    /// (UTF-8 encoded).
+    /// Executes the client-credentials grant, authenticating the client with `Basic` authentication.
+    /// As required by RFC 6749 §2.3.1, the client id and secret are form-urlencoded (UTF-8) before
+    /// being joined and base64 encoded.
     ///
     /// @param clientId the client id
     /// @param clientSecret the client secret
@@ -76,7 +78,11 @@ public interface OauthClient {
                 .filter(e -> e.getValue() != null)
                 .collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue));
 
-        final var token = HttpHeaders.encodeBasicAuth(clientId, clientSecret, StandardCharsets.UTF_8);
+        final var token = HttpHeaders.encodeBasicAuth(
+                URLEncoder.encode(clientId, StandardCharsets.UTF_8),
+                URLEncoder.encode(clientSecret, StandardCharsets.UTF_8),
+                StandardCharsets.UTF_8
+        );
         return authenticate(
                 params,
                 Map.of(HttpHeaders.AUTHORIZATION, String.format("Basic %s", token))

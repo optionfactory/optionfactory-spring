@@ -56,6 +56,14 @@ public class OauthClientGrantsTest {
     }
 
     @Test
+    public void clientCredentialsAreFormUrlEncodedBeforeBasicAuth() {
+        final var client = new RecordingOauthClient();
+        client.clientCredentials("my:id", "a+b:c% dè", null);
+        final var expected = "Basic " + Base64.getEncoder().encodeToString("my%3Aid:a%2Bb%3Ac%25+d%C3%A8".getBytes(StandardCharsets.UTF_8));
+        Assertions.assertEquals(expected, client.headers.get(HttpHeaders.AUTHORIZATION), "client id and secret must be form-urlencoded as per RFC 6749 §2.3.1");
+    }
+
+    @Test
     public void clientCredentialsOmitAMissingScope() {
         final var client = new RecordingOauthClient();
         client.clientCredentials("id", "secret", null);
