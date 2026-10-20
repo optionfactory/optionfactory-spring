@@ -81,7 +81,7 @@ public class DigestAuth {
     }
 
     private static String quoted(String v) {
-        return String.format("\"%s\"", v.replace("\"", "\\\""));
+        return String.format("\"%s\"", v.replace("\\", "\\\\").replace("\"", "\\\""));
     }
 
     private static String md5LowercaseHex(String v) {

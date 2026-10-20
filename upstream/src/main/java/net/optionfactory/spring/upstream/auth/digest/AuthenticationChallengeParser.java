@@ -8,8 +8,8 @@ import java.util.Map;
 /// `Digest realm="r", nonce="n", qop="auth,auth-int"`.
 ///
 /// The parser is lenient: values may be quoted or not, commas inside quoted values are kept, the
-/// surrounding quotes are removed while escaped quotes inside the value are kept verbatim (backslash
-/// included), and empty entries are skipped. A header carrying several challenges is not split: it
+/// surrounding quotes are removed and quoted values are unescaped (`\"` becomes `"`, `\\` becomes
+/// `\`), and empty entries are skipped. A header carrying several challenges is not split: it
 /// yields the first scheme, with the following challenges mixed into its parameters.
 ///
 /// Instances are stateless and thread-safe.
@@ -89,7 +89,7 @@ public class AuthenticationChallengeParser {
             return null;
         }
         if(stripped.length() >= 2 && stripped.charAt(0) == '"' && stripped.charAt(stripped.length() - 1) == '"'){
-            return stripped.substring(1, stripped.length() - 1);
+            return stripped.substring(1, stripped.length() - 1).replaceAll("\\\\(.)", "$1");
         }
         return stripped;
     }    

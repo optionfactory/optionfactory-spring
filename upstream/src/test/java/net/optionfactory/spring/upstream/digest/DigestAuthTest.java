@@ -49,6 +49,13 @@ public class DigestAuthTest {
     }
 
     @Test
+    public void backslashesInValuesAreEscaped() {
+        final var da = new DigestAuth("DOMAIN\\user", "Circle Of Life", () -> 1);
+        final var got = da.authHeader("GET", "/", "Digest realm=\"a\\\\b\", nonce=\"n\"");
+        Assertions.assertTrue(got.startsWith("Digest username=\"DOMAIN\\\\user\", realm=\"a\\\\b\""), "a backslash in the username or realm must be escaped: " + got);
+    }
+
+    @Test
     public void clientNonceIsDrawnForEveryHeader() {
         final var nonces = new java.util.concurrent.atomic.AtomicInteger();
         final var da = new DigestAuth("Mufasa", "Circle Of Life", nonces::incrementAndGet);

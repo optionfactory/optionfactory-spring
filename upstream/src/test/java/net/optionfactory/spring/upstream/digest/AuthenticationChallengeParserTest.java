@@ -68,9 +68,15 @@ public class AuthenticationChallengeParserTest {
     }
 
     @Test
-    public void escapedQuotesAreKeptVerbatim() {
+    public void escapedQuotesAreUnescaped() {
         final var challenge = new AuthenticationChallengeParser().parse("Digest realm=\"a \\\"quoted\\\" realm, really\", nonce=n");
-        Assertions.assertEquals("a \\\"quoted\\\" realm, really", challenge.params().get("realm"), "an escaped quote must neither end the value nor be unescaped");
+        Assertions.assertEquals("a \"quoted\" realm, really", challenge.params().get("realm"), "an escaped quote must not end the value and must be unescaped");
         Assertions.assertEquals("n", challenge.params().get("nonce"), "parameters after an escaped value must be parsed");
+    }
+
+    @Test
+    public void escapedBackslashesAreUnescaped() {
+        final var challenge = new AuthenticationChallengeParser().parse("Digest realm=\"a\\\\b\", nonce=n");
+        Assertions.assertEquals("a\\b", challenge.params().get("realm"), "an escaped backslash must be unescaped");
     }
 }
