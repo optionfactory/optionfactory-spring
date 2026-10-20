@@ -4,7 +4,7 @@
     <parent>
         <groupId>net.optionfactory.spring</groupId>
         <artifactId>optionfactory-spring-bom</artifactId>
-        <version>29.3-SNAPSHOT</version>
+        <version>29.3</version>
         <relativePath>../optionfactory-spring-bom/pom.xml</relativePath>
     </parent>
     <artifactId>optionfactory-spring-dependencies</artifactId>
