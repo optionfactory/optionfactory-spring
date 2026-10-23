@@ -35,7 +35,7 @@ public class HibernateOnPsqlTestConfig {
 
         @Override
         public GenericContainer start() throws Exception {
-            final var image = DockerImageName.parse("optionfactory/debian13-postgres18:240");
+            final var image = DockerImageName.parse("optionfactory/debian13-postgres18:247");
             final var container = new GenericContainer(image).withExposedPorts(5432)
                     .waitingFor(Wait.forLogMessage(".*database system is ready to accept connections.*", 2));
             container.start();

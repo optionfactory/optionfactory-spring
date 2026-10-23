@@ -44,7 +44,7 @@ public class HibernateOnMysqlTestConfig {
 
         @Override
         public GenericContainer start() throws Exception {
-            final var image = DockerImageName.parse("optionfactory/debian13-mysql8:240");
+            final var image = DockerImageName.parse("optionfactory/debian13-mysql8:247");
             final var container = new GenericContainer<>(image)
                     .withExposedPorts(3306)
                     .withTmpFs(Map.of("/var/lib/mysql", "rw,mode=1777"))

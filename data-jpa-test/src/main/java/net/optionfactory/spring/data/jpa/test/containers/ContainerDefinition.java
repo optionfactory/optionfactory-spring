@@ -15,7 +15,7 @@ import org.testcontainers.lifecycle.Startable;
 ///
 ///     @Override
 ///     public PostgreSQLContainer start() throws Exception {
-///         final var image = DockerImageName.parse("optionfactory/debian13-postgres18:235").asCompatibleSubstituteFor("postgres");
+///         final var image = DockerImageName.parse("optionfactory/debian13-postgres18:247").asCompatibleSubstituteFor("postgres");
 ///         final var container = new PostgreSQLContainer(image).withUsername("postgres").withDatabaseName("test");
 ///         container.start();
 ///         container.execInContainer("psql", "-U", "postgres", "-c", "ALTER USER postgres PASSWORD 'test'");

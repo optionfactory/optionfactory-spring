@@ -29,7 +29,7 @@ public class TestPostgres implements ContainerDefinition<PostgreSQLContainer> {
 
     @Override
     public PostgreSQLContainer start() throws Exception {
-        final var image = DockerImageName.parse("optionfactory/debian13-postgres18:235").asCompatibleSubstituteFor("postgres");
+        final var image = DockerImageName.parse("optionfactory/debian13-postgres18:247").asCompatibleSubstituteFor("postgres");
         final var container = new PostgreSQLContainer(image)
                 .withExposedPorts(5432)
                 .withUsername("postgres")
