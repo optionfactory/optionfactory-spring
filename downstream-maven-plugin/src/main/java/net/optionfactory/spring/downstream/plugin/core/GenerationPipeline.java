@@ -69,7 +69,7 @@ public class GenerationPipeline {
             final var outcomes = emitter.emit(registry);
 
             for (final var outcome : outcomes) {
-                log.info("Source code generation: %s: %s".formatted(outcome.generated() ? "CREATED" : "SKIPPED", outcome.name()));
+                log.info("Source code generation: %s: %s".formatted(outcome.status(), outcome.name()));
             }
         }
     }

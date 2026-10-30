@@ -17,6 +17,7 @@ import java.util.Set;
 import javax.lang.model.element.Modifier;
 import net.optionfactory.spring.downstream.plugin.emit.SourceEmitter;
 import net.optionfactory.spring.downstream.plugin.emit.SourceEmitter.GenerateOutcome;
+import net.optionfactory.spring.downstream.plugin.emit.SourceEmitter.GenerateOutcome.Status;
 import net.optionfactory.spring.downstream.plugin.mapping.TypeRegistry;
 import net.optionfactory.spring.downstream.plugin.mapping.TypeRegistry.TargetName;
 import net.optionfactory.spring.downstream.plugin.reflection.Reflection;
@@ -30,7 +31,8 @@ import net.optionfactory.spring.downstream.plugin.reflection.Reflection;
 /// outer type. Each top-level type documents its source class in its javadoc.
 ///
 /// A type whose `src/main/java/{package}/{Name}.java` already exists under the project base
-/// directory is skipped, so a hand-written class takes the place of the generated one.
+/// directory is skipped, so a hand-written class takes the place of the generated one. A generated
+/// file whose content would not change is left untouched.
 public class JavaEmitter implements SourceEmitter {
 
     private final File outputDir;
@@ -80,14 +82,16 @@ public class JavaEmitter implements SourceEmitter {
             final var relativePath = "src/main/java/%s/%s.java".formatted(target.packageName().replace('.', '/'), target.topLevelName());
             final var sourceFile = new File(projectBaseDir, relativePath);
             if (sourceFile.exists()) {
-                outcomes.add(new GenerateOutcome(relativePath, false));
+                outcomes.add(new GenerateOutcome(relativePath, Status.SKIPPED));
                 continue;
             }
-            JavaFile.builder(target.packageName(), rootSpec)
+            final var javaFile = JavaFile.builder(target.packageName(), rootSpec)
                     .skipJavaLangImports(true)
-                    .build()
-                    .writeTo(outputDir);
-            outcomes.add(new GenerateOutcome(relativePath, true));
+                    .build();
+            final var outputFile = outputDir.toPath()
+                    .resolve(target.packageName().replace('.', '/'))
+                    .resolve(target.topLevelName() + ".java");
+            outcomes.add(new GenerateOutcome(relativePath, SourceEmitter.writeIfChanged(outputFile, javaFile.toString())));
         }
 
         return outcomes;

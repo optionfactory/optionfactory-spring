@@ -2,11 +2,13 @@ package net.optionfactory.spring.downstream.plugin.emit.java;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.nio.file.attribute.FileTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import net.optionfactory.spring.downstream.Downstream;
 import net.optionfactory.spring.downstream.plugin.emit.SourceEmitter.GenerateOutcome;
+import net.optionfactory.spring.downstream.plugin.emit.SourceEmitter.GenerateOutcome.Status;
 import net.optionfactory.spring.downstream.plugin.emit.java.JavaEmitter.DtoStyle;
 import net.optionfactory.spring.downstream.plugin.mapping.TypeRegistry;
 import net.optionfactory.spring.downstream.plugin.mapping.TypeRegistry.Nesting;
@@ -47,7 +49,7 @@ public class JavaEmitterTest {
         final var registry = new TypeRegistry(Set.of(Order.class, Order.Line.class, Order.Status.class), "net.generated", Nesting.NESTED);
         final var outcomes = new JavaEmitter(tempDir, tempDir, Map.of(), DtoStyle.CLASSES, Set.of()).emit(registry);
 
-        Assertions.assertEquals(List.of(new GenerateOutcome("src/main/java/net/generated/Order.java", true)), outcomes, "only top-level types get a file, nested ones are part of it");
+        Assertions.assertEquals(List.of(new GenerateOutcome("src/main/java/net/generated/Order.java", Status.CREATED)), outcomes, "only top-level types get a file, nested ones are part of it");
         final var content = read(tempDir, "net/generated/Order.java");
         Assertions.assertTrue(content.contains("public static class Line {"), "a nested dto is a static nested class");
         Assertions.assertTrue(content.contains("public enum Status {"), "a nested enum is emitted inside the parent");
@@ -84,7 +86,35 @@ public class JavaEmitterTest {
         final var registry = new TypeRegistry(Set.of(Client.class), "net.generated", Nesting.FLATTEN);
         final var outcomes = new JavaEmitter(outputDir, tempDir, Map.of(), DtoStyle.RECORDS, Set.of()).emit(registry);
 
-        Assertions.assertEquals(List.of(new GenerateOutcome("src/main/java/net/generated/Customer.java", false)), outcomes, "a type with a source file in the project is reported as skipped");
+        Assertions.assertEquals(List.of(new GenerateOutcome("src/main/java/net/generated/Customer.java", Status.SKIPPED)), outcomes, "a type with a source file in the project is reported as skipped");
         Assertions.assertFalse(new File(outputDir, "net/generated/Customer.java").exists(), "a type with a source file in the project is not generated");
+    }
+
+    @Test
+    public void filesWithTheSameContentAreLeftUntouched(@TempDir File tempDir) throws Exception {
+        final var registry = new TypeRegistry(Set.of(Client.class), "net.generated", Nesting.FLATTEN);
+        final var emitter = new JavaEmitter(tempDir, tempDir, Map.of(), DtoStyle.RECORDS, Set.of());
+        emitter.emit(registry);
+        final var generated = new File(tempDir, "net/generated/Customer.java").toPath();
+        final var past = FileTime.fromMillis(0);
+        Files.setLastModifiedTime(generated, past);
+
+        final var outcomes = emitter.emit(registry);
+
+        Assertions.assertEquals(List.of(new GenerateOutcome("src/main/java/net/generated/Customer.java", Status.UNCHANGED)), outcomes, "a file with the same content is reported as unchanged");
+        Assertions.assertEquals(past, Files.getLastModifiedTime(generated), "a file with the same content is not rewritten");
+    }
+
+    @Test
+    public void filesWithADifferentContentAreOverwritten(@TempDir File tempDir) throws Exception {
+        final var generated = new File(tempDir, "net/generated/Customer.java").toPath();
+        Files.createDirectories(generated.getParent());
+        Files.writeString(generated, "stale");
+
+        final var registry = new TypeRegistry(Set.of(Client.class), "net.generated", Nesting.FLATTEN);
+        final var outcomes = new JavaEmitter(tempDir, tempDir, Map.of(), DtoStyle.RECORDS, Set.of()).emit(registry);
+
+        Assertions.assertEquals(List.of(new GenerateOutcome("src/main/java/net/generated/Customer.java", Status.UPDATED)), outcomes, "a file with a different content is reported as updated");
+        Assertions.assertTrue(Files.readString(generated).contains("public record Customer(String name)"), "a file with a different content is overwritten");
     }
 }
