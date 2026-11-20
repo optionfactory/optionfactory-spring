@@ -22,7 +22,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestInitializer;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
-import org.springframework.web.client.ResponseErrorHandler;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.service.invoker.HttpExchangeAdapter;
 
 /// A [ScopeHandler] keeping the invocation in progress, and its last request and response, in
@@ -98,11 +98,11 @@ public class ThreadLocalScopeHandler implements ScopeHandler {
         return new RequestFactoryAdapter(factory, invocations::get);
     }
 
-    /// @param eh the response error handler
-    /// @return a [ResponseErrorHandlerAdapter], which reads the contexts from the response
+    /// @param handlers the response error handlers, in the order they are consulted
+    /// @return an [ErrorHandlerChainAdapter], which reads the contexts from the response
     @Override
-    public ResponseErrorHandler adapt(UpstreamResponseErrorHandler eh) {
-        return new ResponseErrorHandlerAdapter(eh);
+    public RestClient.ResponseSpec.ErrorHandler adaptErrorHandlers(List<UpstreamResponseErrorHandler> handlers) {
+        return new ErrorHandlerChainAdapter(handlers);
     }
 
 }

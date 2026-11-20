@@ -809,10 +809,11 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
 
         rcb.requestInterceptor(scopeHandler.adapt(initializedInterceptors));
 
-        Stream.concat(responseErrorHandlers.stream(), Stream.of(new UpstreamErrorOnResponseHandler(), new UpstreamErrorOnErrorStatusHandler()))
+        final var initializedErrorHandlers = Stream.concat(responseErrorHandlers.stream(), Stream.of(new UpstreamErrorOnResponseHandler(), new UpstreamErrorOnErrorStatusHandler()))
                 .peek(i -> i.preprocess(klass, expressions, endpoints))
-                .map(scopeHandler::adapt)
-                .forEach(rcb::defaultStatusHandler);
+                .toList();
+
+        rcb.defaultStatusHandler(status -> true, scopeHandler.adaptErrorHandlers(initializedErrorHandlers));
 
         final var innerExchangeAdapter = RestClientAdapter.create(rcb.build());
 

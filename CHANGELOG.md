@@ -14,6 +14,13 @@
     The clients still have no converter besides the configured ones: since 7.1 a `RestClient`
     registers spring's defaults unless told not to, which would have let a `json()` client read
     an xml response with a default mapper.
+*   [BREAKING] **The response error handlers reach the `RestClient` as one error handler.** Spring
+    Framework 7.1 deprecates `ResponseErrorHandler` for removal, and its replacement decides from
+    the status code alone, while `@Upstream.ErrorOnResponse` looks at the whole response: the
+    handlers are now consulted, in the same order and with the same first-claim-wins rule, by a
+    single `ErrorHandlerChainAdapter`. `ScopeHandler.adapt(UpstreamResponseErrorHandler)` is
+    replaced by `adaptErrorHandlers(List)`, and `ResponseErrorHandlerAdapter` by
+    `ErrorHandlerChainAdapter`; `UpstreamResponseErrorHandler` is unchanged.
 
 ## Dependencies
 *   [DEP] **Bumped dependencies:** spring framework 7.1.0, spring boot 4.2.0, spring security

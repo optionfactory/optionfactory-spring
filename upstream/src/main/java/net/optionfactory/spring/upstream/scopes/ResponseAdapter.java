@@ -11,7 +11,7 @@ import org.springframework.http.client.ClientHttpResponse;
 
 /// The `ClientHttpResponse` the [InterceptorChainAdapter] returns to the `RestClient`: it serves
 /// the [ResponseContext] produced by the interceptors, and carries the invocation and request
-/// contexts on to the [ResponseErrorHandlerAdapter].
+/// contexts on to the [ErrorHandlerChainAdapter].
 ///
 /// @param invocation the invocation the exchange belongs to
 /// @param request the request that was executed

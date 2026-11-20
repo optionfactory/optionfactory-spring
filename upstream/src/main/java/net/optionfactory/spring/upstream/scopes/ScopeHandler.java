@@ -14,7 +14,7 @@ import org.aopalliance.intercept.MethodInterceptor;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestInitializer;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
-import org.springframework.web.client.ResponseErrorHandler;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.service.invoker.HttpExchangeAdapter;
 
 /// Binds the invocation in progress to the spring callbacks a client is made of.
@@ -54,8 +54,8 @@ public interface ScopeHandler {
     /// @return the factory as used by the `RestClient`
     ClientHttpRequestFactory adapt(UpstreamHttpRequestFactory factory);
 
-    /// @param factory the response error handler
-    /// @return the handler as used by the `RestClient`
-    ResponseErrorHandler adapt(UpstreamResponseErrorHandler factory);
+    /// @param handlers the response error handlers, in the order they are consulted
+    /// @return a single `RestClient` error handler running them, see [ErrorHandlerChainAdapter]
+    RestClient.ResponseSpec.ErrorHandler adaptErrorHandlers(List<UpstreamResponseErrorHandler> handlers);
 
 }
