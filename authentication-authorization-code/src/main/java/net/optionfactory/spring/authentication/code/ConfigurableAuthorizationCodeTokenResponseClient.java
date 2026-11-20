@@ -29,14 +29,15 @@ public class ConfigurableAuthorizationCodeTokenResponseClient implements OAuth2A
     /// @param httpRequestFactory the factory the token endpoint is called with
     /// @throws IllegalArgumentException when no supported json library is on the classpath
     public ConfigurableAuthorizationCodeTokenResponseClient(ClientHttpRequestFactory httpRequestFactory) {
-	final var restClient = RestClient.builder()
-                	.configureMessageConverters((messageConverters) -> {
-				messageConverters.addCustomConverter(new FormHttpMessageConverter());
-				messageConverters.addCustomConverter(new OAuth2AccessTokenResponseHttpMessageConverter());
-			})
-			.defaultStatusHandler(new OAuth2ErrorResponseErrorHandler())
-                        .requestFactory(httpRequestFactory)
-			.build();
+        final var restClient = RestClient.builder()
+                .configureMessageConverters(messageConverters -> {
+                    messageConverters.disableDefaults();
+                    messageConverters.addCustomConverter(new FormHttpMessageConverter());
+                    messageConverters.addCustomConverter(new OAuth2AccessTokenResponseHttpMessageConverter());
+                })
+                .defaultStatusHandler(new OAuth2ErrorResponseErrorHandler())
+                .requestFactory(httpRequestFactory)
+                .build();
         this.inner = new RestClientAuthorizationCodeTokenResponseClient();
         this.inner.setRestClient(restClient);
     }
