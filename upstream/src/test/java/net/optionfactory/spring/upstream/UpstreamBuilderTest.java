@@ -19,7 +19,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.http.client.MockClientHttpRequest;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.service.annotation.GetExchange;
+import org.springframework.web.service.annotation.PostExchange;
+import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.json.JsonMapper;
 
 public class UpstreamBuilderTest {
@@ -61,8 +66,39 @@ public class UpstreamBuilderTest {
         Map<String, String> call();
     }
 
+    public record Payload(String fooBar) {
+
+    }
+
+    public interface FormsClient {
+
+        @PostExchange(url = "/form", contentType = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        Map<String, String> form(@RequestParam String fooBar);
+
+        @PostExchange(url = "/multipart", contentType = MediaType.MULTIPART_FORM_DATA_VALUE)
+        Map<String, String> multipart(@RequestPart Payload payload);
+
+        @GetExchange("/payload")
+        Payload payload();
+    }
+
     private record Seen(InvocationContext invocation, URI uri, HttpHeaders headers) {
 
+    }
+
+    private static FormsClient sending(List<MockClientHttpRequest> sent, MediaType responseType, String responseBody) {
+        return UpstreamBuilder.create(FormsClient.class)
+                .requestFactory((uri, method) -> {
+                    final var request = new MockClientHttpRequest(method, uri);
+                    final var h = new HttpHeaders();
+                    h.setContentType(responseType);
+                    request.setResponse(new MockClientHttpResponse(HttpStatus.OK, "OK", h, new ByteArrayResource(responseBody.getBytes(StandardCharsets.UTF_8))));
+                    sent.add(request);
+                    return request;
+                })
+                .json(JsonMapper.builder().propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE).build())
+                .baseUri("http://example.com")
+                .build();
     }
 
     private static <T> UpstreamBuilder<T> recording(Class<T> k, List<Seen> seen, HttpStatus status) {
@@ -231,6 +267,26 @@ public class UpstreamBuilderTest {
                 })
                 .build();
         Assertions.assertEquals(Map.of(), client.call(), "a handler that claims the response and does not throw must stop the built-in handlers");
+    }
+
+    @Test
+    public void multipartJsonPartsAreWrittenWithTheClientMapper() {
+        final var sent = new ArrayList<MockClientHttpRequest>();
+        sending(sent, MediaType.APPLICATION_JSON, "{}").multipart(new Payload("v"));
+        Assertions.assertTrue(sent.get(0).getBodyAsString().contains("{\"foo_bar\":\"v\"}"), "a json part must be written with the mapper given to json()");
+    }
+
+    @Test
+    public void urlEncodedFormsAreWritten() {
+        final var sent = new ArrayList<MockClientHttpRequest>();
+        sending(sent, MediaType.APPLICATION_JSON, "{}").form("a b");
+        Assertions.assertEquals("fooBar=a+b", sent.get(0).getBodyAsString(), "the request params of a url encoded endpoint must be sent as the form body");
+    }
+
+    @Test
+    public void responsesWithoutAConfiguredConverterAreRejected() {
+        final var client = sending(new ArrayList<>(), MediaType.TEXT_XML, "<Payload><fooBar>v</fooBar></Payload>");
+        Assertions.assertThrows(RestClientException.class, client::payload, "a json client must not fall back to spring's default converters for an xml response");
     }
 
     @Test

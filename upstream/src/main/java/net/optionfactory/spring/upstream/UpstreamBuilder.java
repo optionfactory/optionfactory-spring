@@ -5,6 +5,7 @@ import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -407,7 +408,8 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
     /// [#xml] or [#soap], configured: the last of these calls wins.
     ///
     /// The configurer receives a builder with no converters registered, and the client has no other
-    /// ones: without a configurer, no body can be read or written. The resulting converters also serve
+    /// ones besides the multipart converter spring adds, whose parts go through the configured ones:
+    /// without a configurer, no body can be read or written. The resulting converters also serve
     /// the error conditions (`#json_path`) and
     /// [net.optionfactory.spring.upstream.errors.RestClientUpstreamException#getResponseBodyAs(Class)].
     ///
@@ -460,22 +462,21 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
 
     /// Configures a JSON/HTTP client, replacing the message converters (see [#messageConverters]).
     ///
-    /// Besides JSON through the given mapper, the client handles `byte[]`, `String`, `Resource`,
-    /// `InputStream` and `Stream` (JSON arrays or JSON lines, read lazily) bodies, and multipart forms
-    /// whose parts can be JSON.
+    /// Besides JSON through the given mapper, the client handles `byte[]`, `String` (UTF-8 unless the
+    /// content type says otherwise), `Resource`, `InputStream` and `Stream` (JSON arrays or JSON lines,
+    /// read lazily) bodies, url encoded forms, and multipart forms whose parts are written through the
+    /// same converters, the mapper included.
     ///
     /// @param jsonMapper the mapper
     /// @return this builder
     public UpstreamBuilder<T> json(JsonMapper jsonMapper) {
         this.messageConverters(c -> {
-            final var multipart = new FormHttpMessageConverter();
-            multipart.addPartConverter(new JacksonJsonHttpMessageConverter(jsonMapper));
+            c.withFormConverter(new FormHttpMessageConverter());
             c.addCustomConverter(new ByteArrayHttpMessageConverter());
-            c.addCustomConverter(new StringHttpMessageConverter());
+            c.addCustomConverter(new StringHttpMessageConverter(StandardCharsets.UTF_8));
             c.addCustomConverter(new ResourceHttpMessageConverter(false));
             c.addCustomConverter(new InputStreamHttpMessageConverter());
             c.addCustomConverter(StreamHttpMessageConverter.forJson(jsonMapper));
-            c.addCustomConverter(multipart);
             c.addCustomConverter(new JacksonJsonHttpMessageConverter(jsonMapper));
         });
         return this;
@@ -483,22 +484,21 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
 
     /// Configures an XML/HTTP client, replacing the message converters (see [#messageConverters]).
     ///
-    /// Besides XML through the given mapper, the client handles `byte[]`, `String`, `Resource`,
-    /// `InputStream` and `Stream` (repeated elements, read lazily) bodies, and multipart forms whose parts
-    /// can be XML.
+    /// Besides XML through the given mapper, the client handles `byte[]`, `String` (UTF-8 unless the
+    /// content type says otherwise), `Resource`, `InputStream` and `Stream` (repeated elements, read
+    /// lazily) bodies, url encoded forms, and multipart forms whose parts are written through the same
+    /// converters, the mapper included.
     ///
     /// @param xmlMapper the mapper
     /// @return this builder
     public UpstreamBuilder<T> xml(XmlMapper xmlMapper) {
         this.messageConverters(c -> {
-            final var multipart = new FormHttpMessageConverter();
-            multipart.addPartConverter(new JacksonXmlHttpMessageConverter(xmlMapper));
+            c.withFormConverter(new FormHttpMessageConverter());
             c.addCustomConverter(new ByteArrayHttpMessageConverter());
-            c.addCustomConverter(new StringHttpMessageConverter());
+            c.addCustomConverter(new StringHttpMessageConverter(StandardCharsets.UTF_8));
             c.addCustomConverter(new ResourceHttpMessageConverter(false));
             c.addCustomConverter(new InputStreamHttpMessageConverter());
             c.addCustomConverter(StreamHttpMessageConverter.forXml(xmlMapper));
-            c.addCustomConverter(multipart);
             c.addCustomConverter(new JacksonXmlHttpMessageConverter(xmlMapper));
         });
         return this;
@@ -785,6 +785,7 @@ public class UpstreamBuilder<T> implements UpstreamPrototype<T> {
         final var httpMessageConverters = httpMessageConverterBuilder.build();
 
         final var rcb = RestClient.builder().requestFactory(requestFactory).configureMessageConverters(configurer -> {
+            configurer.disableDefaults();
             httpMessageConverters.forEach(configurer::addCustomConverter);
         });
         restClientCustomizers.forEach(c -> c.accept(rcb));

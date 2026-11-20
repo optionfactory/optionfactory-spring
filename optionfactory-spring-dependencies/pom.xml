@@ -17,41 +17,41 @@
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-devtools</artifactId>
-                <version>4.1.2</version>
+                <version>4.2.0</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-webmvc</artifactId>
-                <version>4.1.2</version>
+                <version>4.2.0</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-autoconfigure</artifactId>
-                <version>4.1.2</version>
+                <version>4.2.0</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-tomcat</artifactId>
-                <version>4.1.2</version>
+                <version>4.2.0</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.data</groupId>
                 <artifactId>spring-data-bom</artifactId>
-                <version>2026.0.2</version>
+                <version>2026.0.3</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>org.springframework.security</groupId>
                 <artifactId>spring-security-bom</artifactId>
-                <version>7.1.2</version>
+                <version>7.2.0</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-framework-bom</artifactId>
-                <version>7.0.10</version>
+                <version>7.1.0</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

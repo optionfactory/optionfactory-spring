@@ -1,3 +1,24 @@
+# version 30.0
+
+## `upstream`
+
+*   [BREAKING] **`String` bodies without a charset are UTF-8.** The `json()` and `xml()` clients read
+    and write a `String` body whose content type names no charset (e.g. `text/plain`, `text/xml`)
+    as UTF-8, where they used ISO-8859-1. Spring Framework 7.1 sets UTF-8 on every converter its
+    multipart converter writes parts with, the client's own `String` converter included; the
+    clients now declare UTF-8 explicitly instead of inheriting it. An upstream that sends or
+    expects ISO-8859-1 must name the charset in the content type.
+*   [DEP] **Ported to Spring Framework 7.1.** Url encoded forms and multipart forms are written by
+    separate converters, so `json()` and `xml()` register the url encoded one and let spring's
+    multipart converter write the parts through the client's converters, its mapper included.
+    The clients still have no converter besides the configured ones: since 7.1 a `RestClient`
+    registers spring's defaults unless told not to, which would have let a `json()` client read
+    an xml response with a default mapper.
+
+## Dependencies
+*   [DEP] **Bumped dependencies:** spring framework 7.1.0, spring boot 4.2.0, spring security
+    7.2.0, spring data 2026.0.3.
+
 # version 29.1
 
 ## `downstream-maven-plugin`
